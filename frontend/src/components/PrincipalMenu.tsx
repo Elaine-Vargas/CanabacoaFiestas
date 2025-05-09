@@ -14,4 +14,4 @@ const PrincipalMenu = () => {
   )
 }
 
-export default PrincipalMenu
+export default PrincipalMenu;
