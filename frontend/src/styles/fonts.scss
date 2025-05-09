@@ -1,0 +1,123 @@
+/* Font Families */
+@font-face {
+  font-family: "Glina Script";
+  font-weight: 400;
+  font-style: normal;
+  src: url("./font-faces/GlinaScript.otf") format("opentype");
+}
+
+@font-face {
+  font-family: "Whitenice";
+  font-weight: 400;
+  font-style: normal;
+  src: url("./font-faces/Whitenice.otf") format("opentype");
+}
+
+.pinyon-script-regular {
+  font-family: "Pinyon Script", cursive;
+  font-weight: 400;
+  font-style: normal;
+}
+
+.montserrat-alternates-regular {
+  font-family: "Montserrat Alternates", sans-serif;
+  font-weight: 400;
+  font-style: normal;
+}
+
+.montserrat-alternates-medium {
+  font-family: "Montserrat Alternates", sans-serif;
+  font-weight: 500;
+  font-style: normal;
+}
+
+.montserrat-alternates-semibold {
+  font-family: "Montserrat Alternates", sans-serif;
+  font-weight: 600;
+  font-style: normal;
+}
+
+.montserrat-alternates-bold {
+  font-family: "Montserrat Alternates", sans-serif;
+  font-weight: 700;
+  font-style: normal;
+}
+
+.montserrat-alternates-extrabold {
+  font-family: "Montserrat Alternates", sans-serif;
+  font-weight: 800;
+  font-style: normal;
+}
+
+.montserrat-alternates-black {
+  font-family: "Montserrat Alternates", sans-serif;
+  font-weight: 900;
+  font-style: normal;
+}
+
+.nunito-sans-variable {
+  font-family: "Nunito Sans", sans-serif;
+  font-optical-sizing: auto;
+  font-weight: 400;
+  font-style: normal;
+  font-variation-settings:
+    "wdth" 100,
+    "YTLC" 500;
+}
+
+/* Font Styles */
+h1 {
+  font-family: "Pinyon Script", cursive;
+  font-weight: 400;
+  font-style: normal;
+  font-size: 8vw;
+  line-height: 1;
+}
+
+h2 {
+  font-family: "Glina Script", cursive;
+  font-weight: 400;
+  font-style: normal;
+  font-size: 5vw;
+  line-height: 1;
+}
+
+h3 {
+  font-family: "Whitenice", cursive;
+  font-weight: 400;
+  font-style: normal;
+  font-size: 4vw;
+  line-height: 1;
+}
+
+h4{
+  font-family: "Montserrat Alternates", sans-serif;
+  font-weight: 800;
+  font-style: normal;
+  font-size: 3vw;
+  line-height: 1;
+}
+
+h5{
+  font-family: "Montserrat Alternates", sans-serif;
+  font-weight: 600;
+  font-style: italic;
+  font-size: 3vw;
+  line-height: 1;
+}
+
+h6{
+  font-family: "Montserrat Alternates", sans-serif;
+  font-weight: 500;
+  font-style: normal;
+  font-size: 3vw;
+  line-height: 1;
+}
+
+p {
+  font-family: "Nunito Sans", sans-serif;
+  font-weight: 400;
+  font-style: normal;
+  font-size: 3.25vw;
+  line-height: 1;
+}
