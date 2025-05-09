@@ -44,13 +44,19 @@ const servicesData = [
 export default function Services() {
   return (
     <>
+    <div className="servicioContent">
+        <div className="servicioFondo">
       <div className="servicioContainer">
         <NavBar />
       </div>
-      <div className="servicioContent">
+
+      
+        <div className="servicioArriba">
         <h1>Nuestros servicios</h1>
         <p>Canabacoa Fiestas te ofrece una buena variedad de servicios</p>
-
+        </div>
+        <br />
+        </div>
         <div className="servicesGrid">
           {servicesData.map((service, index) => (
             <div key={index} className="serviceCard">

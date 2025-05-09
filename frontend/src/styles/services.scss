@@ -4,6 +4,19 @@
   background-color: #f8f6f0;
 }
 
+/*.servicioFondo {
+   background: linear-gradient(to bottom, rgba(0, 0, 0, 0.9), rgba(0, 0, 0, 0.0)), url("../assets/backgrounds/Nservices.jpg");
+  background-blend-mode: multiply;
+  background-position: bottom center;
+  background-repeat: no-repeat;
+  background-size: cover;
+}*/
+
+.servicioArriba p{
+  font-size: 2vw;
+  margin-top: -5.5vw;
+}
+
 .servicesGrid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
