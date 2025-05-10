@@ -6,7 +6,42 @@ export default function Principal() {
 <>
 <div className="principalContainer">
 <PrincipalMenu/>
-
+<p>
+  hola
+</p>
+<p>
+  hola
+</p>
+<p>
+  hola
+</p>
+<p>
+  hola
+</p>
+<p>
+  hola
+</p>
+<p>
+  hola
+</p>
+<p>
+  hola
+</p>
+<p>
+  hola
+</p>
+<p>
+  hola
+</p>
+<p>
+  hola
+</p>
+<p>
+  hola
+</p>
+<p>
+  hola
+</p>
  </div> 
  
  <div className="principalContent">

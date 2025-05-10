@@ -1,0 +1,58 @@
+.servicioContent {
+  padding:3vw;
+  text-align: center;
+  background-color: #f8f6f0;
+}
+
+/*.servicioFondo {
+   background: linear-gradient(to bottom, rgba(0, 0, 0, 0.9), rgba(0, 0, 0, 0.0)), url("../assets/backgrounds/Nservices.jpg");
+  background-blend-mode: multiply;
+  background-position: bottom center;
+  background-repeat: no-repeat;
+  background-size: cover;
+}*/
+
+.servicioArriba p{
+  font-size: 2vw;
+  margin-top: -5.5vw;
+}
+
+.servicesGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 2vw;
+  margin-top: 3vw;
+  padding: 2vw;
+}
+
+.serviceCard {
+  background-color: white;
+  border-radius: 20px;
+  box-shadow: 0px 8px 20px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+  padding-bottom: 2vw;
+  transition: transform 0.3s ease;
+}
+
+.serviceCard:hover {
+  transform: translateY(-10px);
+}
+
+.serviceImage {
+  width: 100%;
+  height: 200px;
+  object-fit: cover;
+}
+
+.serviceCard h4 {
+  font-size: 2vw;
+  margin-top: 1vw;
+  color: #caa23f;
+}
+
+.serviceCard p {
+  padding: 0 1.5vw;
+  margin-top: -1.5vw;
+  font-size: 1.5vw;
+  color: #333;
+}
