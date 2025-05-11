@@ -1,4 +1,5 @@
-import PrincipalMenu from '../components/PrincipalMenu'
+import PrincipalCard from '../components/principal/principalCard';
+import PrincipalMenu from '../components/principal/PrincipalMenu'
 import "../styles/principal.scss";
 
 export default function Principal() {
@@ -6,46 +7,53 @@ export default function Principal() {
 <>
 <div className="principalContainer">
 <PrincipalMenu/>
-<p>
-  hola
-</p>
-<p>
-  hola
-</p>
-<p>
-  hola
-</p>
-<p>
-  hola
-</p>
-<p>
-  hola
-</p>
-<p>
-  hola
-</p>
-<p>
-  hola
-</p>
-<p>
-  hola
-</p>
-<p>
-  hola
-</p>
-<p>
-  hola
-</p>
-<p>
-  hola
-</p>
-<p>
-  hola
-</p>
- </div> 
- 
- <div className="principalContent">
-</div>
+
+      <PrincipalCard/>
+     
+    </div>
+
+<p>lorem ipsum</p>
+<p>lorem ipsum</p>
+<p>lorem ipsum</p>
+<p>lorem ipsum</p>
+<p>lorem ipsum</p>
+<p>lorem ipsum</p>
+<p>lorem ipsum</p>
+<p>lorem ipsum</p>
+<p>lorem ipsum</p>
+<p>lorem ipsum</p>
+<p>lorem ipsum</p>
+<p>lorem ipsum</p>
+<p>lorem ipsum</p>
+<p>lorem ipsum</p>
+<p>lorem ipsum</p>
+<p>lorem ipsum</p>
+<p>lorem ipsum</p>
+<p>lorem ipsum</p>
+<p>lorem ipsum</p>
+<p>lorem ipsum</p>
+<p>lorem ipsum</p>
+<p>lorem ipsum</p>
+<p>lorem ipsum</p>
+<p>lorem ipsum</p>
+<p>lorem ipsum</p>
+<p>lorem ipsum</p>
+<p>lorem ipsum</p>
+<p>lorem ipsum</p>
+<p>lorem ipsum</p>
+<p>lorem ipsum</p>
+<p>lorem ipsum</p>
+<p>lorem ipsum</p>
+<p>lorem ipsum</p>
+<p>lorem ipsum</p>
+<p>lorem ipsum</p>
+<p>lorem ipsum</p>
+<p>lorem ipsum</p>
+<p>lorem ipsum</p>
+<p>lorem ipsum</p>
+<p>lorem ipsum</p>
+<p>lorem ipsum</p>
+
 </>
   )
 }

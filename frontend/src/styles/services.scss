@@ -1,7 +1,7 @@
 .servicioContent {
   padding:3vw;
   text-align: center;
-  background-color: #f8f6f0;
+  background-color: var(--color-background);
 }
 
 /*.servicioFondo {
@@ -26,9 +26,9 @@
 }
 
 .serviceCard {
-  background-color: white;
+  background-color: var(--color-input-bg);
   border-radius: 20px;
-  box-shadow: 0px 8px 20px rgba(0, 0, 0, 0.1);
+  box-shadow: 0px 8px 20px rgba(var(--color-input-border), 0.1);
   overflow: hidden;
   padding-bottom: 2vw;
   transition: transform 0.3s ease;
@@ -47,12 +47,12 @@
 .serviceCard h4 {
   font-size: 2vw;
   margin-top: 1vw;
-  color: #caa23f;
+  color: var(--dark-gold);
 }
 
 .serviceCard p {
   padding: 0 1.5vw;
   margin-top: -1.5vw;
   font-size: 1.5vw;
-  color: #333;
+  color: var(--color-text);
 }

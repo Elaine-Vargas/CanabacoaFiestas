@@ -12,7 +12,7 @@ import Decor from './ServicesSubpages/Decor';
 import Transportation from './ServicesSubpages/Transportation';
 import Supervision from './ServicesSubpages/Supervision';
 import Catering from './ServicesSubpages/Catering';
-
+import '../styles/theme.scss';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 
 function App() {

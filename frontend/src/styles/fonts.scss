@@ -70,54 +70,153 @@ h1 {
   font-family: "Pinyon Script", cursive;
   font-weight: 400;
   font-style: normal;
-  font-size: 8vw;
   line-height: 1;
+
+  // Si el tamaño de la pantalla es 651px o más
+  @media screen and (min-width: 651px) {
+    font-size: 8vw;
+  }
+
+  // Si el tamaño de la pantalla es menor 650px y mayor a 350px
+  @media screen and (max-width: 650px) {
+    font-size: 10vw;
+  }
+  // Si el tamaño de la pantalla es 350px o menos
+    @media screen and (max-width: 350px) {
+    font-size: 12vw;
+  }
 }
 
 h2 {
   font-family: "Glina Script", cursive;
   font-weight: 400;
   font-style: normal;
-  font-size: 5vw;
   line-height: 1;
+
+  
+  // Si el tamaño de la pantalla es 651px o más
+  @media screen and (min-width: 651px) {
+    font-size: 6vw;
+  }
+
+  // Si el tamaño de la pantalla es menor 650px y mayor a 350px
+  @media screen and (max-width: 650px) {
+    font-size: 8vw;
+  }
+  // Si el tamaño de la pantalla es 350px o menos
+    @media screen and (max-width: 350px) {
+    font-size: 10vw;
+  }
 }
+
 
 h3 {
   font-family: "Whitenice", cursive;
   font-weight: 400;
   font-style: normal;
-  font-size: 4vw;
   line-height: 1;
+    
+  // Si el tamaño de la pantalla es 651px o más
+  @media screen and (min-width: 651px) {
+    font-size: 3vw;
+  }
+
+  // Si el tamaño de la pantalla es menor 650px y mayor a 350px
+  @media screen and (max-width: 650px) {
+    font-size: 4vw;
+  }
+  // Si el tamaño de la pantalla es 350px o menos
+    @media screen and (max-width: 350px) {
+    font-size: 5vw;
+  }
 }
 
 h4{
   font-family: "Montserrat Alternates", sans-serif;
   font-weight: 800;
   font-style: normal;
-  font-size: 3vw;
   line-height: 1;
+  
+  // Si el tamaño de la pantalla es 651px o más
+  @media screen and (min-width: 651px) {
+    font-size: 3vw;
+  }
+
+  // Si el tamaño de la pantalla es menor 650px y mayor a 350px
+  @media screen and (max-width: 650px) {
+    font-size: 4vw;
+  }
+  // Si el tamaño de la pantalla es 350px o menos
+    @media screen and (max-width: 350px) {
+    font-size: 5vw;
+  }
+  
 }
 
 h5{
   font-family: "Montserrat Alternates", sans-serif;
   font-weight: 600;
   font-style: italic;
-  font-size: 3vw;
   line-height: 1;
+
+  // Si el tamaño de la pantalla es 651px o más
+  @media screen and (min-width: 651px) {
+    font-size: 2vw;
+  }
+
+  // Si el tamaño de la pantalla es menor 650px y mayor a 350px
+  @media screen and (max-width: 650px) {
+    font-size: 3vw;
+  }
+  // Si el tamaño de la pantalla es 350px o menos
+    @media screen and (max-width: 350px) {
+    font-size: 4vw;
+  }
 }
 
 h6{
   font-family: "Montserrat Alternates", sans-serif;
   font-weight: 500;
   font-style: normal;
-  font-size: 3vw;
   line-height: 1;
+
+    // Si el tamaño de la pantalla es 651px o más
+  @media screen and (min-width: 651px) {
+    font-size: 2vw;
+  }
+
+  // Si el tamaño de la pantalla es menor 650px y mayor a 350px
+  @media screen and (max-width: 650px) {
+    font-size: 4vw;
+  }
+  // Si el tamaño de la pantalla es 350px o menos
+    @media screen and (max-width: 350px) {
+    font-size: 6vw;
+  }
 }
 
 p {
   font-family: "Nunito Sans", sans-serif;
   font-weight: 400;
   font-style: normal;
-  font-size: 3.25vw;
   line-height: 1;
+
+  // Si el tamaño de la pantalla es 651px o más
+  @media screen and (min-width: 651px) {
+    font-size: 1.25vw;
+  }
+
+    // Si el tamaño de la pantalla es menor 750px y mayor a 650px
+  @media screen and (max-width: 750px) {
+    font-size: 1.5vw;
+  }
+  // Si el tamaño de la pantalla es 650px y mayor a 350px
+  @media screen and (max-width: 650px) {
+    font-size: 2vw;
+  }
+  // Si el tamaño de la pantalla es 350px o menos
+    @media screen and (max-width: 350px) {
+    font-size: 2vw;
+  }
+
 }
