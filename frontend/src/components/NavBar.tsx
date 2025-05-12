@@ -3,10 +3,11 @@ import MenuRoundedIcon from '@mui/icons-material/MenuRounded';
 import circuloLogo from "../assets/logoVariants/CIRCULO-CF(blanco).svg";
 import ColorTheme from '../functions/ColorTheme';
 import { useMediaQuery } from '@mui/material';
-
+import { useState } from 'react';
 import Back from '@mui/icons-material/ArrowBackRounded';
 
 import '../styles/principal.scss'; 
+
 
 const NavBar = () => {
   const [drawerOpen, setDrawerOpen] = useState(false);

@@ -1,4 +1,4 @@
-import PrincipalCard from '../components/principal/principalCard';
+import PrincipalCard from '../components/principal/PrincipalCard';
 import PrincipalMenu from '../components/principal/PrincipalMenu'
 import "../styles/principal.scss";
 
