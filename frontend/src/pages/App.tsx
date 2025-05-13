@@ -23,7 +23,7 @@ function App() {
       <Routes>
         <Route path="/" element={<Navigate to="/Principal" replace />} />
         <Route path="/Principal" element={<Principal />} />
-        <Route path="/SobreNosotros" element={<AboutUs />} />
+        <Route path="/Nosotros" element={<AboutUs />} />
         <Route path="/Servicios" element={<Services />} />
         <Route path="/Login" element={<UserLogin />} />
         <Route path="/Registro" element={<UserSignIn />} />
