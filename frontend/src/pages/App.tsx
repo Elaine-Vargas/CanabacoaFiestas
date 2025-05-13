@@ -1,11 +1,10 @@
 import '../styles/App.scss'
-import Principal from './Principal'
+import Principal from './Principal';
 import AboutUs from './AboutUs';
 import Services from './Services';
 import ServicesMenu from './ServicesMenu';
 import UserConfig from './UserConfig';
 import UserLogin from './UserLogin';
-import UserSignIn from './UserSignIn';
 import AssemblyAndDisassembly from './ServicesSubpages/AssemblyAndDisassembly';
 import Rent from './ServicesSubpages/Rent'; 
 import Decor from './ServicesSubpages/Decor';
@@ -23,10 +22,9 @@ function App() {
       <Routes>
         <Route path="/" element={<Navigate to="/Principal" replace />} />
         <Route path="/Principal" element={<Principal />} />
-        <Route path="/Nosotros" element={<AboutUs />} />
+        <Route path="/SobreNosotros" element={<AboutUs />} />
         <Route path="/Servicios" element={<Services />} />
         <Route path="/Login" element={<UserLogin />} />
-        <Route path="/Registro" element={<UserSignIn />} />
         <Route path="/Ajustes-Usuario" element={<UserConfig />} />
 
 

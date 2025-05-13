@@ -11,7 +11,7 @@ const PrincipalMenu = () => {
     <hr className="line"/>
     <h1 className="principalTitle">Canabacoa Fiestas</h1>
    
-    <button className="principalButton">INGRESAR</button>
+    <button className="principalButton"><a href="/Login">INGRESAR</a></button>
     </div>
 <div className="principalInfo">
   <p className="principalPhrase">¡Transformamos tus eventos en experiencias inolvidables!</p>

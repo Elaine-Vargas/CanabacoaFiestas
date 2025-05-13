@@ -59,7 +59,7 @@ body {
   align-items: flex-start; // left align vertically
   justify-content: flex-start;
   text-align: left;
-  color: white;
+  color: var(--white);
   width: 100%;
   margin-top: 8vw;
   @media screen and (min-width: 1000px) and (max-width: 1200px) {
@@ -250,6 +250,10 @@ a {
   margin-left: 24vw;
   cursor: pointer;
   transition: background-color 0.3s ease-in-out;
+
+  a{
+    color: var(--color-text);
+  }
 
   &:hover {
     background-color: var(--dark-gold);
