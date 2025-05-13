@@ -1,6 +1,6 @@
 import '../styles/App.scss'
 import Principal from './Principal'
-import AboutUs from './AboutUs'
+import AboutUs from './AboutUs';
 import Services from './Services';
 import ServicesMenu from './ServicesMenu';
 import UserConfig from './UserConfig';
