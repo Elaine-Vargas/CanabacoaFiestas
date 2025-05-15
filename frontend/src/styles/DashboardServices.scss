@@ -1,64 +1,149 @@
+/* Variables (puedes importarlas desde theme.scss si usas @use o @import) */
+@use "./theme.scss" as *;
+
+/* Contenedor general del dashboard */
 .dashboard-container {
   display: flex;
   height: 100vh;
+  width: 100vw;
+  background-color: var(--color-background);
+  color: var(--color-text);
+  overflow: hidden;
+  font-family: "Montserrat Alternates", sans-serif;
 }
 
+/* Sidebar del menú */
 .sidebar {
-  width: 250px;
-  background-color: #2d3748; // Fondo oscuro
-  color: white;
-  padding: 1rem;
+  width: 80px;
+  height: 100vh;
+  background-color: var(--color-background2);
+  padding: 1rem 0.5rem;
   display: flex;
   flex-direction: column;
-  align-items: flex-start;
-}
-
-.user-profile {
-  display: flex;
   align-items: center;
-  margin-bottom: 2rem;
+  box-shadow: 2px 0px 10px var(--color-shadow);
+  transition: width 0.3s ease;
+  z-index: 10;
+
+  .user-profile {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-bottom: 2rem;
+    cursor: pointer;
+
+    svg {
+      margin-bottom: 0.3rem;
+    }
+
+    p {
+      font-size: 0.7rem;
+      text-align: center;
+      color: var(--color-text2);
+      font-weight: 600;
+    }
+
+    &:hover {
+      color: var(--gold);
+    }
+  }
+
+  ul {
+    list-style: none;
+    padding: 0;
+    width: 100%;
+
+    li {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      font-size: 0.8rem;
+      padding: 0.5rem 0.25rem;
+      margin-bottom: 0.5rem;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      color: var(--color-text2);
+
+      svg {
+        margin-bottom: 0.2rem;
+        font-size: 1.2rem;
+      }
+
+      &:hover {
+        background-color: var(--gold);
+        color: var(--black);
+        transform: scale(1.05);
+      }
+
+      &.active {
+        background-color: var(--dark-gold);
+        color: var(--white);
+        font-weight: bold;
+      }
+    }
+  }
 }
 
-.user-profile p {
-  margin-left: 10px;
-  font-size: 1.1rem;
-}
-
-ul {
-  list-style-type: none;
-  padding-left: 0;
-}
-
-ul li {
-  margin: 1rem 0;
-  display: flex;
-  align-items: center;
-  cursor: pointer;
-}
-
-ul li:hover {
-  background-color: #4a5568;  // Cambia el color al pasar el cursor
-  padding: 0.5rem;
-  border-radius: 8px;
-}
-
-ul li svg {
-  margin-right: 10px;
-}
-
+/* Área de contenido de la derecha */
 .content-area {
   flex-grow: 1;
+  height: 100vh;
+  width: 100%;
+  background-color: var(--beige);
   padding: 2rem;
-  background-color: #f7fafc;
+  overflow-y: auto;
+  position: relative;
+
+  /* Scroll custom (opcional) */
+  &::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background-color: var(--gold);
+    border-radius: 3px;
+  }
+
+  &::-webkit-scrollbar-track {
+    background-color: transparent;
+  }
 }
 
-.content-area h2 {
-  font-size: 2rem;
-  color: #2d3748;
-}
+/* Responsive (opcional para pantallas pequeñas) */
+@media screen and (max-width: 600px) {
+  .dashboard-container {
+    flex-direction: column;
+  }
 
-.content-area p {
-  font-size: 1.1rem;
-  color: #4a5568;
-}
+  .sidebar {
+    width: 100vw;
+    height: auto;
+    flex-direction: row;
+    justify-content: space-around;
+    padding: 0.5rem;
 
+    .user-profile {
+      display: none;
+    }
+
+    ul {
+      display: flex;
+      flex-direction: row;
+      flex-wrap: wrap;
+      justify-content: space-evenly;
+      width: 100%;
+
+      li {
+        font-size: 0.7rem;
+        padding: 0.4rem;
+        margin: 0.2rem;
+      }
+    }
+  }
+
+  .content-area {
+    padding: 1rem;
+    height: auto;
+  }
+}

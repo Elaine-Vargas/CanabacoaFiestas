@@ -1,0 +1,146 @@
+/* Contenedor principal */
+.dashboard-container {
+  display: flex;
+  height: 100vh;
+  background-color: var(--color-background);
+  color: var(--color-text);
+}
+
+/* Área de contenido */
+.content-area {
+  flex-grow: 1;
+  padding: 2rem;
+  background-color: var(--beige);
+}
+
+/* Botón para abrir el modal */
+.open-modal-btn {
+  background-color: var(--gold);
+  color: var(--black);
+  padding: 0.8rem 1.5rem;
+  font-size: 1rem;
+  border: none;
+  cursor: pointer;
+  border-radius: 5px;
+  transition: all 0.3s ease;
+}
+
+.open-modal-btn:hover {
+  background-color: var(--dark-gold);
+}
+
+/* Estilos para la ventana modal */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000
+}
+
+.modal-container {
+  background-color: var(--white);
+  padding: 2rem;
+  border-radius: 10px;
+  box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.2);
+  max-width: 400px;
+  width: 90%;
+  height: 90%;
+  position: relative;
+}
+
+/* Botón de cierre */
+.close-btn {
+  position: absolute;
+  top: 10px;
+  right: 15px;
+  font-size: 1.5rem;
+  cursor: pointer;
+  background: none;
+  border: none;
+  color: var(--brown);
+}
+
+.close-btn:hover {
+  color: red;
+}
+
+/* Formulario dentro del modal */
+.modal-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.modal-form h2 {
+  font-size: 1.5rem;
+  color: var(--dark-gold);
+}
+
+label {
+  font-family: "Nunito Sans", sans-serif;
+  font-weight: 400;
+}
+
+input {
+  width: 100%;
+  padding: 0.5rem;
+  border: 1px solid var(--color-input-border);
+  border-radius: 5px;
+}
+
+/* Botón de envío */
+.submit-btn {
+  background-color: var(--green);
+  color: var(--white);
+  padding: 0.8rem;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+.submit-btn:hover {
+  background-color: var(--dark-gold);
+}
+
+.modal-container {
+  background-color: var(--white);
+  padding: 2rem;
+  border-radius: 10px;
+  box-shadow: 0px 4px 20px rgba(0, 0, 0, 0.3);
+  width: 400px;
+  max-width: 90%;
+  position: relative;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+/* Bordes suaves y estructura elegante */
+input {
+  width: 100%;
+  padding: 0.7rem;
+  border: 1px solid var(--color-input-border);
+  border-radius: 8px;
+  font-size: 1rem;
+  margin-top: 5px;
+}
+
+.submit-btn {
+  background-color: var(--dark-gold);
+  color: var(--white);
+  padding: 0.8rem;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  width: 100%;
+  font-size: 1rem;
+  margin-top: -150px;
+}
+
+.submit-btn:hover {
+  background-color: var(--gold);
+}

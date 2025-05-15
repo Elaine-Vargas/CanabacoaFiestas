@@ -14,14 +14,14 @@
 
 .servicioArriba p{
   font-size: 2vw;
-  margin-top: -5.5vw;
+  margin-top: 21w;
 }
 
 .servicesGrid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
   gap: 2vw;
-  margin-top: 3vw;
+  margin-top: 2vw;
   padding: 2vw;
 }
 
@@ -52,7 +52,7 @@
 
 .serviceCard p {
   padding: 0 1.5vw;
-  margin-top: -1.5vw;
+  margin-top: 1vw;
   font-size: 1.5vw;
   color: var(--color-text);
 }
