@@ -64,6 +64,9 @@ body {
   margin-top: 8vw;
   @media screen and (min-width: 1000px) and (max-width: 1200px) {
     margin-top: 2vw;
+  }
+  @media screen and (max-width: 900px) {
+    margin-top: 10vw;
     
   }
 }
@@ -79,6 +82,10 @@ body {
 .principalTitle {
   padding-left: 3vw;
   margin-top: -0.1vw;
+  margin-bottom: -0.5vw;
+    @media screen and (min-width: 651px) {
+    font-size: 8vw;
+  }
 }
 
 .line {
@@ -177,11 +184,15 @@ body {
   align-items: center;
   font-weight: bold;
   color: var(--text-color);
-  .active a {
-  color: var(--dark-gold);
-  font-weight: bold;
-  text-shadow: 0 0 4px var(--dark-gold);
-}
+
+  a{
+    color: var(--white);
+    &:hover{
+      color: var(--dark-gold);
+      box-shadow: none;
+      background-color: transparent;
+    }
+  }
 }
 
 button {
@@ -203,6 +214,16 @@ button {
   }
   @media screen and (max-width: 830px) {
     font-size: 1.8vw;
+  }
+  &:hover {
+    background-color: var(--white);
+    color: var(--color-background);
+    box-shadow: var(--color-shadow) 0px 8px 20px rgba(var(--color-input-border), 0.1);
+    transform: translateY(-2px);
+    transition: all ease-in-out .2s;
+    a{
+      color: var(--gold);
+    }
   }
 }
 
@@ -228,13 +249,17 @@ a {
   text-decoration: none;
   color:var(--light-beige);
   transition: color 0.3s ease-in-out;
+  background-color: transparent;
 
   &:hover {
-    color: var(--gold); //Color al pasar el mouse
+    color: var(--dark-gold); //Color al pasar el mouse
+    background-color: transparent;
+
   }
 
   &:active {
     color: var(--dark-gold); //Color al hacer estar en la página
+          background-color: transparent;
   }
 }
 
@@ -299,15 +324,42 @@ a {
   display: flex;
   flex-direction: column;
   align-items: center;
-  margin: -2.5vw auto 5vw auto;
-  width: 60%;
   max-width: 600px;
   background-color: var(--color-background2);
   border-radius: 20px;
   padding: 4vw;
-  padding-bottom: 2vw;
+  padding-bottom: 0vw;
+  @media screen and (min-width: 1200px) {
+     margin: -10.5vw 2vw 5vw auto;  
+       width: 60%;
 
+  }
+    @media screen and (min-width: 1000px) {
+     margin: -10.5vw 2vw 5vw auto;  
+     width: 40%;
+  } 
+  
+  @media screen and (max-width: 999px) {
+     margin: 2vw auto 5vw auto;  
+     width: 60%;
+
+  }
  
+  .ButtonFindMore {
+    position: relative;
+    background-color: var(--dark-gold);
+    color: var(--color-background);
+
+    top:1.5vw;
+    padding: 0.5vw 1vw;
+    &:hover {
+      color: var(--color-text);
+      background-color: var(--gold);
+      box-shadow: var(--color-shadow) 0px 8px 20px rgba(var(--color-input-border), 0.1);
+      transform: translateY(-2px);
+      transition: all ease-in-out .2s;
+    }
+}
 }
 
 .contentTitle {
@@ -353,6 +405,8 @@ a {
   margin-top: 0.5vw;
 }
 
+
+
 @media (max-width: 768px) {
   .card {
     flex-direction: column;
@@ -368,14 +422,15 @@ a {
   }
 
   .cardTitle {
-    font-size: 5vw;
+    font-size: 4vw;
   }
 
   .cardText {
-    font-size: 4vw;
+    font-size: 2.5vw;
   }
 
   .contentTitle {
     font-size: 4vw;
   }
+
 }

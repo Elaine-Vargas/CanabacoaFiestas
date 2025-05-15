@@ -18,10 +18,64 @@ section {
   padding: 10px;
 }
 
+
+.navbarLogin {
+  display: flex;
+  align-items: center;
+  padding: 10px 20px;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 999;
+  background: transparent;
+}
+
+.navListLogin {
+  display: flex;
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  width: 100%;
+  justify-content: space-between; // Push first and last items to ends
+  align-items: center;
+}
+
+.navItemLogin {
+  font-family: "Montserrat Alternates", sans-serif;
+  padding: 0 10px;
+  display: flex;
+  align-items: center;
+  font-weight: bold;
+
+  .active a {
+    color: var(--dark-gold);
+    font-weight: bold;
+  }
+}
+
+.navColorTheme {
+  padding: 0 10px;
+  display: flex;
+  align-items: center;
+}
+
+
+  a{
+    color: var(--color-text);
+
+  &:hover {
+    color: var(--gold);
+    box-shadow: var(--color-shadow) 0px 8px 20px rgba(var(--color-input-border), 0.1);
+    transform: translateY(-2px);
+    transition: all ease-in-out .2s;
+  }}
+
+
 section .container {
   position: relative;
-  width: 1100px;
-  height: 700px;
+  width: 1000px;
+  height: 600px;
   background: var(--color-background);
   box-shadow: 0 15px 50px var(--color-shadow);
   overflow: hidden;
@@ -36,13 +90,24 @@ section .container .user {
   display: flex;
 }
 
-section .container .user .imgBx {
+section .container .user .imgBx1 {
   position: relative;
   width: 50%;
   height: 100%;
-  background: var(--gold);
   transition: 0.5s;
+  background: var(--gold);
 }
+
+section .container .user .imgBx2 {
+  position: relative;
+  width: 50%;
+  height: 100%;
+  transition: 0.5s;
+  background: var(--color-background);
+}
+
+
+
 section .container .user .imgBx {
   display: flex;
   justify-content: center;
@@ -76,7 +141,7 @@ section .container .user .formBx form h2 {
   text-align: center;
   width: 100%;
   margin-bottom: 10px;
-  color: var(--brown);
+  color: var(--color-text);
   font-family: "Montserrat Alternates"
 }
 
@@ -115,6 +180,10 @@ section .container .user .formBx form .signup {
   text-transform: uppercase;
   font-weight: 600;
   
+}
+
+.signup strong{
+  cursor: pointer;
 }
 
 section .container .user .formBx form .signup a {
