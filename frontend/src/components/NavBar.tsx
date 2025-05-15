@@ -5,7 +5,6 @@ import ColorTheme from '../functions/ColorTheme';
 import { useMediaQuery } from '@mui/material';
 import { useState } from 'react';
 import Back from '@mui/icons-material/ArrowBackRounded';
-
 import '../styles/principal.scss'; 
 
 
@@ -27,7 +26,7 @@ const NavBar = () => {
         <li className="navItem"><a href="/Nosotros">Nosotros</a></li>
         <li className="navItem"><a href="/Servicios">Servicios</a></li>
         <li className="navItem"><a href="/Contacto">Contacto</a></li>
-        <button className="login">INGRESAR</button>
+        <button className="login"><a href="/Login">INGRESAR</a></button>
         <li className="navItem colortheme"><ColorTheme /></li>
       </ul>
 

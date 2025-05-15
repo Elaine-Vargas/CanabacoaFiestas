@@ -1,0 +1,84 @@
+@use './fonts.scss';
+
+.sobre-nosotros {
+  margin-top: 4vw;
+  background-color: var(--color-background);
+  color: var(--color-text);
+  padding: 4rem 2rem;
+  display: flex;
+  justify-content: center;
+
+  .contenido {
+    max-width: 1200px;
+    display: flex;
+    gap: 3rem;
+    flex-wrap: wrap;
+
+    .columna-izquierda {
+      flex: 1 1 300px;
+      display: flex;
+      flex-direction: column;
+      gap: 2rem;
+
+      .titulo-seccion {
+        font-size: 5rem;
+        font-weight: 700;
+        color: var(--color-text2);
+        line-height: 1;
+      }
+
+      .imagen {
+        img {
+          max-width: 90%;
+          height: auto;
+          border-radius: 8px;
+        }
+      }
+    }
+
+    .columna-derecha {
+      flex: 2 1 500px;
+      font-size: 1.1rem;
+      line-height: 1.6;
+
+      p {
+        margin-bottom: 1rem;
+      }
+
+      .subtitulo {
+        font-size: 2rem;
+        margin-top: 1.5rem;
+        color: var(--dark-gold);
+      }
+
+      ul {
+        padding-left: 1.2rem;
+
+        li {
+          margin-bottom: 0.5rem;
+
+          strong {
+            color: var(--brown);
+          }
+        }
+      }
+    }
+  }
+
+  // Responsive para móviles
+  @media (max-width: 768px) {
+    .contenido {
+      flex-direction: column;
+
+      .columna-izquierda,
+      .columna-derecha {
+        flex: 1 1 100%;
+      }
+
+      .titulo-seccion {
+        font-size: 3rem;
+        text-align: center;
+      }
+    }
+  }
+}

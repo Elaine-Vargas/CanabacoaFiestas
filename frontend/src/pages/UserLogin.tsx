@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import "../styles/Login.scss";
 import Logo from "../assets/logoVariants/OVALO-CF(titulo).svg"
+import { Link } from "react-router-dom"; 
 
 const UserLogin: React.FC = () => {  // Define el componente UserLogin
   const [isActive, setIsActive] = useState(false);  // Estado para controlar el formulario activo
@@ -21,6 +22,10 @@ const UserLogin: React.FC = () => {  // Define el componente UserLogin
 
   return (
     <section>  {/*Sección principal del formulario*/} 
+     {/* Flecha de regreso */}
+    <Link to="/principal" className="back-arrow" title="Volver al inicio">
+      Inicio
+    </Link>
       <div className={`container ${isActive ? "active" : ""}`}>
         <div className="user signinBx">
           <div className="imgBx">

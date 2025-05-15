@@ -12,47 +12,7 @@ export default function Principal() {
      
     </div>
 
-<p>lorem ipsum</p>
-<p>lorem ipsum</p>
-<p>lorem ipsum</p>
-<p>lorem ipsum</p>
-<p>lorem ipsum</p>
-<p>lorem ipsum</p>
-<p>lorem ipsum</p>
-<p>lorem ipsum</p>
-<p>lorem ipsum</p>
-<p>lorem ipsum</p>
-<p>lorem ipsum</p>
-<p>lorem ipsum</p>
-<p>lorem ipsum</p>
-<p>lorem ipsum</p>
-<p>lorem ipsum</p>
-<p>lorem ipsum</p>
-<p>lorem ipsum</p>
-<p>lorem ipsum</p>
-<p>lorem ipsum</p>
-<p>lorem ipsum</p>
-<p>lorem ipsum</p>
-<p>lorem ipsum</p>
-<p>lorem ipsum</p>
-<p>lorem ipsum</p>
-<p>lorem ipsum</p>
-<p>lorem ipsum</p>
-<p>lorem ipsum</p>
-<p>lorem ipsum</p>
-<p>lorem ipsum</p>
-<p>lorem ipsum</p>
-<p>lorem ipsum</p>
-<p>lorem ipsum</p>
-<p>lorem ipsum</p>
-<p>lorem ipsum</p>
-<p>lorem ipsum</p>
-<p>lorem ipsum</p>
-<p>lorem ipsum</p>
-<p>lorem ipsum</p>
-<p>lorem ipsum</p>
-<p>lorem ipsum</p>
-<p>lorem ipsum</p>
+
 
 </>
   )
