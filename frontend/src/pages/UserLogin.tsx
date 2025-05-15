@@ -2,7 +2,6 @@ import React, { useState } from "react";
 import "../styles/Login.scss";
 import LogoBlanco from "../assets/logoVariants/OVALO-CF(titulo blanco).svg"
 import LogoDorado from "../assets/logoVariants/OVALO-CF(titulo dorado osc).svg"
-import { Link } from "react-router-dom"; 
 import LoginNav from "../components/loginNav";
 
 const UserLogin: React.FC = () => {  // Define el componente UserLogin
