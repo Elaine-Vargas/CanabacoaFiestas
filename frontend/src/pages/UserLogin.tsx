@@ -40,7 +40,7 @@ const UserLogin: React.FC = () => {  // Define el componente UserLogin
               <p className="signup">
                 No tienes cuenta?{" "}
                 <span onClick={toggleForm} className="link">
-                  Registrate.
+                 <strong>Registrate. </strong> 
                 </span>
               </p>
             </form>
@@ -60,7 +60,7 @@ const UserLogin: React.FC = () => {  // Define el componente UserLogin
               <p className="signup">
                 Ya cuentas con una cuenta?{" "}
                 <span onClick={toggleForm} className="link">
-                  Inicia sesión.
+                  <strong>Inicia sesión.</strong> 
                 </span>
               </p>
             </form>
