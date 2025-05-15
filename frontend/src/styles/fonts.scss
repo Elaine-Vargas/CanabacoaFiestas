@@ -67,7 +67,7 @@
 
 /* Font Styles */
 h1 {
-  font-family: "Pinyon Script", cursive;
+  font-family: "Pinyon Script", Georgia, 'Times New Roman', Times, serif;
   font-weight: 400;
   font-style: normal;
   line-height: 1;
@@ -88,7 +88,7 @@ h1 {
 }
 
 h2 {
-  font-family: "Glina Script", cursive;
+  font-family: "Glina Script", 'Courier New', Courier, monospace;
   font-weight: 400;
   font-style: normal;
   line-height: 1;
@@ -111,7 +111,7 @@ h2 {
 
 
 h3 {
-  font-family: "Whitenice", cursive;
+  font-family: "Whitenice", 'Trebuchet MS', 'Lucida Sans Unicode', 'Lucida Grande', 'Lucida Sans', Arial, sans-serif;
   font-weight: 400;
   font-style: normal;
   line-height: 1;
@@ -132,7 +132,7 @@ h3 {
 }
 
 h4{
-  font-family: "Montserrat Alternates", sans-serif;
+  font-family: "Montserrat Alternates", Verdana, Geneva, Tahoma, sans-serif;
   font-weight: 800;
   font-style: normal;
   line-height: 1;
@@ -154,7 +154,7 @@ h4{
 }
 
 h5{
-  font-family: "Montserrat Alternates", sans-serif;
+  font-family: "Montserrat Alternates", Verdana, Geneva, Tahoma, sans-serif;
   font-weight: 600;
   font-style: italic;
   line-height: 1;
@@ -175,15 +175,15 @@ h5{
 }
 
 h6{
-  font-family: "Montserrat Alternates", sans-serif;
+  font-family: "Montserrat Alternates", Verdana, Geneva, Tahoma, sans-serif;
   font-weight: 500;
   font-style: normal;
   line-height: 1;
-
-    // Si el tamaño de la pantalla es 651px o más
-  @media screen and (min-width: 651px) {
+  // Si el tamaño de la pantalla es 800px o más
+  @media screen and (min-width: 800px) {
     font-size: 2vw;
   }
+  
 
   // Si el tamaño de la pantalla es menor 650px y mayor a 350px
   @media screen and (max-width: 650px) {
@@ -196,7 +196,7 @@ h6{
 }
 
 p {
-  font-family: "Nunito Sans", sans-serif;
+  font-family: "Nunito Sans", Verdana, Geneva, Tahoma, sans-serif;
   font-weight: 400;
   font-style: normal;
   line-height: 1;

@@ -3,7 +3,7 @@ import { usePrefersTheme, useLocalStorage } from 'react-haiku';
 import DarkMode from '@mui/icons-material/Brightness4';
 import LightMode from '@mui/icons-material/Brightness4Outlined';
 
-const ColorTheme = () => {
+const ColorTheme = ({ colorLight, colorDark }: { colorLight: string; colorDark: string }) => {
   const preferred = usePrefersTheme('light'); // Detecta el tema del sistema
   const [theme, setTheme] = useLocalStorage('theme', '');
 
@@ -25,7 +25,7 @@ const ColorTheme = () => {
 
   return (
     <button onClick={toggleTheme} style={{ background: 'none', border: 'none', cursor: 'pointer' }}>
-      {theme === 'light' ? <DarkMode sx={{color:'white'}}/> : <LightMode sx={{color:'white'}}/>}
+      {theme === 'light' ? <DarkMode sx={{color: colorDark}}/> : <LightMode sx={{color:colorLight}}/>}
     </button>
   );
 };

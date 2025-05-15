@@ -27,7 +27,7 @@ const NavBar = () => {
         <li className="navItem"><a href="/Servicios">Servicios</a></li>
         <li className="navItem"><a href="/Contacto">Contacto</a></li>
         <button className="login"><a href="/Login">INGRESAR</a></button>
-        <li className="navItem colortheme"><ColorTheme /></li>
+        <li className="navItem colortheme"><ColorTheme colorDark='white' colorLight='white' /></li>
       </ul>
 
       <IconButton className="menuIcon" onClick={toggleDrawer(true)}>

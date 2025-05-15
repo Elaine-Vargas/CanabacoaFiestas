@@ -36,6 +36,8 @@ const PrincipalCard = () => {
       </p>
     </div>
   </div>
+        <button className="ButtonFindMore"><h6>Descubre más</h6></button>
+
 </div>
 
 </>

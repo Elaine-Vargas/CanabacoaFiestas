@@ -1,7 +1,8 @@
 import React, { useState } from "react";
 import "../styles/Login.scss";
-import Logo from "../assets/logoVariants/OVALO-CF(titulo).svg"
-import { Link } from "react-router-dom"; 
+import LogoBlanco from "../assets/logoVariants/OVALO-CF(titulo blanco).svg"
+import LogoDorado from "../assets/logoVariants/OVALO-CF(titulo dorado osc).svg"
+import LoginNav from "../components/loginNav";
 
 const UserLogin: React.FC = () => {  // Define el componente UserLogin
   const [isActive, setIsActive] = useState(false);  // Estado para controlar el formulario activo
@@ -23,13 +24,11 @@ const UserLogin: React.FC = () => {  // Define el componente UserLogin
   return (
     <section>  {/*Sección principal del formulario*/} 
      {/* Flecha de regreso */}
-    <Link to="/principal" className="back-arrow" title="Volver al inicio">
-      Inicio
-    </Link>
+      <LoginNav /> {/* Componente de navegación */}
       <div className={`container ${isActive ? "active" : ""}`}>
         <div className="user signinBx">
-          <div className="imgBx">
-            <img src={Logo} alt="" />
+          <div className="imgBx imgBx1 LoginImg">
+            <img src={LogoBlanco} alt="" />
           </div>
           <div className="formBx">
              <form onSubmit={handleLogin}>  {/*Maneja el evento de login*/}
@@ -40,7 +39,7 @@ const UserLogin: React.FC = () => {  // Define el componente UserLogin
               <p className="signup">
                 No tienes cuenta?{" "}
                 <span onClick={toggleForm} className="link">
-                  Registrate.
+                 <strong>Regístrate. </strong> 
                 </span>
               </p>
             </form>
@@ -60,13 +59,13 @@ const UserLogin: React.FC = () => {  // Define el componente UserLogin
               <p className="signup">
                 Ya cuentas con una cuenta?{" "}
                 <span onClick={toggleForm} className="link">
-                  Inicia sesión.
+                  <strong>Inicia sesión.</strong> 
                 </span>
               </p>
             </form>
           </div>
-          <div className="imgBx">
-            <img src={Logo} alt="" />
+          <div className="imgBx imgBx2 signupImg">
+            <img src={LogoDorado} alt="" />
           </div>
         </div>
       </div>
