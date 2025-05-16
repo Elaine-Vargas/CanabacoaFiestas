@@ -1,4 +1,5 @@
 import '../styles/App.scss'
+//pages
 import Principal from './Principal';
 import AboutUs from './AboutUs';
 import Services from './Services';
@@ -12,13 +13,21 @@ import Catering from "./ServicesSubpages/Catering";
 import Supervision from "./ServicesSubpages/Supervision";
 import Transportation from "./ServicesSubpages/Transportation";
 import AssemblyAndDisassembly from "./ServicesSubpages/AssemblyAndDisassembly";
+
+//css
 import '../styles/theme.scss';
+//router 
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import LoadingScreen from '../components/LoadingScreen';
+import ColorTheme from '../functions/ColorTheme';
 
 function App() {
   
   return (
     <>
+  <div id="ColorTheme">
+      <ColorTheme colorLight="none" colorDark="none" />
+    </div>
   <BrowserRouter>
       <Routes>
         <Route path="/" element={<Navigate to="/Principal" replace />} />
@@ -27,6 +36,7 @@ function App() {
         <Route path="/Servicios" element={<Services />} />
         <Route path="/Login" element={<UserLogin />} />
         <Route path="/Ajustes-Usuario" element={<UserConfig />} />
+          <Route path="/Loading" element={<LoadingScreen />} />
         
         
         <Route path="/" element={<Navigate to="/Menu-Servicios/Bienvenida" />} />
