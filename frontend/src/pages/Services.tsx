@@ -1,12 +1,12 @@
 import NavBar from '../components/NavBar';
 import "../styles/services.scss";
 {/*Importacion de cada imagen*/}
-import alquilerImg from '../assets/servicesPhotos/alquilerServices.jpg';
-import decoracionImg from '../assets/servicesPhotos/decorServices.jpg';
-import cateringImg from '../assets/servicesPhotos/cateringServices.jpg';
-import transporteImg from '../assets/servicesPhotos/transportServices.jpg';
-import supervisionImg from '../assets/servicesPhotos/supervisionServices.jpg';
-import montdesImg from '../assets/servicesPhotos/MonyDesServices.jpg';
+import alquilerImg from '../assets/servicesPhotos/alquilerServices.webp';
+import decoracionImg from '../assets/servicesPhotos/decorServices.webp';
+import cateringImg from '../assets/servicesPhotos/cateringServices.webp';
+import transporteImg from '../assets/servicesPhotos/transportServices.webp';
+import supervisionImg from '../assets/servicesPhotos/supervisionServices.webp';
+import montdesImg from '../assets/servicesPhotos/MonyDesServices.webp';
 
 const servicesData = [
   {

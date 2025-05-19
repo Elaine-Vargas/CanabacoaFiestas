@@ -9,7 +9,7 @@ body {
   left: 0;
   right: 0;
   width: 100%;
-  background: var(--gradient-background), url("../assets/backgrounds/menuBackground2.jpg");
+  background: var(--gradient-background), var(--photo);
   background-blend-mode: multiply;
   background-position: bottom center;
   background-repeat: no-repeat;
@@ -48,6 +48,26 @@ body {
   @media screen and (max-width: 415px) {
     min-height: 30vh;
   }
+
+  @media screen and (min-width: 1000px){
+    padding-top: 2vw;
+  }
+    @media screen and (max-width: 999px) {
+    padding-top: 10vw;
+  }
+
+    @media screen and (max-width: 750px) {
+    padding-top: 12vw;
+  }
+    @media screen and (max-width: 500px) {
+    padding-top: 14vw;
+  }
+    @media screen and (max-width: 400px) {
+    padding-top: 16vw;
+  }
+      @media screen and (max-width: 350px) {
+    padding-top: 18vw;
+  }
 }
 
 .principalContent {
@@ -59,18 +79,11 @@ body {
   text-align: left;
   color: var(--white);
   width: 100%;
-  margin-top: 8vw;
-  @media screen and (min-width: 1000px) and (max-width: 1200px) {
-    margin-top: 2vw;
-  }
-  @media screen and (max-width: 900px) {
-    margin-top: 10vw;
-    
-  }
 }
 
 .welcome {
   margin-top: 3vw;
+  margin-bottom: -10px;
   padding-left: 3vw;
   color: var(--gold);
   font-weight: 500;
@@ -140,58 +153,7 @@ body {
 
 
 
-.navbar {
-  display: flex;
-  align-items: center;
-  padding: 10px 20px;
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  z-index: 999;
-  background: var(--gradient-background-nav);
-  background-blend-mode: multiply;
-}
 
-.logo img {
-@media screen and (min-width: 1200px) {
-    height: 80px;
-  }
-    @media screen and (max-width: 1200px) {
-    height: 50px;
-  }
-  @media screen and (max-width: 1000px) {
-    height: 40px;
-  }
-    @media screen and (max-width: 600px) {
-    height: 30px;
-  }
-}
-
-.navList {
-  display: flex;
-  list-style: none;
-  margin-left: auto;
-  padding: 0;
-}
-
-.navItem {
-  font-family: "Montserrat Alternates", sans-serif;
-  padding: 0 10px;
-  display: flex;
-  align-items: center;
-  font-weight: bold;
-  color: var(--text-color);
-
-  a{
-    color: var(--white);
-    &:hover{
-      color: var(--dark-gold);
-      box-shadow: none;
-      background-color: transparent;
-    }
-  }
-}
 
 button {
   padding: 0.5vw 1vw 0.5vw 1vw;
@@ -199,70 +161,8 @@ button {
   border: 0;
 }
 
-.login {
-  background-color: var(--gold);
-  margin: 0 2vw 0 2vw;
-  font-family: "Montserrat Alternates", cursive;
-  font-weight: 800;
-  @media screen and (min-width: 1000px) {
-    font-size: 0.9vw;
-  }
-  @media screen and (max-width: 999px) {
-    font-size: 1.2vw;
-  }
-  @media screen and (max-width: 830px) {
-    font-size: 1.8vw;
-  }
-  &:hover {
-    background-color: var(--white);
-    color: var(--color-background);
-    box-shadow: var(--color-shadow) 0px 8px 20px rgba(var(--color-input-border), 0.1);
-    transform: translateY(-2px);
-    transition: all ease-in-out .2s;
-    a{
-      color: var(--gold);
-    }
-  }
-}
-
-
-
-@media screen and (max-width: 650px) {
-  .navList {
-    // Oculta todo excepto el icono de tema
-    .navItem:not(.colortheme),
-    .login {
-      display: none;
-    }
-  }
-}
-
-@media screen and (min-width: 651px) {
-  .menuIcon {
-    display: none;
-  }
-}
-
-a {
-  text-decoration: none;
-  color:var(--light-beige);
-  transition: color 0.3s ease-in-out;
-  background-color: transparent;
-
-  &:hover {
-    color: var(--dark-gold); //Color al pasar el mouse
-    background-color: transparent;
-
-  }
-
-  &:active {
-    color: var(--dark-gold); //Color al hacer estar en la página
-          background-color: transparent;
-  }
-}
-
 .principalButton {
-  background-color: var(--color-background);
+  background-color: var(--gold);
   color: var(--color-text);
   font-family: "Montserrat Alternates", cursive;
   font-weight: 800;
@@ -310,7 +210,6 @@ a {
     text-align: center;     
     margin-left: 0;
     margin-right: 0;
-    margin-top: 10vw;
   }
   .principalButton {
     margin: 0 0 0 0;
@@ -325,18 +224,13 @@ a {
   max-width: 600px;
   background-color: var(--color-background2);
   border-radius: 20px;
-  padding: 4vw;
+  padding: 0.5rem 2.5rem;
   padding-bottom: 0vw;
   box-shadow: 0 15px 50px var(--color-shadow);
 
-  @media screen and (min-width: 1200px) {
-     margin: -10.5vw 2vw 5vw auto;  
-       width: 60%;
-
-  }
     @media screen and (min-width: 1000px) {
-     margin: -10.5vw 2vw 5vw auto;  
-     width: 40%;
+     margin: -8vw 2vw 5vw auto;  
+     width: 34%;
   } 
   
   @media screen and (max-width: 999px) {
@@ -347,25 +241,34 @@ a {
  
   .ButtonFindMore {
     position: relative;
-    background-color: var(--dark-gold);
+    font-family: "Montserrat Alternates", cursive;
+    text-transform: uppercase;
+    font-weight: 800;
+    background-color: var(--gold);
     color: var(--color-background);
+    padding: 10px 20px;
 
     top:1.5vw;
-    padding: 0.5vw 1vw;
+
     &:hover {
       color: var(--color-text);
-      background-color: var(--gold);
+      background-color: var(--dark-gold);
       box-shadow: var(--color-shadow) 0px 8px 20px rgba(var(--color-input-border), 0.1);
       transform: translateY(-2px);
       transition: all ease-in-out .2s;
+    }
+    @media screen and (max-width: 900px) {
+      top: 2vw;
+      
     }
 }
 }
 
 .contentTitle {
   font-size: 2vw;
-  margin-bottom: 45px;
+  margin-bottom: 25px;
   text-align: center;
+  margin-top: 2rem;
   color: var(--color-text);
 }
 
@@ -433,4 +336,29 @@ a {
     font-size: 4vw;
   }
 
+
+}
+.principalDesc{
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: justify;
+  max-width: 600px;
+  background-color: var(--gold);
+  color: var(--color-background2);
+  border-radius: 20px;
+  padding: 1.5rem 2.5rem;
+  box-shadow: 0 15px 50px var(--color-shadow);
+    margin: -34vw 2vw 5vw 2vw;  
+
+    @media screen and (max-width: 1250px) {
+    width: 45%;
+  } 
+  
+  @media screen and (max-width: 999px) {
+  width: 60%;
+      margin:  auto;  
+
+
+  }
 }

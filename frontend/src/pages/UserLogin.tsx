@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import "../styles/Login.scss";
 import LogoBlanco from "../assets/logoVariants/OVALO-CF(titulo blanco).svg"
 import LogoDorado from "../assets/logoVariants/OVALO-CF(titulo dorado osc).svg"
-import LoginNav from "../components/loginNav";
+import LoginNav from "../components/LoginNav";
 
 const UserLogin: React.FC = () => {  // Define el componente UserLogin
   const [isActive, setIsActive] = useState(false);  // Estado para controlar el formulario activo
@@ -22,7 +22,7 @@ const UserLogin: React.FC = () => {  // Define el componente UserLogin
   };
 
   return (
-    <section>  {/*Sección principal del formulario*/} 
+    <section className="loginPage">  {/*Sección principal del formulario*/} 
      {/* Flecha de regreso */}
       <LoginNav /> {/* Componente de navegación */}
       <div className={`container ${isActive ? "active" : ""}`}>
@@ -31,15 +31,15 @@ const UserLogin: React.FC = () => {  // Define el componente UserLogin
             <img src={LogoBlanco} alt="" />
           </div>
           <div className="formBx">
-             <form onSubmit={handleLogin}>  {/*Maneja el evento de login*/}
+            <form onSubmit={handleLogin}>
               <h2>Inicio de sesión</h2>
-              <input type="text" placeholder="Usuario / cédula" required />
-              <input type="password" placeholder="Contraseña" required />
+              <input type="text" id="login-username" placeholder="Usuario / cédula" required />
+              <input type="password" id="login-password" placeholder="Contraseña" required />
               <input type="submit" value="Iniciar sesión" />
               <p className="signup">
                 No tienes cuenta?{" "}
                 <span onClick={toggleForm} className="link">
-                 <strong>Regístrate. </strong> 
+                  <strong>Regístrate. </strong>
                 </span>
               </p>
             </form>
@@ -48,18 +48,18 @@ const UserLogin: React.FC = () => {  // Define el componente UserLogin
 
         <div className="user signupBx">
           <div className="formBx">
-            <form onSubmit={handleSignup}> {/*Maneja el evento de signup*/}
+            <form onSubmit={handleSignup}>
               <h2>Registrar</h2>
-              <input type="text" placeholder="Nombre" required />
-              <input type="text" placeholder="Cédula" required />
-              <input type="email" placeholder="Email" required />
-              <input type="password" placeholder="Crear contraseña" required />
-              <input type="password" placeholder="Confirmar contraseña" required />
+              <input type="text" id="signup-name" placeholder="Nombre" required />
+              <input type="text" id="signup-id" placeholder="Cédula" required />
+              <input type="email" id="signup-email" placeholder="Email" required />
+              <input type="password" id="signup-password" placeholder="Crear contraseña" required />
+              <input type="password" id="signup-password-confirm" placeholder="Confirmar contraseña" required />
               <input type="submit" value="Registrar" />
               <p className="signup">
                 Ya cuentas con una cuenta?{" "}
                 <span onClick={toggleForm} className="link">
-                  <strong>Inicia sesión.</strong> 
+                  <strong>Inicia sesión.</strong>
                 </span>
               </p>
             </form>

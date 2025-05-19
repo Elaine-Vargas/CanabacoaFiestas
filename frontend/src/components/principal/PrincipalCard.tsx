@@ -1,7 +1,10 @@
-import Alquiler from "../../assets/principalPhotos/Alquiler.jpg"
-import Decoracion from "../../assets/principalPhotos/Decoracion.jpg"
-import Catering from "../../assets/principalPhotos/Catering.jpg"
-const PrincipalCard = () => {
+import Alquiler from "../../assets/principalPhotos/Alquiler.webp"
+import Decoracion from "../../assets/principalPhotos/Decoracion.webp"
+import Catering from "../../assets/principalPhotos/Catering.webp"
+import React from "react";
+import { Link } from "react-router-dom";
+
+const PrincipalCard = React.memo(() => {
   return (
 <>
   <div className="cardsContainer">
@@ -36,12 +39,12 @@ const PrincipalCard = () => {
       </p>
     </div>
   </div>
-        <button className="ButtonFindMore"><h6>Descubre más</h6></button>
+        <button className="ButtonFindMore"><Link to='/Login'>Descubre más</Link></button>
 
 </div>
 
 </>
   )
-}
+})
 
 export default PrincipalCard

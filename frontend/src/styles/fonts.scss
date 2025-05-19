@@ -17,7 +17,15 @@
   font-family: "Pinyon Script", cursive;
   font-weight: 400;
   font-style: normal;
+  font-display: fallback;
 }
+
+.parisienne-regular {
+  font-family: "Parisienne", cursive;
+  font-weight: 400;
+  font-style: normal;
+}
+
 
 .montserrat-alternates-regular {
   font-family: "Montserrat Alternates", sans-serif;
@@ -71,6 +79,7 @@ h1 {
   font-weight: 400;
   font-style: normal;
   line-height: 1;
+  margin: 0;
 
   // Si el tamaño de la pantalla es 651px o más
   @media screen and (min-width: 651px) {
@@ -92,7 +101,7 @@ h2 {
   font-weight: 400;
   font-style: normal;
   line-height: 1;
-
+  margin: 0;
   
   // Si el tamaño de la pantalla es 651px o más
   @media screen and (min-width: 651px) {
@@ -111,10 +120,11 @@ h2 {
 
 
 h3 {
-  font-family: "Whitenice", 'Trebuchet MS', 'Lucida Sans Unicode', 'Lucida Grande', 'Lucida Sans', Arial, sans-serif;
+  font-family: "Parisienne", 'Trebuchet MS', 'Lucida Sans Unicode', 'Lucida Grande', 'Lucida Sans', Arial, sans-serif;
   font-weight: 400;
   font-style: normal;
   line-height: 1;
+  margin: 0;
     
   // Si el tamaño de la pantalla es 651px o más
   @media screen and (min-width: 651px) {
@@ -136,6 +146,7 @@ h4{
   font-weight: 800;
   font-style: normal;
   line-height: 1;
+  margin: 0;
   
   // Si el tamaño de la pantalla es 651px o más
   @media screen and (min-width: 651px) {
@@ -158,6 +169,7 @@ h5{
   font-weight: 600;
   font-style: italic;
   line-height: 1;
+  margin: 0;
 
   // Si el tamaño de la pantalla es 651px o más
   @media screen and (min-width: 651px) {
@@ -179,6 +191,8 @@ h6{
   font-weight: 500;
   font-style: normal;
   line-height: 1;
+ margin: 0;
+
   // Si el tamaño de la pantalla es 800px o más
   @media screen and (min-width: 800px) {
     font-size: 2vw;
@@ -203,12 +217,12 @@ p {
 
   // Si el tamaño de la pantalla es 651px o más
   @media screen and (min-width: 651px) {
-    font-size: 1.25vw;
+    font-size: 1.5vw;
   }
 
     // Si el tamaño de la pantalla es menor 750px y mayor a 650px
   @media screen and (max-width: 750px) {
-    font-size: 1.5vw;
+    font-size: 1.75vw;
   }
   // Si el tamaño de la pantalla es 650px y mayor a 350px
   @media screen and (max-width: 650px) {
@@ -216,7 +230,7 @@ p {
   }
   // Si el tamaño de la pantalla es 350px o menos
     @media screen and (max-width: 350px) {
-    font-size: 2vw;
+    font-size: 2.5vw;
   }
 
 }
