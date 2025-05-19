@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import "../styles/Login.scss";
 import LogoBlanco from "../assets/logoVariants/OVALO-CF(titulo blanco).svg"
 import LogoDorado from "../assets/logoVariants/OVALO-CF(titulo dorado osc).svg"
-import LoginNav from "../components/loginNav";
+import LoginNav from "../components/LoginNav";
 
 const UserLogin: React.FC = () => {  // Define el componente UserLogin
   const [isActive, setIsActive] = useState(false);  // Estado para controlar el formulario activo

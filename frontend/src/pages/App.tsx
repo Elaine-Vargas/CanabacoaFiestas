@@ -44,9 +44,9 @@ function App() {
         <Route path="/Menu-Servicios/*" element={<DashboardLayout />}>
         <Route path="Bienvenida" element={<WelcomeMenu />} />
         <Route path="Alquiler" element={<Rent />} />
-        <Route path="Decoración" element={<Decor />} />
+        <Route path="Decoracion" element={<Decor />} />
         <Route path="Catering" element={<Catering />} />
-        <Route path="Supervisión" element={<Supervision />} />
+        <Route path="Supervision" element={<Supervision />} />
         <Route path="Transporte" element={<Transportation />} />
         <Route path="Montaje-Desmontaje" element={<AssemblyAndDisassembly />} />
       </Route>

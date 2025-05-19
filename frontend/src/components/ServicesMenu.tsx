@@ -36,11 +36,12 @@ export default function ServicesMenu({ selectedService }: ServicesMenuProps) {
           <FaBoxOpen /> Alquiler
         </li>
         <li
-          className={selectedService === "Decoracion" ? "active" : ""}
-          onClick={() => navigate("/Menu-Servicios/Decoración")}
+        className={selectedService === "Decoracion" ? "active" : ""}
+        onClick={() => navigate("/Menu-Servicios/Decoracion")}
         >
-          <FaBrush /> Decoración
+          <FaBrush /> Decoracion
         </li>
+
         <li
           className={selectedService === "Catering" ? "active" : ""}
           onClick={() => navigate("/Menu-Servicios/Catering")}
@@ -48,10 +49,10 @@ export default function ServicesMenu({ selectedService }: ServicesMenuProps) {
           <FaConciergeBell /> Catering
         </li>
         <li
-          className={selectedService === "Supervisiónn" ? "active" : ""}
-          onClick={() => navigate("/Menu-Servicios/Supervisión")}
+          className={selectedService === "Supervision" ? "active" : ""}
+          onClick={() => navigate("/Menu-Servicios/Supervision")}
         >
-          <FaTachometerAlt /> Supervisión
+          <FaTachometerAlt /> Supervision
         </li>
         <li
           className={selectedService === "Transporte" ? "active" : ""}
