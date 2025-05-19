@@ -1,4 +1,4 @@
-
+import "../../styles/services-subpages.scss";
 
 export default function WelcomeMenu() {
 

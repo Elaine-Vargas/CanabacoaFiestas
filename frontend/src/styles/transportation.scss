@@ -1,0 +1,124 @@
+.modal-container.transport {
+  background-color: var(--white);
+  padding: 2rem;
+  border-radius: 10px;
+  box-shadow: 0px 4px 20px rgba(0, 0, 0, 0.3);
+  width: 700px;
+  max-width: 95%;
+  max-height: 85vh;
+  overflow-y: auto;
+  position: relative;
+  text-align: left;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+.modal-form.horizontal {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+}
+
+.modal-form h3 {
+  font-size: 1.4rem;
+  color: var(--dark-gold);
+  margin-bottom: 1rem;
+}
+
+.form-columns {
+  display: flex;
+  gap: 2rem;
+  width: 100%;
+  flex-wrap: wrap;
+  margin-bottom: 1.5rem;
+}
+
+.form-column {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.modal-container::-webkit-scrollbar {
+  width: 8px;
+}
+
+.modal-container::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.modal-container::-webkit-scrollbar-thumb {
+  background-color: var(--gold);
+  border-radius: 4px;
+}
+
+label {
+  font-family: "Nunito Sans", sans-serif;
+  font-weight: 400;
+  font-size: 0.95rem;
+}
+
+input {
+  width: 100%;
+  padding: 0.6rem;
+  border: 1px solid var(--color-input-border);
+  border-radius: 6px;
+  font-size: 1rem;
+  margin-top: 5px;
+  background-color: var(--white);
+  color: var(--black);
+}
+
+/* Toggle para otras informaciones */
+.center-toggle {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  margin-top: 1rem;
+}
+
+.extra-info-toggle {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+  color: var(--dark-gold);
+  font-weight: bold;
+  transition: color 0.2s ease;
+}
+
+.extra-info-toggle:hover {
+  color: var(--gold);
+}
+
+/* Sección extra */
+.extra-info-section {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  margin-top: 1rem;
+  padding: 1rem;
+  background-color: var(--beige);
+  border: 1px solid var(--color-input-border);
+  border-radius: 8px;
+  width: 100%;
+}
+
+/* Botón de envío */
+.submit-btn {
+  background-color: var(--dark-gold);
+  color: var(--white);
+  padding: 0.7rem;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  width: 100%;
+  font-size: 1rem;
+  margin-top: 1.5rem;
+}
+
+.submit-btn:hover {
+  background-color: var(--gold);
+}
