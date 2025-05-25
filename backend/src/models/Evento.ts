@@ -1,6 +1,17 @@
-import { Table, Model, Column, PrimaryKey, AutoIncrement, DataType, ForeignKey, BelongsTo } from 'sequelize-typescript';
+import { Table, Model, Column, PrimaryKey, AutoIncrement, DataType, ForeignKey, BelongsTo, HasMany, HasOne} from 'sequelize-typescript';
 import Usuario from './Usuario';
 import TipoEvento from './TipoEvento';
+import Espacio from './Espacio';
+import Comentario from './Comentario';
+import AlquilerServicio from './AlquilerServicio';
+import DecoracionServicio from './DecoracionServicio';
+import CateringServicio from './CateringServicio';
+import MontajeDesmontajeServicio from './DetalleMontajeDesmontaje';
+import TransporteServicio from './TransporteServicio';
+import CostoAgregadoEvento from './CostoAgregadoEvento';
+import Pago from './Pago';
+import Factura from './Factura';
+import SupervisionServicio from './SupervisionServicio';
 
 @Table({ tableName: 'evento', timestamps: false })
 export default class Evento extends Model {
@@ -28,6 +39,13 @@ export default class Evento extends Model {
 
   @Column({ type: DataType.TIME, allowNull: false })
   hora_evento!: string;
+
+   @ForeignKey(() => Espacio)
+  @Column({ type: DataType.INTEGER, allowNull: false })
+  id_espacio!: number;
+
+  @BelongsTo(() => Espacio)
+  espacio!: Espacio;
 
   @Column({
     type: DataType.ENUM('Pendiente', 'Confirmado', 'Cancelado', 'Completado'),
@@ -65,4 +83,35 @@ export default class Evento extends Model {
 
   @Column({ type: DataType.DECIMAL(10, 2), defaultValue: 0 })
   total_evento!: number;
+
+  //Relaciones
+  @HasMany(() => Comentario)
+  comentarios!: Comentario[];
+
+  @HasMany(() => CostoAgregadoEvento)
+  costos_agregados_evento!: CostoAgregadoEvento[];
+
+  @HasMany(() => AlquilerServicio)
+  alquileres_servicio!: AlquilerServicio[];
+
+  @HasOne(() => DecoracionServicio)
+  decoracion_servicio!: DecoracionServicio[];
+
+  @HasOne(() => CateringServicio)
+  catering_servicio!: CateringServicio[];
+
+  @HasOne(() => MontajeDesmontajeServicio)
+  montaje_desmontaje_servicio!: MontajeDesmontajeServicio[];
+
+  @HasOne(() => TransporteServicio)
+  transporte_servicio!: TransporteServicio[];
+
+  @HasOne(() => SupervisionServicio)
+  supervision_servicio!: SupervisionServicio[];
+
+  @HasMany(() => Pago)
+  pagos!: Pago[];
+
+  @HasMany(() => Factura)
+  facturas!: Factura[];
 }

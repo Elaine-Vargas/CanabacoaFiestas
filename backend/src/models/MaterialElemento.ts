@@ -1,4 +1,5 @@
-import { Table, Model, Column, PrimaryKey, AutoIncrement, DataType } from 'sequelize-typescript';
+import { Table, Model, Column, PrimaryKey, AutoIncrement, DataType, HasMany} from 'sequelize-typescript';
+import Elemento from './Elemento';
 
 @Table({ tableName: 'material_elemento', timestamps: false })
 export default class MaterialElemento extends Model {
@@ -9,4 +10,7 @@ export default class MaterialElemento extends Model {
 
   @Column({ type: DataType.STRING(50), allowNull: false })
   nombre_material!: string;
+    // Relación 1:N con Elemento
+    @HasMany(() => Elemento)
+    elementos!: Elemento[];
 }

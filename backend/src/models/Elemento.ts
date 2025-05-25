@@ -1,7 +1,8 @@
-import { Table, Model, Column, PrimaryKey, AutoIncrement, DataType, ForeignKey, BelongsTo } from 'sequelize-typescript';
+import { Table, Model, Column, PrimaryKey, AutoIncrement, DataType, ForeignKey, BelongsTo, HasMany } from 'sequelize-typescript';
 import SubcategoriaElemento from './SubcategoriaElemento';
 import MaterialElemento from './MaterialElemento';
 import ColorElemento from './ColorElemento';
+import Compra from './Compra';
 
 @Table({ tableName: 'elemento', timestamps: false })
 export default class Elemento extends Model {
@@ -42,4 +43,8 @@ export default class Elemento extends Model {
     defaultValue: 'Activo'
   })
   estado_elemento!: string;
+
+  //Relación 1:N con Compra
+  @HasMany(() => Compra)
+  compras!: Compra[];
 }

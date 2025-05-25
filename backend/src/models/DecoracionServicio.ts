@@ -19,13 +19,6 @@ export default class DecoracionServicio extends Model {
   @Column({ type: DataType.TEXT, allowNull: false })
   tema_decoracion!: string;
 
-  @ForeignKey(() => Espacio)
-  @Column({ type: DataType.INTEGER, allowNull: false })
-  id_espacio!: number;
-
-  @BelongsTo(() => Espacio)
-  espacio!: Espacio;
-
   @Column({ type: DataType.DECIMAL(10, 2), allowNull: false })
   precioneto_decor!: number;
 

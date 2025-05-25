@@ -11,6 +11,7 @@ export default class TipoProveedor extends Model {
   @Column({ type: DataType.STRING(50), allowNull: false })
   nombre_tipo!: string;
 
+  // Relación 1:N con Proveedor  
   @HasMany(() => Proveedor)
   proveedores!: Proveedor[];
 }

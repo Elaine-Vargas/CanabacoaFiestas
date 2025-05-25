@@ -11,6 +11,7 @@ export default class TipoEvento extends Model {
   @Column({ type: DataType.STRING(50), allowNull: false })
   tipo_evento!: string;
 
+  // Relación 1:N con Evento
   @HasMany(() => Evento)
   eventos!: Evento[];
 }

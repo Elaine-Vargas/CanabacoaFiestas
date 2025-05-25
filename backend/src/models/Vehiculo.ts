@@ -1,4 +1,5 @@
-import { Table, Model, Column, PrimaryKey, DataType } from 'sequelize-typescript';
+import { Table, Model, Column, PrimaryKey, DataType, HasMany } from 'sequelize-typescript';
+import DetalleTransporte from './DetalleTransporte';
 
 @Table({ tableName: 'vehiculo', timestamps: false })
 export default class Vehiculo extends Model {
@@ -23,4 +24,7 @@ export default class Vehiculo extends Model {
     defaultValue: 'Activo'
   })
   estado_vehiculo!: string;
+
+  @HasMany(() => DetalleTransporte)
+  detallestransportes!: DetalleTransporte[];
 }

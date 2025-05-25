@@ -1,4 +1,4 @@
-import { Table, Model, DataType, Column, PrimaryKey, ForeignKey } from 'sequelize-typescript';
+import { Table, Model, DataType, Column, PrimaryKey, ForeignKey, BelongsTo } from 'sequelize-typescript';
 import Rol from './Rol';
 import Permiso from './Permiso';
 
@@ -13,4 +13,11 @@ export default class RolPermiso extends Model {
   @ForeignKey(() => Permiso)
   @Column({ type: DataType.INTEGER, field: 'id_permiso' })
   id_permiso!: number;
+
+  //Relaciones
+  @BelongsTo(() => Rol)
+  rol!: Rol;
+
+  @BelongsTo(() => Permiso)
+  permiso!: Permiso;
 }

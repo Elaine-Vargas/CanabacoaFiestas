@@ -21,8 +21,8 @@ export default class Rol extends Model {
   })
   nombre_rol!: string;
 
-  // Relación 1:N con Usuario
+  // Relación con usuario 1:N
   @HasMany(() => Usuario, { foreignKey: 'id_rol' })
-  usuarios!: Usuario[];
+  usuario!: Usuario[];
 }
 

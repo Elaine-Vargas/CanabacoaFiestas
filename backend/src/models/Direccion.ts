@@ -1,5 +1,8 @@
-import { Table, Model, Column, PrimaryKey, AutoIncrement, DataType, ForeignKey, BelongsTo } from 'sequelize-typescript';
+import { Table, Model, Column, PrimaryKey, AutoIncrement, DataType, ForeignKey, BelongsTo, HasMany } from 'sequelize-typescript';
 import Sector from './Sector';
+import Espacio from './Espacio';
+import Proveedor from './Proveedor';
+import TransporteServicio from './TransporteServicio';
 
 @Table({ tableName: 'direccion', timestamps: false })
 export default class Direccion extends Model {
@@ -20,4 +23,14 @@ export default class Direccion extends Model {
 
   @Column({ type: DataType.TEXT })
   detalles!: string;
+
+  // Relación 1:N con Espacio
+  @HasMany(() => Espacio)
+  espacios!: Espacio[]; 
+
+    @HasMany(() => Proveedor)
+  proveedores!: Proveedor[]; 
+
+    @HasMany(() => TransporteServicio)
+  transportesServicio!: TransporteServicio[]; 
 }

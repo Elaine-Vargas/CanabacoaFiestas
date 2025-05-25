@@ -1,4 +1,5 @@
-import { Table, Model, Column, PrimaryKey, AutoIncrement, DataType } from 'sequelize-typescript';
+import { Table, Model, Column, PrimaryKey, AutoIncrement, DataType, HasMany } from 'sequelize-typescript';
+import RolPermiso from './RolPermiso';
 
 @Table({ tableName: 'permiso', timestamps: false })
 export default class Permiso extends Model {
@@ -13,4 +14,8 @@ export default class Permiso extends Model {
     field: 'permiso'
   })
   permiso!: string;
+
+  //Relación 1:N con RolPermiso
+  @HasMany(() => RolPermiso, { foreignKey: 'id_permiso' })
+  rol_permisos!: RolPermiso[];
 }
