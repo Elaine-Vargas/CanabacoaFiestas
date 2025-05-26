@@ -18,7 +18,7 @@ export default function ServicesMenu({ selectedService }: ServicesMenuProps) {
 
   return (
     <div className="sidebar">
-      <div className="user-profile" onClick={() => navigate("/Menu-Servicios/Welcome")}>
+      <div className="user-profile" onClick={() => navigate("/Menu-Servicios/Ajustes-Usuario")}>
         <FaUser size={30} />
         <p>Configurar cuenta</p>
       </div>
