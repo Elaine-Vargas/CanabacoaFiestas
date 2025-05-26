@@ -6,7 +6,7 @@ import Comentario from './Comentario';
 import AlquilerServicio from './AlquilerServicio';
 import DecoracionServicio from './DecoracionServicio';
 import CateringServicio from './CateringServicio';
-import MontajeDesmontajeServicio from './DetalleMontajeDesmontaje';
+import MontajeDesmontajeServicio from './MontajeDesmontajeServicio';
 import TransporteServicio from './TransporteServicio';
 import CostoAgregadoEvento from './CostoAgregadoEvento';
 import Pago from './Pago';

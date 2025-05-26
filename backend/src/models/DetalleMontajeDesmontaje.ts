@@ -56,4 +56,7 @@ export default class DetalleMontajedesmontaje extends Model<DetalleMontajedesmon
     field: 'precioneto_montaje',
   })
   precioneto_montaje!: number;
+
+
 }
+

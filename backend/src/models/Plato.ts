@@ -1,5 +1,5 @@
 import { Table, Model, Column, PrimaryKey, AutoIncrement, DataType, HasMany } from 'sequelize-typescript';
-import PlatoMenu from './MenuCatering';
+import PlatoMenu from './PlatoMenu';
 
 @Table({ tableName: 'plato', timestamps: false })
 export default class Plato extends Model {

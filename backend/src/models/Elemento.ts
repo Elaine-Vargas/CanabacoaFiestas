@@ -2,7 +2,7 @@ import { Table, Model, Column, PrimaryKey, AutoIncrement, DataType, ForeignKey, 
 import SubcategoriaElemento from './SubcategoriaElemento';
 import MaterialElemento from './MaterialElemento';
 import ColorElemento from './ColorElemento';
-import Compra from './Compra';
+import DetalleCompra from './DetalleCompra';
 
 @Table({ tableName: 'elemento', timestamps: false })
 export default class Elemento extends Model {
@@ -45,6 +45,6 @@ export default class Elemento extends Model {
   estado_elemento!: string;
 
   //Relación 1:N con Compra
-  @HasMany(() => Compra)
-  compras!: Compra[];
+  @HasMany(() => DetalleCompra)
+  detallecompras!: DetalleCompra[];
 }
