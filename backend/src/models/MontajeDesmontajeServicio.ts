@@ -1,5 +1,6 @@
-import { Table, Model, Column, PrimaryKey, AutoIncrement, DataType, ForeignKey, BelongsTo } from 'sequelize-typescript';
+import { Table, Model, Column, PrimaryKey, AutoIncrement, DataType, ForeignKey, BelongsTo, HasMany } from 'sequelize-typescript';
 import Evento from './Evento';
+import DetalleMontajeDesmontaje from './DetalleMontajeDesmontaje';
 
 @Table({ tableName: 'montajedesmontaje_servicio', timestamps: false })
 export default class MontajeDesmontajeServicio extends Model {
@@ -23,4 +24,7 @@ export default class MontajeDesmontajeServicio extends Model {
 
   @Column({ type: DataType.DECIMAL(10, 2), allowNull: false })
   total!: number;
+
+  @HasMany (() => DetalleMontajeDesmontaje)
+  detalles_montaje_desmontaje!: DetalleMontajeDesmontaje[];
 }

@@ -1,5 +1,6 @@
-import { Table, Model, Column, PrimaryKey, AutoIncrement, DataType, ForeignKey, BelongsTo } from 'sequelize-typescript';
+import { Table, Model, Column, PrimaryKey, AutoIncrement, DataType, ForeignKey, BelongsTo, HasMany} from 'sequelize-typescript';
 import CategoriaElemento from './CategoriaElemento';
+import Elemento from './Elemento';
 
 @Table({ tableName: 'subcategoria_elemento', timestamps: false })
 export default class SubcategoriaElemento extends Model {
@@ -17,4 +18,8 @@ export default class SubcategoriaElemento extends Model {
 
   @Column({ type: DataType.STRING(50), allowNull: false })
   nombre_subcategoria!: string;
+
+  // Relación 1:N con Elemento
+  @HasMany(() => Elemento)
+  elementos!: Elemento[];
 }

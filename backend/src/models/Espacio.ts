@@ -1,5 +1,6 @@
-import { Table, Model, Column, PrimaryKey, AutoIncrement, DataType, ForeignKey, BelongsTo } from 'sequelize-typescript';
+import { Table, Model, Column, PrimaryKey, AutoIncrement, DataType, ForeignKey, BelongsTo, HasMany } from 'sequelize-typescript';
 import Direccion from './Direccion';
+import Evento from './Evento';
 
 @Table({ tableName: 'espacio', timestamps: false })
 export default class Espacio extends Model {
@@ -26,4 +27,8 @@ export default class Espacio extends Model {
     defaultValue: 'Activo'
   })
   estado_espacio!: string;
+
+  // Relación 1:N con Evento
+  @HasMany(() => Evento)
+  eventos!: Evento[];
 }

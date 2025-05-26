@@ -1,4 +1,4 @@
-import { Table, Model, Column, PrimaryKey, AutoIncrement, DataType, ForeignKey, BelongsTo } from 'sequelize-typescript';
+import { Table, Model, Column, PrimaryKey, AutoIncrement, DataType, ForeignKey, BelongsTo, HasMany } from 'sequelize-typescript';
 import Compra from './Compra';
 import Elemento from './Elemento';
 
@@ -31,4 +31,5 @@ export default class DetalleCompra extends Model {
 
   @Column({ type: DataType.DECIMAL(10, 2), allowNull: false })
   precio_total!: number;
+
 }

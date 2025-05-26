@@ -11,6 +11,7 @@ export default class CategoriaElemento extends Model {
   @Column({ type: DataType.STRING(50), allowNull: false })
   nombre_categoria!: string;
 
+  // Relación 1:N con SubcategoriaElemento 
   @HasMany(() => SubcategoriaElemento)
   subcategorias!: SubcategoriaElemento[];
 }

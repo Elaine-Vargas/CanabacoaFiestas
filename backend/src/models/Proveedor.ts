@@ -1,6 +1,8 @@
-import { Table, Model, Column, PrimaryKey, AutoIncrement, DataType, ForeignKey, BelongsTo } from 'sequelize-typescript';
+import { Table, Model, Column, PrimaryKey, AutoIncrement, DataType, ForeignKey, BelongsTo, HasMany } from 'sequelize-typescript';
 import TipoProveedor from './TipoProveedor';
 import Direccion from './Direccion';
+import Compra from './Compra';
+import Menu from './Menu';
 
 @Table({ tableName: 'proveedor', timestamps: false })
 export default class Proveedor extends Model {
@@ -37,4 +39,11 @@ export default class Proveedor extends Model {
     defaultValue: 'Activo'
   })
   estado_proveedor!: string;
+
+  //Relaciones
+  @HasMany(() => Compra)
+  compras!: Compra[];
+
+  @HasMany(() => Menu)
+  menus!: Menu[];
 }

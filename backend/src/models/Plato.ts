@@ -1,4 +1,5 @@
-import { Table, Model, Column, PrimaryKey, AutoIncrement, DataType } from 'sequelize-typescript';
+import { Table, Model, Column, PrimaryKey, AutoIncrement, DataType, HasMany } from 'sequelize-typescript';
+import PlatoMenu from './MenuCatering';
 
 @Table({ tableName: 'plato', timestamps: false })
 export default class Plato extends Model {
@@ -9,4 +10,7 @@ export default class Plato extends Model {
 
   @Column({ type: DataType.TEXT, allowNull: false })
   desc_plato!: string;
+
+  @HasMany (() => PlatoMenu)
+  platos_menu!: PlatoMenu[];
 }

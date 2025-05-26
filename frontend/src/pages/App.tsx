@@ -21,6 +21,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import ColorTheme from '../functions/ColorTheme';
 
 function App() {
+
   return (
     <>
       <div id="ColorTheme">
@@ -39,10 +40,10 @@ function App() {
             <Route path="/" element={<Navigate to="/Menu-Servicios/Bienvenida" />} />
 
             <Route path="/Menu-Servicios/*" element={<DashboardLayout />}>
-              <Route path="Bienvenida" element={<WelcomeMenu />} />
+              <Route path="Bienvenida" element={<WelcomeMenu eventsInProcess={38} averageRating={4.0} totalUsers={150} quotations={[]}/>}/>
               <Route path="Alquiler" element={<Rent />} />
               <Route path="Decoracion" element={<Decor />} />
-              <Route path="Catering" element={<Catering />} />
+              <Route path="Catering" element={<Catering menuVarieties={5} activeProveedor={8} completedOrders={150} poveedores={[]} /* o una lista si tienes datos*/ menus={[]}     /* igual aquí*/ />}/>
               <Route path="Supervision" element={<Supervision />} />
               <Route path="Transporte" element={<Transportation />} />
               <Route path="Montaje-Desmontaje" element={<AssemblyAndDisassembly />} />

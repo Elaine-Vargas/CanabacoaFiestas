@@ -20,6 +20,7 @@ export default class Ciudad extends Model {
   @Column({ type: DataType.INTEGER, field: 'id_provincia' })
   id_provincia!: number;
 
+  //Relaciones
   @BelongsTo(() => Provincia)
   provincia!: Provincia;
 

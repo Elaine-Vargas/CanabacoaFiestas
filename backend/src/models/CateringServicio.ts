@@ -1,5 +1,6 @@
-import { Table, Model, Column, PrimaryKey, AutoIncrement, DataType, ForeignKey, BelongsTo } from 'sequelize-typescript';
+import { Table, Model, Column, PrimaryKey, AutoIncrement, DataType, ForeignKey, BelongsTo, HasMany } from 'sequelize-typescript';
 import Evento from './Evento';
+import MenuCatering from './MenuCatering';
 
 @Table({ tableName: 'catering_servicio', timestamps: false })
 export default class CateringServicio extends Model {
@@ -26,4 +27,7 @@ export default class CateringServicio extends Model {
 
   @Column({ type: DataType.DECIMAL(10, 2), allowNull: false })
   total_catering!: number;
+
+  @HasMany (() => MenuCatering)
+  menu_catering!: MenuCatering[];
 }

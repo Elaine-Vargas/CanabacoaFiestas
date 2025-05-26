@@ -15,6 +15,7 @@ export default class Provincia extends Model {
   })
   nombre_provincia!: string;
 
+  //Relaciones
   @HasMany(() => Ciudad)
   ciudades!: Ciudad[];
 }

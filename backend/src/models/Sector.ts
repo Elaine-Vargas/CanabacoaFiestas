@@ -20,6 +20,7 @@ export default class Sector extends Model {
   @Column({ type: DataType.INTEGER, field: 'id_ciudad' })
   id_ciudad!: number;
 
+  //Relaciones
   @BelongsTo(() => Ciudad)
   ciudad!: Ciudad;
 
