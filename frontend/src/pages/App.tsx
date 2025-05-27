@@ -43,10 +43,10 @@ function App() {
               <Route path="Bienvenida" element={<WelcomeMenu eventsInProcess={38} averageRating={4.0} totalUsers={150} quotations={[]}/>}/>
               <Route path="Alquiler" element={<Rent />} />
               <Route path="Decoracion" element={<Decor />} />
-              <Route path="Catering" element={<Catering menuVarieties={5} activeProveedor={8} completedOrders={150} poveedores={[]} /* o una lista si tienes datos*/ menus={[]}     /* igual aquí*/ />}/>
-              <Route path="Supervision" element={<Supervision />} />
+              <Route path="Catering" element={<Catering menuVarieties={5} activeProveedor={8} completedOrders={150} proveedor={[]} menus={[]}/>}/>
+              <Route path="Supervision" element={<Supervision eventosSupervisados={25} eventosParticipados={15} horasTrabajadas={120}/>} />
               <Route path="Transporte" element={<Transportation />} />
-              <Route path="Montaje-Desmontaje" element={<AssemblyAndDisassembly />} />
+              <Route path="Montaje-Desmontaje" element={<AssemblyAndDisassembly totalServicios={45} horasTrabajadas={180} personalActivo={12} />} />
             </Route>
           </Routes>
         </BrowserRouter>

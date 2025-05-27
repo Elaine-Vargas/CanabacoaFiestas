@@ -53,7 +53,8 @@
       color: #c49a44;
     }
 
-    &__seeInfo2 {
+    &__seeInfo2,
+    &__seeInfo {
       margin-top: 10px;
       background-color: #c49a44;
       color: #fff;
@@ -69,22 +70,6 @@
         background-color: #e0c55a;
       }
     }
-    &__seeInfo {
-    margin-top: 2px;
-    background-color: #c49a44;
-    color: #fff;
-    border: none;
-    padding: 10px 22px;
-    border-radius: 9999px;
-    cursor: pointer;
-    font-size: 16px;
-    font-weight: 600;
-    transition: background-color 0.3s ease;
-
-    &:hover {
-      background-color: #e0c55a;
-    }
-  }
   }
 }
 
@@ -136,7 +121,7 @@
   }
 }
 
-/* Modal */
+/* ============ MODAL ESTILO PANEL DOBLE ============ */
 .modalOverlay {
   position: fixed;
   inset: 0;
@@ -151,11 +136,14 @@
   background-color: #fff;
   padding: 2rem;
   border-radius: 10px;
-  width: 400px;
+  width: 90vw;
+  max-width: 1200px;
   max-height: 90vh;
   overflow-y: auto;
   position: relative;
-  text-align: center;
+  display: flex;
+  gap: 2rem;
+  flex-direction: row;
 }
 
 .closeButton {
@@ -173,19 +161,29 @@
   }
 }
 
-.cateringForm {
+/* ======= FORMULARIO ======= */
+.modal-form {
+  flex: 1;
   display: flex;
   flex-direction: column;
-  gap: 1rem;
+
+  h3 {
+    font-family: 'Georgia', serif;
+    font-size: 2rem;
+    color: #c49a44;
+    margin-bottom: 1.5rem;
+    text-align: center;
+  }
 
   label {
-    text-align: left;
     font-weight: 500;
+    margin-bottom: 0.5rem;
+    color: #333;
     font-size: 0.95rem;
-    color: #444;
+    display: flex;
+    flex-direction: column;
 
     input {
-      width: 100%;
       padding: 0.6rem;
       margin-top: 0.3rem;
       border: 1px solid #ccc;
@@ -194,32 +192,91 @@
     }
   }
 
-  .submitBtn,
-  .resetBtn {
-    padding: 10px;
-    border: none;
-    border-radius: 8px;
-    font-size: 1rem;
-    cursor: pointer;
-    font-weight: 600;
-  }
+  .form-buttons {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 1.5rem;
 
-  .submitBtn {
-    background-color: #c49a44;
-    color: #fff;
+    button {
+      padding: 10px 20px;
+      border: none;
+      border-radius: 8px;
+      font-size: 1rem;
+      cursor: pointer;
+      font-weight: 600;
+      width: 48%;
+    }
 
-    &:hover {
-      background-color: #e0c55a;
+    .submitBtn {
+      background-color: #c49a44;
+      color: #fff;
+
+      &:hover {
+        background-color: #e0c55a;
+      }
+    }
+
+    .resetBtn {
+      background-color: transparent;
+      border: 1px solid #c49a44;
+      color: #c49a44;
+
+      &:hover {
+        background-color: #fffbea;
+      }
     }
   }
+}
 
-  .resetBtn {
-    background-color: transparent;
-    border: 1px solid #c49a44;
-    color: #c49a44;
+/* ======= TABLAS ======= */
+.tables-container {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
 
-    &:hover {
-      background-color: #fffbea;
+  .table-section {
+    h4 {
+      font-size: 1.4rem;
+      color: #6c432d;
+      margin-bottom: 1rem;
+      text-align: left;
+    }
+
+    input {
+      width: 100%;
+      padding: 0.5rem;
+      margin-bottom: 1rem;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+      font-size: 0.95rem;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      background-color: #fff;
+      border-radius: 8px;
+      overflow: hidden;
+      box-shadow: 0 0 10px rgba(0, 0, 0, 0.05);
+
+      th {
+        background-color: #fff3cd;
+        padding: 12px;
+        font-weight: bold;
+        border-bottom: 1px solid #e0c55a;
+        text-align: center;
+      }
+
+      td {
+        padding: 12px;
+        border-bottom: 1px solid #eee;
+        text-align: center;
+      }
+
+      tr:last-child td {
+        border-bottom: none;
+      }
     }
   }
 }
