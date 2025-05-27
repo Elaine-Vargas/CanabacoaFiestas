@@ -256,6 +256,81 @@ section .container.active .signinBx .imgBx {
     color: var(--dark-gold);
   }
 }
+
+.form-row {
+  display: flex;
+  gap: 10px;
+  width: 100%;
+  margin: 8px 0;
+  justify-content: space-between;
+
+  input {
+    flex: 1;
+    min-width: 0; // Prevents flex items from overflowing
+  }
+}
+
+.full-width {
+  width: 100%;
+  margin: 8px 0;
+}
+
+section .container .user .formBx form {
+  width: 100%;
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+section .container .user .formBx form input {
+  width: 100%;
+  padding: 10px;
+  background: var(--color-input-bg);
+  color: var(--brown);
+  border: none;
+  outline: none;
+  box-shadow: none;
+  margin: 8px 0;
+  font-size: 20px;
+  letter-spacing: 1px;
+  font-weight: 300;
+  font-family: "Nunito Sans", sans-serif;
+  box-sizing: border-box;
+}
+
+@media screen and (min-width: 601px) and (max-width: 1025px) {
+  .form-row {
+    flex-direction: column;
+    gap: 8px;
+    width: 100%;
+    max-width: 400px;
+    margin: 8px auto;
+
+    input {
+      width: 100%;
+      max-width: none;
+      margin: 0;
+    }
+  }
+
+  .full-width {
+    width: 100%;
+    max-width: 400px;
+    margin: 8px auto;
+  }
+
+  section .container .user .formBx form input {
+    width: 100%;
+    max-width: 400px;
+    margin: 8px auto;
+  }
+
+  input[type="submit"] {
+    width: 100%;
+    max-width: 400px;
+    margin: 8px auto;
+  }
+}
+
 @media screen and (max-width: 600px), screen and (max-height: 600px) {
   section .container {
     width: 100%;
@@ -284,12 +359,16 @@ section .container.active .signinBx .imgBx {
 
   section .container .user .formBx form {
     width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
   }
 
   section .container .user .formBx form input {
-    width: 80%;
+    width: 100%;
     max-width: 300px;
     text-align: center;
+    margin: 8px auto;
   }
 
   section .container .signinBx,
@@ -297,18 +376,50 @@ section .container.active .signinBx .imgBx {
     width: 100%;
     height: 100%;
   }
-  form{
-    display: flex;
-    justify-content: center;
-    align-content: flex-start;
-    flex-wrap: wrap;
-    align-items: center;
+
+  .form-row {
     flex-direction: column;
+    gap: 8px;
+    width: 100%;
+    max-width: 300px;
+    margin: 8px auto;
+
+    input {
+      width: 100%;
+      max-width: none;
+      margin: 0;
+    }
   }
+
+  .full-width {
+    width: 100%;
+    max-width: 300px;
+    margin: 8px auto;
+  }
+
   section .container .user .formBx form h2 {
     font-size: 5vw;
+    text-align: center;
   }
+
   section .container .user .formBx form .signup {
     text-align: center;
+  }
+
+  input[type="submit"] {
+    width: 100%;
+    max-width: 300px;
+    margin: 8px auto;
+  }
 }
+
+.error-message {
+  color: #ff3333;
+  background-color: #ffe6e6;
+  padding: 10px;
+  border-radius: 4px;
+  margin-bottom: 15px;
+  text-align: center;
+  font-size: 14px;
+  font-family: "Nunito Sans", sans-serif;
 }

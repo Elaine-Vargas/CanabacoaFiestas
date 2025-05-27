@@ -23,9 +23,11 @@ export default class Usuario extends Model {
     type: DataType.CHAR(13),
     primaryKey: true,
     field: 'cedula_usuario',
-    validate: {
-      len: [13, 13],
-      isNumeric: true
+      validate: {
+        is: {
+          args: [/^[0-9]{3}-[0-9]{7}-[0-9]{1}$/],
+          msg: 'El teléfono debe tener el formato 000-0000000-0'
+        }
     }
   })
   cedula_usuario!: string;
@@ -40,6 +42,18 @@ export default class Usuario extends Model {
     }
   })
   nombre_usuario!: string;
+
+  @Column({
+    type: DataType.STRING(50),
+    allowNull: false,
+    field: 'apellido_usuario',
+    validate: {
+      notEmpty: true,
+      is: /^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/i
+    }
+  })
+  apellido_usuario!: string;
+
 
   @ForeignKey(() => Rol)
   @Column({ 
