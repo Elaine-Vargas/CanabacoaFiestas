@@ -4,11 +4,15 @@ import "../styles/Login.scss";
 import LogoBlanco from "../assets/logoVariants/OVALO-CF(titulo blanco).svg"
 import LogoDorado from "../assets/logoVariants/OVALO-CF(titulo dorado osc).svg"
 import LoginNav from "../components/LoginNav";
-
+import VisibilityOffIcon from '@mui/icons-material/VisibilityOff';
+import VisibilityIcon from '@mui/icons-material/Visibility';
 //Se necesita adaptar el formulario de registro para que sea responsive y tenga un scroll vertical si es necesario
 
 const UserLogin: React.FC = () => {
   const [isActive, setIsActive] = useState(false);  // Estado para controlar el formulario activo
+  const [showLoginPassword, setShowLoginPassword] = useState(false);
+  const [showSignupPassword, setShowSignupPassword] = useState(false);
+  const [showSignupConfirmPassword, setShowSignupConfirmPassword] = useState(false);
   const [loginData, setLoginData] = useState({
     usuario_login: "",
     contrasena: ""
@@ -29,6 +33,18 @@ const UserLogin: React.FC = () => {
   const toggleForm = () => { // Función para alternar entre los formularios de login y signup
     setIsActive(!isActive);
     setError("");
+  };
+
+  const toggleLoginPasswordVisibility = () => {
+    setShowLoginPassword(!showLoginPassword);
+  };
+
+  const toggleSignupPasswordVisibility = () => {
+    setShowSignupPassword(!showSignupPassword);
+  };
+
+  const toggleSignupConfirmPasswordVisibility = () => {
+    setShowSignupConfirmPassword(!showSignupConfirmPassword);
   };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -143,14 +159,19 @@ const UserLogin: React.FC = () => {
                 value={loginData.usuario_login}
                 onChange={handleInputChange}
               />
-              <input 
-                type="password" 
-                id="login-password" 
-                placeholder="Contraseña" 
-                required 
-                value={loginData.contrasena}
-                onChange={handleInputChange}
-              />
+              <div className="password-input-container">
+                <input 
+                  type={showLoginPassword ? "text" : "password"} 
+                  id="login-password" 
+                  placeholder="Contraseña" 
+                  required 
+                  value={loginData.contrasena}
+                  onChange={handleInputChange}
+                />
+                <span className="password-toggle" onClick={toggleLoginPasswordVisibility}>
+                  {showLoginPassword ? <VisibilityOffIcon /> : <VisibilityIcon />}
+                </span>
+              </div>
               <input type="submit" value="Iniciar sesión" />
               <p className="signup">
                 ¿No tienes una cuenta?{" "}
@@ -222,22 +243,32 @@ const UserLogin: React.FC = () => {
                 />
               </div>
               <div className="form-row">
-                <input 
-                  type="password" 
-                  id="signup-password" 
-                  placeholder="Contraseña" 
-                  required 
-                  value={signupData.contrasena_login}
-                  onChange={handleInputChange}
-                />
-                <input 
-                  type="password" 
-                  id="signup-password-confirm" 
-                  placeholder="Confirmar contraseña" 
-                  required 
-                  value={signupData.confirmar_contrasena}
-                  onChange={handleInputChange}
-                />
+                <div className="password-input-container">
+                  <input 
+                    type={showSignupPassword ? "text" : "password"} 
+                    id="signup-password" 
+                    placeholder="Contraseña" 
+                    required 
+                    value={signupData.contrasena_login}
+                    onChange={handleInputChange}
+                  />
+                  <span className="password-toggle" onClick={toggleSignupPasswordVisibility}>
+                    {showSignupPassword ? <VisibilityOffIcon /> : <VisibilityIcon />}
+                  </span>
+                </div>
+                <div className="password-input-container">
+                  <input 
+                    type={showSignupConfirmPassword ? "text" : "password"} 
+                    id="signup-password-confirm" 
+                    placeholder="Confirmar contraseña" 
+                    required 
+                    value={signupData.confirmar_contrasena}
+                    onChange={handleInputChange}
+                  />
+                  <span className="password-toggle" onClick={toggleSignupConfirmPasswordVisibility}>
+                    {showSignupConfirmPassword ? <VisibilityOffIcon /> : <VisibilityIcon />}
+                  </span>
+                </div>
               </div>
               <input type="submit" value="Registrar" />
               <p className="signup">

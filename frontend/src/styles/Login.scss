@@ -137,7 +137,7 @@ section .container .user .formBx {
   display: flex;
   justify-content: center;
   align-items: center;
-  padding: 40px;
+  padding: 0px 40px 0px 40px;
   transition: 0.5s;
 }
 
@@ -422,4 +422,30 @@ section .container .user .formBx form input {
   text-align: center;
   font-size: 14px;
   font-family: "Nunito Sans", sans-serif;
+}
+
+.password-input-container {
+  position: relative;
+  width: 100%;
+  
+  input {
+    width: 100%;
+    padding-right: 40px; // Espacio para el icono
+  }
+
+  .password-toggle {
+    position: absolute;
+    right: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    cursor: pointer;
+    color: #666;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    
+    &:hover {
+      color: #333;
+    }
+  }
 }
