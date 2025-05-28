@@ -1,4 +1,5 @@
-import { useEffect, useState, ChangeEvent, FormEvent } from "react";
+import { useEffect, useState } from "react";
+import type { ChangeEvent, FormEvent } from "react";
 import "../../styles/rent.scss";
 import "../../styles/fonts.scss";
 import "../../styles/services-subpages.scss";

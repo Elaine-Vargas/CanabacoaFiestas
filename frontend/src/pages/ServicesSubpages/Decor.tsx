@@ -1,4 +1,5 @@
-import { useState, ChangeEvent, FormEvent } from "react";
+import { useState } from "react";
+import type { ChangeEvent, FormEvent } from "react";
 import "../../styles/decor.scss";
 import "../../styles/services-subpages.scss";
 
@@ -24,7 +25,7 @@ type Evento = {
 export default function Decor() {
   const [showModal, setShowModal] = useState(false);
   const [decorItems, setDecorItems] = useState<DecorItem[]>([]);
-  const [eventos, setEventos] = useState<Evento[]>([]);
+  const [eventos] = useState<Evento[]>([]);
   const [filtroEvento, setFiltroEvento] = useState("");
   const [formData, setFormData] = useState<Partial<DecorItem>>({});
 
