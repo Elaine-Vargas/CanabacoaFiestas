@@ -135,10 +135,22 @@ section .container .user .formBx {
   height: 100%;
   background: var(--color-background);
   display: flex;
-  justify-content: center;
-  align-items: center;
-  padding: 0px 40px 0px 40px;
+  justify-content: flex-start;
+  align-items: flex-start;
+  padding: 40px;
   transition: 0.5s;
+  overflow-y: auto;
+  max-height: 100%;
+}
+
+section .container .user .formBx form {
+  width: 100%;
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 20px 0 80px 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
 }
 
 section .container .user .formBx form h2 {
@@ -182,12 +194,14 @@ section .container .user .formBx form input[type='submit'] {
 section .container .user .formBx form .signup {
   position: relative;
   margin-top: 30px;
+  margin-bottom: 20px;
   font-size: 15px;
   letter-spacing: 1px;
   color: var(--color-text);
   text-transform: uppercase;
   font-weight: 600;
-  
+  text-align: center;
+  width: 100%;
 }
 
 .signup strong{
@@ -279,6 +293,7 @@ section .container .user .formBx form {
   width: 100%;
   max-width: 800px;
   margin: 0 auto;
+  padding: 20px 0;
 }
 
 section .container .user .formBx form input {
@@ -351,10 +366,10 @@ section .container .user .formBx form input {
     width: 90vw;
     height: 100%;
     display: flex;
-    justify-content: center;
-    align-items: center;
-    align-self: center;
+    justify-content: flex-start;
+    align-items: flex-start;
     padding: 20px;
+    overflow-y: auto;
   }
 
   section .container .user .formBx form {
@@ -362,6 +377,7 @@ section .container .user .formBx form input {
     display: flex;
     flex-direction: column;
     align-items: center;
+    padding: 10px 0 60px 0;
   }
 
   section .container .user .formBx form input {
@@ -403,13 +419,31 @@ section .container .user .formBx form input {
   }
 
   section .container .user .formBx form .signup {
-    text-align: center;
+    margin-bottom: 15px;
   }
 
   input[type="submit"] {
     width: 100%;
     max-width: 300px;
     margin: 8px auto;
+  }
+
+  .password-input-container {
+    width: 100%;
+    max-width: 300px;
+    margin: 8px auto;
+
+    input {
+      width: 100%;
+      text-align: center;
+      padding-right: 40px;
+    }
+
+    .password-toggle {
+      right: 10px;
+      top: 50%;
+      transform: translateY(-50%);
+    }
   }
 }
 
@@ -430,7 +464,7 @@ section .container .user .formBx form input {
   
   input {
     width: 100%;
-    padding-right: 40px; // Espacio para el icono
+    padding-right: 40px;
   }
 
   .password-toggle {
