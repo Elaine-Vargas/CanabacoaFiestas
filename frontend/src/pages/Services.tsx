@@ -45,28 +45,23 @@ export default function Services() {
   return (
     <>
     <div className="servicioContent">
-        <div className="servicioFondo">
-      <div className="servicioContainer">
+      <div className="servicesHeader">
         <NavBar />
-      </div>
-
-      
-        <div className="servicioArriba">
-        <h1>Nuestros servicios</h1>
-        <p>Canabacoa Fiestas te ofrece una buena variedad de servicios</p>
-        </div>
-        <br />
-        </div>
-        <div className="servicesGrid">
-          {servicesData.map((service, index) => (
-            <div key={index} className="serviceCard">
-              <img src={service.image} alt={service.title} className="serviceImage" />
-              <h4>{service.title}</h4>
-              <p>{service.description}</p>
-            </div>
-          ))}
+        <div className="servicesHeaderContent">
+          <h1>Nuestros servicios</h1>
+          <p>Canabacoa Fiestas te ofrece una buena variedad de servicios</p>
         </div>
       </div>
+      <div className="servicesGrid">
+        {servicesData.map((service, index) => (
+          <div key={index} className="serviceCard">
+            <img src={service.image} alt={service.title} className="serviceImage" />
+            <h4>{service.title}</h4>
+            <p>{service.description}</p>
+          </div>
+        ))}
+      </div>
+    </div>
     </>
   );
 }
