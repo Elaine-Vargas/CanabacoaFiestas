@@ -41,15 +41,13 @@ function App() {
               </PublicRoute>
             } />
             <Route path="/Ajustes-Usuario" element={<UserConfig />} />
-            <Route path="/Menu-Servicios/*" element={<DashboardLayout />}>
-              <Route path="Bienvenida" element={<WelcomeMenu />} />
-            <Route path="/" element={<Navigate to="/Menu-Servicios/Bienvenida" />} />
             <Route path="/Menu-Servicios/*" element={
               <ProtectedRoute>
                 <DashboardLayout />
               </ProtectedRoute>
             }>
-              <Route path="Bienvenida" element={<WelcomeMenu eventsInProcess={38} averageRating={4.0} totalUsers={150} quotations={[]}/>}/>
+              <Route index element={<Navigate to="Bienvenida" replace />} />
+              <Route path="Bienvenida" element={<WelcomeMenu eventsInProcess={38} averageRating={4.0} totalUsers={150} quotations={[]}/>} />
               <Route path="Alquiler" element={<Rent />} />
               <Route path="Decoracion" element={<Decor />} />
               <Route path="Catering" element={<Catering />} />

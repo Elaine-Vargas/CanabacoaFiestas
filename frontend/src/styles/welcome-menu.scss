@@ -33,23 +33,25 @@
 
   h2 {
     color: var(--dark-gold);
-&__stats {
-  display: flex;
-  flex-wrap: nowrap; // ❗ No permite que se vayan a otra línea
-  gap: 2rem;
-  overflow-x: auto; // ❗ Scroll horizontal si no entran
-  padding-bottom: 1rem;
-  margin-bottom: 2rem;
-
-  &::-webkit-scrollbar {
-    height: 6px;
   }
 
-  &::-webkit-scrollbar-thumb {
-    background: var(--color-background);
-    border-radius: 10px;
+  &__stats {
+    display: flex;
+    flex-wrap: nowrap;
+    gap: 2rem;
+    overflow-x: auto;
+    padding-bottom: 1rem;
+    margin-bottom: 2rem;
+
+    &::-webkit-scrollbar {
+      height: 6px;
+    }
+
+    &::-webkit-scrollbar-thumb {
+      background: var(--color-background);
+      border-radius: 10px;
+    }
   }
-}
 
   .stat-card {
     flex: 1 1 30%;
