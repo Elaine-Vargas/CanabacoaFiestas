@@ -5,6 +5,10 @@
   padding: 2rem;
   min-height: 100vh;
   box-sizing: border-box;
+  font-family: 'Segoe UI', sans-serif;
+  color: var(--color-text);
+  max-width: 1200px;
+  margin: auto;
 
   &__title {
     color: var(--text-color);
@@ -29,6 +33,29 @@
 
   h2 {
     color: var(--dark-gold);
+&__stats {
+  display: flex;
+  flex-wrap: nowrap; // ❗ No permite que se vayan a otra línea
+  gap: 2rem;
+  overflow-x: auto; // ❗ Scroll horizontal si no entran
+  padding-bottom: 1rem;
+  margin-bottom: 2rem;
+
+  &::-webkit-scrollbar {
+    height: 6px;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background: var(--color-background);
+    border-radius: 10px;
+  }
+}
+
+  .stat-card {
+    flex: 1 1 30%;
+    background: var(--color-input-bg);
+    border-radius: 1rem;
+    padding: 1.5rem;
     text-align: center;
     margin-bottom: 1.5vw;
   }

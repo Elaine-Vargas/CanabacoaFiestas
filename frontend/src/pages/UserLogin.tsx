@@ -68,7 +68,7 @@ const UserLogin: React.FC = () => {
       
       setSignupData(prev => ({
         ...prev,
-        [fieldMap[id]]: value
+        [fieldMap[id]]: id === 'signup-email' ? value.toLowerCase() : value
       }));
     }
   };
@@ -76,7 +76,7 @@ const UserLogin: React.FC = () => {
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
-
+  
     try {
       const response = await fetch('/api/auth/login', {
         method: 'POST',
@@ -85,15 +85,23 @@ const UserLogin: React.FC = () => {
         },
         body: JSON.stringify(loginData),
       });
-
+  
       const data = await response.json();
-
+  
       if (!response.ok) {
         throw new Error(data.error || 'Error al iniciar sesión');
       }
-
-      // Guardar el token en localStorage
+  
+      // Guardar el token y los datos del usuario en localStorage
       localStorage.setItem('token', data.token);
+      const userData = {
+        nombre_usuario: data.nombre_usuario,
+        apellido_usuario: data.apellido_usuario,
+        usuario_login: data.usuario_login,
+        rol: data.rol
+      };
+      //console.log('Saving user data:', userData); // Debug log
+      localStorage.setItem('userData', JSON.stringify(userData));
       
       // Mostrar mensaje de bienvenida
       alert(data.mensaje);
@@ -108,13 +116,12 @@ const UserLogin: React.FC = () => {
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
-
-    // Validar que las contraseñas coincidan
+  
     if (signupData.contrasena_login !== signupData.confirmar_contrasena) {
       setError('Las contraseñas no coinciden');
       return;
     }
-
+  
     try {
       const response = await fetch('/api/auth/register', {
         method: 'POST',
@@ -123,14 +130,20 @@ const UserLogin: React.FC = () => {
         },
         body: JSON.stringify(signupData),
       });
-
+  
       const data = await response.json();
-
+  
       if (!response.ok) {
         throw new Error(data.error || 'Error al registrar usuario');
       }
-
+  
       localStorage.setItem('token', data.token);
+      localStorage.setItem('userData', JSON.stringify({
+        nombre: signupData.nombre_usuario,
+        apellido: signupData.apellido_usuario,
+        username: signupData.usuario_login
+      }));
+      
       alert(data.mensaje);
       navigate('/Menu-Servicios/Bienvenida');
     } catch (error) {
@@ -250,7 +263,29 @@ const UserLogin: React.FC = () => {
                     placeholder="Contraseña" 
                     required 
                     value={signupData.contrasena_login}
-                    onChange={handleInputChange}
+                    onChange={(e) => {
+                      handleInputChange(e);
+                      const password = e.target.value;
+                      const hasUpperCase = /[A-Z]/.test(password);
+                      const hasNumber = /[0-9]/.test(password);
+                      const hasSpecial = /[!@#$%^&*]/.test(password);
+                      const isValidLength = password.length >= 8 && password.length <= 25;
+                      
+                      // eslint-disable-next-line prefer-const
+                      let errorMsg = [];
+                      if (!hasUpperCase) errorMsg.push("una mayúscula");
+                      if (!hasNumber) errorMsg.push("un número"); 
+                      if (!hasSpecial) errorMsg.push("un carácter especial (!@#$%^&*.?_-)");
+                      if (!isValidLength) errorMsg.push("entre 8-25 caracteres");
+                      
+                      if (errorMsg.length > 0) {
+                        setError(`La contraseña debe tener ${errorMsg.join(", ")}`);
+                      } else if (signupData.confirmar_contrasena && password !== signupData.confirmar_contrasena) {
+                        setError("Las contraseñas no coinciden");
+                      } else {
+                        setError("");
+                      }
+                    }}
                   />
                   <span className="password-toggle" onClick={toggleSignupPasswordVisibility}>
                     {showSignupPassword ? <VisibilityOffIcon /> : <VisibilityIcon />}
@@ -263,7 +298,14 @@ const UserLogin: React.FC = () => {
                     placeholder="Confirmar contraseña" 
                     required 
                     value={signupData.confirmar_contrasena}
-                    onChange={handleInputChange}
+                    onChange={(e) => {
+                      handleInputChange(e);
+                      if (e.target.value && e.target.value !== signupData.contrasena_login) {
+                        setError("Las contraseñas no coinciden");
+                      } else {
+                        setError("");
+                      }
+                    }}
                   />
                   <span className="password-toggle" onClick={toggleSignupConfirmPasswordVisibility}>
                     {showSignupConfirmPassword ? <VisibilityOffIcon /> : <VisibilityIcon />}

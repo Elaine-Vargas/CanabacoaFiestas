@@ -38,6 +38,20 @@
     display: block;
     margin-bottom: 1rem;
   }
+    &::-webkit-scrollbar-thumb {
+      background: var(--color-background);
+      border-radius: 10px;
+    }
+  }
+
+  .stat-card {
+    flex: 1 1 30%;
+    background: var(--color-background);
+    border-radius: 1rem;
+    padding: 1.5rem;
+    text-align: center;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    min-width: 300px;
 
   &__number {
     color: var(--primary-color);

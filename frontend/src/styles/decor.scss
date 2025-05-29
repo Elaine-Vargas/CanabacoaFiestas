@@ -1,14 +1,3 @@
-:root {
-  --color-background: #fefefe;
-  --color-text: #333;
-  --beige: #fdf6e3;
-  --gold: #c49a44;
-  --dark-gold: #a07e2d;
-  --black: #000;
-  --white: #fff;
-  --brown: #6c432d;
-  --color-input-border: #ccc;
-}
 
 .dashboard-container {
   display: flex;
@@ -20,7 +9,7 @@
 .content-area {
   flex-grow: 1;
   padding: 2rem;
-  background-color: var(--beige);
+  background-color: var(--color-background);
   overflow-y: auto;
 }
 

@@ -19,6 +19,9 @@ const Supervision = lazy(() => import('./ServicesSubpages/Supervision'));
 const Transportation = lazy(() => import('./ServicesSubpages/Transportation'));
 const AssemblyAndDisassembly = lazy(() => import('./ServicesSubpages/AssemblyAndDisassembly'));
 
+import ProtectedRoute from '../components/ProtectedRoute';
+import PublicRoute from '../components/PublicRoute';
+
 function App() {
   return (
     <UserProvider>
@@ -32,11 +35,21 @@ function App() {
             <Route path="/Principal" element={<Principal />} />
             <Route path="/Nosotros" element={<AboutUs />} />
             <Route path="/Servicios" element={<Services />} />
-            <Route path="/Login" element={<UserLogin />} />
+            <Route path="/Login" element={
+              <PublicRoute>
+                <UserLogin />
+              </PublicRoute>
+            } />
             <Route path="/Ajustes-Usuario" element={<UserConfig />} />
-
             <Route path="/Menu-Servicios/*" element={<DashboardLayout />}>
               <Route path="Bienvenida" element={<WelcomeMenu />} />
+            <Route path="/" element={<Navigate to="/Menu-Servicios/Bienvenida" />} />
+            <Route path="/Menu-Servicios/*" element={
+              <ProtectedRoute>
+                <DashboardLayout />
+              </ProtectedRoute>
+            }>
+              <Route path="Bienvenida" element={<WelcomeMenu eventsInProcess={38} averageRating={4.0} totalUsers={150} quotations={[]}/>}/>
               <Route path="Alquiler" element={<Rent />} />
               <Route path="Decoracion" element={<Decor />} />
               <Route path="Catering" element={<Catering />} />
