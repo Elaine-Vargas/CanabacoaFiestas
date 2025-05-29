@@ -1,6 +1,6 @@
 import { useNavigate } from "react-router-dom";
 import {
-  FaUser,
+  FaUserCog ,
   FaBoxOpen,
   FaBrush,
   FaConciergeBell,
@@ -8,6 +8,9 @@ import {
   FaTachometerAlt,
   FaTools,
 } from "react-icons/fa";
+import { IoIosExit } from "react-icons/io";
+import { useState } from "react";
+import ColorTheme from "../functions/ColorTheme";
 
 interface ServicesMenuProps {
   selectedService: string;
@@ -15,13 +18,57 @@ interface ServicesMenuProps {
 
 export default function ServicesMenu({ selectedService }: ServicesMenuProps) {
   const navigate = useNavigate();
+  const userData = JSON.parse(localStorage.getItem('userData') || '{}');
+  const [showLogoutModal, setShowLogoutModal] = useState(false);
+  
+  //console.log('User Data from localStorage:', userData); // Debug log
+
+  const getRolName = (rolId: number) => {
+    //console.log('Rol ID:', rolId); // Debug log
+    switch(Number(rolId)) {
+      case 1: return 'Administrador';
+      case 2: return 'Cliente';
+      case 3: return 'Supervisor';
+      default: return 'Usuario';
+    }
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem('userData');
+    localStorage.removeItem('token');
+    navigate("/");
+  };
 
   return (
     <div className="sidebar">
-      <div className="user-profile" onClick={() => navigate("/Menu-Servicios/Ajustes-Usuario")}>
-        <FaUser size={30} />
-        <p>Configurar cuenta</p>
+      {showLogoutModal && (
+        <div className="modal-overlay">
+          <div className="modal-content">
+            <h4>¿Está seguro que desea cerrar sesión?</h4>
+            <div className="modal-buttons">
+              <button onClick={handleLogout}>Sí</button>
+              <button onClick={() => setShowLogoutModal(false)}>No</button>
+            </div>
+          </div>
+        </div>
+      )}
+      <ColorTheme colorDark="black" colorLight="white" />
+
+      <div className="user-profile">
+        <FaUserCog size={30} className="user-icon"
+          title="Ajustes de Usuario"
+          onClick={() => navigate("/Menu-Servicios/Ajustes-Usuario")}
+        />
+        <div className="user-info">
+          <p className="user-name">
+            {userData.nombre_usuario || ''} {userData.apellido_usuario || ''}
+          </p>
+          <p className="user-role">
+            {getRolName(userData.rol)}
+          </p>
+        </div>
       </div>
+
       <ul>
         <li
           className={selectedService === "Bienvenida" ? "active" : ""}
@@ -66,7 +113,9 @@ export default function ServicesMenu({ selectedService }: ServicesMenuProps) {
         >
           <FaTools /> Montaje y Desmontaje
         </li>
-      </ul>
+        </ul>
+     <IoIosExit className="logout-button" title="Cerrar Sesión" onClick={() => setShowLogoutModal(true)} />
+         
     </div>
   );
 }

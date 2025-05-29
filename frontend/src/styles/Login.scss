@@ -12,7 +12,6 @@
 }
 
 
-
 section {
   position: relative;
   min-height: 100vh;
@@ -293,14 +292,14 @@ section .container .user .formBx form {
   width: 100%;
   max-width: 800px;
   margin: 0 auto;
-  padding: 20px 0;
+  padding: 0;
 }
 
 section .container .user .formBx form input {
   width: 100%;
   padding: 10px;
   background: var(--color-input-bg);
-  color: var(--brown);
+  color: var(--color-text);
   border: none;
   outline: none;
   box-shadow: none;
@@ -448,8 +447,8 @@ section .container .user .formBx form input {
 }
 
 .error-message {
-  color: #ff3333;
-  background-color: #ffe6e6;
+  color: var(--error-text);
+  background-color: var(--error-bg);
   padding: 10px;
   border-radius: 4px;
   margin-bottom: 15px;

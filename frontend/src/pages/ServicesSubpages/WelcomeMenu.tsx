@@ -56,7 +56,7 @@ const WelcomeMenu: React.FC<WelcomeMenuProps> = ({
       </div>
 
       <div className="quotationsSection">
-        <h3 className="quotationsTitle">Cotizaciones</h3>
+        <h3 className="quotationsTitle">Eventos</h3>
         <div className="tableContainer">
           {quotations.length > 0 ? (
             <table>

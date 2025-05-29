@@ -21,6 +21,8 @@
   --photo: url("../assets/backgrounds/menuBackground2v.webp");
   --login-bg: url("../assets/backgrounds/Pattern.webp"), var(--color-background);
   --login-blend: multiply;
+  --error-bg: #ffe6e6;
+  --error-text: #ff3333;
 }
 
 [data-theme="dark"] {
@@ -34,4 +36,6 @@
   --color-shadow: #524a41;
   --login-bg:url("../assets/backgrounds/PatternDM.webp"), var(--color-background);
   --login-blend: screen;
+  --error-bg: #ff3333;
+  --error-text: #ffe6e6;
 }

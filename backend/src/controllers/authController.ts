@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import Usuario from '../models/Usuario';
+import Usuario from '../models/Usuario_model';
 import jwt from 'jsonwebtoken';
 import { Op } from 'sequelize';
 
@@ -50,7 +50,11 @@ export const Login = async (req: Request, res: Response) => {
     // Respuesta exitosa
     res.json({
       mensaje: `Inicio de sesión exitoso, ¡Bienvenido/a ${usuario.nombre_usuario} ${usuario.apellido_usuario}!`,
-      token
+      token,
+      nombre_usuario: usuario.nombre_usuario,
+      apellido_usuario: usuario.apellido_usuario,
+      usuario_login: usuario.usuario_login,
+      rol: usuario.id_rol
     });
 
   } catch (error) {
@@ -83,9 +87,15 @@ export const Register = async (req: Request, res: Response) => {
     });
 
     if (usuarioExistente) {
-      return res.status(400).json({ 
-        error: 'Ya existe un usuario con ese nombre de usuario, cédula o correo electrónico' 
-      });
+      let errorMessage = 'Ya existe un usuario con ';
+      if (usuarioExistente.usuario_login === usuario_login) {
+        errorMessage += 'ese nombre de usuario';
+      } else if (usuarioExistente.cedula_usuario === cedula_usuario) {
+        errorMessage += 'esa cédula';
+      } else if (usuarioExistente.correo_usuario === correo_usuario) {
+        errorMessage += 'ese correo electrónico';
+      }
+      return res.status(400).json({ error: errorMessage });
     }
 
     // Crear nuevo usuario
