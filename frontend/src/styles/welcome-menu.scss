@@ -1,7 +1,7 @@
 .dashboard {
   padding: 2rem;
   font-family: 'Segoe UI', sans-serif;
-  color: #1a1a1a;
+  color: var(--color-text);
   max-width: 1200px;
   margin: auto;
 
@@ -25,14 +25,14 @@
   }
 
   &::-webkit-scrollbar-thumb {
-    background: #ccc;
+    background: var(--color-background);
     border-radius: 10px;
   }
 }
 
   .stat-card {
     flex: 1 1 30%;
-    background: #fffbea;
+    background: var(--color-input-bg);
     border-radius: 1rem;
     padding: 1.5rem;
     text-align: center;

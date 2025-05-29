@@ -53,22 +53,28 @@
     }
 
     h3{
-        font-size: 1.5vw;
+        font-size: 3vw;
         margin: 0 12px 0 12px;
         text-align: center;
         @media screen and (max-width: 663px) {
-            font-size: 6.5vw;
+            font-size: 6vw;
+        }
+        @media screen and (max-width: 363px) {
+            font-size: 8vw;
         }
 
     }
     h5{
-        font-size: 1vw;
+        font-size: 1.5vw;
         font-style: normal;
         padding-bottom: 4px;
         margin: 0 12px 0 12px;
         text-align: center;
         @media screen and (max-width: 663px) {
-            font-size: 3.5vw;
+            font-size: 4vw;
+        }
+        @media screen and (max-width: 363px) {
+            font-size: 6vw;
         }
     }
     
@@ -76,7 +82,7 @@
     width: 100%;
     max-width: 400px;     // tamaño máximo controlado
     height: auto;
-    aspect-ratio: 1 / 1;  // forma cuadrada
+    aspect-ratio: 2 / 1;  // forma cuadrada
     border-radius: 3vw;
     border: solid 1vw var(--dark-gold);
     box-sizing: border-box;
@@ -86,9 +92,7 @@
         height: auto;
         border: solid 2vw var(--dark-gold);
     }
-    @media screen and (max-width: 800px) {
-        aspect-ratio: 2 / 1;  // forma cuadrada        
-    }
+ 
   }
 }
 
@@ -146,10 +150,13 @@
   display: flex;
   align-items: center;
   justify-content: left;
-    font-size: 4vw !important;
+    font-size: 2vw !important;
 
         @media screen and (max-width: 663px) {
-                font-size: 6vw !important;
+                font-size: 4vw !important;
         }
+        @media screen and (max-width: 363px) {
+            font-size: 6vw !important;
+    }
 }
 
