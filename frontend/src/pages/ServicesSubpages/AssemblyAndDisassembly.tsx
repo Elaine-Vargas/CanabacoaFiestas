@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import type { ChangeEvent, FormEvent } from "react";
 import "../../styles/assembly-disassembly.scss";
 import "../../styles/services-subpages.scss";
+import { useUser } from "../../context/UserContext";
 
 type MontajeDesmontaje = {
   id_montdes: number;
@@ -29,9 +30,9 @@ type Evento = {
 };
 
 type AssemblyAndDisassemblyProps = {
-  totalServicios: number;
-  horasTrabajadas: number;
-  personalActivo: number;
+  totalServicios?: number;
+  horasTrabajadas?: number;
+  personalActivo?: number;
 };
 
 export default function AssemblyAndDisassembly({
@@ -44,6 +45,9 @@ export default function AssemblyAndDisassembly({
   const [eventos, setEventos] = useState<Evento[]>([]);
   const [filtroEvento, setFiltroEvento] = useState("");
   const [montajes, setMontajes] = useState<(MontajeDesmontaje & DetalleMontaje)[]>([]);
+
+  const { user } = useUser();
+  const role = user?.rol?.nombre;
 
   useEffect(() => {
     // Cargar eventos
@@ -85,34 +89,99 @@ export default function AssemblyAndDisassembly({
     setFormData({});
   };
 
+  const renderDashboard = () => {
+    if (role === 'cliente') {
+      return (
+        <div className="dashboard__stats">
+          <div className="stat-card">
+            <span className="stat-card__label">Servicios Solicitados</span>
+            <span className="stat-card__number">{totalServicios || 0}</span>
+            <button className="stat-card__seeInfo" onClick={() => setShowServiciosModal(true)}>
+              Ver Servicios
+            </button>
+          </div>
+          <div className="stat-card">
+            <span className="stat-card__label">Personal Asignado</span>
+            <span className="stat-card__number">{personalActivo?.length || 0}</span>
+            <button className="stat-card__seeInfo" onClick={() => setShowPersonalModal(true)}>
+              Ver Personal
+            </button>
+          </div>
+          <div className="stat-card">
+            <span className="stat-card__label">Horas de Servicio</span>
+            <span className="stat-card__number">{horasTrabajadas || 0}</span>
+            <button className="stat-card__seeInfo" onClick={() => setShowHorasModal(true)}>
+              Ver Detalles
+            </button>
+          </div>
+        </div>
+      );
+    }
+
+    if (role === 'administrador') {
+      return (
+        <div className="dashboard__stats">
+          <div className="stat-card">
+            <span className="stat-card__label">Total Servicios</span>
+            <span className="stat-card__number">{totalServicios || 0}</span>
+            <button className="stat-card__seeInfo" onClick={() => setShowServiciosModal(true)}>
+              Gestionar Servicios
+            </button>
+          </div>
+          <div className="stat-card">
+            <span className="stat-card__label">Personal Activo</span>
+            <span className="stat-card__number">{personalActivo?.length || 0}</span>
+            <button className="stat-card__seeInfo" onClick={() => setShowPersonalModal(true)}>
+              Gestionar Personal
+            </button>
+          </div>
+          <div className="stat-card">
+            <span className="stat-card__label">Horas Totales</span>
+            <span className="stat-card__number">{horasTrabajadas || 0}</span>
+            <button className="stat-card__seeInfo" onClick={() => setShowHorasModal(true)}>
+              Ver Reportes
+            </button>
+          </div>
+        </div>
+      );
+    }
+
+    if (role === 'montador') {
+      return (
+        <div className="dashboard__stats">
+          <div className="stat-card">
+            <span className="stat-card__label">Mis Servicios</span>
+            <span className="stat-card__number">{totalServicios || 0}</span>
+            <button className="stat-card__seeInfo" onClick={() => setShowServiciosModal(true)}>
+              Ver Servicios
+            </button>
+          </div>
+          <div className="stat-card">
+            <span className="stat-card__label">Horas Trabajadas</span>
+            <span className="stat-card__number">{horasTrabajadas || 0}</span>
+            <button className="stat-card__seeInfo" onClick={() => setShowHorasModal(true)}>
+              Ver Detalles
+            </button>
+          </div>
+          <div className="stat-card">
+            <span className="stat-card__label">Servicios Pendientes</span>
+            <span className="stat-card__number">{totalServicios?.filter(s => !s.completado)?.length || 0}</span>
+            <button className="stat-card__seeInfo" onClick={() => setShowPendientesModal(true)}>
+              Ver Pendientes
+            </button>
+          </div>
+        </div>
+      );
+    }
+
+    return null;
+  };
+
   return (
     <div className="dashboard">
       <h1 className="dashboard__title">Montaje y Desmontaje</h1>
 
-      <div className="dashboard__stats">
-        <div className="stat-card">
-          <span className="stat-card__label">Total de Servicios</span>
-          <strong className="stat-card__number">{totalServicios}</strong>
-          <br />
-          <button className="stat-card__seeInfo">Ver datos</button>
-        </div>
-
-        <div className="stat-card">
-          <span className="stat-card__label">Horas Trabajadas</span>
-          <strong className="stat-card__number">{horasTrabajadas}</strong>
-          <br />
-          <button className="stat-card__seeInfo">Ver datos</button>
-        </div>
-
-        <div className="stat-card">
-          <span className="stat-card__label">Personal Activo</span>
-          <strong className="stat-card__number">{personalActivo}</strong>
-          <br />
-          <button className="stat-card__seeInfo2" onClick={() => setShowForm(true)}>
-            Agregar Servicio
-          </button>
-        </div>
-      </div>
+      {renderDashboard()}
 
       {showForm && (
         <div className="modalOverlay">

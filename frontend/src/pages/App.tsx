@@ -1,8 +1,11 @@
 import '../styles/App.scss';
 import Principal from './Principal'; // This stays as a regular import
+import { lazy, Suspense } from 'react';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import ColorTheme from '../functions/ColorTheme';
+import { UserProvider } from '../context/UserContext';
 
 // Lazy loaded pages
-import { lazy, Suspense } from 'react';
 const AboutUs = lazy(() => import('./AboutUs'));
 const Services = lazy(() => import('./Services'));
 const UserConfig = lazy(() => import('./UserConfig'));
@@ -16,14 +19,9 @@ const Supervision = lazy(() => import('./ServicesSubpages/Supervision'));
 const Transportation = lazy(() => import('./ServicesSubpages/Transportation'));
 const AssemblyAndDisassembly = lazy(() => import('./ServicesSubpages/AssemblyAndDisassembly'));
 
-// Router
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
-import ColorTheme from '../functions/ColorTheme';
-
 function App() {
-
   return (
-    <>
+    <UserProvider>
       <div id="ColorTheme">
         <ColorTheme colorLight="none" colorDark="none" />
       </div>
@@ -37,21 +35,19 @@ function App() {
             <Route path="/Login" element={<UserLogin />} />
             <Route path="/Ajustes-Usuario" element={<UserConfig />} />
 
-            <Route path="/" element={<Navigate to="/Menu-Servicios/Bienvenida" />} />
-
             <Route path="/Menu-Servicios/*" element={<DashboardLayout />}>
-              <Route path="Bienvenida" element={<WelcomeMenu eventsInProcess={38} averageRating={4.0} totalUsers={150} quotations={[]}/>}/>
+              <Route path="Bienvenida" element={<WelcomeMenu />} />
               <Route path="Alquiler" element={<Rent />} />
               <Route path="Decoracion" element={<Decor />} />
-              <Route path="Catering" element={<Catering menuVarieties={5} activeProveedor={8} completedOrders={150} proveedor={[]} menus={[]}/>}/>
-              <Route path="Supervision" element={<Supervision eventosSupervisados={25} eventosParticipados={15} horasTrabajadas={120}/>} />
+              <Route path="Catering" element={<Catering />} />
+              <Route path="Supervision" element={<Supervision />} />
               <Route path="Transporte" element={<Transportation />} />
-              <Route path="Montaje-Desmontaje" element={<AssemblyAndDisassembly totalServicios={45} horasTrabajadas={180} personalActivo={12} />} />
+              <Route path="Montaje-Desmontaje" element={<AssemblyAndDisassembly />} />
             </Route>
           </Routes>
         </BrowserRouter>
       </Suspense>
-    </>
+    </UserProvider>
   );
 }
 
