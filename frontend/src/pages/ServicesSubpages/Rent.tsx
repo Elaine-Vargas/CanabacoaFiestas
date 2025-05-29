@@ -95,7 +95,6 @@ export default function Rent() {
         <button onClick={() => setShowForm(true)} className="open-modal-btn">
           Agregar Alquiler
         </button>
-        <div style={{ height: "40px" }}></div>
 
         <div className="table-section">
           <p>Alquileres</p>

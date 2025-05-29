@@ -106,7 +106,6 @@ export default function Decor() {
         <button onClick={() => { setFormData({}); setShowModal(true); }} className="open-modal-btn">
           Agregar Decoración
         </button>
-        <div style={{ height: "40px" }}></div>
 
         {/* Tabla principal de Decoración */}
         <div className="table-section">
