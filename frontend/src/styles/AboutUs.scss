@@ -73,7 +73,7 @@
           text-align: center;
         }
 
-        p, li {
+        p:not(.nombre) {
           font-family: "Nunito Sans", sans-serif;
           font-size: 0.95rem;
           line-height: 1.5;
@@ -89,6 +89,7 @@
             position: relative;
             padding-left: 1.2rem;
             margin-bottom: 0.5rem;
+            text-align: justify;
 
             &:before {
               content: "•";
@@ -135,6 +136,7 @@
             font-size: 1rem;
             color: var(--color-text);
             margin: 0.3rem 0;
+            text-align: center;
           }
         }
       }
