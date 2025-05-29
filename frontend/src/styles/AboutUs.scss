@@ -1,83 +1,260 @@
 @use './fonts.scss';
+@use './theme.scss';
 
 .sobre-nosotros {
-  margin-top: 4vw;
   background-color: var(--color-background);
   color: var(--color-text);
-  padding: 4rem 2rem;
+  padding: 0.5rem;
+  min-height: 100vh;
+  width: 100%;
   display: flex;
-  justify-content: center;
+  flex-direction: column;
+  align-items: center;
+  box-sizing: border-box;
+
+  // Evita scroll horizontal innecesario
+  overflow-x: hidden;
 
   .contenido {
     max-width: 1200px;
+    width: 100%;
+    min-height: calc(100vh - 80px);
     display: flex;
-    gap: 3rem;
-    flex-wrap: wrap;
+    flex-direction: column;
+    gap: 0.5rem;
+    padding: 1rem;
+    margin-top: 2rem;
+    box-sizing: border-box;
 
-    .columna-izquierda {
-      flex: 1 1 300px;
-      display: flex;
-      flex-direction: column;
-      gap: 2rem;
+    .header {
+      text-align: center;
+      margin-bottom: 0.3rem;
 
       .titulo-seccion {
-        font-size: 5rem;
-        font-weight: 700;
+        font-family: "Pinyon Script", Georgia, 'Times New Roman', Times, serif;
+        font-size: 2.5rem;
+        font-weight: 400;
         color: var(--color-text2);
-        line-height: 1;
+        margin: 0;
       }
+    }
 
-      .imagen {
-        img {
-          max-width: 90%;
-          height: auto;
-          border-radius: 8px;
+    .info-section {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 1rem;
+
+      .info-card {
+        background: var(--color-card);
+        color: var(--color-text);
+        padding: 1rem;
+        border-radius: 12px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+        display: flex;
+        flex-direction: column;
+
+        .descripcion {
+          font-family: "Nunito Sans", sans-serif;
+          font-size: 0.95rem;
+          line-height: 1.5;
+          text-align: justify;
+
+          strong {
+            color: var(--brown);
+            font-weight: 600;
+          }
+        }
+
+        .subtitulo {
+          font-family: "Parisienne", cursive;
+          font-size: 1.8rem;
+          color: var(--dark-gold);
+          margin-bottom: 0.5rem;
+          text-align: center;
+        }
+
+        p, li {
+          font-family: "Nunito Sans", sans-serif;
+          font-size: 0.95rem;
+          line-height: 1.5;
+          text-align: justify;
+        }
+
+        ul {
+          list-style: none;
+          padding: 0;
+          margin: 0;
+
+          li {
+            position: relative;
+            padding-left: 1.2rem;
+            margin-bottom: 0.5rem;
+
+            &:before {
+              content: "•";
+              position: absolute;
+              left: 0;
+              color: var(--dark-gold);
+            }
+
+            strong {
+              color: var(--brown);
+              font-weight: 600;
+            }
+          }
         }
       }
     }
 
-    .columna-derecha {
-      flex: 2 1 500px;
-      font-size: 1.1rem;
-      line-height: 1.6;
-
-      p {
-        margin-bottom: 1rem;
-      }
+    .personal-section {
+      margin-top: 2rem;
+      text-align: center;
 
       .subtitulo {
+        font-family: "Parisienne", cursive;
         font-size: 2rem;
-        margin-top: 1.5rem;
         color: var(--dark-gold);
+        margin-bottom: 1.5rem;
       }
 
-      ul {
-        padding-left: 1.2rem;
+      .info-section {
+        .info-card {
+          text-align: center;
+          padding: 1.5rem;
 
-        li {
-          margin-bottom: 0.5rem;
-
-          strong {
+          .cargo {
+            font-family: "Nunito Sans", sans-serif;
+            font-size: 1.1rem;
             color: var(--brown);
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+          }
+
+          .nombre {
+            font-family: "Nunito Sans", sans-serif;
+            font-size: 1rem;
+            color: var(--color-text);
+            margin: 0.3rem 0;
           }
         }
       }
     }
   }
 
-  // Responsive para móviles
-  @media (max-width: 768px) {
+  // Tablet
+  @media (max-width: 1024px) {
     .contenido {
-      flex-direction: column;
+      margin-top: 1.5rem;
 
-      .columna-izquierda,
-      .columna-derecha {
-        flex: 1 1 100%;
+      .header .titulo-seccion {
+        font-size: 2.2rem;
       }
 
-      .titulo-seccion {
-        font-size: 3rem;
-        text-align: center;
+      .info-section .info-card .subtitulo {
+        font-size: 1.6rem;
+      }
+
+      .personal-section {
+        margin-top: 1.5rem;
+
+        .subtitulo {
+          font-size: 1.8rem;
+        }
+      }
+    }
+  }
+
+  // Teléfono
+  @media (max-width: 768px) {
+    .contenido {
+      margin-top: 1.2rem;
+      padding: 0 1rem;
+
+      .header .titulo-seccion {
+        font-size: 2rem;
+      }
+
+      .info-section {
+        display: flex;
+        flex-direction: column;
+
+        .info-card {
+          padding: 1rem;
+
+          .subtitulo {
+            font-size: 1.4rem;
+          }
+
+          p, li {
+            font-size: 0.9rem;
+          }
+        }
+      }
+
+      .personal-section {
+        margin-top: 1.2rem;
+
+        .subtitulo {
+          font-size: 1.6rem;
+          margin-bottom: 1rem;
+        }
+
+        .info-section .info-card {
+          padding: 1rem;
+
+          .cargo {
+            font-size: 1rem;
+          }
+
+          .nombre {
+            font-size: 0.9rem;
+          }
+        }
+      }
+    }
+  }
+
+  // Teléfonos pequeños
+  @media (max-width: 480px) {
+    .contenido {
+      padding: 0 0.8rem;
+      margin-top: 1rem;
+
+      .header .titulo-seccion {
+        font-size: 1.8rem;
+      }
+
+      .info-section .info-card {
+        padding: 0.8rem;
+
+        .subtitulo {
+          font-size: 1.3rem;
+        }
+
+        .descripcion, p, li {
+          font-size: 0.85rem;
+        }
+      }
+
+      .personal-section {
+        margin-top: 1rem;
+
+        .subtitulo {
+          font-size: 1.4rem;
+          margin-bottom: 0.8rem;
+        }
+
+        .info-section .info-card {
+          padding: 0.8rem;
+
+          .cargo {
+            font-size: 0.9rem;
+          }
+
+          .nombre {
+            font-size: 0.85rem;
+          }
+        }
       }
     }
   }
