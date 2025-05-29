@@ -537,224 +537,222 @@ export default function Transportation() {
           <div className="modal-overlay">
             <div className="modal-container transport">
               <button onClick={() => setShowModal(false)} className="close-btn">×</button>
-              <div className="modal-content">
-                <div className="modal-form">
-                  <h3>{editId ? "Editar Transporte" : "Nuevo Transporte"}</h3>
-                  <form onSubmit={handleSubmit}>
-                    <div className="form-section">
-                      <h4>Información Principal</h4>
-                      <label>
-                        ID Evento
-                        <input
-                          type="number"
-                          name="id_evento"
-                          value={formData.id_evento || ""}
-                          onChange={handleInputChange}
-                          required
-                        />
-                      </label>
-                      <label>
-                        Dirección
-                        <select
-                          name="id_direccion"
-                          value={formData.id_direccion || ""}
-                          onChange={handleSelectChange}
-                          required
-                          className="direccion-select"
-                        >
-                          <option value="">Seleccione una dirección</option>
-                          {direcciones.map(dir => (
-                            <option key={dir.id_direccion} value={dir.id_direccion}>
-                              {`${dir.calle}, ${dir.sector} - ${provincias.find(p => p.id_provincia === dir.id_provincia)?.nombre}`}
-                            </option>
-                          ))}
-                        </select>
-                      </label>
-                      <label>
-                        Distancia (km)
-                        <input
-                          type="number"
-                          name="distancia_km"
-                          value={formData.distancia_km || ""}
-                          onChange={handleInputChange}
-                          required
-                          readOnly
-                        />
-                      </label>
-                    </div>
+              <div className="modal-form">
+                <h3>{editId ? "Editar Transporte" : "Nuevo Transporte"}</h3>
+                <form onSubmit={handleSubmit}>
+                  <div className="form-section">
+                    <h4>Información Principal</h4>
+                    <label>
+                      ID Evento
+                      <input
+                        type="number"
+                        name="id_evento"
+                        value={formData.id_evento || ""}
+                        onChange={handleInputChange}
+                        required
+                      />
+                    </label>
+                    <label>
+                      Dirección
+                      <select
+                        name="id_direccion"
+                        value={formData.id_direccion || ""}
+                        onChange={handleSelectChange}
+                        required
+                        className="direccion-select"
+                      >
+                        <option value="">Seleccione una dirección</option>
+                        {direcciones.map(dir => (
+                          <option key={dir.id_direccion} value={dir.id_direccion}>
+                            {`${dir.calle}, ${dir.sector} - ${provincias.find(p => p.id_provincia === dir.id_provincia)?.nombre}`}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                    <label>
+                      Distancia (km)
+                      <input
+                        type="number"
+                        name="distancia_km"
+                        value={formData.distancia_km || ""}
+                        onChange={handleInputChange}
+                        required
+                        readOnly
+                      />
+                    </label>
+                  </div>
 
-                    <div className="form-section">
-                      <h4>Información de Costos</h4>
-                      <label>
-                        Precio Neto
-                        <input
-                          type="number"
-                          name="precioneto_transporte"
-                          value={formData.precioneto_transporte || ""}
-                          onChange={handleInputChange}
-                          required
-                        />
-                      </label>
-                      <label>
-                        ITBIS
-                        <input
-                          type="number"
-                          name="itbis_transporte"
-                          value={formData.itbis_transporte || ""}
-                          onChange={handleInputChange}
-                          required
-                        />
-                      </label>
-                      <label>
-                        Total
-                        <input
-                          type="number"
-                          name="total_transporte"
-                          value={formData.total_transporte || ""}
-                          onChange={handleInputChange}
-                          required
-                        />
-                      </label>
-                    </div>
+                  <div className="form-section">
+                    <h4>Información de Costos</h4>
+                    <label>
+                      Precio Neto
+                      <input
+                        type="number"
+                        name="precioneto_transporte"
+                        value={formData.precioneto_transporte || ""}
+                        onChange={handleInputChange}
+                        required
+                      />
+                    </label>
+                    <label>
+                      ITBIS
+                      <input
+                        type="number"
+                        name="itbis_transporte"
+                        value={formData.itbis_transporte || ""}
+                        onChange={handleInputChange}
+                        required
+                      />
+                    </label>
+                    <label>
+                      Total
+                      <input
+                        type="number"
+                        name="total_transporte"
+                        value={formData.total_transporte || ""}
+                        onChange={handleInputChange}
+                        required
+                      />
+                    </label>
+                  </div>
 
-                    <div className="form-buttons">
-                      <button type="submit" className="submit-btn">{editId ? "Actualizar" : "Registrar"}</button>
-                      <button type="button" className="reset-btn" onClick={() => setFormData({})}>Limpiar</button>
+                  <div className="form-buttons">
+                    <button type="submit" className="submit-btn">{editId ? "Actualizar" : "Registrar"}</button>
+                    <button type="button" className="reset-btn" onClick={() => setFormData({})}>Limpiar</button>
+                  </div>
+                </form>
+              </div>
+
+              <div className="tables-container">
+                <div className="table-section">
+                  <div className="table-header">
+                    <p>Eventos Disponibles</p>
+                    <div className="search-section">
+                      <input
+                        type="text"
+                        placeholder="Buscar por ID, estado, fecha..."
+                        value={filtroEvento}
+                        onChange={(e) => setFiltroEvento(e.target.value)}
+                      />
                     </div>
-                  </form>
+                  </div>
+                  <table>
+                    <thead>
+                      <tr>
+                        <th>ID</th>
+                        <th>Fecha</th>
+                        <th>Hora</th>
+                        <th>Estado</th>
+                        <th>Tipo</th>
+                        <th>Nota</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {eventos.length === 0 ? (
+                        <tr>
+                          <td colSpan={6} style={{ textAlign: "center", fontStyle: "italic" }}>
+                            No hay eventos.
+                          </td>
+                        </tr>
+                      ) : (
+                        eventos
+                          .filter(ev =>
+                            Object.values(ev).join(" ").toLowerCase().includes(filtroEvento.toLowerCase())
+                          )
+                          .map(ev => (
+                            <tr key={ev.id_evento}>
+                              <td>{ev.id_evento}</td>
+                              <td>{ev.fecha_evento}</td>
+                              <td>{ev.hora_evento}</td>
+                              <td>{ev.estado_evento}</td>
+                              <td>{ev.tipo_evento}</td>
+                              <td>{ev.nota_cliente}</td>
+                            </tr>
+                          ))
+                      )}
+                    </tbody>
+                  </table>
                 </div>
 
-                <div className="tables-container">
-                  <div className="table-section">
-                    <div className="table-header">
-                      <p>Eventos Disponibles</p>
+                <div className="table-section">
+                  <div className="table-header">
+                    <p>Direcciones Registradas</p>
+                    <div className="header-actions">
                       <div className="search-section">
                         <input
                           type="text"
-                          placeholder="Buscar por ID, estado, fecha..."
-                          value={filtroEvento}
-                          onChange={(e) => setFiltroEvento(e.target.value)}
+                          placeholder="Buscar por provincia, sector, calle..."
+                          value={filtroDireccion}
+                          onChange={(e) => setFiltroDireccion(e.target.value)}
                         />
                       </div>
+                      <button 
+                        onClick={() => setShowDireccionModal(true)}
+                        className="add-btn"
+                      >
+                        Agregar Dirección
+                      </button>
                     </div>
-                    <table>
-                      <thead>
-                        <tr>
-                          <th>ID</th>
-                          <th>Fecha</th>
-                          <th>Hora</th>
-                          <th>Estado</th>
-                          <th>Tipo</th>
-                          <th>Nota</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {eventos.length === 0 ? (
-                          <tr>
-                            <td colSpan={6} style={{ textAlign: "center", fontStyle: "italic" }}>
-                              No hay eventos.
-                            </td>
-                          </tr>
-                        ) : (
-                          eventos
-                            .filter(ev =>
-                              Object.values(ev).join(" ").toLowerCase().includes(filtroEvento.toLowerCase())
-                            )
-                            .map(ev => (
-                              <tr key={ev.id_evento}>
-                                <td>{ev.id_evento}</td>
-                                <td>{ev.fecha_evento}</td>
-                                <td>{ev.hora_evento}</td>
-                                <td>{ev.estado_evento}</td>
-                                <td>{ev.tipo_evento}</td>
-                                <td>{ev.nota_cliente}</td>
-                              </tr>
-                            ))
-                        )}
-                      </tbody>
-                    </table>
                   </div>
+                  <table>
+                    <thead>
+                      <tr>
+                        <th>ID</th>
+                        <th>Provincia</th>
+                        <th>Sector</th>
+                        <th>Calle</th>
+                        <th>Detalles</th>
+                        <th>Acciones</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {direcciones.length === 0 ? (
+                        <tr>
+                          <td colSpan={6} style={{ textAlign: "center" }}>
+                            No hay direcciones registradas
+                          </td>
+                        </tr>
+                      ) : (
+                        direcciones
+                          .filter(dir =>
+                            Object.values(dir).join(" ").toLowerCase().includes(filtroDireccion.toLowerCase())
+                          )
+                          .map(dir => (
+                            <tr key={dir.id_direccion}>
+                              <td>{dir.id_direccion}</td>
+                              <td>{provincias.find(p => p.id_provincia === dir.id_provincia)?.nombre}</td>
+                              <td>{dir.sector}</td>
+                              <td>{dir.calle}</td>
+                              <td>{dir.detalles}</td>
+                              <td>
+                                <button 
+                                  onClick={() => seleccionarDireccionDB(dir)}
+                                  className="select-btn"
+                                >
+                                  Seleccionar
+                                </button>
+                              </td>
+                            </tr>
+                          ))
+                      )}
+                    </tbody>
+                  </table>
+                </div>
 
-                  <div className="table-section">
-                    <div className="table-header">
-                      <p>Direcciones Registradas</p>
-                      <div className="header-actions">
-                        <div className="search-section">
-                          <input
-                            type="text"
-                            placeholder="Buscar por provincia, sector, calle..."
-                            value={filtroDireccion}
-                            onChange={(e) => setFiltroDireccion(e.target.value)}
-                          />
-                        </div>
-                        <button 
-                          onClick={() => setShowDireccionModal(true)}
-                          className="add-btn"
-                        >
-                          Agregar Dirección
-                        </button>
+                <div className="map-section">
+                  <div id="map" className="map-container"></div>
+                  {rutaInfo && (
+                    <div className="ruta-info">
+                      <div className="info-item">
+                        <span className="info-label">Distancia:</span>
+                        <span className="info-value">{rutaInfo.distancia}</span>
+                      </div>
+                      <div className="info-item">
+                        <span className="info-label">Tiempo estimado:</span>
+                        <span className="info-value">{rutaInfo.duracion}</span>
                       </div>
                     </div>
-                    <table>
-                      <thead>
-                        <tr>
-                          <th>ID</th>
-                          <th>Provincia</th>
-                          <th>Sector</th>
-                          <th>Calle</th>
-                          <th>Detalles</th>
-                          <th>Acciones</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {direcciones.length === 0 ? (
-                          <tr>
-                            <td colSpan={6} style={{ textAlign: "center" }}>
-                              No hay direcciones registradas
-                            </td>
-                          </tr>
-                        ) : (
-                          direcciones
-                            .filter(dir =>
-                              Object.values(dir).join(" ").toLowerCase().includes(filtroDireccion.toLowerCase())
-                            )
-                            .map(dir => (
-                              <tr key={dir.id_direccion}>
-                                <td>{dir.id_direccion}</td>
-                                <td>{provincias.find(p => p.id_provincia === dir.id_provincia)?.nombre}</td>
-                                <td>{dir.sector}</td>
-                                <td>{dir.calle}</td>
-                                <td>{dir.detalles}</td>
-                                <td>
-                                  <button 
-                                    onClick={() => seleccionarDireccionDB(dir)}
-                                    className="select-btn"
-                                  >
-                                    Seleccionar
-                                  </button>
-                                </td>
-                              </tr>
-                            ))
-                        )}
-                      </tbody>
-                    </table>
-                  </div>
-
-                  <div className="map-section">
-                    <div id="map" className="map-container"></div>
-                    {rutaInfo && (
-                      <div className="ruta-info">
-                        <div className="info-item">
-                          <span className="info-label">Distancia:</span>
-                          <span className="info-value">{rutaInfo.distancia}</span>
-                        </div>
-                        <div className="info-item">
-                          <span className="info-label">Tiempo estimado:</span>
-                          <span className="info-value">{rutaInfo.duracion}</span>
-                        </div>
-                      </div>
-                    )}
-                  </div>
+                  )}
                 </div>
               </div>
             </div>
