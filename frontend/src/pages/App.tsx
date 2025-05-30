@@ -40,7 +40,7 @@ function App() {
                 <UserLogin />
               </PublicRoute>
             } />
-            <Route path="/Ajustes-Usuario" element={<UserConfig />} />
+        
             <Route path="/Menu-Servicios/*" element={
               <ProtectedRoute>
                 <DashboardLayout />
@@ -48,6 +48,7 @@ function App() {
             }>
               <Route index element={<Navigate to="Bienvenida" replace />} />
               <Route path="Bienvenida" element={<WelcomeMenu eventsInProcess={38} averageRating={4.0} totalUsers={150} quotations={[]}/>} />
+              <Route path="Ajustes-Usuario" element={<UserConfig />} />
               <Route path="Alquiler" element={<Rent />} />
               <Route path="Decoracion" element={<Decor />} />
               <Route path="Catering" element={<Catering />} />

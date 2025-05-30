@@ -16,11 +16,11 @@
         font-weight: 800;
         font-family: "Nunito Sans", sans-serif;
         
-        :hover{
+        &:hover{
         color: var(--brown);
     }
     p {
-        font-family: "Nunito Sans";
+        font-family: "'Nunito Sans', sans-serif";
     }
 
         @media screen and (max-width: 663px) {

@@ -115,7 +115,8 @@ const UserLogin: React.FC = () => {
         nombre_usuario: data.nombre_usuario,
         apellido_usuario: data.apellido_usuario,
         usuario_login: data.usuario_login,
-        rol: data.rol
+        rol: data.rol,
+        cedula_usuario: data.cedula_usuario
       };
       localStorage.setItem('userData', JSON.stringify(userData));
       
@@ -140,7 +141,7 @@ const UserLogin: React.FC = () => {
     }
   
     try {
-      const response = await fetch('/api/auth/register', {
+      const response = await fetch('/api/auth/register-client', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -156,9 +157,13 @@ const UserLogin: React.FC = () => {
   
       localStorage.setItem('token', data.token);
       localStorage.setItem('userData', JSON.stringify({
-        nombre: signupData.nombre_usuario,
-        apellido: signupData.apellido_usuario,
-        username: signupData.usuario_login
+        nombre_usuario: signupData.nombre_usuario,
+        apellido_usuario: signupData.apellido_usuario,
+        usuario_login: signupData.usuario_login,
+        cedula_usuario: signupData.cedula_usuario,
+        correo_usuario: signupData.correo_usuario,
+        tel_usuario: signupData.tel_usuario,
+        id_rol: data.rol
       }));
       
       alert(data.mensaje);

@@ -31,7 +31,6 @@ export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
         if (userData.rol) {
           const role = userData.rol === 1 ? 'admin' : userData.rol === 2 ? 'client' : 'supervisor';
           setUserRole(role);
-          
           // Permisos por defecto para el administrador
           if (role === 'admin') {
             setUserPermissions([
@@ -43,16 +42,74 @@ export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
               { id: 'manage_assembly', name: 'Gestionar Montaje y Desmontaje' }
             ]);
           } else {
-            setUserPermissions([]);
+            // Obtener permisos basados en el rol distinto a admin
+            try {
+              const permissionsResponse = await fetch(`/api/permissions/${userData.rol}`);
+              if (permissionsResponse.ok) {
+                const permissionsData = await permissionsResponse.json();
+                setUserPermissions(permissionsData);
+              } else {
+                setUserPermissions([]);
+              }
+            } catch {
+              setUserPermissions([]);
+            }
           }
+          return;
+        }
+        // Si no hay userData válido, intentar obtener desde el backend
+        const token = localStorage.getItem('token');
+        if (!token) {
+          setUserRole('client');
+          setUserPermissions([]);
+          return;
+        }
+        const response = await fetch('/api/auth/current', {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
+        if (!response.ok) {
+          setUserRole('client');
+          setUserPermissions([]);
+          return;
+        }
+        const data = await response.json();
+        if (data.id_rol) {
+          const role = data.id_rol === 1 ? 'admin' : data.id_rol === 2 ? 'client' : 'supervisor';
+          setUserRole(role);
+          if (role === 'admin') {
+            setUserPermissions([
+              { id: 'view_transportation', name: 'Ver Transporte' },
+              { id: 'view_supervision', name: 'Ver Supervisión' },
+              { id: 'view_assembly', name: 'Ver Montaje y Desmontaje' },
+              { id: 'manage_transportation', name: 'Gestionar Transporte' },
+              { id: 'manage_supervision', name: 'Gestionar Supervisión' },
+              { id: 'manage_assembly', name: 'Gestionar Montaje y Desmontaje' }
+            ]);
+          } else {
+            try {
+              const permissionsResponse = await fetch(`/api/permissions/${data.id_rol}`);
+              if (permissionsResponse.ok) {
+                const permissionsData = await permissionsResponse.json();
+                setUserPermissions(permissionsData);
+              } else {
+                setUserPermissions([]);
+              }
+            } catch {
+              setUserPermissions([]);
+            }
+          }
+        } else {
+          setUserRole('client');
+          setUserPermissions([]);
         }
       } catch (error) {
-        console.error('Error al obtener datos del usuario:', error);
+        // No hay sesión activa o error inesperado
         setUserRole('client');
         setUserPermissions([]);
       }
     };
-
     fetchUserData();
   }, []);
 
@@ -74,4 +131,4 @@ export const useUser = () => {
     throw new Error('useUser must be used within a UserProvider');
   }
   return context;
-}; 
+};

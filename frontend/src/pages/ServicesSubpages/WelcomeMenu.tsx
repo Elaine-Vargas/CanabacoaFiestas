@@ -71,21 +71,6 @@ const WelcomeMenu: React.FC<WelcomeMenuProps> = () => {
   });
 
   useEffect(() => {
-    const fetchData = async () => {
-      try {
-        // Obtener datos según el rol del usuario
-        const response = await fetch(`/api/dashboard/${userRole}`);
-        const data = await response.json();
-        setStats(data);
-      } catch (error) {
-        console.error('Error al obtener datos del dashboard:', error);
-      }
-    };
-
-    fetchData();
-  }, [userRole]);
-
-  useEffect(() => {
     const fetchEspacios = async () => {
       try {
         console.log('Intentando cargar espacios...');
@@ -129,7 +114,7 @@ const WelcomeMenu: React.FC<WelcomeMenuProps> = () => {
         setComment('');
         setRating(0);
         // Actualizar los datos del dashboard
-        const updatedData = await fetch(`/api/dashboard/${userRole}`);
+        const updatedData = await fetch(`/api/auth/current`);
         const data = await updatedData.json();
         setStats(data);
       }

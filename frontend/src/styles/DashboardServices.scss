@@ -38,19 +38,28 @@
     width: 100%;
     text-align: center;
     padding: 0 0.25rem;
-
+    
+.active {
+        background-color: var(--dark-gold);
+        color: var(--white);
+        font-weight: bold;
+    }
     svg {
       margin-bottom: 0.3rem;
       width: 30px;
       height: 30px;
-      padding-top: 1rem;
-      padding-bottom: 0.5rem;
+      padding: 0.5rem 1rem;
       cursor: pointer;
       color: var(--color-text);
 
       &:hover {
-        color: var(--dark-gold);
+        color: var(--gold);
+
+        &.active {
+            color: var(--white);
+        }
       }
+      
     }
 
     .user-info {
@@ -297,4 +306,20 @@
 
 .modal-buttons button:last-child:hover {
   background-color: #5a6268;
+}
+
+.user-icon {
+    cursor: pointer;
+    transition: all 0.3s ease;
+    
+    &:hover {
+        transform: scale(1.1);
+    }
+    
+    &.active {
+        color: var(--white);
+        background-color: var(--dark-gold);
+        padding: 5px;
+        border-radius: 5px;
+    }
 } 

@@ -29,9 +29,10 @@ export default function ServicesMenu({ selectedService }: ServicesMenuProps) {
   const getRolName = (rolId: number) => {
     //console.log('Rol ID:', rolId); // Debug log
     switch(Number(rolId)) {
-      case 1: return 'Administrador';
+      case 1: return 'Admin';
       case 2: return 'Cliente';
-      case 3: return 'Supervisor';
+      case 3: return 'Organizador de Eventos';
+      case 3: return 'Encargado de Inventario';
       default: return 'Usuario';
     }
   };

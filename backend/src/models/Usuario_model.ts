@@ -1,4 +1,4 @@
-import { Table, Model, Column, DataType, ForeignKey, BelongsTo, HasMany, BeforeCreate } from 'sequelize-typescript';
+import { Table, Model, Column, DataType, ForeignKey, BelongsTo, HasMany, BeforeCreate, BeforeUpdate } from 'sequelize-typescript';
 import Rol from './Rol_model';
 import Evento from './Evento_model';
 import * as bcrypt from 'bcryptjs';
@@ -97,6 +97,7 @@ export default class Usuario extends Model {
   contrasena_login!: string;
 
   @BeforeCreate
+  @BeforeUpdate
   static async hashPassword(usuario: Usuario) {
     if (usuario.changed('contrasena_login')) {
       usuario.contrasena_login = await bcrypt.hash(usuario.contrasena_login, 10);

@@ -24,7 +24,7 @@ const ColorTheme = ({ colorLight, colorDark }: { colorLight: string; colorDark: 
   };
 
   return (
-    <button onClick={toggleTheme} style={{ background: 'none', border: 'none', cursor: 'pointer' }}>
+    <button onClick={toggleTheme} title="Cambiar Tema" style={{ background: 'none', border: 'none', cursor: 'pointer', transition: 'transform 0.2s ease', transform: 'scale(1)' }} onMouseOver={(e) => e.currentTarget.style.transform = 'scale(1.1)'} onMouseOut={(e) => e.currentTarget.style.transform = 'scale(1)'}>
       {theme === 'light' ? <DarkMode sx={{color: colorDark}}/> : <LightMode sx={{color:colorLight}}/>}
     </button>
   );
