@@ -1,6 +1,6 @@
 import { useNavigate } from "react-router-dom";
 import {
-  FaUserCog ,
+  FaUserCog,
   FaBoxOpen,
   FaBrush,
   FaConciergeBell,
@@ -11,6 +11,8 @@ import {
 import { IoIosExit } from "react-icons/io";
 import { useState } from "react";
 import ColorTheme from "../functions/ColorTheme";
+import "../styles/DashboardServices.scss";
+import { useUser } from "../context/UserContext";
 
 interface ServicesMenuProps {
   selectedService: string;
@@ -18,6 +20,7 @@ interface ServicesMenuProps {
 
 export default function ServicesMenu({ selectedService }: ServicesMenuProps) {
   const navigate = useNavigate();
+  const { userRole } = useUser();
   const userData = JSON.parse(localStorage.getItem('userData') || '{}');
   const [showLogoutModal, setShowLogoutModal] = useState(false);
   
@@ -37,6 +40,59 @@ export default function ServicesMenu({ selectedService }: ServicesMenuProps) {
     localStorage.removeItem('userData');
     localStorage.removeItem('token');
     navigate("/");
+  };
+
+  const renderMenuItems = () => {
+    return (
+      <ul>
+        <li
+          className={selectedService === "Bienvenida" ? "active" : ""}
+          onClick={() => navigate("/Menu-Servicios/Bienvenida")}
+        >
+          <FaTachometerAlt /> Bienvenida
+        </li>
+        <li
+          className={selectedService === "Alquiler" ? "active" : ""}
+          onClick={() => navigate("/Menu-Servicios/Alquiler")}
+        >
+          <FaBoxOpen /> Alquiler
+        </li>
+        <li
+          className={selectedService === "Decoracion" ? "active" : ""}
+          onClick={() => navigate("/Menu-Servicios/Decoracion")}
+        >
+          <FaBrush /> Decoracion
+        </li>
+        <li
+          className={selectedService === "Catering" ? "active" : ""}
+          onClick={() => navigate("/Menu-Servicios/Catering")}
+        >
+          <FaConciergeBell /> Catering
+        </li>
+        {userRole === 'admin' && (
+          <>
+            <li
+              className={selectedService === "Supervision" ? "active" : ""}
+              onClick={() => navigate("/Menu-Servicios/Supervision")}
+            >
+              <FaTachometerAlt /> Supervision
+            </li>
+            <li
+              className={selectedService === "Transporte" ? "active" : ""}
+              onClick={() => navigate("/Menu-Servicios/Transporte")}
+            >
+              <FaCar /> Transporte
+            </li>
+            <li
+              className={selectedService === "Montaje-Desmontaje" ? "active" : ""}
+              onClick={() => navigate("/Menu-Servicios/Montaje-Desmontaje")}
+            >
+              <FaTools /> Montaje y Desmontaje
+            </li>
+          </>
+        )}
+      </ul>
+    );
   };
 
   return (
@@ -69,53 +125,8 @@ export default function ServicesMenu({ selectedService }: ServicesMenuProps) {
         </div>
       </div>
 
-      <ul>
-        <li
-          className={selectedService === "Bienvenida" ? "active" : ""}
-          onClick={() => navigate("/Menu-Servicios/Bienvenida")}
-        >
-          <FaTachometerAlt /> Bienvenida
-        </li>
-        <li
-          className={selectedService === "Alquiler" ? "active" : ""}
-          onClick={() => navigate("/Menu-Servicios/Alquiler")}
-        >
-          <FaBoxOpen /> Alquiler
-        </li>
-        <li
-        className={selectedService === "Decoracion" ? "active" : ""}
-        onClick={() => navigate("/Menu-Servicios/Decoracion")}
-        >
-          <FaBrush /> Decoracion
-        </li>
-
-        <li
-          className={selectedService === "Catering" ? "active" : ""}
-          onClick={() => navigate("/Menu-Servicios/Catering")}
-        >
-          <FaConciergeBell /> Catering
-        </li>
-        <li
-          className={selectedService === "Supervision" ? "active" : ""}
-          onClick={() => navigate("/Menu-Servicios/Supervision")}
-        >
-          <FaTachometerAlt /> Supervision
-        </li>
-        <li
-          className={selectedService === "Transporte" ? "active" : ""}
-          onClick={() => navigate("/Menu-Servicios/Transporte")}
-        >
-          <FaCar /> Transporte
-        </li>
-        <li
-          className={selectedService === "Montaje-Desmontaje" ? "active" : ""}
-          onClick={() => navigate("/Menu-Servicios/Montaje-Desmontaje")}
-        >
-          <FaTools /> Montaje y Desmontaje
-        </li>
-        </ul>
-     <IoIosExit className="logout-button" title="Cerrar Sesión" onClick={() => setShowLogoutModal(true)} />
-         
+      {renderMenuItems()}
+      <IoIosExit className="logout-button" title="Cerrar Sesión" onClick={() => setShowLogoutModal(true)} />
     </div>
   );
 }

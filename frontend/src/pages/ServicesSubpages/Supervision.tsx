@@ -1,473 +1,330 @@
-import { useState, useEffect } from "react";
-import type { ChangeEvent, FormEvent } from "react";
-import "../../styles/supervision.scss";
-import "../../styles/services-subpages.scss";
-import { useUser } from "../../context/UserContext";
+import React, { useState, useEffect } from 'react';
+import '../../styles/services-subpages.scss';
+import { useUser } from '../../context/UserContext';
+import ServiceBase from '../../components/ServiceBase';
+import { useNavigate } from "react-router-dom";
 
-type SupervisionForm = {
-  evento: string;
-  tarifaHora: string;
-  precioNeto: string;
-  itbis: string;
-  total: string;
-  supervisor_id?: string;
-  horas_trabajo?: string;
-  estado?: string;
-};
+export type UserRole = 'admin' | 'coordinator' | 'inventory' | 'client';
 
-type Evento = {
+interface Supervision {
+  id_supervision?: number;
+  id_evento: number;
+  supervisor: string;
+  fecha: string;
+  hora_inicio: string;
+  hora_fin: string;
+  estado: string;
+  notas: string;
+}
+
+interface Evento {
   id_evento: number;
   fecha_evento: string;
-  hora_evento: string;
-  estado_evento: string;
   tipo_evento: string;
-  nota_cliente: string;
-};
+}
 
-type Supervisor = {
-  id: number;
-  nombre: string;
-  especialidad: string;
-  tarifa_hora: number;
-};
-
-type SupervisionProps = {
-  eventosSupervisados?: number;
-  eventosParticipados?: number;
-  horasTrabajadas?: number;
-  supervisores?: any[];
-};
-
-const Supervision: React.FC<SupervisionProps> = ({
-  eventosSupervisados,
-  eventosParticipados,
-  horasTrabajadas,
-  supervisores
-}) => {
-  const { userRole, hasPermission, user } = useUser();
-  const [showForm, setShowForm] = useState(false);
-  const [formData, setFormData] = useState<Partial<SupervisionForm>>({});
+export default function Supervision() {
+  const { userRole } = useUser();
+  const navigate = useNavigate();
+  const [showModal, setShowModal] = useState(false);
+  const [supervisions, setSupervisions] = useState<Supervision[]>([]);
   const [eventos, setEventos] = useState<Evento[]>([]);
+  const [formData, setFormData] = useState<Partial<Supervision>>({});
+  const [editId, setEditId] = useState<number | null>(null);
   const [filtroEvento, setFiltroEvento] = useState("");
-  const [filtroSupervisor, setFiltroSupervisor] = useState("");
-  const [selectedSupervisor, setSelectedSupervisor] = useState<Supervisor | null>(null);
-  const [showSupervisorDetails, setShowSupervisorDetails] = useState(false);
-  const [showEventosModal, setShowEventosModal] = useState(false);
-  const [showSupervisoresModal, setShowSupervisoresModal] = useState(false);
-  const [showHorasModal, setShowHorasModal] = useState(false);
-  const [showPendientesModal, setShowPendientesModal] = useState(false);
+  const [stats, setStats] = useState({
+    eventsInProcess: 0,
+    averageRating: 0,
+    totalUsers: 0,
+    quotations: []
+  });
 
   useEffect(() => {
-    fetch("/api/eventos")
-      .then((res) => res.json())
-      .then((data) => setEventos(data));
+    if (userRole !== 'admin') {
+      navigate('/Menu-Servicios/Bienvenida');
+    }
+  }, [userRole, navigate]);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const [supervisionsRes, eventosRes] = await Promise.all([
+          fetch('/api/supervision'),
+          fetch('/api/eventos')
+        ]);
+
+        const [supervisionsData, eventosData] = await Promise.all([
+          supervisionsRes.json(),
+          eventosRes.json()
+        ]);
+
+        setSupervisions(supervisionsData);
+        setEventos(eventosData);
+      } catch (error) {
+        console.error('Error al cargar datos:', error);
+      }
+    };
+
+    fetchData();
   }, []);
 
-  const handleChange = (e: ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
-
-    // Si se selecciona un supervisor, actualizar la tarifa por hora
-    if (name === 'supervisor_id') {
-      const supervisor = supervisores?.find(s => s.id.toString() === value);
-      if (supervisor) {
-        setFormData(prev => ({
-          ...prev,
-          tarifaHora: supervisor.tarifa_hora.toString()
-        }));
+  useEffect(() => {
+    const fetchStats = async () => {
+      try {
+        const response = await fetch('/api/supervision/stats');
+        const data = await response.json();
+        setStats(data);
+      } catch (error) {
+        console.error('Error al obtener estadísticas:', error);
       }
-    }
+    };
 
-    // Calcular totales si se modifican horas o tarifa
-    if (name === 'horas_trabajo' || name === 'tarifaHora') {
-      const horas = parseFloat(formData.horas_trabajo || '0');
-      const tarifa = parseFloat(formData.tarifaHora || '0');
-      const precioNeto = horas * tarifa;
-      const itbis = precioNeto * 0.18;
-      const total = precioNeto + itbis;
+    fetchStats();
+  }, []);
 
-      setFormData(prev => ({
-        ...prev,
-        precioNeto: precioNeto.toFixed(2),
-        itbis: itbis.toFixed(2),
-        total: total.toFixed(2)
-      }));
-    }
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
   };
 
-  const handleSupervisorClick = (supervisor: Supervisor) => {
-    setSelectedSupervisor(supervisor);
-    setShowSupervisorDetails(true);
+  const handleSelectChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
   };
 
-  const handleSubmit = (e: FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (userRole === 'client' && !hasPermission('crear_supervision')) {
-      alert('No tienes permiso para crear supervisión');
-      return;
+    try {
+      if (editId) {
+        await fetch(`/api/supervision/${editId}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(formData)
+        });
+      } else {
+        await fetch('/api/supervision', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(formData)
+        });
+      }
+
+      const response = await fetch('/api/supervision');
+      const data = await response.json();
+      setSupervisions(data);
+      setShowModal(false);
+      setFormData({});
+      setEditId(null);
+    } catch (error) {
+      console.error('Error al guardar:', error);
     }
-    alert("Formulario enviado (simulado)");
-    setShowForm(false);
-    setFormData({});
   };
 
-  const handleReset = () => {
-    setFormData({});
-    setSelectedSupervisor(null);
+  const handleEdit = (supervision: Supervision) => {
+    setFormData(supervision);
+    setEditId(supervision.id_supervision!);
+    setShowModal(true);
   };
 
-  const canEditSupervision = hasPermission('editar_supervision');
-  const canCreateSupervision = hasPermission('crear_supervision');
-
-  const renderDashboard = () => {
-    const role = user?.rol?.nombre;
-
-    if (role === 'cliente') {
-      return (
-        <div className="dashboard__stats">
-          <div className="stat-card">
-            <span className="stat-card__label">Eventos Supervisados</span>
-            <span className="stat-card__number">{eventosSupervisados?.length || 0}</span>
-            <button className="stat-card__seeInfo" onClick={() => setShowEventosModal(true)}>
-              Ver Eventos
-            </button>
-          </div>
-          <div className="stat-card">
-            <span className="stat-card__label">Supervisores Asignados</span>
-            <span className="stat-card__number">{supervisores?.length || 0}</span>
-            <button className="stat-card__seeInfo" onClick={() => setShowSupervisoresModal(true)}>
-              Ver Supervisores
-            </button>
-          </div>
-          <div className="stat-card">
-            <span className="stat-card__label">Horas de Supervisión</span>
-            <span className="stat-card__number">{horasTrabajadas || 0}</span>
-            <button className="stat-card__seeInfo" onClick={() => setShowHorasModal(true)}>
-              Ver Detalles
-            </button>
-          </div>
-        </div>
-      );
+  const handleDelete = async (id: number) => {
+    try {
+      await fetch(`/api/supervision/${id}`, { method: 'DELETE' });
+      setSupervisions(prev => prev.filter(s => s.id_supervision !== id));
+    } catch (error) {
+      console.error('Error al eliminar:', error);
     }
-
-    if (role === 'administrador') {
-      return (
-        <div className="dashboard__stats">
-          <div className="stat-card">
-            <span className="stat-card__label">Total Eventos</span>
-            <span className="stat-card__number">{eventosSupervisados?.length || 0}</span>
-            <button className="stat-card__seeInfo" onClick={() => setShowEventosModal(true)}>
-              Gestionar Eventos
-            </button>
-          </div>
-          <div className="stat-card">
-            <span className="stat-card__label">Total Supervisores</span>
-            <span className="stat-card__number">{supervisores?.length || 0}</span>
-            <button className="stat-card__seeInfo" onClick={() => setShowSupervisoresModal(true)}>
-              Gestionar Supervisores
-            </button>
-          </div>
-          <div className="stat-card">
-            <span className="stat-card__label">Horas Totales</span>
-            <span className="stat-card__number">{horasTrabajadas || 0}</span>
-            <button className="stat-card__seeInfo" onClick={() => setShowHorasModal(true)}>
-              Ver Reportes
-            </button>
-          </div>
-        </div>
-      );
-    }
-
-    if (role === 'supervisor') {
-      return (
-        <div className="dashboard__stats">
-          <div className="stat-card">
-            <span className="stat-card__label">Mis Eventos</span>
-            <span className="stat-card__number">{eventosParticipados?.length || 0}</span>
-            <button className="stat-card__seeInfo" onClick={() => setShowEventosModal(true)}>
-              Ver Eventos
-            </button>
-          </div>
-          <div className="stat-card">
-            <span className="stat-card__label">Horas Trabajadas</span>
-            <span className="stat-card__number">{horasTrabajadas || 0}</span>
-            <button className="stat-card__seeInfo" onClick={() => setShowHorasModal(true)}>
-              Ver Detalles
-            </button>
-          </div>
-          <div className="stat-card">
-            <span className="stat-card__label">Eventos Pendientes</span>
-            <span className="stat-card__number">{eventosParticipados?.filter(e => !e.completado)?.length || 0}</span>
-            <button className="stat-card__seeInfo" onClick={() => setShowPendientesModal(true)}>
-              Ver Pendientes
-            </button>
-          </div>
-        </div>
-      );
-    }
-
-    return null;
   };
 
-  return (
-    <div className="dashboard">
-      <h1 className="dashboard__title">Supervisión</h1>
+  const renderAdminView = () => (
+    <div className="service-content">
+      <button className="new-form-btn" onClick={() => setShowModal(true)}>
+        Agregar Servicio
+      </button>
 
-      {renderDashboard()}
+      <div className="table-section">
+        <p>Servicios de Supervisión Registrados</p>
+        <input
+          type="text"
+          placeholder="Filtrar por evento..."
+          value={filtroEvento}
+          onChange={(e) => setFiltroEvento(e.target.value)}
+        />
+        <table>
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Evento</th>
+              <th>Supervisor</th>
+              <th>Fecha</th>
+              <th>Hora Inicio</th>
+              <th>Hora Fin</th>
+              <th>Estado</th>
+              <th>Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            {supervisions
+              .filter(s => 
+                eventos.find(e => e.id_evento === s.id_evento)?.tipo_evento
+                  .toLowerCase()
+                  .includes(filtroEvento.toLowerCase())
+              )
+              .map((supervision) => (
+                <tr key={supervision.id_supervision}>
+                  <td>{supervision.id_supervision}</td>
+                  <td>
+                    {eventos.find(e => e.id_evento === supervision.id_evento)?.tipo_evento}
+                  </td>
+                  <td>{supervision.supervisor}</td>
+                  <td>{supervision.fecha}</td>
+                  <td>{supervision.hora_inicio}</td>
+                  <td>{supervision.hora_fin}</td>
+                  <td>{supervision.estado}</td>
+                  <td>
+                    <button
+                      className="edit-btn"
+                      onClick={() => handleEdit(supervision)}
+                    >
+                      Editar
+                    </button>
+                    <button
+                      className="delete-btn"
+                      onClick={() => handleDelete(supervision.id_supervision!)}
+                    >
+                      Eliminar
+                    </button>
+                  </td>
+                </tr>
+              ))}
+          </tbody>
+        </table>
+      </div>
 
-      {showForm && (
-        <div className="modalOverlay">
-          <div className="modalContainer">
-            <button className="closeButton" onClick={() => setShowForm(false)}>
-              ×
-            </button>
+      {showModal && (
+        <div className="modal-overlay">
+          <div className="modal-container">
+            <button className="close-btn" onClick={() => setShowModal(false)}>×</button>
+            <form className="modal-form" onSubmit={handleSubmit}>
+              <h2>{editId ? 'Editar Servicio' : 'Nuevo Servicio'}</h2>
+              
+              <label>
+                Evento:
+                <select
+                  name="id_evento"
+                  value={formData.id_evento || ''}
+                  onChange={handleSelectChange}
+                  required
+                >
+                  <option value="">Seleccionar evento</option>
+                  {eventos.map((evento) => (
+                    <option key={evento.id_evento} value={evento.id_evento}>
+                      {evento.fecha_evento} - {evento.tipo_evento}
+                    </option>
+                  ))}
+                </select>
+              </label>
 
-            <div className="modal-form">
-              <h3 className="form-title">
-                {canEditSupervision ? 'Formulario de Supervisión' : 'Crear Nueva Supervisión'}
-              </h3>
-              <form onSubmit={handleSubmit}>
-                <label>
-                  Evento relacionado
-                  <input 
-                    type="text" 
-                    name="evento" 
-                    value={formData.evento || ""} 
-                    onChange={handleChange} 
-                    required 
-                    disabled={!canEditSupervision}
-                  />
-                </label>
+              <label>
+                Supervisor:
+                <input
+                  type="text"
+                  name="supervisor"
+                  value={formData.supervisor || ''}
+                  onChange={handleInputChange}
+                  required
+                />
+              </label>
 
-                {canEditSupervision && (
-                  <>
-                    <label>
-                      Supervisor
-                      <select 
-                        name="supervisor_id" 
-                        value={formData.supervisor_id || ""} 
-                        onChange={handleChange}
-                        required
-                      >
-                        <option value="">Seleccionar supervisor...</option>
-                        {supervisores?.map(supervisor => (
-                          <option key={supervisor.id} value={supervisor.id}>
-                            {supervisor.nombre} - {supervisor.especialidad}
-                          </option>
-                        ))}
-                      </select>
-                    </label>
+              <label>
+                Fecha:
+                <input
+                  type="date"
+                  name="fecha"
+                  value={formData.fecha || ''}
+                  onChange={handleInputChange}
+                  required
+                />
+              </label>
 
-                    <label>
-                      Tarifa por hora
-                      <input 
-                        type="number" 
-                        name="tarifaHora" 
-                        value={formData.tarifaHora || ""} 
-                        onChange={handleChange} 
-                        required 
-                        disabled
-                      />
-                    </label>
+              <label>
+                Hora Inicio:
+                <input
+                  type="time"
+                  name="hora_inicio"
+                  value={formData.hora_inicio || ''}
+                  onChange={handleInputChange}
+                  required
+                />
+              </label>
 
-                    <label>
-                      Horas de trabajo
-                      <input 
-                        type="number" 
-                        name="horas_trabajo" 
-                        value={formData.horas_trabajo || ""} 
-                        onChange={handleChange} 
-                        required 
-                        min="1"
-                      />
-                    </label>
+              <label>
+                Hora Fin:
+                <input
+                  type="time"
+                  name="hora_fin"
+                  value={formData.hora_fin || ''}
+                  onChange={handleInputChange}
+                  required
+                />
+              </label>
 
-                    <label>
-                      Precio Neto
-                      <input 
-                        type="number" 
-                        name="precioNeto" 
-                        value={formData.precioNeto || ""} 
-                        onChange={handleChange} 
-                        required 
-                        disabled
-                      />
-                    </label>
+              <label>
+                Estado:
+                <select
+                  name="estado"
+                  value={formData.estado || ''}
+                  onChange={handleSelectChange}
+                  required
+                >
+                  <option value="">Seleccionar estado</option>
+                  <option value="Pendiente">Pendiente</option>
+                  <option value="En Progreso">En Progreso</option>
+                  <option value="Completado">Completado</option>
+                  <option value="Cancelado">Cancelado</option>
+                </select>
+              </label>
 
-                    <label>
-                      ITBIS
-                      <input 
-                        type="number" 
-                        name="itbis" 
-                        value={formData.itbis || ""} 
-                        onChange={handleChange} 
-                        required 
-                        disabled
-                      />
-                    </label>
+              <label>
+                Notas:
+                <textarea
+                  name="notas"
+                  value={formData.notas || ''}
+                  onChange={handleInputChange}
+                  rows={4}
+                />
+              </label>
 
-                    <label>
-                      Precio Total
-                      <input 
-                        type="number" 
-                        name="total" 
-                        value={formData.total || ""} 
-                        onChange={handleChange} 
-                        required 
-                        disabled
-                      />
-                    </label>
-
-                    <label>
-                      Estado
-                      <select 
-                        name="estado" 
-                        value={formData.estado || ""} 
-                        onChange={handleChange}
-                        required
-                      >
-                        <option value="">Seleccionar estado...</option>
-                        <option value="pendiente">Pendiente</option>
-                        <option value="en_proceso">En Proceso</option>
-                        <option value="completado">Completado</option>
-                        <option value="cancelado">Cancelado</option>
-                      </select>
-                    </label>
-                  </>
-                )}
-
-                <div className="form-buttons">
-                  <button type="submit" className="submitBtn">Guardar</button>
-                  <button type="button" className="resetBtn" onClick={handleReset}>Limpiar</button>
-                </div>
-              </form>
-            </div>
-
-            <div className="tables-container">
-              {canEditSupervision && (
-                <>
-                  <div className="table-section">
-                    <p>Supervisores Disponibles</p>
-                    <input
-                      type="text"
-                      placeholder="Buscar supervisor por nombre o especialidad..."
-                      value={filtroSupervisor}
-                      onChange={(e) => setFiltroSupervisor(e.target.value)}
-                      className="search-input"
-                    />
-                    <table>
-                      <thead>
-                        <tr>
-                          <th>ID</th>
-                          <th>Nombre</th>
-                          <th>Especialidad</th>
-                          <th>Tarifa/Hora</th>
-                          <th>Acciones</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {supervisores
-                          ?.filter((s) =>
-                            Object.values(s).join(" ").toLowerCase().includes(filtroSupervisor.toLowerCase())
-                          )
-                          .map((s) => (
-                            <tr key={s.id}>
-                              <td>{s.id}</td>
-                              <td>{s.nombre}</td>
-                              <td>{s.especialidad}</td>
-                              <td>${s.tarifa_hora}</td>
-                              <td>
-                                <button 
-                                  className="edit-btn"
-                                  onClick={() => handleSupervisorClick(s)}
-                                >
-                                  Ver Detalles
-                                </button>
-                              </td>
-                            </tr>
-                          ))}
-                      </tbody>
-                    </table>
-                  </div>
-
-                  <div className="table-section">
-                    <p>Eventos de los Usuarios</p>
-                    <input
-                      type="text"
-                      placeholder="Buscar evento por ID, estado, fecha..."
-                      value={filtroEvento}
-                      onChange={(e) => setFiltroEvento(e.target.value)}
-                      className="search-input"
-                    />
-                    <table>
-                      <thead>
-                        <tr>
-                          <th>ID</th>
-                          <th>Fecha</th>
-                          <th>Hora</th>
-                          <th>Estado</th>
-                          <th>Tipo</th>
-                          <th>Nota</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {eventos
-                          .filter((ev) =>
-                            Object.values(ev).join(" ").toLowerCase().includes(filtroEvento.toLowerCase())
-                          )
-                          .map((ev) => (
-                            <tr key={ev.id_evento}>
-                              <td>{ev.id_evento}</td>
-                              <td>{ev.fecha_evento}</td>
-                              <td>{ev.hora_evento}</td>
-                              <td>{ev.estado_evento}</td>
-                              <td>{ev.tipo_evento}</td>
-                              <td>{ev.nota_cliente}</td>
-                            </tr>
-                          ))}
-                      </tbody>
-                    </table>
-                  </div>
-                </>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
-
-      {showSupervisorDetails && selectedSupervisor && (
-        <div className="modalOverlay">
-          <div className="modalContainer supervisor-details">
-            <button className="closeButton" onClick={() => setShowSupervisorDetails(false)}>
-              ×
-            </button>
-            <h3>Detalles del Supervisor</h3>
-            <div className="supervisor-info">
-              <p><strong>Nombre:</strong> {selectedSupervisor.nombre}</p>
-              <p><strong>Especialidad:</strong> {selectedSupervisor.especialidad}</p>
-              <p><strong>Tarifa por Hora:</strong> ${selectedSupervisor.tarifa_hora}</p>
-            </div>
-            <button 
-              className="select-supervisor-btn"
-              onClick={() => {
-                setFormData(prev => ({
-                  ...prev,
-                  supervisor_id: selectedSupervisor.id.toString(),
-                  tarifaHora: selectedSupervisor.tarifa_hora.toString()
-                }));
-                setShowSupervisorDetails(false);
-              }}
-            >
-              Seleccionar Supervisor
-            </button>
+              <div className="form-buttons">
+                <button type="submit" className="submit-btn">
+                  {editId ? 'Actualizar' : 'Guardar'}
+                </button>
+                <button
+                  type="button"
+                  className="reset-btn"
+                  onClick={() => setShowModal(false)}
+                >
+                  Cancelar
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}
     </div>
   );
-};
 
-export default Supervision;
+  return (
+    <ServiceBase 
+      title="Supervisión" 
+      stats={stats}
+    >
+      {renderAdminView()}
+    </ServiceBase>
+  );
+}

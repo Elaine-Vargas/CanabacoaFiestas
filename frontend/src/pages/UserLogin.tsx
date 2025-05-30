@@ -78,19 +78,36 @@ const UserLogin: React.FC = () => {
     setError("");
   
     try {
-      const response = await fetch('/api/auth/login', {
+      console.log('Enviando datos de login:', loginData);
+      
+      const response = await fetch('http://localhost:3000/api/auth/login', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify(loginData),
+        credentials: 'include'
       });
   
-      const data = await response.json();
-  
+      console.log('Status de la respuesta:', response.status);
+      console.log('Headers de la respuesta:', Object.fromEntries(response.headers.entries()));
+      
+      const responseText = await response.text();
+      console.log('Respuesta del servidor:', responseText);
+      
       if (!response.ok) {
-        throw new Error(data.error || 'Error al iniciar sesión');
+        let errorMessage = 'Error al iniciar sesión';
+        try {
+          const errorData = JSON.parse(responseText);
+          errorMessage = errorData.error || errorMessage;
+        } catch (e) {
+          console.error('Error al parsear la respuesta:', e);
+        }
+        throw new Error(errorMessage);
       }
+  
+      const data = JSON.parse(responseText);
+      console.log('Datos recibidos:', data);
   
       // Guardar el token y los datos del usuario en localStorage
       localStorage.setItem('token', data.token);
@@ -100,7 +117,6 @@ const UserLogin: React.FC = () => {
         usuario_login: data.usuario_login,
         rol: data.rol
       };
-      //console.log('Saving user data:', userData); // Debug log
       localStorage.setItem('userData', JSON.stringify(userData));
       
       // Mostrar mensaje de bienvenida
@@ -109,6 +125,7 @@ const UserLogin: React.FC = () => {
       // Redirigir a la página de servicios
       navigate('/Menu-Servicios/Bienvenida');
     } catch (error) {
+      console.error('Error completo:', error);
       setError(error instanceof Error ? error.message : 'Error al iniciar sesión');
     }
   };

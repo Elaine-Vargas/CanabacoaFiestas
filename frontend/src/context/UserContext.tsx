@@ -1,6 +1,11 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import type { ReactNode } from 'react';
-import type { UserRole, Permission } from '../pages/ServicesSubpages/WelcomeMenu';
+
+type UserRole = 'admin' | 'client' | 'supervisor';
+
+interface Permission {
+  id: string;
+  name: string;
+}
 
 interface UserContextType {
   userRole: UserRole;
@@ -11,16 +16,8 @@ interface UserContextType {
 
 const UserContext = createContext<UserContextType | undefined>(undefined);
 
-export const useUser = () => {
-  const context = useContext(UserContext);
-  if (!context) {
-    throw new Error('useUser debe ser usado dentro de un UserProvider');
-  }
-  return context;
-};
-
 interface UserProviderProps {
-  children: ReactNode;
+  children: React.ReactNode;
 }
 
 export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
@@ -28,25 +25,31 @@ export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
   const [userPermissions, setUserPermissions] = useState<Permission[]>([]);
 
   useEffect(() => {
-    // Aquí iría la lógica para obtener el rol y permisos del usuario desde la API
     const fetchUserData = async () => {
       try {
-        // Simulamos la obtención de datos del usuario
-        // En producción, esto vendría de tu API
-        const response = await fetch('/api/user/current');
-        const data = await response.json();
-        
-        if (data.role) {
-          setUserRole(data.role);
-          // Obtener permisos basados en el rol
-          const permissionsResponse = await fetch(`/api/permissions/${data.role}`);
-          const permissionsData = await permissionsResponse.json();
-          setUserPermissions(permissionsData);
+        const userData = JSON.parse(localStorage.getItem('userData') || '{}');
+        if (userData.rol) {
+          const role = userData.rol === 1 ? 'admin' : userData.rol === 2 ? 'client' : 'supervisor';
+          setUserRole(role);
+          
+          // Permisos por defecto para el administrador
+          if (role === 'admin') {
+            setUserPermissions([
+              { id: 'view_transportation', name: 'Ver Transporte' },
+              { id: 'view_supervision', name: 'Ver Supervisión' },
+              { id: 'view_assembly', name: 'Ver Montaje y Desmontaje' },
+              { id: 'manage_transportation', name: 'Gestionar Transporte' },
+              { id: 'manage_supervision', name: 'Gestionar Supervisión' },
+              { id: 'manage_assembly', name: 'Gestionar Montaje y Desmontaje' }
+            ]);
+          } else {
+            setUserPermissions([]);
+          }
         }
       } catch (error) {
         console.error('Error al obtener datos del usuario:', error);
-        // En caso de error, establecer rol por defecto
         setUserRole('client');
+        setUserPermissions([]);
       }
     };
 
@@ -54,6 +57,7 @@ export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
   }, []);
 
   const hasPermission = (permissionId: string) => {
+    if (userRole === 'admin') return true;
     return userPermissions.some((permission: Permission) => permission.id === permissionId);
   };
 
@@ -62,4 +66,12 @@ export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
       {children}
     </UserContext.Provider>
   );
+};
+
+export const useUser = () => {
+  const context = useContext(UserContext);
+  if (context === undefined) {
+    throw new Error('useUser must be used within a UserProvider');
+  }
+  return context;
 }; 

@@ -1,359 +1,329 @@
-import { useState, useEffect } from "react";
-import type { ChangeEvent, FormEvent } from "react";
-import "../../styles/assembly-disassembly.scss";
-import "../../styles/services-subpages.scss";
+import { useState, useEffect } from 'react';
+import type { ChangeEvent, FormEvent } from 'react';
+import '../../styles/services-subpages.scss';
+import ServiceBase from '../../components/ServiceBase';
+import { useNavigate } from "react-router-dom";
 import { useUser } from "../../context/UserContext";
 
-type MontajeDesmontaje = {
-  id_montdes: number;
+interface Assembly {
+  id_assembly?: number;
   id_evento: number;
-  precio_neto: number;
-  itbis: number;
-  total: number;
-};
+  tipo_servicio: string;
+  descripcion: string;
+  fecha_inicio: string;
+  fecha_fin: string;
+  estado: string;
+  notas: string;
+}
 
-type DetalleMontaje = {
-  id_detalle_montaje: number;
-  id_montdes: number;
-  cedula_usuariopersonal: string;
-  horas_trabajo: number;
-  precioneto_montaje: number;
-};
-
-type Evento = {
+interface Evento {
   id_evento: number;
   fecha_evento: string;
-  hora_evento: string;
-  estado_evento: string;
   tipo_evento: string;
-  nota_cliente: string;
-};
+}
 
-type AssemblyAndDisassemblyProps = {
-  totalServicios?: number;
-  horasTrabajadas?: number;
-  personalActivo?: number;
-};
-
-export default function AssemblyAndDisassembly({
-  totalServicios = 0,
-  horasTrabajadas = 0,
-  personalActivo = 0,
-}: AssemblyAndDisassemblyProps) {
-  const [showForm, setShowForm] = useState(false);
-  const [formData, setFormData] = useState<Partial<MontajeDesmontaje & DetalleMontaje>>({});
+export default function AssemblyAndDisassembly() {
+  const { userRole } = useUser();
+  const navigate = useNavigate();
+  const [showModal, setShowModal] = useState(false);
+  const [assemblies, setAssemblies] = useState<Assembly[]>([]);
   const [eventos, setEventos] = useState<Evento[]>([]);
+  const [formData, setFormData] = useState<Partial<Assembly>>({});
+  const [editId, setEditId] = useState<number | null>(null);
   const [filtroEvento, setFiltroEvento] = useState("");
-  const [montajes, setMontajes] = useState<(MontajeDesmontaje & DetalleMontaje)[]>([]);
-
-  const { user } = useUser();
-  const role = user?.rol?.nombre;
+  const [stats, setStats] = useState({
+    eventsInProcess: 0,
+    averageRating: 0,
+    totalUsers: 0,
+    quotations: []
+  });
 
   useEffect(() => {
-    // Cargar eventos
-    fetch("/api/eventos")
-      .then((res) => res.json())
-      .then((data) => setEventos(data));
+    if (userRole !== 'admin') {
+      navigate('/Menu-Servicios/Bienvenida');
+    }
+  }, [userRole, navigate]);
 
-    // Cargar montajes
-    fetch("/api/montajes")
-      .then((res) => res.json())
-      .then((data) => setMontajes(data))
-      .catch((error) => console.error("Error cargando montajes:", error));
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const [assembliesRes, eventosRes] = await Promise.all([
+          fetch('/api/assembly'),
+          fetch('/api/eventos')
+        ]);
+
+        const [assembliesData, eventosData] = await Promise.all([
+          assembliesRes.json(),
+          eventosRes.json()
+        ]);
+
+        setAssemblies(assembliesData);
+        setEventos(eventosData);
+      } catch (error) {
+        console.error('Error al cargar datos:', error);
+      }
+    };
+
+    fetchData();
   }, []);
 
-  const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
+  useEffect(() => {
+    const fetchStats = async () => {
+      try {
+        const response = await fetch('/api/assembly/stats');
+        const data = await response.json();
+        setStats(data);
+      } catch (error) {
+        console.error('Error al obtener estadísticas:', error);
+      }
+    };
+
+    fetchStats();
+  }, []);
+
+  const handleInputChange = (e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
-    setFormData((prev) => ({
+    setFormData(prev => ({
       ...prev,
-      [name]: ["id_evento", "precio_neto", "itbis", "total", "horas_trabajo", "precioneto_montaje"].includes(name)
-        ? Number(value)
-        : value,
+      [name]: value
     }));
   };
 
-  const handleSubmit = (e: FormEvent) => {
+  const handleSelectChange = (e: ChangeEvent<HTMLSelectElement>) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
+
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    // Aquí iría la lógica para guardar en la base de datos
-    const nuevoMontaje = {
-      ...formData,
-      id_montdes: montajes.length + 1, // Esto sería manejado por el backend
-    } as MontajeDesmontaje & DetalleMontaje;
+    try {
+      if (editId) {
+        await fetch(`/api/assembly/${editId}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(formData)
+        });
+      } else {
+        await fetch('/api/assembly', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(formData)
+        });
+      }
 
-    setMontajes((prev) => [...prev, nuevoMontaje]);
-    setShowForm(false);
-    setFormData({});
+      const response = await fetch('/api/assembly');
+      const data = await response.json();
+      setAssemblies(data);
+      setShowModal(false);
+      setFormData({});
+      setEditId(null);
+    } catch (error) {
+      console.error('Error al guardar:', error);
+    }
   };
 
-  const handleReset = () => {
-    setFormData({});
+  const handleEdit = (assembly: Assembly) => {
+    setFormData(assembly);
+    setEditId(assembly.id_assembly!);
+    setShowModal(true);
   };
 
-  const renderDashboard = () => {
-    if (role === 'cliente') {
-      return (
-        <div className="dashboard__stats">
-          <div className="stat-card">
-            <span className="stat-card__label">Servicios Solicitados</span>
-            <span className="stat-card__number">{totalServicios || 0}</span>
-            <button className="stat-card__seeInfo" onClick={() => setShowServiciosModal(true)}>
-              Ver Servicios
-            </button>
-          </div>
-          <div className="stat-card">
-            <span className="stat-card__label">Personal Asignado</span>
-            <span className="stat-card__number">{personalActivo?.length || 0}</span>
-            <button className="stat-card__seeInfo" onClick={() => setShowPersonalModal(true)}>
-              Ver Personal
-            </button>
-          </div>
-          <div className="stat-card">
-            <span className="stat-card__label">Horas de Servicio</span>
-            <span className="stat-card__number">{horasTrabajadas || 0}</span>
-            <button className="stat-card__seeInfo" onClick={() => setShowHorasModal(true)}>
-              Ver Detalles
-            </button>
-          </div>
-        </div>
-      );
+  const handleDelete = async (id: number) => {
+    try {
+      await fetch(`/api/assembly/${id}`, { method: 'DELETE' });
+      setAssemblies(prev => prev.filter(a => a.id_assembly !== id));
+    } catch (error) {
+      console.error('Error al eliminar:', error);
     }
-
-    if (role === 'administrador') {
-      return (
-        <div className="dashboard__stats">
-          <div className="stat-card">
-            <span className="stat-card__label">Total Servicios</span>
-            <span className="stat-card__number">{totalServicios || 0}</span>
-            <button className="stat-card__seeInfo" onClick={() => setShowServiciosModal(true)}>
-              Gestionar Servicios
-            </button>
-          </div>
-          <div className="stat-card">
-            <span className="stat-card__label">Personal Activo</span>
-            <span className="stat-card__number">{personalActivo?.length || 0}</span>
-            <button className="stat-card__seeInfo" onClick={() => setShowPersonalModal(true)}>
-              Gestionar Personal
-            </button>
-          </div>
-          <div className="stat-card">
-            <span className="stat-card__label">Horas Totales</span>
-            <span className="stat-card__number">{horasTrabajadas || 0}</span>
-            <button className="stat-card__seeInfo" onClick={() => setShowHorasModal(true)}>
-              Ver Reportes
-            </button>
-          </div>
-        </div>
-      );
-    }
-
-    if (role === 'montador') {
-      return (
-        <div className="dashboard__stats">
-          <div className="stat-card">
-            <span className="stat-card__label">Mis Servicios</span>
-            <span className="stat-card__number">{totalServicios || 0}</span>
-            <button className="stat-card__seeInfo" onClick={() => setShowServiciosModal(true)}>
-              Ver Servicios
-            </button>
-          </div>
-          <div className="stat-card">
-            <span className="stat-card__label">Horas Trabajadas</span>
-            <span className="stat-card__number">{horasTrabajadas || 0}</span>
-            <button className="stat-card__seeInfo" onClick={() => setShowHorasModal(true)}>
-              Ver Detalles
-            </button>
-          </div>
-          <div className="stat-card">
-            <span className="stat-card__label">Servicios Pendientes</span>
-            <span className="stat-card__number">{totalServicios?.filter(s => !s.completado)?.length || 0}</span>
-            <button className="stat-card__seeInfo" onClick={() => setShowPendientesModal(true)}>
-              Ver Pendientes
-            </button>
-          </div>
-        </div>
-      );
-    }
-
-    return null;
   };
 
   return (
-    <div className="dashboard">
-      <h1 className="dashboard__title">Montaje y Desmontaje</h1>
+    <ServiceBase 
+      title="Montaje y Desmontaje" 
+      stats={stats}
+    >
+      <div className="assembly-content">
+        <button className="new-form-btn" onClick={() => setShowModal(true)}>
+          Agregar Servicio
+        </button>
 
-      {renderDashboard()}
+        <div className="table-section">
+          <p>Servicios Registrados</p>
+          <input
+            type="text"
+            placeholder="Filtrar por evento..."
+            value={filtroEvento}
+            onChange={(e) => setFiltroEvento(e.target.value)}
+          />
+          <table>
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Evento</th>
+                <th>Tipo de Servicio</th>
+                <th>Descripción</th>
+                <th>Fecha Inicio</th>
+                <th>Fecha Fin</th>
+                <th>Estado</th>
+                <th>Acciones</th>
+              </tr>
+            </thead>
+            <tbody>
+              {assemblies
+                .filter(a => 
+                  eventos.find(e => e.id_evento === a.id_evento)?.tipo_evento
+                    .toLowerCase()
+                    .includes(filtroEvento.toLowerCase())
+                )
+                .map((assembly) => (
+                  <tr key={assembly.id_assembly}>
+                    <td>{assembly.id_assembly}</td>
+                    <td>
+                      {eventos.find(e => e.id_evento === assembly.id_evento)?.tipo_evento}
+                    </td>
+                    <td>{assembly.tipo_servicio}</td>
+                    <td>{assembly.descripcion}</td>
+                    <td>{assembly.fecha_inicio}</td>
+                    <td>{assembly.fecha_fin}</td>
+                    <td>{assembly.estado}</td>
+                    <td>
+                      <button
+                        className="edit-btn"
+                        onClick={() => handleEdit(assembly)}
+                      >
+                        Editar
+                      </button>
+                      <button
+                        className="delete-btn"
+                        onClick={() => handleDelete(assembly.id_assembly!)}
+                      >
+                        Eliminar
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+            </tbody>
+          </table>
+        </div>
 
-      {showForm && (
-        <div className="modalOverlay">
-          <div className="modalContainer" style={{ display: "flex", gap: "20px" }}>
-            <button className="closeButton" onClick={() => setShowForm(false)}>
-              ×
-            </button>
-
-            {/* Formulario */}
-            <div className="modal-form" style={{ flex: 1 }}>
-              <h3 className="form-title">Formulario de Montaje y Desmontaje</h3>
-              <form onSubmit={handleSubmit}>
+        {showModal && (
+          <div className="modal-overlay">
+            <div className="modal-container">
+              <button className="close-btn" onClick={() => setShowModal(false)}>×</button>
+              <form className="modal-form" onSubmit={handleSubmit}>
+                <h2>{editId ? 'Editar Servicio' : 'Nuevo Servicio'}</h2>
+                
                 <label>
-                  ID Evento
-                  <input
-                    type="number"
+                  Evento:
+                  <select
                     name="id_evento"
-                    value={formData.id_evento || ""}
-                    onChange={handleChange}
+                    value={formData.id_evento || ''}
+                    onChange={handleSelectChange}
+                    required
+                  >
+                    <option value="">Seleccionar evento</option>
+                    {eventos.map((evento) => (
+                      <option key={evento.id_evento} value={evento.id_evento}>
+                        {evento.fecha_evento} - {evento.tipo_evento}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+
+                <label>
+                  Tipo de Servicio:
+                  <select
+                    name="tipo_servicio"
+                    value={formData.tipo_servicio || ''}
+                    onChange={handleSelectChange}
+                    required
+                  >
+                    <option value="">Seleccionar tipo</option>
+                    <option value="Montaje">Montaje</option>
+                    <option value="Desmontaje">Desmontaje</option>
+                    <option value="Montaje y Desmontaje">Montaje y Desmontaje</option>
+                  </select>
+                </label>
+
+                <label>
+                  Descripción:
+                  <textarea
+                    name="descripcion"
+                    value={formData.descripcion || ''}
+                    onChange={handleInputChange}
+                    required
+                    rows={4}
+                  />
+                </label>
+
+                <label>
+                  Fecha Inicio:
+                  <input
+                    type="datetime-local"
+                    name="fecha_inicio"
+                    value={formData.fecha_inicio || ''}
+                    onChange={handleInputChange}
                     required
                   />
                 </label>
 
                 <label>
-                  Precio Neto
+                  Fecha Fin:
                   <input
-                    type="number"
-                    name="precio_neto"
-                    value={formData.precio_neto || ""}
-                    onChange={handleChange}
+                    type="datetime-local"
+                    name="fecha_fin"
+                    value={formData.fecha_fin || ''}
+                    onChange={handleInputChange}
                     required
                   />
                 </label>
 
                 <label>
-                  ITBIS
-                  <input
-                    type="number"
-                    name="itbis"
-                    value={formData.itbis || ""}
-                    onChange={handleChange}
+                  Estado:
+                  <select
+                    name="estado"
+                    value={formData.estado || ''}
+                    onChange={handleSelectChange}
                     required
-                  />
+                  >
+                    <option value="">Seleccionar estado</option>
+                    <option value="Pendiente">Pendiente</option>
+                    <option value="En Progreso">En Progreso</option>
+                    <option value="Completado">Completado</option>
+                    <option value="Cancelado">Cancelado</option>
+                  </select>
                 </label>
 
                 <label>
-                  Total
-                  <input
-                    type="number"
-                    name="total"
-                    value={formData.total || ""}
-                    onChange={handleChange}
-                    required
-                  />
-                </label>
-
-                <label>
-                  Cédula del usuario
-                  <input
-                    type="text"
-                    name="cedula_usuariopersonal"
-                    value={formData.cedula_usuariopersonal || ""}
-                    onChange={handleChange}
-                    required
-                  />
-                </label>
-
-                <label>
-                  Horas de trabajo
-                  <input
-                    type="number"
-                    name="horas_trabajo"
-                    value={formData.horas_trabajo || ""}
-                    onChange={handleChange}
-                    required
-                  />
-                </label>
-
-                <label>
-                  Precio neto montaje
-                  <input
-                    type="number"
-                    name="precioneto_montaje"
-                    value={formData.precioneto_montaje || ""}
-                    onChange={handleChange}
-                    required
+                  Notas:
+                  <textarea
+                    name="notas"
+                    value={formData.notas || ''}
+                    onChange={handleInputChange}
+                    rows={4}
                   />
                 </label>
 
                 <div className="form-buttons">
-                  <button type="submit" className="submitBtn">Guardar</button>
-                  <button type="button" className="resetBtn" onClick={handleReset}>Limpiar</button>
+                  <button type="submit" className="submit-btn">
+                    {editId ? 'Actualizar' : 'Guardar'}
+                  </button>
+                  <button
+                    type="button"
+                    className="reset-btn"
+                    onClick={() => setShowModal(false)}
+                  >
+                    Cancelar
+                  </button>
                 </div>
               </form>
             </div>
-
-            {/* Tablas */}
-            <div className="tables-container" style={{ flex: 2, display: "flex", flexDirection: "column", gap: "20px" }}>
-              <div className="table-section">
-                <p>Eventos Disponibles</p>
-                <input
-                  type="text"
-                  placeholder="Buscar evento por ID, estado, fecha..."
-                  value={filtroEvento}
-                  onChange={(e) => setFiltroEvento(e.target.value)}
-                  style={{ margin: "10px 0", width: "100%" }}
-                />
-                <table>
-                  <thead>
-                    <tr>
-                      <th>ID</th>
-                      <th>Fecha</th>
-                      <th>Hora</th>
-                      <th>Estado</th>
-                      <th>Tipo</th>
-                      <th>Nota</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {eventos
-                      .filter((ev) =>
-                        Object.values(ev).join(" ").toLowerCase().includes(filtroEvento.toLowerCase())
-                      )
-                      .map((ev) => (
-                        <tr key={ev.id_evento}>
-                          <td>{ev.id_evento}</td>
-                          <td>{ev.fecha_evento}</td>
-                          <td>{ev.hora_evento}</td>
-                          <td>{ev.estado_evento}</td>
-                          <td>{ev.tipo_evento}</td>
-                          <td>{ev.nota_cliente}</td>
-                        </tr>
-                      ))}
-                  </tbody>
-                </table>
-              </div>
-
-              <div className="table-section">
-                <p>Servicios Registrados</p>
-                <table>
-                  <thead>
-                    <tr>
-                      <th>ID</th>
-                      <th>ID Evento</th>
-                      <th>Precio Neto</th>
-                      <th>ITBIS</th>
-                      <th>Total</th>
-                      <th>Cédula Usuario</th>
-                      <th>Horas Trabajo</th>
-                      <th>Precio Neto Montaje</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {montajes.map((montaje) => (
-                      <tr key={montaje.id_montdes}>
-                        <td>{montaje.id_montdes}</td>
-                        <td>{montaje.id_evento}</td>
-                        <td>{montaje.precio_neto}</td>
-                        <td>{montaje.itbis}</td>
-                        <td>{montaje.total}</td>
-                        <td>{montaje.cedula_usuariopersonal}</td>
-                        <td>{montaje.horas_trabajo}</td>
-                        <td>{montaje.precioneto_montaje}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
           </div>
-        </div>
-      )}
-    </div>
+        )}
+      </div>
+    </ServiceBase>
   );
 }

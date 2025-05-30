@@ -1,333 +1,335 @@
-import { useState } from "react";
-import type { ChangeEvent, FormEvent } from "react";
-import "../../styles/decor.scss";
-import "../../styles/services-subpages.scss";
+import { useState, useEffect } from 'react';
+import type { ChangeEvent, FormEvent } from 'react';
+import '../../styles/services-subpages.scss';
+import ServiceBase from '../../components/ServiceBase';
 
-type DecorItem = {
-  id_decoracion: number;
+interface Decor {
+  id_decor?: number;
   id_evento: number;
-  tema_decoracion: string;
-  id_espacio: number;
-  precio_neto: number;
-  itbis_decoracion: number;
-  total_decoracion: number;
-};
+  tipo_decoracion: string;
+  descripcion: string;
+  precio: number;
+  fecha: string;
+  estado: string;
+  notas: string;
+}
 
-type Evento = {
+interface Evento {
   id_evento: number;
   fecha_evento: string;
-  hora_evento: string;
-  estado_evento: string;
   tipo_evento: string;
-  nota_cliente: string;
-};
+}
 
 export default function Decor() {
   const [showModal, setShowModal] = useState(false);
-  const [decorItems, setDecorItems] = useState<DecorItem[]>([]);
-  const [eventos] = useState<Evento[]>([]);
+  const [decors, setDecors] = useState<Decor[]>([]);
+  const [eventos, setEventos] = useState<Evento[]>([]);
+  const [formData, setFormData] = useState<Partial<Decor>>({});
+  const [editId, setEditId] = useState<number | null>(null);
   const [filtroEvento, setFiltroEvento] = useState("");
-  const [formData, setFormData] = useState<Partial<DecorItem>>({});
+  const [stats, setStats] = useState({
+    eventsInProcess: 0,
+    averageRating: 0,
+    totalUsers: 0,
+    quotations: []
+  });
+  const [userRole, setUserRole] = useState('client');
 
-  // Si tuvieras endpoint real, en useEffect cargarías eventos
-  // useEffect(() => {
-  //   fetch("/api/eventos")
-  //     .then(res => res.json())
-  //     .then(data => setEventos(data));
-  // }, []);
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const [decorsRes, eventosRes] = await Promise.all([
+          fetch('/api/decor'),
+          fetch('/api/eventos')
+        ]);
 
-  const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
+        const [decorsData, eventosData] = await Promise.all([
+          decorsRes.json(),
+          eventosRes.json()
+        ]);
+
+        setDecors(decorsData);
+        setEventos(eventosData);
+      } catch (error) {
+        console.error('Error al cargar datos:', error);
+      }
+    };
+
+    fetchData();
+  }, []);
+
+  useEffect(() => {
+    const fetchStats = async () => {
+      if (userRole === 'client') {
+        setStats({
+          eventsInProcess: 0,
+          averageRating: 0,
+          totalUsers: 0,
+          quotations: []
+        });
+        return;
+      }
+
+      try {
+        const response = await fetch('/api/decor/stats');
+        const data = await response.json();
+        setStats(data);
+      } catch (error) {
+        console.error('Error al obtener estadísticas:', error);
+      }
+    };
+
+    fetchStats();
+  }, [userRole]);
+
+  const handleInputChange = (e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({
       ...prev,
-      [name]:
-        ["id_evento", "id_espacio", "precio_neto", "itbis_decoracion", "total_decoracion"].includes(name)
-          ? Number(value)
-          : value,
+      [name]: value
     }));
   };
 
-  const handleSubmit = (e: FormEvent) => {
+  const handleSelectChange = (e: ChangeEvent<HTMLSelectElement>) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
+
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    if (formData.id_decoracion != null) {
-      // Editar existente
-      setDecorItems(prev =>
-        prev.map(item =>
-          item.id_decoracion === formData.id_decoracion
-            ? ({
-                id_decoracion: formData.id_decoracion!,
-                id_evento: formData.id_evento!,
-                tema_decoracion: formData.tema_decoracion!,
-                id_espacio: formData.id_espacio!,
-                precio_neto: formData.precio_neto!,
-                itbis_decoracion: formData.itbis_decoracion!,
-                total_decoracion: formData.total_decoracion!,
-              } as DecorItem)
-            : item
-        )
-      );
-    } else {
-      // Agregar nuevo
-      const newItem: DecorItem = {
-        id_decoracion: Math.max(0, ...decorItems.map(i => i.id_decoracion)) + 1,
-        id_evento: formData.id_evento!,
-        tema_decoracion: formData.tema_decoracion!,
-        id_espacio: formData.id_espacio!,
-        precio_neto: formData.precio_neto!,
-        itbis_decoracion: formData.itbis_decoracion!,
-        total_decoracion: formData.total_decoracion!,
-      };
-      setDecorItems(prev => [...prev, newItem]);
+    try {
+      if (editId) {
+        await fetch(`/api/decor/${editId}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(formData)
+        });
+      } else {
+        await fetch('/api/decor', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(formData)
+        });
+      }
+
+      const response = await fetch('/api/decor');
+      const data = await response.json();
+      setDecors(data);
+      setShowModal(false);
+      setFormData({});
+      setEditId(null);
+    } catch (error) {
+      console.error('Error al guardar:', error);
     }
-    setFormData({});
-    setShowModal(false);
   };
 
-  const handleReset = () => {
-    setFormData({});
-  };
-
-  const handleEdit = (item: DecorItem) => {
-    setFormData(item);
+  const handleEdit = (decor: Decor) => {
+    setFormData(decor);
+    setEditId(decor.id_decor!);
     setShowModal(true);
   };
 
-  const handleDelete = (id: number) => {
-    if (confirm("¿Seguro que quieres eliminar esta decoración?")) {
-      setDecorItems(prev => prev.filter(item => item.id_decoracion !== id));
+  const handleDelete = async (id: number) => {
+    try {
+      await fetch(`/api/decor/${id}`, { method: 'DELETE' });
+      setDecors(prev => prev.filter(d => d.id_decor !== id));
+    } catch (error) {
+      console.error('Error al eliminar:', error);
     }
   };
 
   return (
-    <div className="dashboard-container">
-      <div className="content-area">
-        <h1>Decoración</h1>
-        <div style={{ height: "20px" }}></div>
-        <button onClick={() => { setFormData({}); setShowModal(true); }} className="open-modal-btn">
+    <ServiceBase 
+      title="Decoración" 
+      stats={stats}
+    >
+      <div className="decor-content">
+        <button className="new-form-btn" onClick={() => setShowModal(true)}>
           Agregar Decoración
         </button>
 
-        {/* Tabla principal de Decoración */}
         <div className="table-section">
-          <p>Decoración</p>
+          <p>Decoraciones Registradas</p>
+          <input
+            type="text"
+            className="escri"
+            placeholder="Filtrar por evento..."
+            value={filtroEvento}
+            onChange={(e) => setFiltroEvento(e.target.value)}
+          />
           <table>
             <thead>
               <tr>
-                <th>ID Decoración</th>
-                <th>ID Evento</th>
-                <th>Tema</th>
-                <th>ID Espacio</th>
-                <th>Precio Neto</th>
-                <th>ITBIS</th>
-                <th>Total</th>
+                <th>ID</th>
+                <th>Evento</th>
+                <th>Tipo de Decoración</th>
+                <th>Descripción</th>
+                <th>Precio</th>
+                <th>Fecha</th>
+                <th>Estado</th>
                 <th>Acciones</th>
               </tr>
             </thead>
             <tbody>
-              {decorItems.length === 0 ? (
-                <tr>
-                  <td colSpan={8} style={{ textAlign: "center", fontStyle: "italic" }}>
-                    No hay datos de decoración.
-                  </td>
-                </tr>
-              ) : (
-                decorItems.map(item => (
-                  <tr key={item.id_decoracion}>
-                    <td>{item.id_decoracion}</td>
-                    <td>{item.id_evento}</td>
-                    <td>{item.tema_decoracion}</td>
-                    <td>{item.id_espacio}</td>
-                    <td>{item.precio_neto}</td>
-                    <td>{item.itbis_decoracion}</td>
-                    <td>{item.total_decoracion}</td>
+              {decors
+                .filter(d => 
+                  eventos.find(e => e.id_evento === d.id_evento)?.tipo_evento
+                    .toLowerCase()
+                    .includes(filtroEvento.toLowerCase())
+                )
+                .map((decor) => (
+                  <tr key={decor.id_decor}>
+                    <td>{decor.id_decor}</td>
                     <td>
-                      <button onClick={() => handleEdit(item)} className="edit-btn">Editar</button>
-                      <button onClick={() => handleDelete(item.id_decoracion)} className="delete-btn">Eliminar</button>
+                      {eventos.find(e => e.id_evento === decor.id_evento)?.tipo_evento}
+                    </td>
+                    <td>{decor.tipo_decoracion}</td>
+                    <td>{decor.descripcion}</td>
+                    <td>${decor.precio}</td>
+                    <td>{decor.fecha}</td>
+                    <td>{decor.estado}</td>
+                    <td>
+                      <button
+                        className="edit-btn"
+                        onClick={() => handleEdit(decor)}
+                      >
+                        Editar
+                      </button>
+                      <button
+                        className="delete-btn"
+                        onClick={() => handleDelete(decor.id_decor!)}
+                      >
+                        Eliminar
+                      </button>
                     </td>
                   </tr>
-                ))
-              )}
+                ))}
             </tbody>
           </table>
         </div>
 
-        {/* Modal */}
         {showModal && (
           <div className="modal-overlay">
-            <div className="modal-container decor" style={{ display: "flex", gap: "20px" }}>
-              <button onClick={() => setShowModal(false)} className="close-btn">×</button>
+            <div className="modal-container">
+              <button className="close-btn" onClick={() => setShowModal(false)}>×</button>
+              <form className="modal-form" onSubmit={handleSubmit}>
+                <h2>{editId ? 'Editar Decoración' : 'Nueva Decoración'}</h2>
+                
+                <label>
+                  Evento:
+                  <select
+                    name="id_evento"
+                    value={formData.id_evento || ''}
+                    onChange={handleSelectChange}
+                    required
+                  >
+                    <option value="">Seleccionar evento</option>
+                    {eventos.map((evento) => (
+                      <option key={evento.id_evento} value={evento.id_evento}>
+                        {evento.fecha_evento} - {evento.tipo_evento}
+                      </option>
+                    ))}
+                  </select>
+                </label>
 
-              {/* Formulario de Decoración (izquierda) */}
-              <div className="modal-form" style={{ flex: "1" }}>
-                <h3>{formData.id_decoracion != null ? "Editar Decoración" : "Nueva Decoración"}</h3>
-                <form onSubmit={handleSubmit}>
-                  <label>
-                    ID Evento
-                    <input
-                      type="number"
-                      name="id_evento"
-                      value={formData.id_evento || ""}
-                      onChange={handleChange}
-                      required
-                    />
-                  </label>
+                <label>
+                  Tipo de Decoración:
+                  <select
+                    name="tipo_decoracion"
+                    value={formData.tipo_decoracion || ''}
+                    onChange={handleSelectChange}
+                    required
+                  >
+                    <option value="">Seleccionar tipo</option>
+                    <option value="Centros de Mesa">Centros de Mesa</option>
+                    <option value="Arreglos Florales">Arreglos Florales</option>
+                    <option value="Iluminación">Iluminación</option>
+                    <option value="Telas y Cortinas">Telas y Cortinas</option>
+                    <option value="Otro">Otro</option>
+                  </select>
+                </label>
 
-                  <label>
-                    Tema de Decoración
-                    <input
-                      type="text"
-                      name="tema_decoracion"
-                      value={formData.tema_decoracion || ""}
-                      onChange={handleChange}
-                      required
-                    />
-                  </label>
-
-                  <label>
-                    ID Espacio
-                    <input
-                      type="number"
-                      name="id_espacio"
-                      value={formData.id_espacio || ""}
-                      onChange={handleChange}
-                      required
-                    />
-                  </label>
-
-                  <label>
-                    Precio Neto
-                    <input
-                      type="number"
-                      name="precio_neto"
-                      value={formData.precio_neto || ""}
-                      onChange={handleChange}
-                      required
-                      min={0}
-                    />
-                  </label>
-
-                  <label>
-                    ITBIS
-                    <input
-                      type="number"
-                      name="itbis_decoracion"
-                      value={formData.itbis_decoracion || ""}
-                      onChange={handleChange}
-                      required
-                      min={0}
-                    />
-                  </label>
-
-                  <label>
-                    Total
-                    <input
-                      type="number"
-                      name="total_decoracion"
-                      value={formData.total_decoracion || ""}
-                      onChange={handleChange}
-                      required
-                      min={0}
-                    />
-                  </label>
-
-                  <div className="form-buttons">
-                    <button type="submit" className="submit-btn">Guardar</button>
-                    <button type="button" className="reset-btn" onClick={handleReset}>Limpiar</button>
-                  </div>
-                </form>
-              </div>
-
-              {/* Lado derecho: Tablas de Evento y Espacio */}
-              <div className="tables-container" style={{ flex: "1", display: "flex", flexDirection: "column", gap: "20px" }}>
-                {/* Tabla de Eventos con buscador */}
-                <div className="table-section">
-                  <p>Eventos Disponibles</p>
-                  <input
-                    type="text"
-                    placeholder="Buscar por ID, estado, fecha..."
-                    value={filtroEvento}
-                    onChange={(e) => setFiltroEvento(e.target.value)}
-                    style={{
-                      marginBottom: "10px",
-                      marginTop: "10px",
-                      marginRight: "10px",
-                      width: "calc(100% - 20px)",
-                    }}
+                <label>
+                  Descripción:
+                  <textarea
+                    name="descripcion"
+                    value={formData.descripcion || ''}
+                    onChange={handleInputChange}
+                    required
+                    rows={4}
                   />
-                  <table>
-                    <thead>
-                      <tr>
-                        <th>ID</th>
-                        <th>Fecha</th>
-                        <th>Hora</th>
-                        <th>Estado</th>
-                        <th>Tipo</th>
-                        <th>Nota</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {eventos.length === 0 ? (
-                        <tr>
-                          <td colSpan={6} style={{ textAlign: "center", fontStyle: "italic" }}>
-                            No hay datos de eventos.
-                          </td>
-                        </tr>
-                      ) : (
-                        eventos
-                          .filter(ev =>
-                            Object.values(ev).join(" ").toLowerCase().includes(filtroEvento.toLowerCase())
-                          )
-                          .map(ev => (
-                            <tr key={ev.id_evento}>
-                              <td>{ev.id_evento}</td>
-                              <td>{ev.fecha_evento}</td>
-                              <td>{ev.hora_evento}</td>
-                              <td>{ev.estado_evento}</td>
-                              <td>{ev.tipo_evento}</td>
-                              <td>{ev.nota_cliente}</td>
-                            </tr>
-                          ))
-                      )}
-                    </tbody>
-                  </table>
-                </div>
+                </label>
 
-                {/* Tabla estática de Espacio */}
-                <div className="table-section">
-                  <p>Espacio</p>
+                <label>
+                  Precio:
                   <input
-                    type="text"
-                    placeholder="Buscar por área, capacidad..."
-                    style={{
-                      marginBottom: "10px",
-                      marginTop: "10px",
-                      marginRight: "10px",
-                      width: "calc(100% - 20px)",
-                    }}
+                    type="number"
+                    name="precio"
+                    value={formData.precio || ''}
+                    onChange={handleInputChange}
+                    required
+                    min="0"
+                    step="0.01"
                   />
-                  <table>
-                    <thead>
-                      <tr>
-                        <th>ID Espacio</th>
-                        <th>Nombre</th>
-                        <th>Teléfono</th>
-                        <th>Estado</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      <tr>
-                        <td colSpan={4} style={{ textAlign: "center", fontStyle: "italic" }}>
-                          Sin datos de espacios disponibles.
-                        </td>
-                      </tr>
-                    </tbody>
-                  </table>
+                </label>
+
+                <label>
+                  Fecha:
+                  <input
+                    type="date"
+                    name="fecha"
+                    value={formData.fecha || ''}
+                    onChange={handleInputChange}
+                    required
+                  />
+                </label>
+
+                <label>
+                  Estado:
+                  <select
+                    name="estado"
+                    value={formData.estado || ''}
+                    onChange={handleSelectChange}
+                    required
+                  >
+                    <option value="">Seleccionar estado</option>
+                    <option value="Pendiente">Pendiente</option>
+                    <option value="En Progreso">En Progreso</option>
+                    <option value="Completado">Completado</option>
+                    <option value="Cancelado">Cancelado</option>
+                  </select>
+                </label>
+
+                <label>
+                  Notas:
+                  <textarea
+                    name="notas"
+                    value={formData.notas || ''}
+                    onChange={handleInputChange}
+                    rows={4}
+                  />
+                </label>
+
+                <div className="form-buttons">
+                  <button type="submit" className="submit-btn">
+                    {editId ? 'Actualizar' : 'Guardar'}
+                  </button>
+                  <button
+                    type="button"
+                    className="reset-btn"
+                    onClick={() => setShowModal(false)}
+                  >
+                    Cancelar
+                  </button>
                 </div>
-              </div>
+              </form>
             </div>
           </div>
         )}
       </div>
-    </div>
+    </ServiceBase>
   );
 }
