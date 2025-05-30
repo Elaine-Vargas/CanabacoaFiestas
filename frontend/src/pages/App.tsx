@@ -18,6 +18,7 @@ const Catering = lazy(() => import('./ServicesSubpages/Catering'));
 const Supervision = lazy(() => import('./ServicesSubpages/Supervision'));
 const Transportation = lazy(() => import('./ServicesSubpages/Transportation'));
 const AssemblyAndDisassembly = lazy(() => import('./ServicesSubpages/AssemblyAndDisassembly'));
+const Catalogo = lazy(() => import('./CatalogoPage'));
 
 import ProtectedRoute from '../components/ProtectedRoute';
 import PublicRoute from '../components/PublicRoute';
@@ -35,6 +36,7 @@ function App() {
             <Route path="/Principal" element={<Principal />} />
             <Route path="/Nosotros" element={<AboutUs />} />
             <Route path="/Servicios" element={<Services />} />
+            <Route path="/Catalogo" element={<Catalogo />} />
             <Route path="/Login" element={
               <PublicRoute>
                 <UserLogin />

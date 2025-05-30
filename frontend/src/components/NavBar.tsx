@@ -6,6 +6,10 @@ import {
   ListItemText,
   Button,
   IconButton,
+  AppBar,
+  Toolbar,
+  Typography,
+  Box,
 } from "@mui/material";
 import MenuRoundedIcon from "@mui/icons-material/MenuRounded";
 import circuloLogo from "../assets/logoVariants/CIRCULO-CF(blanco).svg";
@@ -15,6 +19,7 @@ import { useState, lazy, Suspense } from "react";
 import React from "react";
 import "../styles/NavBar.scss";
 import "../styles/fonts.scss";
+import { Link as RouterLink } from 'react-router-dom';
 const BackIcon = lazy(() => import("@mui/icons-material/ArrowBackRounded"));
 
 const NavBar = React.memo(() => {
@@ -40,6 +45,9 @@ const NavBar = React.memo(() => {
         </li>
         <li className="navItem">
           <a href="/Servicios">Servicios</a>
+        </li>
+        <li className="navItem">
+          <a href="/Catalogo">Catálogo</a>
         </li>
         <li className="navItem">
           <a href="/Contacto">Contacto</a>
@@ -83,7 +91,7 @@ const NavBar = React.memo(() => {
               <BackIcon sx={{ alignSelf: "left" }} />
             </IconButton>
             <List>
-              {["Inicio", "Nosotros", "Servicios", "Contacto"].map((text) => (
+              {["Inicio", "Nosotros", "Servicios", "Catálogo", "Contacto"].map((text) => (
                 <ListItem key={text} disablePadding>
                   <ListItemButton
                     component="a"
