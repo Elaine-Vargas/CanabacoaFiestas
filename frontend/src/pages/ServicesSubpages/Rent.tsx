@@ -204,11 +204,12 @@ export default function Rent() {
       <div className="table-section">
         <p>Servicios de Renta Registrados</p>
         <input
-          type="text"
-          placeholder="Filtrar por evento..."
-          value={filtroEvento}
-          onChange={(e) => setFiltroEvento(e.target.value)}
-        />
+            type="text"
+            className="escri"
+            placeholder="Filtrar por evento..."
+            value={filtroEvento}
+            onChange={(e) => setFiltroEvento(e.target.value)}
+          />
         <table>
           <thead>
             <tr>

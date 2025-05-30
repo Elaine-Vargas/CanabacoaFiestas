@@ -504,12 +504,12 @@ const WelcomeMenu: React.FC<WelcomeMenuProps> = () => {
         <br />
         <h3>Acciones Administrativas</h3>
         <div className="action-buttons">
-          <button onClick={() => navigate('/Menu-Servicios/Transportation')}>Gestionar Transporte</button>
+          <button onClick={() => navigate('/Menu-Servicios/Transporte')}>Gestionar Transporte</button>
           <button onClick={() => navigate('/Menu-Servicios/Supervision')}>Gestionar Supervisión</button>
-          <button onClick={() => navigate('/Menu-Servicios/AssemblyAndDisassembly')}>Gestionar Montaje</button>
+          <button onClick={() => navigate('/Menu-Servicios/Montaje-Desmontaje')}>Gestionar Montaje</button>
           <button onClick={() => navigate('/Menu-Servicios/Catering')}>Gestionar Catering</button>
-          <button onClick={() => navigate('/Menu-Servicios/Decor')}>Gestionar Decoración</button>
-          <button onClick={() => navigate('/Menu-Servicios/Rent')}>Gestionar Alquiler</button>
+          <button onClick={() => navigate('/Menu-Servicios/Decoracion')}>Gestionar Decoración</button>
+          <button onClick={() => navigate('/Menu-Servicios/Aquiler')}>Gestionar Alquiler</button>
         </div>
       </div>
     </div>

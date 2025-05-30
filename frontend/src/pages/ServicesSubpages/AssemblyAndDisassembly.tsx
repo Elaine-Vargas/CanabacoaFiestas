@@ -154,6 +154,13 @@ export default function AssemblyAndDisassembly() {
           <p>Servicios Registrados</p>
           <input
             type="text"
+            className="escri"
+            placeholder="Filtrar por evento..."
+            value={filtroEvento}
+            onChange={(e) => setFiltroEvento(e.target.value)}
+          />
+          <input
+            type="text"
             placeholder="Filtrar por evento..."
             value={filtroEvento}
             onChange={(e) => setFiltroEvento(e.target.value)}

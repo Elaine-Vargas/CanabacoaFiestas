@@ -34,6 +34,7 @@ export default function Catering() {
   const [platos, setPlatos] = useState<Plato[]>([]);
   const [selectedCategory, setSelectedCategory] = useState('todos');
   const [searchTerm, setSearchTerm] = useState('');
+  const [filtroEvento, setFiltroEvento] = useState('');
   const [formData, setFormData] = useState<Partial<Catering>>({
     personas_catering: 0,
     precioneto_catering: 0,
@@ -309,6 +310,13 @@ export default function Catering() {
 
       <div className="table-section">
         <p>Servicios de Catering Registrados</p>
+        <input
+            type="text"
+            className="escri"
+            placeholder="Filtrar por evento..."
+            value={filtroEvento}
+            onChange={(e) => setFiltroEvento(e.target.value)}
+          />
         <table>
           <thead>
             <tr>
