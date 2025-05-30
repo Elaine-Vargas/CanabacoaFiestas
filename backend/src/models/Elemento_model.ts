@@ -11,6 +11,13 @@ export default class Elemento extends Model {
   @Column({ type: DataType.INTEGER, field: 'id_elemento' })
   id_elemento!: number;
 
+  @Column({
+    type: DataType.STRING(50),
+    allowNull: false,
+    field: 'nombre_elemento'
+  })
+  nombre_elemento!: string;
+
   @ForeignKey(() => SubcategoriaElemento)
   @Column({ type: DataType.INTEGER, allowNull: false })
   id_subcategoria!: number;

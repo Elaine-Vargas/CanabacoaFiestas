@@ -1,17 +1,19 @@
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
-import  sequelize from './config/index';
-import authRoutes from './routes/authRoutes'; // Asegúrate del path
+import sequelize from './config';
+import { syncDatabase } from './config/syncDatabase';
+import authRoutes from './routes/authRoutes';
+import elementoRoutes from './routes/elementoRoutes';
 
-dotenv.config(); // Carga las variables de entorno
+dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
 // CORS configuration
 const corsOptions = {
-  origin: 'http://localhost:5173', // Vite's default port
+  origin: 'http://localhost:5173',
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
   credentials: true
@@ -19,10 +21,11 @@ const corsOptions = {
 
 // Middlewares
 app.use(cors(corsOptions));
-app.use(express.json()); // Para leer JSON en req.body
+app.use(express.json());
 
 // Rutas
 app.use('/api/auth', authRoutes);
+app.use('/api/elementos', elementoRoutes);
 
 // Ruta de prueba
 app.get('/', (req, res) => {
@@ -30,9 +33,21 @@ app.get('/', (req, res) => {
 });
 
 // Iniciar servidor
-app.listen(PORT, () => {
+app.listen(PORT, async () => {
   console.log(`Servidor escuchando en http://localhost:${PORT}`);
-  testDbConnection();
+  console.log('Rutas disponibles:');
+  console.log('- GET /api/elementos');
+  console.log('- GET /api/elementos/categorias/list');
+  console.log('- GET /api/elementos/colores/list');
+  console.log('- GET /api/elementos/filtrados');
+  console.log('- GET /api/elementos/elemento/:id');
+  
+  try {
+    await testDbConnection();
+    await syncDatabase();
+  } catch (error) {
+    console.error('Error al inicializar la base de datos:', error);
+  }
 });
 
 // Verificar conexión DB
@@ -42,5 +57,6 @@ async function testDbConnection() {
     console.log('Conexión a la base de datos exitosa');
   } catch (error) {
     console.error('No se pudo conectar a la base de datos:', error);
+    throw error;
   }
 }
