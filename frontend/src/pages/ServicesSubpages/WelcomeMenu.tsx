@@ -3,7 +3,7 @@ import '../../styles/services-subpages.scss';
 import { useUser } from '../../context/UserContext';
 import { useNavigate } from 'react-router-dom';
 
-export type UserRole = 'admin' | 'client' | 'supervisor';
+export type UserRole = 'admin' | 'client' | 'supervisor' | 'inventory';
 
 export type Permission = {
   id: string;
@@ -567,6 +567,7 @@ const WelcomeMenu: React.FC<WelcomeMenuProps> = () => {
       {userRole === 'admin' && renderAdminDashboard()}
       {userRole === 'client' && renderClientDashboard()}
       {userRole === 'supervisor' && renderCoordinatorDashboard()}
+      {userRole === 'inventory' && renderInventoryDashboard()}
 
       {showCommentModal && (
         <div className="modal-overlay">

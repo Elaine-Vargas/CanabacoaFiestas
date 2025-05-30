@@ -33,7 +33,7 @@ export default function Decor() {
     totalUsers: 0,
     quotations: []
   });
-  const [userRole, setUserRole] = useState('client');
+  const [userRole] = useState('client');
 
   useEffect(() => {
     const fetchData = async () => {

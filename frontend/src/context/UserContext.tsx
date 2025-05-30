@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 
-type UserRole = 'admin' | 'client' | 'supervisor';
+type UserRole = 'admin' | 'client' | 'supervisor' | 'inventory';
 
 interface Permission {
   id: string;
@@ -29,7 +29,7 @@ export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
       try {
         const userData = JSON.parse(localStorage.getItem('userData') || '{}');
         if (userData.rol) {
-          const role = userData.rol === 1 ? 'admin' : userData.rol === 2 ? 'client' : 'supervisor';
+          const role = userData.rol === 1 ? 'admin' : userData.rol === 2 ? 'client' : userData.rol === 3 ? 'supervisor' : 'inventory';
           setUserRole(role);
           // Permisos por defecto para el administrador
           if (role === 'admin') {
@@ -76,7 +76,7 @@ export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
         }
         const data = await response.json();
         if (data.id_rol) {
-          const role = data.id_rol === 1 ? 'admin' : data.id_rol === 2 ? 'client' : 'supervisor';
+          const role = data.id_rol === 1 ? 'admin' : data.id_rol === 2 ? 'client' : data.id_rol === 3 ? 'supervisor' : 'inventory';
           setUserRole(role);
           if (role === 'admin') {
             setUserPermissions([
