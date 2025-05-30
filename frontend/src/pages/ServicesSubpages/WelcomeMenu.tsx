@@ -47,6 +47,7 @@ interface NuevoEvento {
 const WelcomeMenu: React.FC<WelcomeMenuProps> = () => {
   const navigate = useNavigate();
   const { userRole } = useUser();
+  console.log('Rol actual:', userRole);
   const [showCommentModal, setShowCommentModal] = useState(false);
   const [showEventModal, setShowEventModal] = useState(false);
   const [showServicesModal, setShowServicesModal] = useState(false);
@@ -503,12 +504,12 @@ const WelcomeMenu: React.FC<WelcomeMenuProps> = () => {
         <br />
         <h3>Acciones Administrativas</h3>
         <div className="action-buttons">
-          <button onClick={() => navigate('/services/Transportation')}>Gestionar Transporte</button>
-          <button onClick={() => navigate('/services/Supervision')}>Gestionar Supervisión</button>
-          <button onClick={() => navigate('/services/AssemblyAndDisassembly')}>Gestionar Montaje</button>
-          <button onClick={() => navigate('/services/Catering')}>Gestionar Catering</button>
-          <button onClick={() => navigate('/services/Decor')}>Gestionar Decoración</button>
-          <button onClick={() => navigate('/services/Rent')}>Gestionar Alquiler</button>
+          <button onClick={() => navigate('/Menu-Servicios/Transportation')}>Gestionar Transporte</button>
+          <button onClick={() => navigate('/Menu-Servicios/Supervision')}>Gestionar Supervisión</button>
+          <button onClick={() => navigate('/Menu-Servicios/AssemblyAndDisassembly')}>Gestionar Montaje</button>
+          <button onClick={() => navigate('/Menu-Servicios/Catering')}>Gestionar Catering</button>
+          <button onClick={() => navigate('/Menu-Servicios/Decor')}>Gestionar Decoración</button>
+          <button onClick={() => navigate('/Menu-Servicios/Rent')}>Gestionar Alquiler</button>
         </div>
       </div>
     </div>
