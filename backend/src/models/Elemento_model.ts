@@ -1,7 +1,7 @@
 import { Table, Model, Column, PrimaryKey, AutoIncrement, DataType, ForeignKey, BelongsTo, HasMany } from 'sequelize-typescript';
 import SubcategoriaElemento from './SubcategoriaElemento_model';
-import MaterialElemento from './MaterialElemento_model';
 import ColorElemento from './ColorElemento_model';
+import MaterialElemento from './MaterialElemento_model';
 import DetalleCompra from './DetalleCompra_model';
 
 @Table({ tableName: 'elemento', timestamps: false })
@@ -10,13 +10,6 @@ export default class Elemento extends Model {
   @AutoIncrement
   @Column({ type: DataType.INTEGER, field: 'id_elemento' })
   id_elemento!: number;
-
-  @Column({
-    type: DataType.STRING(50),
-    allowNull: false,
-    field: 'nombre_elemento'
-  })
-  nombre_elemento!: string;
 
   @ForeignKey(() => SubcategoriaElemento)
   @Column({ type: DataType.INTEGER, allowNull: false })
@@ -39,19 +32,28 @@ export default class Elemento extends Model {
   @BelongsTo(() => ColorElemento)
   color!: ColorElemento;
 
-  @Column({ type: DataType.INTEGER, defaultValue: 0 })
+  @Column({ type: DataType.INTEGER, allowNull: true, defaultValue: 0 })
   cantidad_total!: number;
 
-  @Column({ type: DataType.INTEGER, defaultValue: 0 })
+  @Column({ type: DataType.INTEGER, allowNull: true, defaultValue: 0 })
   cantidad_disponible!: number;
 
   @Column({
     type: DataType.ENUM('Activo', 'Inactivo', 'Eliminado'),
+    allowNull: true,
     defaultValue: 'Activo'
   })
   estado_elemento!: string;
 
-  //Relación 1:N con Compra
+  @Column({ type: DataType.STRING(50), allowNull: false })
+  nombre_elemento!: string;
+
+  @Column({ type: DataType.DECIMAL(10, 2), allowNull: false })
+  precio_elemento!: number;
+
+  @Column({ type: DataType.STRING(255), allowNull: true })
+  imagen_url!: string;
+
   @HasMany(() => DetalleCompra)
   detallecompras!: DetalleCompra[];
 }
