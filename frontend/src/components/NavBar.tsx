@@ -50,7 +50,7 @@ const NavBar = React.memo(() => {
           <a href="/Catalogo">Catálogo</a>
         </li>
         <li className="navItem">
-          <a href="/Contacto">Contacto</a>
+          <a href="#footer">Contacto</a>
         </li>
         <button className="login">
           <a href="/Login">INGRESAR</a>

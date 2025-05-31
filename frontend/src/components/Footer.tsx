@@ -9,7 +9,7 @@ const MapComponent = lazy(() => import('./MapComponent'));
 
 const Footer = () => {
   return (
-    <footer>
+    <footer id="footer">
       <div className='footer'>
         <div className="footerMap">
           <h3>Nos encuentras en...</h3>
