@@ -1,5 +1,4 @@
 import ColorTheme from "../functions/ColorTheme";
-import "../styles/mainPages/Login.scss";
 import Back from '@mui/icons-material/ArrowBackRounded';
 import { useLocalStorage } from 'react-haiku';
 
