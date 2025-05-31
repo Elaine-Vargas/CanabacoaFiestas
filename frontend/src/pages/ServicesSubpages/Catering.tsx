@@ -1,8 +1,20 @@
 import { useState, useEffect } from 'react';
-import type { ChangeEvent, FormEvent } from 'react';
+import type { FormEvent } from 'react';
 import '../../styles/services-subpages.scss';
 import ServiceBase from '../../components/ServiceBase';
 import { useUser } from '../../context/UserContext';
+
+export type UserRole = 'admin' | 'client' | 'supervisor' | 'inventory';
+
+export type Permission = {
+  id: string;
+  name: string;
+  description: string;
+};
+
+export type RolePermissions = {
+  [key in UserRole]: Permission[];
+};
 
 interface Plato {
   id_plato: number;
@@ -17,17 +29,35 @@ interface Menu {
 }
 
 interface Catering {
-  id_catering: number;
+  id_catering?: number;
   id_evento: number;
-  personas_catering: number;
-  precioneto_catering: number;
-  itbis_catering: number;
-  total_catering: number;
+  personas: number;
+  precio_neto: number;
+  itbis: number;
+  total: number;
   menus: Menu[];
+  estado: string;
+  rating: number;
+  comment: string;
+}
+
+interface Evento {
+  id_evento: number;
+  fecha_evento: string;
+  tipo_evento: string;
+}
+
+interface CateringStats {
+  menuDisponibles: number;
+  proveedorActivo: number;
+  totalPedidos: number;
+  pedidosPendientes: number;
+  totalPersonas: number;
 }
 
 export default function Catering() {
   const { userRole } = useUser();
+  const userData = JSON.parse(localStorage.getItem('userData') || '{}');
   const [showModal, setShowModal] = useState(false);
   const [showCreateMenuModal, setShowCreateMenuModal] = useState(false);
   const [menus, setMenus] = useState<Menu[]>([]);
@@ -35,33 +65,47 @@ export default function Catering() {
   const [selectedCategory, setSelectedCategory] = useState('todos');
   const [searchTerm, setSearchTerm] = useState('');
   const [filtroEvento, setFiltroEvento] = useState('');
+  const [stats, setStats] = useState<CateringStats>({
+    menuDisponibles: 0,
+    proveedorActivo: 0,
+    totalPedidos: 0,
+    pedidosPendientes: 0,
+    totalPersonas: 0
+  });
   const [formData, setFormData] = useState<Partial<Catering>>({
-    personas_catering: 0,
-    precioneto_catering: 0,
-    itbis_catering: 0,
-    total_catering: 0,
-    menus: []
+    menus: [],
+    rating: 0,
+    comment: ''
   });
   const [newMenuData, setNewMenuData] = useState({
     desc_menu: '',
     selectedPlatos: [] as Plato[]
   });
+  const [caterings, setCaterings] = useState<Catering[]>([]);
+  const [eventos, setEventos] = useState<Evento[]>([]);
+  const [editId, setEditId] = useState<number | null>(null);
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [menusRes, platosRes] = await Promise.all([
+        const [cateringsRes, menusRes, platosRes, eventosRes] = await Promise.all([
+          fetch('/api/catering'),
           fetch('/api/menus'),
-          fetch('/api/platos')
+          fetch('/api/platos'),
+          fetch('/api/eventos')
         ]);
 
-        const [menusData, platosData] = await Promise.all([
+        const [cateringsData, menusData, platosData, eventosData] = await Promise.all([
+          cateringsRes.json(),
           menusRes.json(),
-          platosRes.json()
+          platosRes.json(),
+          eventosRes.json()
         ]);
 
+        setCaterings(cateringsData);
         setMenus(menusData);
         setPlatos(platosData);
+        setEventos(eventosData);
       } catch (error) {
         console.error('Error al cargar datos:', error);
       }
@@ -70,13 +114,41 @@ export default function Catering() {
     fetchData();
   }, []);
 
-  const handleInputChange = (e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+  useEffect(() => {
+    const fetchStats = async () => {
+      try {
+        const response = await fetch('/api/catering/stats');
+        if (response.ok) {
+          const data = await response.json();
+          setStats(data);
+        }
+      } catch (error) {
+        console.error('Error al cargar estadísticas:', error);
+      }
+    };
+
+    if (userRole !== 'client') {
+      fetchStats();
+    }
+  }, [userRole]);
+
+  useEffect(() => {
+    // Verificar el rol del usuario
+    const rolId = Number(userData.rol);
+    if (![1, 3, 4].includes(rolId)) {
+      // Si no es admin, organizador o inventario, redirigir a bienvenida
+      window.location.href = '/Menu-Servicios/Bienvenida';
+    }
+  }, [userData.rol]);
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({
       ...prev,
       [name]: value
     }));
   };
+
 
   const handleMenuSelect = (menu: Menu) => {
     setFormData(prev => ({
@@ -122,24 +194,65 @@ export default function Catering() {
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     try {
-      const response = await fetch('/api/catering', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData)
-      });
-
-      if (response.ok) {
-        setShowModal(false);
-        setFormData({
-          personas_catering: 0,
-          precioneto_catering: 0,
-          itbis_catering: 0,
-          total_catering: 0,
-          menus: []
+      if (editId) {
+        await fetch(`/api/catering/${editId}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(formData)
+        });
+      } else {
+        await fetch('/api/catering', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(formData)
         });
       }
+
+      const response = await fetch('/api/catering');
+      const data = await response.json();
+      setCaterings(data);
+      setShowModal(false);
+      setFormData({
+        id_evento: 0,
+        personas: 0,
+        precio_neto: 0,
+        itbis: 0,
+        total: 0,
+        menus: [],
+        rating: 0,
+        comment: ''
+      });
+      setEditId(null);
     } catch (error) {
       console.error('Error al guardar:', error);
+    }
+  };
+
+  const handleEdit = (catering: Catering) => {
+    setFormData({
+      id_evento: catering.id_evento,
+      personas: catering.personas,
+      precio_neto: catering.precio_neto,
+      itbis: catering.itbis,
+      total: catering.total,
+      estado: catering.estado,
+      menus: catering.menus,
+      rating: catering.rating,
+      comment: catering.comment
+    });
+    setShowModal(true);
+  };
+
+  const handleDelete = async (id: number) => {
+    if (window.confirm('¿Estás seguro de que deseas eliminar este servicio de catering?')) {
+      try {
+        await fetch(`/api/catering/${id}`, {
+          method: 'DELETE',
+        });
+        setCaterings(prev => prev.filter(c => c.id_catering !== id));
+      } catch (error) {
+        console.error('Error al eliminar el servicio:', error);
+      }
     }
   };
 
@@ -259,8 +372,8 @@ export default function Catering() {
                 Número de personas:
                 <input
                   type="number"
-                  name="personas_catering"
-                  value={formData.personas_catering || ''}
+                  name="personas"
+                  value={formData.personas || ''}
                   onChange={handleInputChange}
                   required
                   min="1"
@@ -302,21 +415,186 @@ export default function Catering() {
     </div>
   );
 
-  const renderAdminView = () => (
-    <div className="catering-content">
-      <button className="new-form-btn" onClick={() => setShowModal(true)}>
-        Agregar Servicio
-      </button>
+  const renderAdminView = () => {
+    return (
+      <div className="catering-content">
+        <div className="dashboard__stats">
+          <div className="stat-card">
+            <span className="stat-card__label">Total de Pedidos</span>
+            <strong className="stat-card__number">{stats.totalPedidos}</strong>
+            <button className="stat-card__seeInfo">Ver pedidos</button>
+          </div>
 
-      <div className="table-section">
-        <p>Servicios de Catering Registrados</p>
-        <input
+          <div className="stat-card">
+            <span className="stat-card__label">Pedidos Pendientes</span>
+            <strong className="stat-card__number">{stats.pedidosPendientes}</strong>
+            <button className="stat-card__seeInfo">Ver pendientes</button>
+          </div>
+
+          <div className="stat-card">
+            <span className="stat-card__label">Total de Personas</span>
+            <strong className="stat-card__number">{stats.totalPersonas}</strong>
+            <button className="stat-card__seeInfo">Ver detalles</button>
+          </div>
+        </div>
+
+        <button className="new-form-btn" onClick={() => setShowModal(true)}>
+          + Agregar Servicio
+        </button>
+
+        <div className="table-section">
+          <p>Servicios de Catering Registrados</p>
+          <input
             type="text"
             className="escri"
             placeholder="Filtrar por evento..."
             value={filtroEvento}
             onChange={(e) => setFiltroEvento(e.target.value)}
           />
+          <table>
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Evento</th>
+                <th>Personas</th>
+                <th>Precio Neto</th>
+                <th>ITBIS</th>
+                <th>Total</th>
+                <th>Acciones</th>
+              </tr>
+            </thead>
+            <tbody>
+              {/* Aquí iría la tabla de servicios para administradores */}
+            </tbody>
+          </table>
+        </div>
+
+        {showModal && (
+          <div className="modal-overlay">
+            <div className="modal-container">
+              <button className="close-btn" onClick={() => setShowModal(false)}>×</button>
+              <form className="modal-form" onSubmit={handleSubmit}>
+                <h2>{editId ? 'Editar Servicio' : 'Nuevo Servicio'}</h2>
+                
+                <label>
+                  Evento:
+                  <select
+                    name="id_evento"
+                    value={formData.id_evento || ''}
+                    onChange={handleInputChange}
+                    required
+                  >
+                    <option value="">Seleccionar evento</option>
+                    {eventos.map((evento) => (
+                      <option key={evento.id_evento} value={evento.id_evento}>
+                        {evento.fecha_evento} - {evento.tipo_evento}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+
+                <label>
+                  Personas:
+                  <input
+                    type="number"
+                    name="personas"
+                    value={formData.personas || ''}
+                    onChange={handleInputChange}
+                    required
+                    min="1"
+                  />
+                </label>
+
+                <label>
+                  Precio Neto:
+                  <input
+                    type="number"
+                    name="precio_neto"
+                    value={formData.precio_neto || ''}
+                    onChange={handleInputChange}
+                    required
+                    min="0"
+                    step="0.01"
+                  />
+                </label>
+
+                <label>
+                  ITBIS:
+                  <input
+                    type="number"
+                    name="itbis"
+                    value={formData.itbis || ''}
+                    onChange={handleInputChange}
+                    required
+                    min="0"
+                    step="0.01"
+                  />
+                </label>
+
+                <label>
+                  Total:
+                  <input
+                    type="number"
+                    name="total"
+                    value={formData.total || ''}
+                    onChange={handleInputChange}
+                    required
+                    min="0"
+                    step="0.01"
+                  />
+                </label>
+
+                <div className="form-buttons">
+                  <button type="submit" className="submit-btn">
+                    {editId ? 'Actualizar' : 'Guardar'}
+                  </button>
+                  <button
+                    type="button"
+                    className="reset-btn"
+                    onClick={() => setShowModal(false)}
+                  >
+                    Cancelar
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  const renderOrganizerView = () => (
+    <div className="catering-content">
+      <div className="dashboard__stats">
+        <div className="stat-card">
+          <span className="stat-card__label">Total de Pedidos</span>
+          <strong className="stat-card__number">{stats.totalPedidos}</strong>
+          <button className="stat-card__seeInfo">Ver pedidos</button>
+        </div>
+
+        <div className="stat-card">
+          <span className="stat-card__label">Pedidos Pendientes</span>
+          <strong className="stat-card__number">{stats.pedidosPendientes}</strong>
+          <button className="stat-card__seeInfo">Ver pendientes</button>
+        </div>
+
+        <div className="stat-card">
+          <span className="stat-card__label">Total de Personas</span>
+          <strong className="stat-card__number">{stats.totalPersonas}</strong>
+          <button className="stat-card__seeInfo">Ver detalles</button>
+        </div>
+      </div>
+
+      <div className="table-section">
+        <p>Servicios de Catering Registrados</p>
+        <input
+          type="text"
+          className="escri"
+          placeholder="Filtrar por evento..."
+          value={filtroEvento}
+          onChange={(e) => setFiltroEvento(e.target.value)}
+        />
         <table>
           <thead>
             <tr>
@@ -326,12 +604,42 @@ export default function Catering() {
               <th>Precio Neto</th>
               <th>ITBIS</th>
               <th>Total</th>
-              <th>Menús</th>
               <th>Acciones</th>
             </tr>
           </thead>
           <tbody>
-            {/* Aquí iría la tabla de servicios para administradores */}
+            {caterings
+              .filter(c => 
+                eventos.find(e => e.id_evento === c.id_evento)?.tipo_evento
+                  .toLowerCase()
+                  .includes(filtroEvento.toLowerCase())
+              )
+              .map((catering) => (
+                <tr key={catering.id_catering}>
+                  <td>{catering.id_catering}</td>
+                  <td>
+                    {eventos.find(e => e.id_evento === catering.id_evento)?.tipo_evento}
+                  </td>
+                  <td>{catering.personas}</td>
+                  <td>${catering.precio_neto}</td>
+                  <td>${catering.itbis}</td>
+                  <td>${catering.total}</td>
+                  <td>
+                    <button
+                      className="edit-btn"
+                      onClick={() => handleEdit(catering)}
+                    >
+                      Editar
+                    </button>
+                    <button
+                      className="delete-btn"
+                      onClick={() => handleDelete(catering.id_catering!)}
+                    >
+                      Eliminar
+                    </button>
+                  </td>
+                </tr>
+              ))}
           </tbody>
         </table>
       </div>
@@ -341,14 +649,28 @@ export default function Catering() {
   return (
     <ServiceBase 
       title="Catering" 
-      stats={{
-        eventsInProcess: 0,
-        averageRating: 0,
-        totalUsers: 0,
-        quotations: []
-      }}
+      stats={stats}
     >
-      {userRole === 'client' ? renderClientView() : renderAdminView()}
+      {(() => {
+        const rolId = Number(userData.rol);
+        const isAdmin = rolId === 1;
+        const isOrganizer = rolId === 3;
+        const isClient = rolId === 2;
+
+        if (isAdmin) {
+          return renderAdminView();
+        }
+
+        if (isOrganizer) {
+          return renderOrganizerView();
+        }
+
+        if (isClient) {
+          return renderClientView();
+        }
+
+        return null;
+      })()}
     </ServiceBase>
   );
 }

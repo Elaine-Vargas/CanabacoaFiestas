@@ -1,7 +1,20 @@
 import { useState, useEffect } from 'react';
-import type { ChangeEvent, FormEvent } from 'react';
+import type { FormEvent } from 'react';
 import '../../styles/services-subpages.scss';
 import ServiceBase from '../../components/ServiceBase';
+import { useUser } from '../../context/UserContext';
+
+export type UserRole = 'admin' | 'client' | 'supervisor' | 'inventory';
+
+export type Permission = {
+  id: string;
+  name: string;
+  description: string;
+};
+
+export type RolePermissions = {
+  [key in UserRole]: Permission[];
+};
 
 interface Decor {
   id_decor?: number;
@@ -20,20 +33,36 @@ interface Evento {
   tipo_evento: string;
 }
 
+interface DecorStats {
+  empleadosEncargados: number;
+  eventosConDecoracion: number;
+  decoracionesPendintes: number;
+  decoracionesCompletadas: number;
+}
+
 export default function Decor() {
+  const { userRole } = useUser();
+  const userData = JSON.parse(localStorage.getItem('userData') || '{}');
   const [showModal, setShowModal] = useState(false);
   const [decors, setDecors] = useState<Decor[]>([]);
   const [eventos, setEventos] = useState<Evento[]>([]);
-  const [formData, setFormData] = useState<Partial<Decor>>({});
-  const [editId, setEditId] = useState<number | null>(null);
-  const [filtroEvento, setFiltroEvento] = useState("");
-  const [stats, setStats] = useState({
-    eventsInProcess: 0,
-    averageRating: 0,
-    totalUsers: 0,
-    quotations: []
+  const [stats, setStats] = useState<DecorStats>({
+    empleadosEncargados: 0,
+    eventosConDecoracion: 0,
+    decoracionesPendintes: 0,
+    decoracionesCompletadas: 0
   });
-  const [userRole] = useState('client');
+  const [formData, setFormData] = useState<Partial<Decor>>({
+    id_evento: 0,
+    tipo_decoracion: '',
+    descripcion: '',
+    precio: 0,
+    fecha: '',
+    estado: 'Pendiente',
+    notas: ''
+  });
+  const [editId, setEditId] = useState<number | null>(null);
+  const [filtroEvento, setFiltroEvento] = useState<string>('');
 
   useEffect(() => {
     const fetchData = async () => {
@@ -60,29 +89,32 @@ export default function Decor() {
 
   useEffect(() => {
     const fetchStats = async () => {
-      if (userRole === 'client') {
-        setStats({
-          eventsInProcess: 0,
-          averageRating: 0,
-          totalUsers: 0,
-          quotations: []
-        });
-        return;
-      }
-
       try {
         const response = await fetch('/api/decor/stats');
-        const data = await response.json();
-        setStats(data);
+        if (response.ok) {
+          const data = await response.json();
+          setStats(data);
+        }
       } catch (error) {
-        console.error('Error al obtener estadísticas:', error);
+        console.error('Error al cargar estadísticas:', error);
       }
     };
 
-    fetchStats();
+    if (userRole !== 'client') {
+      fetchStats();
+    }
   }, [userRole]);
 
-  const handleInputChange = (e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+  useEffect(() => {
+    // Verificar el rol del usuario
+    const rolId = Number(userData.rol);
+    if (![1, 3, 4].includes(rolId)) {
+      // Si no es admin, organizador o inventario, redirigir a bienvenida
+      window.location.href = '/Menu-Servicios/Bienvenida';
+    }
+  }, [userData.rol]);
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({
       ...prev,
@@ -90,7 +122,7 @@ export default function Decor() {
     }));
   };
 
-  const handleSelectChange = (e: ChangeEvent<HTMLSelectElement>) => {
+  const handleSelectChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({
       ...prev,
@@ -119,7 +151,16 @@ export default function Decor() {
       const data = await response.json();
       setDecors(data);
       setShowModal(false);
-      setFormData({});
+      setFormData({
+        id_decor: 0,
+        id_evento: 0,
+        tipo_decoracion: '',
+        descripcion: '',
+        precio: 0,
+        fecha: '',
+        estado: 'Pendiente',
+        notas: ''
+      });
       setEditId(null);
     } catch (error) {
       console.error('Error al guardar:', error);
@@ -141,18 +182,84 @@ export default function Decor() {
     }
   };
 
-  return (
-    <ServiceBase 
-      title="Decoración" 
-      stats={stats}
-    >
+  const renderClientView = () => (
+    <div className="decor-content">
+      <div className="table-section">
+        <p>Decoraciones Registradas</p>
+        <input
+          type="text"
+          className="escri"
+          placeholder="Filtrar por evento..."
+          value={filtroEvento}
+          onChange={(e) => setFiltroEvento(e.target.value)}
+        />
+        <table>
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Evento</th>
+              <th>Tipo de Decoración</th>
+              <th>Descripción</th>
+              <th>Precio</th>
+              <th>Fecha</th>
+              <th>Estado</th>
+            </tr>
+          </thead>
+          <tbody>
+            {decors
+              .filter(d => 
+                eventos.find(e => e.id_evento === d.id_evento)?.tipo_evento
+                  .toLowerCase()
+                  .includes(filtroEvento.toLowerCase())
+              )
+              .map((decor) => (
+                <tr key={decor.id_decor}>
+                  <td>{decor.id_decor}</td>
+                  <td>
+                    {eventos.find(e => e.id_evento === decor.id_evento)?.tipo_evento}
+                  </td>
+                  <td>{decor.tipo_decoracion}</td>
+                  <td>{decor.descripcion}</td>
+                  <td>${decor.precio}</td>
+                  <td>{decor.fecha}</td>
+                  <td>{decor.estado}</td>
+                </tr>
+              ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+
+  const renderAdminView = () => {
+    return (
       <div className="decor-content">
+        <div className="dashboard__stats">
+          <div className="stat-card">
+            <span className="stat-card__label">Empleados Encargados</span>
+            <strong className="stat-card__number">{stats.empleadosEncargados}</strong>
+            <button className="stat-card__seeInfo">Ver empleados</button>
+          </div>
+
+          <div className="stat-card">
+            <span className="stat-card__label">Eventos con Decoración</span>
+            <strong className="stat-card__number">{stats.eventosConDecoracion}</strong>
+            <button className="stat-card__seeInfo">Ver eventos</button>
+          </div>
+
+          <div className="stat-card">
+            <span className="stat-card__label">Decoraciones Completadas</span>
+            <strong className="stat-card__number">{stats.decoracionesCompletadas}</strong>
+            <button className="stat-card__seeInfo">Ver completadas</button>
+          </div>
+        </div>
+
         <button className="new-form-btn" onClick={() => setShowModal(true)}>
-          Agregar Decoración
+          + Agregar Servicio
         </button>
 
         <div className="table-section">
-          <p>Decoraciones Registradas</p>
+          <p>Servicios de Decoración Registrados</p>
           <input
             type="text"
             className="escri"
@@ -168,7 +275,6 @@ export default function Decor() {
                 <th>Tipo de Decoración</th>
                 <th>Descripción</th>
                 <th>Precio</th>
-                <th>Fecha</th>
                 <th>Estado</th>
                 <th>Acciones</th>
               </tr>
@@ -189,7 +295,6 @@ export default function Decor() {
                     <td>{decor.tipo_decoracion}</td>
                     <td>{decor.descripcion}</td>
                     <td>${decor.precio}</td>
-                    <td>{decor.fecha}</td>
                     <td>{decor.estado}</td>
                     <td>
                       <button
@@ -216,7 +321,7 @@ export default function Decor() {
             <div className="modal-container">
               <button className="close-btn" onClick={() => setShowModal(false)}>×</button>
               <form className="modal-form" onSubmit={handleSubmit}>
-                <h2>{editId ? 'Editar Decoración' : 'Nueva Decoración'}</h2>
+                <h2>{editId ? 'Editar Servicio' : 'Nuevo Servicio'}</h2>
                 
                 <label>
                   Evento:
@@ -244,11 +349,11 @@ export default function Decor() {
                     required
                   >
                     <option value="">Seleccionar tipo</option>
+                    <option value="Flores">Flores</option>
                     <option value="Centros de Mesa">Centros de Mesa</option>
-                    <option value="Arreglos Florales">Arreglos Florales</option>
+                    <option value="Arcos">Arcos</option>
                     <option value="Iluminación">Iluminación</option>
-                    <option value="Telas y Cortinas">Telas y Cortinas</option>
-                    <option value="Otro">Otro</option>
+                    <option value="Otros">Otros</option>
                   </select>
                 </label>
 
@@ -277,17 +382,6 @@ export default function Decor() {
                 </label>
 
                 <label>
-                  Fecha:
-                  <input
-                    type="date"
-                    name="fecha"
-                    value={formData.fecha || ''}
-                    onChange={handleInputChange}
-                    required
-                  />
-                </label>
-
-                <label>
                   Estado:
                   <select
                     name="estado"
@@ -301,16 +395,6 @@ export default function Decor() {
                     <option value="Completado">Completado</option>
                     <option value="Cancelado">Cancelado</option>
                   </select>
-                </label>
-
-                <label>
-                  Notas:
-                  <textarea
-                    name="notas"
-                    value={formData.notas || ''}
-                    onChange={handleInputChange}
-                    rows={4}
-                  />
                 </label>
 
                 <div className="form-buttons">
@@ -330,6 +414,116 @@ export default function Decor() {
           </div>
         )}
       </div>
+    );
+  };
+
+  const renderOrganizerView = () => (
+    <div className="decor-content">
+      <div className="dashboard__stats">
+        <div className="stat-card">
+          <span className="stat-card__label">Empleados Encargados</span>
+          <strong className="stat-card__number">{stats.empleadosEncargados}</strong>
+          <button className="stat-card__seeInfo">Ver empleados</button>
+        </div>
+
+        <div className="stat-card">
+          <span className="stat-card__label">Eventos con Decoración</span>
+          <strong className="stat-card__number">{stats.eventosConDecoracion}</strong>
+          <button className="stat-card__seeInfo">Ver eventos</button>
+        </div>
+
+        <div className="stat-card">
+          <span className="stat-card__label">Decoraciones Completadas</span>
+          <strong className="stat-card__number">{stats.decoracionesCompletadas}</strong>
+          <button className="stat-card__seeInfo">Ver completadas</button>
+        </div>
+      </div>
+
+      <div className="table-section">
+        <p>Servicios de Decoración Registrados</p>
+        <input
+          type="text"
+          className="escri"
+          placeholder="Filtrar por evento..."
+          value={filtroEvento}
+          onChange={(e) => setFiltroEvento(e.target.value)}
+        />
+        <table>
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Evento</th>
+              <th>Tipo de Decoración</th>
+              <th>Descripción</th>
+              <th>Precio</th>
+              <th>Estado</th>
+              <th>Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            {decors
+              .filter(d => 
+                eventos.find(e => e.id_evento === d.id_evento)?.tipo_evento
+                  .toLowerCase()
+                  .includes(filtroEvento.toLowerCase())
+              )
+              .map((decor) => (
+                <tr key={decor.id_decor}>
+                  <td>{decor.id_decor}</td>
+                  <td>
+                    {eventos.find(e => e.id_evento === decor.id_evento)?.tipo_evento}
+                  </td>
+                  <td>{decor.tipo_decoracion}</td>
+                  <td>{decor.descripcion}</td>
+                  <td>${decor.precio}</td>
+                  <td>{decor.estado}</td>
+                  <td>
+                    <button
+                      className="edit-btn"
+                      onClick={() => handleEdit(decor)}
+                    >
+                      Editar
+                    </button>
+                    <button
+                      className="delete-btn"
+                      onClick={() => handleDelete(decor.id_decor!)}
+                    >
+                      Eliminar
+                    </button>
+                  </td>
+                </tr>
+              ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+
+  return (
+    <ServiceBase 
+      title="Decoración" 
+      stats={stats}
+    >
+      {(() => {
+        const rolId = Number(userData.rol);
+        const isAdmin = rolId === 1;
+        const isOrganizer = rolId === 3;
+        const isClient = rolId === 2;
+
+        if (isAdmin) {
+          return renderAdminView();
+        }
+
+        if (isOrganizer) {
+          return renderOrganizerView();
+        }
+
+        if (isClient) {
+          return renderClientView();
+        }
+
+        return null;
+      })()}
     </ServiceBase>
   );
 }

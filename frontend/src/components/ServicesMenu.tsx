@@ -12,7 +12,18 @@ import { IoIosExit } from "react-icons/io";
 import { useState } from "react";
 import ColorTheme from "../functions/ColorTheme";
 import "../styles/DashboardServices.scss";
-import { useUser } from "../context/UserContext";
+
+export type UserRole = 'admin' | 'client' | 'supervisor' | 'inventory';
+
+export type Permission = {
+  id: string;
+  name: string;
+  description: string;
+};
+
+export type RolePermissions = {
+  [key in UserRole]: Permission[];
+};
 
 interface ServicesMenuProps {
   selectedService: string;
@@ -20,7 +31,6 @@ interface ServicesMenuProps {
 
 export default function ServicesMenu({ selectedService }: ServicesMenuProps) {
   const navigate = useNavigate();
-  const { userRole } = useUser();
   const userData = JSON.parse(localStorage.getItem('userData') || '{}');
   const [showLogoutModal, setShowLogoutModal] = useState(false);
   
@@ -32,7 +42,7 @@ export default function ServicesMenu({ selectedService }: ServicesMenuProps) {
       case 1: return 'Admin';
       case 2: return 'Cliente';
       case 3: return 'Organizador de Eventos';
-      case 3: return 'Encargado de Inventario';
+      case 4: return 'Encargado de Inventario';
       default: return 'Usuario';
     }
   };
@@ -70,7 +80,7 @@ export default function ServicesMenu({ selectedService }: ServicesMenuProps) {
         >
           <FaConciergeBell /> Catering
         </li>
-        {userRole === 'admin' && (
+        {Number(userData.rol) === 1 && (
           <>
             <li
               className={selectedService === "Supervision" ? "active" : ""}

@@ -1,8 +1,7 @@
 import { useState, useEffect } from 'react';
-import type { ChangeEvent, FormEvent } from 'react';
+import type { ChangeEvent } from 'react';
 import '../../styles/services-subpages.scss';
 import ServiceBase from '../../components/ServiceBase';
-import { useNavigate } from "react-router-dom";
 import { useUser } from "../../context/UserContext";
 
 interface Assembly {
@@ -22,27 +21,40 @@ interface Evento {
   tipo_evento: string;
 }
 
+interface AssemblyStats {
+  eventosCompletados: number;
+  equiposDisponibles: number;
+  personalAsignado: number;
+}
+
 export default function AssemblyAndDisassembly() {
   const { userRole } = useUser();
-  const navigate = useNavigate();
+  const userData = JSON.parse(localStorage.getItem('userData') || '{}');
   const [showModal, setShowModal] = useState(false);
   const [assemblies, setAssemblies] = useState<Assembly[]>([]);
   const [eventos, setEventos] = useState<Evento[]>([]);
-  const [formData, setFormData] = useState<Partial<Assembly>>({});
-  const [editId, setEditId] = useState<number | null>(null);
-  const [filtroEvento, setFiltroEvento] = useState("");
-  const [stats, setStats] = useState({
-    eventsInProcess: 0,
-    averageRating: 0,
-    totalUsers: 0,
-    quotations: []
+  const [stats, setStats] = useState<AssemblyStats>({
+    eventosCompletados: 0,
+    equiposDisponibles: 0,
+    personalAsignado: 0
   });
+  const [formData, setFormData] = useState<Partial<Assembly>>({
+    id_evento: 0,
+    descripcion: '',
+    estado: 'Pendiente',
+    notas: ''
+  });
+  const [editId, setEditId] = useState<number | null>(null);
+  const [filtroEvento, setFiltroEvento] = useState<string>('');
 
   useEffect(() => {
-    if (userRole !== 'admin') {
-      navigate('/Menu-Servicios/Bienvenida');
+    // Verificar el rol del usuario
+    const rolId = Number(userData.rol);
+    if (![1, 3, 4].includes(rolId)) {
+      // Si no es admin, organizador o inventario, redirigir a bienvenida
+      window.location.href = '/Menu-Servicios/Bienvenida';
     }
-  }, [userRole, navigate]);
+  }, [userData.rol]);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -71,15 +83,19 @@ export default function AssemblyAndDisassembly() {
     const fetchStats = async () => {
       try {
         const response = await fetch('/api/assembly/stats');
-        const data = await response.json();
-        setStats(data);
+        if (response.ok) {
+          const data = await response.json();
+          setStats(data);
+        }
       } catch (error) {
-        console.error('Error al obtener estadísticas:', error);
+        console.error('Error al cargar estadísticas:', error);
       }
     };
 
-    fetchStats();
-  }, []);
+    if (userRole !== 'client') {
+      fetchStats();
+    }
+  }, [userRole]);
 
   const handleInputChange = (e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
@@ -97,31 +113,33 @@ export default function AssemblyAndDisassembly() {
     }));
   };
 
-  const handleSubmit = async (e: FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      if (editId) {
-        await fetch(`/api/assembly/${editId}`, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(formData)
-        });
-      } else {
-        await fetch('/api/assembly', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(formData)
-        });
+      const response = await fetch('/api/assemblies', {
+        method: editId ? 'PUT' : 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(formData),
+      });
+
+      if (!response.ok) {
+        throw new Error('Error al guardar el servicio');
       }
 
-      const response = await fetch('/api/assembly');
       const data = await response.json();
       setAssemblies(data);
       setShowModal(false);
-      setFormData({});
+      setFormData({
+        id_evento: 0,
+        descripcion: '',
+        estado: 'Pendiente',
+        notas: ''
+      });
       setEditId(null);
     } catch (error) {
-      console.error('Error al guardar:', error);
+      console.error('Error:', error);
     }
   };
 
@@ -140,27 +158,196 @@ export default function AssemblyAndDisassembly() {
     }
   };
 
-  return (
-    <ServiceBase 
-      title="Montaje y Desmontaje" 
-      stats={stats}
-    >
+  const renderInventoryView = () => (
+    <div className="assembly-content">
+      <div className="dashboard__stats">
+        <div className="stat-card">
+          <span className="stat-card__label">Equipos Disponibles</span>
+          <strong className="stat-card__number">{stats.equiposDisponibles}</strong>
+          <button className="stat-card__seeInfo">Ver equipos</button>
+        </div>
+
+        <div className="stat-card">
+          <span className="stat-card__label">Equipos en Uso</span>
+          <strong className="stat-card__number">{stats.eventosCompletados}</strong>
+          <button className="stat-card__seeInfo">Ver en uso</button>
+        </div>
+
+        <div className="stat-card">
+          <span className="stat-card__label">Equipos en Mantenimiento</span>
+          <strong className="stat-card__number">{stats.personalAsignado}</strong>
+          <button className="stat-card__seeInfo">Ver mantenimiento</button>
+        </div>
+      </div>
+
+      <div className="table-section">
+        <p>Inventario de Equipos</p>
+        <input
+          type="text"
+          className="escri"
+          placeholder="Filtrar por equipo..."
+          value={filtroEvento}
+          onChange={(e) => setFiltroEvento(e.target.value)}
+        />
+        <table>
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Evento</th>
+              <th>Tipo de Servicio</th>
+              <th>Descripción</th>
+              <th>Estado</th>
+              <th>Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            {assemblies
+              .filter(a => 
+                eventos.find(e => e.id_evento === a.id_evento)?.tipo_evento
+                  .toLowerCase()
+                  .includes(filtroEvento.toLowerCase())
+              )
+              .map((assembly) => (
+                <tr key={assembly.id_assembly}>
+                  <td>{assembly.id_assembly}</td>
+                  <td>
+                    {eventos.find(e => e.id_evento === assembly.id_evento)?.tipo_evento}
+                  </td>
+                  <td>{assembly.tipo_servicio}</td>
+                  <td>{assembly.descripcion}</td>
+                  <td>{assembly.estado}</td>
+                  <td>
+                    <button
+                      className="edit-btn"
+                      onClick={() => handleEdit(assembly)}
+                    >
+                      Actualizar Estado
+                    </button>
+                  </td>
+                </tr>
+              ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+
+  const renderOrganizerView = () => (
+    <div className="assembly-content">
+      <div className="dashboard__stats">
+        <div className="stat-card">
+          <span className="stat-card__label">Eventos Completados</span>
+          <strong className="stat-card__number">{stats.eventosCompletados}</strong>
+          <button className="stat-card__seeInfo">Ver completados</button>
+        </div>
+
+        <div className="stat-card">
+          <span className="stat-card__label">Personal Asignado</span>
+          <strong className="stat-card__number">{stats.personalAsignado}</strong>
+          <button className="stat-card__seeInfo">Ver personal</button>
+        </div>
+
+        <div className="stat-card">
+          <span className="stat-card__label">Servicios Pendientes</span>
+          <strong className="stat-card__number">{stats.equiposDisponibles}</strong>
+          <button className="stat-card__seeInfo">Ver pendientes</button>
+        </div>
+      </div>
+
+      <div className="table-section">
+        <p>Servicios de Montaje y Desmontaje</p>
+        <input
+          type="text"
+          className="escri"
+          placeholder="Filtrar por evento..."
+          value={filtroEvento}
+          onChange={(e) => setFiltroEvento(e.target.value)}
+        />
+        <table>
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Evento</th>
+              <th>Tipo de Servicio</th>
+              <th>Descripción</th>
+              <th>Fecha Inicio</th>
+              <th>Fecha Fin</th>
+              <th>Estado</th>
+              <th>Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            {assemblies
+              .filter(a => 
+                eventos.find(e => e.id_evento === a.id_evento)?.tipo_evento
+                  .toLowerCase()
+                  .includes(filtroEvento.toLowerCase())
+              )
+              .map((assembly) => (
+                <tr key={assembly.id_assembly}>
+                  <td>{assembly.id_assembly}</td>
+                  <td>
+                    {eventos.find(e => e.id_evento === assembly.id_evento)?.tipo_evento}
+                  </td>
+                  <td>{assembly.tipo_servicio}</td>
+                  <td>{assembly.descripcion}</td>
+                  <td>{assembly.fecha_inicio}</td>
+                  <td>{assembly.fecha_fin}</td>
+                  <td>{assembly.estado}</td>
+                  <td>
+                    <button
+                      className="edit-btn"
+                      onClick={() => handleEdit(assembly)}
+                    >
+                      Editar
+                    </button>
+                    <button
+                      className="delete-btn"
+                      onClick={() => handleDelete(assembly.id_assembly!)}
+                    >
+                      Eliminar
+                    </button>
+                  </td>
+                </tr>
+              ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+
+  const renderAdminView = () => {
+    return (
       <div className="assembly-content">
+        <div className="dashboard__stats">
+          <div className="stat-card">
+            <span className="stat-card__label">Eventos Completados</span>
+            <strong className="stat-card__number">{stats.eventosCompletados}</strong>
+            <button className="stat-card__seeInfo">Ver completados</button>
+          </div>
+
+          <div className="stat-card">
+            <span className="stat-card__label">Equipos Disponibles</span>
+            <strong className="stat-card__number">{stats.equiposDisponibles}</strong>
+            <button className="stat-card__seeInfo">Ver equipos</button>
+          </div>
+
+          <div className="stat-card">
+            <span className="stat-card__label">Personal Asignado</span>
+            <strong className="stat-card__number">{stats.personalAsignado}</strong>
+            <button className="stat-card__seeInfo">Ver personal</button>
+          </div>
+        </div>
+
         <button className="new-form-btn" onClick={() => setShowModal(true)}>
-          Agregar Servicio
+          + Agregar Servicio
         </button>
 
         <div className="table-section">
-          <p>Servicios Registrados</p>
+          <p>Servicios de Montaje y Desmontaje Registrados</p>
           <input
             type="text"
             className="escri"
-            placeholder="Filtrar por evento..."
-            value={filtroEvento}
-            onChange={(e) => setFiltroEvento(e.target.value)}
-          />
-          <input
-            type="text"
             placeholder="Filtrar por evento..."
             value={filtroEvento}
             onChange={(e) => setFiltroEvento(e.target.value)}
@@ -241,21 +428,6 @@ export default function AssemblyAndDisassembly() {
                 </label>
 
                 <label>
-                  Tipo de Servicio:
-                  <select
-                    name="tipo_servicio"
-                    value={formData.tipo_servicio || ''}
-                    onChange={handleSelectChange}
-                    required
-                  >
-                    <option value="">Seleccionar tipo</option>
-                    <option value="Montaje">Montaje</option>
-                    <option value="Desmontaje">Desmontaje</option>
-                    <option value="Montaje y Desmontaje">Montaje y Desmontaje</option>
-                  </select>
-                </label>
-
-                <label>
                   Descripción:
                   <textarea
                     name="descripcion"
@@ -263,28 +435,6 @@ export default function AssemblyAndDisassembly() {
                     onChange={handleInputChange}
                     required
                     rows={4}
-                  />
-                </label>
-
-                <label>
-                  Fecha Inicio:
-                  <input
-                    type="datetime-local"
-                    name="fecha_inicio"
-                    value={formData.fecha_inicio || ''}
-                    onChange={handleInputChange}
-                    required
-                  />
-                </label>
-
-                <label>
-                  Fecha Fin:
-                  <input
-                    type="datetime-local"
-                    name="fecha_fin"
-                    value={formData.fecha_fin || ''}
-                    onChange={handleInputChange}
-                    required
                   />
                 </label>
 
@@ -331,6 +481,34 @@ export default function AssemblyAndDisassembly() {
           </div>
         )}
       </div>
+    );
+  };
+
+  return (
+    <ServiceBase 
+      title="Montaje y Desmontaje" 
+      stats={stats}
+    >
+      {(() => {
+        const rolId = Number(userData.rol);
+        const isAdmin = rolId === 1;
+        const isOrganizer = rolId === 3;
+        const isInventory = rolId === 4;
+
+        if (isAdmin) {
+          return renderAdminView();
+        }
+
+        if (isInventory) {
+          return renderInventoryView();
+        }
+
+        if (isOrganizer) {
+          return renderOrganizerView();
+        }
+
+        return null;
+      })()}
     </ServiceBase>
   );
 }

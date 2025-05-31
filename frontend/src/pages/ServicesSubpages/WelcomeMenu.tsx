@@ -35,18 +35,30 @@ interface Espacio {
 
 interface NuevoEvento {
   cedula_cliente: string;
+  cedula_asesor: string;
   fecha_evento: string;
   hora_evento: string;
   id_espacio: number;
-  id_tipo_evento: number;
-  nota_cliente: string;
   estado_evento: 'Pendiente' | 'Confirmado' | 'Cancelado' | 'Completado';
+  id_tipo_evento: number;
+  supervision_evento: boolean;
+  nota_cliente: string;
   estado_cotizacion: 'Pendiente' | 'Completada' | 'Aceptada' | 'Rechazada' | 'Cancelada' | 'Eliminada';
+  subtotal_evento: number;
+  itbis_evento: number;
+  total_evento: number;
+}
+
+interface Evento {
+  id_evento: number;
+  fecha_evento: string;
+  tipo_evento: string;
 }
 
 const WelcomeMenu: React.FC<WelcomeMenuProps> = () => {
   const navigate = useNavigate();
   const { userRole } = useUser();
+  const userData = JSON.parse(localStorage.getItem('userData') || '{}');
   console.log('Rol actual:', userRole);
   const [showCommentModal, setShowCommentModal] = useState(false);
   const [showEventModal, setShowEventModal] = useState(false);
@@ -62,14 +74,21 @@ const WelcomeMenu: React.FC<WelcomeMenuProps> = () => {
   const [espacios, setEspacios] = useState<Espacio[]>([]);
   const [formData, setFormData] = useState<NuevoEvento>({
     cedula_cliente: '',
+    cedula_asesor: '',
     fecha_evento: '',
     hora_evento: '',
     id_espacio: 0,
-    id_tipo_evento: 0,
-    nota_cliente: '',
     estado_evento: 'Pendiente',
-    estado_cotizacion: 'Pendiente'
+    id_tipo_evento: 0,
+    supervision_evento: false,
+    nota_cliente: '',
+    estado_cotizacion: 'Pendiente',
+    subtotal_evento: 0.00,
+    itbis_evento: 0.00,
+    total_evento: 0.00
   });
+  const [eventos, setEventos] = useState<Evento[]>([]);
+  const [selectedEventId, setSelectedEventId] = useState<number | null>(null);
 
   useEffect(() => {
     const fetchEspacios = async () => {
@@ -90,6 +109,20 @@ const WelcomeMenu: React.FC<WelcomeMenuProps> = () => {
     fetchEspacios();
   }, []);
 
+  useEffect(() => {
+    const fetchEventos = async () => {
+      try {
+        const response = await fetch('/api/eventos');
+        const data = await response.json();
+        setEventos(data);
+      } catch (error) {
+        console.error('Error al cargar eventos:', error);
+      }
+    };
+
+    fetchEventos();
+  }, []);
+
   // Agregar un log para ver los espacios disponibles
   useEffect(() => {
     console.log('Espacios actuales:', espacios);
@@ -97,6 +130,11 @@ const WelcomeMenu: React.FC<WelcomeMenuProps> = () => {
 
   const handleCommentSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!selectedEventId) {
+      alert('Por favor, selecciona un evento para calificar');
+      return;
+    }
+
     try {
       const response = await fetch('/api/comments', {
         method: 'POST',
@@ -106,7 +144,8 @@ const WelcomeMenu: React.FC<WelcomeMenuProps> = () => {
         body: JSON.stringify({
           comment,
           rating,
-          userId: localStorage.getItem('userId'), // Obtener el ID del usuario del localStorage
+          userId: localStorage.getItem('userId'),
+          eventId: selectedEventId
         }),
       });
 
@@ -114,6 +153,7 @@ const WelcomeMenu: React.FC<WelcomeMenuProps> = () => {
         setShowCommentModal(false);
         setComment('');
         setRating(0);
+        setSelectedEventId(null);
         // Actualizar los datos del dashboard
         const updatedData = await fetch(`/api/auth/current`);
         const data = await updatedData.json();
@@ -145,9 +185,7 @@ const WelcomeMenu: React.FC<WelcomeMenuProps> = () => {
     try {
       const eventoData = {
         ...formData,
-        subtotal_evento: 0.00,
-        itbis_evento: 0.00,
-        total_evento: 0.00
+        supervision_evento: formData.supervision_evento ? 1 : 0 // Convertir boolean a tinyint
       };
 
       const response = await fetch('/api/eventos', {
@@ -166,13 +204,18 @@ const WelcomeMenu: React.FC<WelcomeMenuProps> = () => {
       setShowServicesModal(true);
       setFormData({
         cedula_cliente: '',
+        cedula_asesor: '',
         fecha_evento: '',
         hora_evento: '',
         id_espacio: 0,
-        id_tipo_evento: 0,
-        nota_cliente: '',
         estado_evento: 'Pendiente',
-        estado_cotizacion: 'Pendiente'
+        id_tipo_evento: 0,
+        supervision_evento: false,
+        nota_cliente: '',
+        estado_cotizacion: 'Pendiente',
+        subtotal_evento: 0.00,
+        itbis_evento: 0.00,
+        total_evento: 0.00
       });
     } catch (error) {
       console.error('Error al crear evento:', error);
@@ -182,7 +225,20 @@ const WelcomeMenu: React.FC<WelcomeMenuProps> = () => {
 
   const handleServiceSelect = (service: string) => {
     setShowServicesModal(false);
-    navigate(`/services/${service}`, { state: { openModal: true } });
+    // Mapeo correcto de las rutas
+    const routeMap: { [key: string]: string } = {
+      'catering': '/Menu-Servicios/Catering',
+      'decor': '/Menu-Servicios/Decoracion',
+      'rent': '/Menu-Servicios/Alquiler',
+      'transportation': '/Menu-Servicios/Transporte',
+      'supervision': '/Menu-Servicios/Supervision',
+      'assembly': '/Menu-Servicios/Montaje-Desmontaje'
+    };
+
+    const route = routeMap[service];
+    if (route) {
+      navigate(route);
+    }
   };
 
   const renderStars = (rating: number) => {
@@ -196,8 +252,168 @@ const WelcomeMenu: React.FC<WelcomeMenuProps> = () => {
     );
   };
 
+  const renderEventForm = () => (
+    <form className="modal-form" onSubmit={handleEventSubmit}>
+      <h2>Nuevo Evento</h2>
+
+      <label>
+        {Number(userData.rol) === 2 ? 'Cédula:' : 'Cédula del Cliente:'}
+        <input
+          type="text"
+          name="cedula_cliente"
+          value={formData.cedula_cliente}
+          onChange={handleInputChange}
+          required
+          maxLength={13}
+          pattern="[0-9]{11,13}"
+          title="La cédula debe tener entre 11 y 13 dígitos"
+        />
+      </label>
+
+      {(Number(userData.rol) === 1 || Number(userData.rol) === 3) && (
+        <label>
+          Cédula del Asesor:
+          <input
+            type="text"
+            name="cedula_asesor"
+            value={formData.cedula_asesor}
+            onChange={handleInputChange}
+            required
+            maxLength={13}
+            pattern="[0-9]{11,13}"
+            title="La cédula debe tener entre 11 y 13 dígitos"
+          />
+        </label>
+      )}
+
+      <label>
+        Fecha del evento:
+        <input
+          type="date"
+          name="fecha_evento"
+          value={formData.fecha_evento}
+          onChange={handleInputChange}
+          required
+        />
+      </label>
+
+      <label>
+        Hora del evento:
+        <input
+          type="time"
+          name="hora_evento"
+          value={formData.hora_evento}
+          onChange={handleInputChange}
+          required
+        />
+      </label>
+
+      <label>
+        Espacio:
+        <select
+          name="id_espacio"
+          value={formData.id_espacio || ''}
+          onChange={handleEspacioChange}
+          required
+        >
+          <option value="">Seleccionar espacio</option>
+          {espacios && espacios.length > 0 ? (
+            espacios.map(espacio => (
+              <option 
+                key={espacio.id_espacio} 
+                value={espacio.id_espacio}
+              >
+                {espacio.nombre}
+              </option>
+            ))
+          ) : (
+            <option disabled>No hay espacios disponibles</option>
+          )}
+        </select>
+      </label>
+
+      <label>
+        Tipo de evento:
+        <select
+          name="id_tipo_evento"
+          value={formData.id_tipo_evento}
+          onChange={handleInputChange}
+          required
+        >
+          <option value="0">Seleccionar tipo</option>
+          <option value="1">Compleaños</option>
+          <option value="2">Boda</option>
+          <option value="3">Reunión</option>
+          <option value="4">Graduación</option>
+          <option value="5">Otro</option>
+        </select>
+      </label>
+
+      <label>
+        ¿Requiere supervisión?
+        <div className="radio-group">
+          <label className="radio-label">
+            <input
+              type="radio"
+              name="supervision_evento"
+              checked={formData.supervision_evento}
+              onChange={() => setFormData(prev => ({
+                ...prev,
+                supervision_evento: true
+              }))}
+            />
+            Sí
+          </label>
+          <label className="radio-label">
+            <input
+              type="radio"
+              name="supervision_evento"
+              checked={!formData.supervision_evento}
+              onChange={() => setFormData(prev => ({
+                ...prev,
+                supervision_evento: false
+              }))}
+            />
+            No
+          </label>
+        </div>
+      </label>
+
+      <label>
+        Notas extras:
+        <textarea
+          name="nota_cliente"
+          value={formData.nota_cliente}
+          onChange={handleInputChange}
+          rows={4}
+          placeholder="Escriba aquí cualquier nota o detalle adicional..."
+        />
+      </label>
+
+      <div className="form-buttons">
+        <button type="submit" className="submit-btn">
+          Crear Evento
+        </button>
+        <button
+          type="button"
+          className="reset-btn"
+          onClick={() => setShowEventModal(false)}
+        >
+          Cancelar
+        </button>
+      </div>
+    </form>
+  );
+
   const renderClientDashboard = () => (
     <>
+      <div className="welcome-header">
+        <center>
+          <h1>Bienvenido a tu Panel de Cliente</h1>
+        </center>
+        <p>Gestiona tus eventos y servicios desde aquí</p>
+      </div>
+
       <div className="dashboard__stats">
         <div className="stat-card">
           <span className="stat-card__label">Mis Eventos Activos</span>
@@ -262,6 +478,23 @@ const WelcomeMenu: React.FC<WelcomeMenuProps> = () => {
             <form className="modal-form" onSubmit={handleCommentSubmit}>
               <h3>Agregar Comentario</h3>
               
+              <div className="event-select">
+                <label>Seleccionar Evento:</label>
+                <select
+                  value={selectedEventId || ''}
+                  onChange={(e) => setSelectedEventId(Number(e.target.value))}
+                  required
+                  className="event-select-input"
+                >
+                  <option value="">Seleccionar evento</option>
+                  {eventos.map(evento => (
+                    <option key={evento.id_evento} value={evento.id_evento}>
+                      {evento.fecha_evento} - {evento.tipo_evento}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
               <div className="comment-modal__rating">
                 <span className="comment-modal__rating-label">Calificación:</span>
                 <div className="comment-modal__rating-stars">
@@ -270,8 +503,7 @@ const WelcomeMenu: React.FC<WelcomeMenuProps> = () => {
                       key={star}
                       className={`star ${star <= rating ? 'active' : ''}`}
                       onClick={() => setRating(star)}
-                      onMouseEnter={() => setRating(star)}
-                      onMouseLeave={() => setRating(rating)}
+                      style={{ cursor: 'pointer', fontSize: '24px' }}
                     >
                       ★
                     </span>
@@ -280,7 +512,7 @@ const WelcomeMenu: React.FC<WelcomeMenuProps> = () => {
               </div>
 
               <label>
-               Comentario:
+                Comentario:
                 <textarea
                   value={comment}
                   onChange={(e) => setComment(e.target.value)}
@@ -291,13 +523,22 @@ const WelcomeMenu: React.FC<WelcomeMenuProps> = () => {
               </label>
 
               <div className="form-buttons">
-                <button type="submit" className="submit-btn">
+                <button 
+                  type="submit" 
+                  className="submit-btn"
+                  disabled={!selectedEventId || !rating}
+                >
                   Enviar Comentario
                 </button>
                 <button
                   type="button"
                   className="reset-btn"
-                  onClick={() => setShowCommentModal(false)}
+                  onClick={() => {
+                    setShowCommentModal(false);
+                    setSelectedEventId(null);
+                    setRating(0);
+                    setComment('');
+                  }}
                 >
                   Cancelar
                 </button>
@@ -311,120 +552,7 @@ const WelcomeMenu: React.FC<WelcomeMenuProps> = () => {
         <div className="modal-overlay">
           <div className="modal-container">
             <button className="close-btn" onClick={() => setShowEventModal(false)}>×</button>
-            <form className="modal-form" onSubmit={handleEventSubmit}>
-              <h2>Nuevo Evento</h2>
-
-              <label>
-                Cédula:
-                <input
-                  type="text"
-                  name="cedula_cliente"
-                  value={formData.cedula_cliente}
-                  onChange={handleInputChange}
-                  required
-                />
-              </label>
-
-              <label>
-                Fecha del evento:
-                <input
-                  type="date"
-                  name="fecha_evento"
-                  value={formData.fecha_evento}
-                  onChange={handleInputChange}
-                  required
-                />
-              </label>
-
-              <label>
-                Hora del evento:
-                <input
-                  type="time"
-                  name="hora_evento"
-                  value={formData.hora_evento}
-                  onChange={handleInputChange}
-                  required
-                />
-              </label>
-
-              <label>
-                Espacio:
-                <select
-                  name="id_espacio"
-                  value={formData.id_espacio || ''}
-                  onChange={handleEspacioChange}
-                  required
-                >
-                  <option value="">Seleccionar espacio</option>
-                  {espacios && espacios.length > 0 ? (
-                    espacios.map(espacio => (
-                      <option 
-                        key={espacio.id_espacio} 
-                        value={espacio.id_espacio}
-                      >
-                        {espacio.nombre}
-                      </option>
-                    ))
-                  ) : (
-                    <option disabled>No hay espacios disponibles</option>
-                  )}
-                </select>
-              </label>
-
-              <label>
-                Tipo de evento:
-                <select
-                  name="id_tipo_evento"
-                  value={formData.id_tipo_evento}
-                  onChange={handleInputChange}
-                  required
-                >
-                  <option value="0">Seleccionar tipo</option>
-                  <option value="1">Compleaños</option>
-                  <option value="2">Boda</option>
-                  <option value="3">Reunión</option>
-                  <option value="4">Graduación</option>
-                  <option value="5">Otro</option>
-                </select>
-              </label>
-
-              {formData.id_tipo_evento === 5 && (
-                <label>
-                  Especifique el tipo de evento:
-                  <input
-                    type="text"
-                    name="tipo_evento_otro"
-                    value={formData.nota_cliente}
-                    onChange={handleInputChange}
-                    required
-                  />
-                </label>
-              )}
-
-              <label>
-                Notas extras:
-                <textarea
-                  name="nota_cliente"
-                  value={formData.nota_cliente}
-                  onChange={handleInputChange}
-                  rows={4}
-                  placeholder="Escriba aquí cualquier nota o detalle adicional..."
-                />
-              </label>
-
-              <div className="form-buttons">
-                <button type="submit" className="submit-btn">
-                  Crear Evento
-                </button>
-                <button
-                  type="button"
-                  className="reset-btn"
-                  onClick={() => setShowEventModal(false)}
-                >
-                  Cancelar
-                </button>
-              </div>
-            </form>
+            {renderEventForm()}
           </div>
         </div>
       )}
@@ -439,7 +567,7 @@ const WelcomeMenu: React.FC<WelcomeMenuProps> = () => {
                 <button onClick={() => handleServiceSelect('catering')}>Catering</button>
                 <button onClick={() => handleServiceSelect('decor')}>Decoración</button>
                 <button onClick={() => handleServiceSelect('rent')}>Renta</button>
-                {userRole !== 'client' && (
+                {Number(userData.rol) === 1 && (
                   <>
                     <button onClick={() => handleServiceSelect('transportation')}>Transporte</button>
                     <button onClick={() => handleServiceSelect('supervision')}>Supervisión</button>
@@ -565,10 +693,10 @@ const WelcomeMenu: React.FC<WelcomeMenuProps> = () => {
 
   return (
     <div className="welcome-menu">
-      {userRole === 'admin' && renderAdminDashboard()}
-      {userRole === 'client' && renderClientDashboard()}
-      {userRole === 'supervisor' && renderCoordinatorDashboard()}
-      {userRole === 'inventory' && renderInventoryDashboard()}
+      {Number(userData.rol) === 1 && renderAdminDashboard()}
+      {Number(userData.rol) === 2 && renderClientDashboard()}
+      {Number(userData.rol) === 3 && renderCoordinatorDashboard()}
+      {Number(userData.rol) === 4 && renderInventoryDashboard()}
 
       {showCommentModal && (
         <div className="modal-overlay">
@@ -577,6 +705,23 @@ const WelcomeMenu: React.FC<WelcomeMenuProps> = () => {
             <form className="modal-form" onSubmit={handleCommentSubmit}>
               <h3>Agregar Comentario</h3>
               
+              <div className="event-select">
+                <label>Seleccionar Evento:</label>
+                <select
+                  value={selectedEventId || ''}
+                  onChange={(e) => setSelectedEventId(Number(e.target.value))}
+                  required
+                  className="event-select-input"
+                >
+                  <option value="">Seleccionar evento</option>
+                  {eventos.map(evento => (
+                    <option key={evento.id_evento} value={evento.id_evento}>
+                      {evento.fecha_evento} - {evento.tipo_evento}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
               <div className="comment-modal__rating">
                 <span className="comment-modal__rating-label">Calificación:</span>
                 <div className="comment-modal__rating-stars">
@@ -626,120 +771,7 @@ const WelcomeMenu: React.FC<WelcomeMenuProps> = () => {
         <div className="modal-overlay">
           <div className="modal-container">
             <button className="close-btn" onClick={() => setShowEventModal(false)}>×</button>
-            <form className="modal-form" onSubmit={handleEventSubmit}>
-              <h2>Nuevo Evento</h2>
-
-              <label>
-                Cédula:
-                <input
-                  type="text"
-                  name="cedula_cliente"
-                  value={formData.cedula_cliente}
-                  onChange={handleInputChange}
-                  required
-                />
-              </label>
-
-              <label>
-                Fecha del evento:
-                <input
-                  type="date"
-                  name="fecha_evento"
-                  value={formData.fecha_evento}
-                  onChange={handleInputChange}
-                  required
-                />
-              </label>
-
-              <label>
-                Hora del evento:
-                <input
-                  type="time"
-                  name="hora_evento"
-                  value={formData.hora_evento}
-                  onChange={handleInputChange}
-                  required
-                />
-              </label>
-
-              <label>
-                Espacio:
-                <select
-                  name="id_espacio"
-                  value={formData.id_espacio || ''}
-                  onChange={handleEspacioChange}
-                  required
-                >
-                  <option value="">Seleccionar espacio</option>
-                  {espacios && espacios.length > 0 ? (
-                    espacios.map(espacio => (
-                      <option 
-                        key={espacio.id_espacio} 
-                        value={espacio.id_espacio}
-                      >
-                        {espacio.nombre}
-                      </option>
-                    ))
-                  ) : (
-                    <option disabled>No hay espacios disponibles</option>
-                  )}
-                </select>
-              </label>
-
-              <label>
-                Tipo de evento:
-                <select
-                  name="id_tipo_evento"
-                  value={formData.id_tipo_evento}
-                  onChange={handleInputChange}
-                  required
-                >
-                  <option value="0">Seleccionar tipo</option>
-                  <option value="1">Compleaños</option>
-                  <option value="2">Boda</option>
-                  <option value="3">Reunión</option>
-                  <option value="4">Graduación</option>
-                  <option value="5">Otro</option>
-                </select>
-              </label>
-
-              {formData.id_tipo_evento === 5 && (
-                <label>
-                  Especifique el tipo de evento:
-                  <input
-                    type="text"
-                    name="tipo_evento_otro"
-                    value={formData.nota_cliente}
-                    onChange={handleInputChange}
-                    required
-                  />
-                </label>
-              )}
-
-              <label>
-                Notas extras:
-                <textarea
-                  name="nota_cliente"
-                  value={formData.nota_cliente}
-                  onChange={handleInputChange}
-                  rows={4}
-                  placeholder="Escriba aquí cualquier nota o detalle adicional..."
-                />
-              </label>
-
-              <div className="form-buttons">
-                <button type="submit" className="submit-btn">
-                  Crear Evento
-                </button>
-                <button
-                  type="button"
-                  className="reset-btn"
-                  onClick={() => setShowEventModal(false)}
-                >
-                  Cancelar
-                </button>
-              </div>
-            </form>
+            {renderEventForm()}
           </div>
         </div>
       )}
@@ -754,7 +786,7 @@ const WelcomeMenu: React.FC<WelcomeMenuProps> = () => {
                 <button onClick={() => handleServiceSelect('catering')}>Catering</button>
                 <button onClick={() => handleServiceSelect('decor')}>Decoración</button>
                 <button onClick={() => handleServiceSelect('rent')}>Renta</button>
-                {userRole !== 'client' && (
+                {Number(userData.rol) === 1 && (
                   <>
                     <button onClick={() => handleServiceSelect('transportation')}>Transporte</button>
                     <button onClick={() => handleServiceSelect('supervision')}>Supervisión</button>
