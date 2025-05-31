@@ -3,6 +3,7 @@ import NavBar from './components/NavBar';
 import Home from './pages/Home';
 import CatalogoPage from './pages/CatalogoPage';
 import Login from './pages/Login';
+import AdminElementos from './components/AdminElementos';
 
 function App() {
   return (
@@ -12,6 +13,7 @@ function App() {
         <Route path="/" element={<Home />} />
         <Route path="/catalogo" element={<CatalogoPage />} />
         <Route path="/login" element={<Login />} />
+        <Route path="/admin/elementos" element={<AdminElementos />} />
       </Routes>
     </Router>
   );

@@ -5,6 +5,7 @@ import sequelize from './config';
 import { syncDatabase } from './config/syncDatabase';
 import authRoutes from './routes/authRoutes';
 import elementoRoutes from './routes/elementoRoutes';
+import path from 'path';
 
 dotenv.config();
 
@@ -22,6 +23,9 @@ const corsOptions = {
 // Middlewares
 app.use(cors(corsOptions));
 app.use(express.json());
+
+// Servir archivos estáticos desde el directorio uploads
+app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 
 // Rutas
 app.use('/api/auth', authRoutes);
@@ -60,3 +64,5 @@ async function testDbConnection() {
     throw error;
   }
 }
+
+export default app;

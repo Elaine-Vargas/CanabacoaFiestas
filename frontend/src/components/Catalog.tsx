@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo, lazy, Suspense } from 'react';
 import axios from 'axios';
 import { 
   Card, 
@@ -22,7 +22,8 @@ import {
   Button,
   Snackbar,
   Alert,
-  Divider
+  Divider,
+  Skeleton
 } from '@mui/material';
 import type { SelectChangeEvent } from '@mui/material';
 import ShoppingCartIcon from '@mui/icons-material/ShoppingCart';
@@ -53,9 +54,11 @@ interface Elemento {
   id_subcategoria: number;
   id_material: number;
   id_color: number;
+  precio_elemento: number;
   cantidad_total: number;
   cantidad_disponible: number;
   estado_elemento: string;
+  imagen_url?: string;
   subcategoria: {
     id_subcategoria: number;
     nombre_subcategoria: string;
@@ -70,8 +73,7 @@ interface Elemento {
   };
   material: {
     id_material: number;
-    nombre: string;
-    precio_unitario: number;
+    nombre_material: string;
   };
 }
 
@@ -84,16 +86,73 @@ interface ColorElemento {
   nombre_color: string;
 }
 
+interface MaterialElemento {
+  id_material: number;
+  nombre_material: string;
+}
+
+// Componente para la imagen optimizada
+const OptimizedImage = ({ src, alt }: { src: string; alt: string }) => {
+  const [isLoaded, setIsLoaded] = useState(false);
+  const [error, setError] = useState(false);
+
+  return (
+    <Box sx={{ 
+      position: 'relative', 
+      width: '100%', 
+      paddingTop: '100%', // Cambiado de 75% a 100% para un cuadrado perfecto
+      overflow: 'hidden',
+      borderRadius: '8px'
+    }}>
+      {!isLoaded && !error && (
+        <Skeleton 
+          variant="rectangular" 
+          sx={{ 
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            width: '100%',
+            height: '100%',
+            borderRadius: 1
+          }} 
+        />
+      )}
+      <img
+        src={src}
+        alt={alt}
+        loading="lazy"
+        onLoad={() => setIsLoaded(true)}
+        onError={() => setError(true)}
+        style={{
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          width: '100%',
+          height: '100%',
+          objectFit: 'contain', // Cambiado de 'cover' a 'contain'
+          backgroundColor: '#f5f5f5', // Fondo gris claro para imágenes con transparencia
+          padding: '8px', // Espacio alrededor de la imagen
+          borderRadius: '8px',
+          opacity: isLoaded ? 1 : 0,
+          transition: 'opacity 0.3s ease-in-out'
+        }}
+      />
+    </Box>
+  );
+};
+
 const Catalog = () => {
   const navigate = useNavigate();
   const [elementos, setElementos] = useState<Elemento[]>([]);
   const [categorias, setCategorias] = useState<CategoriaElemento[]>([]);
   const [colores, setColores] = useState<ColorElemento[]>([]);
+  const [materiales, setMateriales] = useState<MaterialElemento[]>([]);
   const [loading, setLoading] = useState(true);
   const [filtros, setFiltros] = useState({
     categoria: '',
     subcategoria: '',
     color: '',
+    material: '',
     busqueda: ''
   });
   const [carrito, setCarrito] = useState<CarritoItem[]>([]);
@@ -108,18 +167,43 @@ const Catalog = () => {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [elementosRes, categoriasRes, coloresRes] = await Promise.all([
+        console.log('Iniciando carga de datos...');
+        setLoading(true);
+
+        const [elementosRes, categoriasRes, coloresRes, materialesRes] = await Promise.all([
           axios.get('http://localhost:3000/api/elementos'),
           axios.get('http://localhost:3000/api/elementos/categorias/list'),
-          axios.get('http://localhost:3000/api/elementos/colores/list')
+          axios.get('http://localhost:3000/api/elementos/colores/list'),
+          axios.get('http://localhost:3000/api/elementos/materiales/list')
         ]);
+
+        console.log('Respuesta de elementos:', elementosRes.data);
+        console.log('Respuesta de categorías:', categoriasRes.data);
+        console.log('Respuesta de colores:', coloresRes.data);
+        console.log('Respuesta de materiales:', materialesRes.data);
+
+        if (!elementosRes.data || elementosRes.data.length === 0) {
+          console.error('No se recibieron elementos del backend');
+          setNotificacion({
+            abierta: true,
+            mensaje: 'No se pudieron cargar los elementos. Por favor, intente más tarde.',
+            tipo: 'error'
+          });
+          return;
+        }
 
         setElementos(elementosRes.data);
         setCategorias(categoriasRes.data);
         setColores(coloresRes.data);
+        setMateriales(materialesRes.data);
         setLoading(false);
       } catch (error) {
-        console.error('Error al cargar datos:', error);
+        console.error('Error detallado al cargar datos:', error);
+        setNotificacion({
+          abierta: true,
+          mensaje: 'Error al cargar los datos. Por favor, verifique que el servidor esté funcionando.',
+          tipo: 'error'
+        });
         setLoading(false);
       }
     };
@@ -136,13 +220,16 @@ const Catalog = () => {
         elemento.id_subcategoria === Number(filtros.subcategoria);
       
       const cumpleColor = !filtros.color || 
-        elemento.id_color === Number(filtros.color);
+        elemento.color?.id_color === Number(filtros.color);
+
+      const cumpleMaterial = !filtros.material ||
+        elemento.material?.id_material === Number(filtros.material);
       
       const busqueda = filtros.busqueda.toLowerCase().trim();
       const cumpleBusqueda = !busqueda || 
         elemento.nombre_elemento.toLowerCase().includes(busqueda);
 
-      return cumpleCategoria && cumpleSubcategoria && cumpleColor && cumpleBusqueda;
+      return cumpleCategoria && cumpleSubcategoria && cumpleColor && cumpleMaterial && cumpleBusqueda;
     });
   };
 
@@ -261,7 +348,7 @@ const Catalog = () => {
   };
 
   const calcularTotal = () => {
-    return carrito.reduce((total, item) => total + (item.material.precio_unitario * item.cantidad), 0);
+    return carrito.reduce((total, item) => total + (item.precio_elemento * item.cantidad), 0);
   };
 
   const vaciarCarrito = () => {
@@ -395,45 +482,45 @@ const Catalog = () => {
         </Box>
         
           <Grid container spacing={{ xs: 1, sm: 2 }} sx={{ mb: { xs: 2, sm: 4 } }}>
-            <Grid item xs={12} md={4} component="div">
-            <TextField
-              fullWidth
-              label="Buscar"
-              name="busqueda"
-              value={filtros.busqueda}
-              onChange={handleFiltroChange}
+            <Grid item xs={12} md={3} component="div">
+              <TextField
+                fullWidth
+                label="Buscar"
+                name="busqueda"
+                value={filtros.busqueda}
+                onChange={(e) => setFiltros(prev => ({ ...prev, busqueda: e.target.value }))}
                 placeholder="Buscar por nombre del elemento..."
-              sx={{
-                '& .MuiOutlinedInput-root': {
+                sx={{
+                  '& .MuiOutlinedInput-root': {
                     backgroundColor: 'var(--color-input-bg)',
-                  '& fieldset': {
-                    borderColor: 'var(--color-input-border)',
+                    '& fieldset': {
+                      borderColor: 'var(--color-input-border)',
+                    },
+                    '&:hover fieldset': {
+                      borderColor: 'var(--gold)',
+                    },
+                    '&.Mui-focused fieldset': {
+                      borderColor: 'var(--gold)',
+                    },
                   },
-                  '&:hover fieldset': {
-                    borderColor: 'var(--gold)',
-                  },
-                  '&.Mui-focused fieldset': {
-                    borderColor: 'var(--gold)',
-                  },
-                },
-                '& .MuiInputLabel-root': {
-                  color: 'var(--color-text)',
-                  fontFamily: '"Nunito Sans", sans-serif',
+                  '& .MuiInputLabel-root': {
+                    color: 'var(--color-text)',
+                    fontFamily: '"Nunito Sans", sans-serif',
                     fontSize: { xs: '0.9rem', sm: '1rem' },
                     '&.Mui-focused': {
                       color: 'var(--gold)',
                     },
-                },
-                '& .MuiInputBase-input': {
-                  fontFamily: '"Nunito Sans", sans-serif',
+                  },
+                  '& .MuiInputBase-input': {
+                    fontFamily: '"Nunito Sans", sans-serif',
                     color: 'var(--color-text)',
                     fontSize: { xs: '0.9rem', sm: '1rem' }
-                }
-              }}
-            />
-          </Grid>
-            <Grid item xs={12} md={4} component="div">
-            <FormControl fullWidth>
+                  }
+                }}
+              />
+            </Grid>
+            <Grid item xs={12} md={3} component="div">
+              <FormControl fullWidth>
                 <InputLabel 
                   sx={{ 
                     fontFamily: '"Nunito Sans", sans-serif',
@@ -446,29 +533,29 @@ const Catalog = () => {
                 >
                   Categoría
                 </InputLabel>
-              <Select
-                name="categoria"
-                value={filtros.categoria}
-                onChange={handleFiltroChange}
-                label="Categoría"
-                sx={{
+                <Select
+                  name="categoria"
+                  value={filtros.categoria}
+                  onChange={handleFiltroChange}
+                  label="Categoría"
+                  sx={{
                     backgroundColor: 'var(--color-input-bg)',
-                  '& .MuiOutlinedInput-notchedOutline': {
-                    borderColor: 'var(--color-input-border)',
-                  },
-                  '&:hover .MuiOutlinedInput-notchedOutline': {
-                    borderColor: 'var(--gold)',
-                  },
-                  '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                    borderColor: 'var(--gold)',
-                  },
-                  '& .MuiInputLabel-root': {
-                    color: 'var(--color-text)',
-                    fontFamily: '"Nunito Sans", sans-serif',
+                    '& .MuiOutlinedInput-notchedOutline': {
+                      borderColor: 'var(--color-input-border)',
+                    },
+                    '&:hover .MuiOutlinedInput-notchedOutline': {
+                      borderColor: 'var(--gold)',
+                    },
+                    '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                      borderColor: 'var(--gold)',
+                    },
+                    '& .MuiInputLabel-root': {
+                      color: 'var(--color-text)',
+                      fontFamily: '"Nunito Sans", sans-serif',
                       fontSize: { xs: '0.9rem', sm: '1rem' },
-                  },
-                  '& .MuiSelect-select': {
-                    fontFamily: '"Nunito Sans", sans-serif',
+                    },
+                    '& .MuiSelect-select': {
+                      fontFamily: '"Nunito Sans", sans-serif',
                       color: 'var(--color-text)',
                       fontSize: { xs: '0.9rem', sm: '1rem' },
                       minWidth: { xs: '100px', sm: '120px' }
@@ -488,10 +575,10 @@ const Catalog = () => {
                   }}>
                     Todas las categorías
                   </MenuItem>
-                {categorias.map(categoria => (
-                  <MenuItem 
-                    key={categoria.id_categoria} 
-                    value={categoria.id_categoria}
+                  {categorias.map(categoria => (
+                    <MenuItem 
+                      key={categoria.id_categoria} 
+                      value={categoria.id_categoria}
                       sx={{ 
                         fontFamily: '"Nunito Sans", sans-serif',
                         color: 'var(--color-text)',
@@ -500,17 +587,17 @@ const Catalog = () => {
                           backgroundColor: 'var(--color-background-secondary)',
                         }
                       }}
-                  >
-                    {categoria.nombre_categoria}
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
-          </Grid>
-            <Grid item xs={12} md={4} component="div">
-            <FormControl fullWidth>
+                    >
+                      {categoria.nombre_categoria}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+            </Grid>
+            <Grid item xs={12} md={3} component="div">
+              <FormControl fullWidth>
                 <InputLabel 
-                sx={{
+                  sx={{
                     fontFamily: '"Nunito Sans", sans-serif',
                     color: 'var(--color-text)',
                     fontSize: { xs: '0.9rem', sm: '1rem' },
@@ -521,29 +608,29 @@ const Catalog = () => {
                 >
                   Color
                 </InputLabel>
-              <Select
-                name="color"
-                value={filtros.color}
-                onChange={handleFiltroChange}
-                label="Color"
-                sx={{
+                <Select
+                  name="color"
+                  value={filtros.color}
+                  onChange={handleFiltroChange}
+                  label="Color"
+                  sx={{
                     backgroundColor: 'var(--color-input-bg)',
-                  '& .MuiOutlinedInput-notchedOutline': {
-                    borderColor: 'var(--color-input-border)',
-                  },
-                  '&:hover .MuiOutlinedInput-notchedOutline': {
-                    borderColor: 'var(--gold)',
-                  },
-                  '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                    borderColor: 'var(--gold)',
-                  },
-                  '& .MuiInputLabel-root': {
-                    color: 'var(--color-text)',
-                    fontFamily: '"Nunito Sans", sans-serif',
+                    '& .MuiOutlinedInput-notchedOutline': {
+                      borderColor: 'var(--color-input-border)',
+                    },
+                    '&:hover .MuiOutlinedInput-notchedOutline': {
+                      borderColor: 'var(--gold)',
+                    },
+                    '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                      borderColor: 'var(--gold)',
+                    },
+                    '& .MuiInputLabel-root': {
+                      color: 'var(--color-text)',
+                      fontFamily: '"Nunito Sans", sans-serif',
                       fontSize: { xs: '0.9rem', sm: '1rem' },
-                  },
-                  '& .MuiSelect-select': {
-                    fontFamily: '"Nunito Sans", sans-serif',
+                    },
+                    '& .MuiSelect-select': {
+                      fontFamily: '"Nunito Sans", sans-serif',
                       color: 'var(--color-text)',
                       fontSize: { xs: '0.9rem', sm: '1rem' },
                       minWidth: { xs: '100px', sm: '120px' }
@@ -563,10 +650,10 @@ const Catalog = () => {
                   }}>
                     Todos los colores
                   </MenuItem>
-                {colores.map(color => (
-                  <MenuItem 
-                    key={color.id_color} 
-                    value={color.id_color}
+                  {colores.map(color => (
+                    <MenuItem 
+                      key={color.id_color} 
+                      value={color.id_color}
                       sx={{ 
                         fontFamily: '"Nunito Sans", sans-serif',
                         color: 'var(--color-text)',
@@ -575,17 +662,92 @@ const Catalog = () => {
                           backgroundColor: 'var(--color-background-secondary)',
                         }
                       }}
-                  >
-                    {color.nombre_color}
+                    >
+                      {color.nombre_color}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+            </Grid>
+            <Grid item xs={12} md={3} component="div">
+              <FormControl fullWidth>
+                <InputLabel 
+                  sx={{
+                    fontFamily: '"Nunito Sans", sans-serif',
+                    color: 'var(--color-text)',
+                    fontSize: { xs: '0.9rem', sm: '1rem' },
+                    '&.Mui-focused': {
+                      color: 'var(--gold)',
+                    }
+                  }}
+                >
+                  Material
+                </InputLabel>
+                <Select
+                  name="material"
+                  value={filtros.material}
+                  onChange={handleFiltroChange}
+                  label="Material"
+                  sx={{
+                    backgroundColor: 'var(--color-input-bg)',
+                    '& .MuiOutlinedInput-notchedOutline': {
+                      borderColor: 'var(--color-input-border)',
+                    },
+                    '&:hover .MuiOutlinedInput-notchedOutline': {
+                      borderColor: 'var(--gold)',
+                    },
+                    '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                      borderColor: 'var(--gold)',
+                    },
+                    '& .MuiInputLabel-root': {
+                      color: 'var(--color-text)',
+                      fontFamily: '"Nunito Sans", sans-serif',
+                      fontSize: { xs: '0.9rem', sm: '1rem' },
+                    },
+                    '& .MuiSelect-select': {
+                      fontFamily: '"Nunito Sans", sans-serif',
+                      color: 'var(--color-text)',
+                      fontSize: { xs: '0.9rem', sm: '1rem' },
+                      minWidth: { xs: '100px', sm: '120px' }
+                    },
+                    '& .MuiSelect-icon': {
+                      color: 'var(--gold)',
+                    }
+                  }}
+                >
+                  <MenuItem value="" sx={{ 
+                    fontFamily: '"Nunito Sans", sans-serif',
+                    color: 'var(--color-text)',
+                    backgroundColor: 'var(--color-input-bg)',
+                    '&:hover': {
+                      backgroundColor: 'var(--color-background-secondary)',
+                    }
+                  }}>
+                    Todos los materiales
                   </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
+                  {materiales.map(material => (
+                    <MenuItem 
+                      key={material.id_material} 
+                      value={material.id_material}
+                      sx={{ 
+                        fontFamily: '"Nunito Sans", sans-serif',
+                        color: 'var(--color-text)',
+                        backgroundColor: 'var(--color-input-bg)',
+                        '&:hover': {
+                          backgroundColor: 'var(--color-background-secondary)',
+                        }
+                      }}
+                    >
+                      {material.nombre_material}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+            </Grid>
           </Grid>
-        </Grid>
 
           <Grid container spacing={{ xs: 2, sm: 3, md: 4 }}>
-          {filtrarElementos().map(elemento => (
+            {filtrarElementos().map((elemento: Elemento) => (
               <Grid 
                 key={`${elemento.id_elemento}-${elemento.color.id_color}`} 
                 item
@@ -617,6 +779,14 @@ const Catalog = () => {
                     flexDirection: 'column',
                     gap: { xs: 1, sm: 1.5 }
                   }}>
+                  {elemento.imagen_url && (
+                    <Box sx={{ mb: 2 }}>
+                      <OptimizedImage 
+                        src={elemento.imagen_url} 
+                        alt={elemento.nombre_elemento} 
+                      />
+                    </Box>
+                  )}
                   <Typography 
                     gutterBottom 
                     variant="h5" 
@@ -672,7 +842,7 @@ const Catalog = () => {
                           fontWeight: 600
                     }}
                   >
-                    Material: {elemento.material.nombre}
+                    Material: {elemento.material?.nombre_material || 'No especificado'}
                   </Typography>
                   <Typography 
                         variant="body1" 
@@ -702,7 +872,7 @@ const Catalog = () => {
                           fontSize: '1.8rem'
                     }}
                   >
-                    ${elemento.material.precio_unitario}
+                    ${elemento.precio_elemento}
                   </Typography>
                   <Typography 
                         variant="body1" 
@@ -950,7 +1120,7 @@ const Catalog = () => {
                             sm: '1rem'
                           }
                       }}>
-                        ${item.material.precio_unitario} x {item.cantidad}
+                        ${item.precio_elemento} x {item.cantidad}
                       </Typography>
                     }
                   />
