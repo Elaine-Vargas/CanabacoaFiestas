@@ -134,41 +134,56 @@ const UserLogin: React.FC = () => {
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
-  
+    
     if (signupData.contrasena_login !== signupData.confirmar_contrasena) {
       setError('Las contraseñas no coinciden');
       return;
     }
   
     try {
-      const response = await fetch('/api/auth/register-client', {
+      const response = await fetch('http://localhost:3000/api/auth/register-client', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify(signupData),
+        credentials: 'include'
       });
   
-      const data = await response.json();
-  
+      const responseText = await response.text();
+      console.log('Respuesta del servidor (registro):', responseText);
+      
       if (!response.ok) {
-        throw new Error(data.error || 'Error al registrar usuario');
+        let errorMessage = 'Error al registrar usuario';
+        try {
+          const errorData = JSON.parse(responseText);
+          errorMessage = errorData.error || errorMessage;
+        } catch (e) {
+          console.error('Error al parsear la respuesta:', e);
+        }
+        throw new Error(errorMessage);
       }
   
+      const data = JSON.parse(responseText);
+      console.log('Datos recibidos (registro):', data);
+  
+      // Guardar el token y los datos del usuario en localStorage
       localStorage.setItem('token', data.token);
-      localStorage.setItem('userData', JSON.stringify({
+      const userData = {
         nombre_usuario: signupData.nombre_usuario,
         apellido_usuario: signupData.apellido_usuario,
         usuario_login: signupData.usuario_login,
+        rol: 2, // Fuerza el rol 2 (cliente) independientemente de lo que devuelva el backend
         cedula_usuario: signupData.cedula_usuario,
         correo_usuario: signupData.correo_usuario,
-        tel_usuario: signupData.tel_usuario,
-        id_rol: data.rol
-      }));
+        tel_usuario: signupData.tel_usuario
+      };
+      localStorage.setItem('userData', JSON.stringify(userData));
       
       alert(data.mensaje);
       navigate('/Menu-Servicios/Bienvenida');
     } catch (error) {
+      console.error('Error completo (registro):', error);
       setError(error instanceof Error ? error.message : 'Error al registrar usuario');
     }
   };
