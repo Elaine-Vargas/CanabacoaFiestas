@@ -17,14 +17,12 @@ import ColorTheme from "../functions/ColorTheme";
 import { useMediaQuery } from "@mui/material";
 import { useState, lazy, Suspense } from "react";
 import React from "react";
-import "../styles/NavBar.scss";
-import "../styles/fonts.scss";
-import { Link as RouterLink } from 'react-router-dom';
+import "../styles/mainPages/Navbar.scss";
 const BackIcon = lazy(() => import("@mui/icons-material/ArrowBackRounded"));
 
 const NavBar = React.memo(() => {
   const [drawerOpen, setDrawerOpen] = useState(false);
-  const isMobile = useMediaQuery("(max-width:650px)");
+  const isMobile = useMediaQuery("(max-width:740px)");
 
   const toggleDrawer = (open: boolean) => () => {
     setDrawerOpen(open);

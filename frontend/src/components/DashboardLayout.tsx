@@ -1,6 +1,6 @@
 import { Outlet, useLocation } from "react-router-dom";
 import ServicesMenu from "./ServicesMenu";
-import "../styles/DashboardServices.scss";
+import "../styles/dashboard/DashboardServices.scss";
 
 export default function DashboardLayout() {
   const location = useLocation();

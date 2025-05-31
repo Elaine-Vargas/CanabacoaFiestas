@@ -1,10 +1,12 @@
 import React from "react";
-import "../styles/AboutUs.scss"; 
-import "../styles/theme.scss";
+import "../styles/mainPages/AboutUs.scss"; 
+import "../styles/basics/Theme.scss";
 import NavBar from "../components/NavBar";
+import Footer from "../components/Footer";
 
 const Nosotros: React.FC = () => {
   return (
+    <>
     <section className="sobre-nosotros">
       <NavBar />
       <div className="contenido">
@@ -60,7 +62,10 @@ const Nosotros: React.FC = () => {
           </div>
         </div>
       </div>
-    </section>
+
+    </section>      
+    <Footer/>
+    </>
   );
 };
 

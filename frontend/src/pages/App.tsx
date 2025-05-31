@@ -1,4 +1,4 @@
-import '../styles/App.scss';
+import '../styles/basics/App.scss';
 import Principal from './Principal'; // This stays as a regular import
 import { lazy, Suspense } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
@@ -8,7 +8,7 @@ import { UserProvider } from '../context/UserContext';
 // Lazy loaded pages
 const AboutUs = lazy(() => import('./AboutUs'));
 const Services = lazy(() => import('./Services'));
-const UserConfig = lazy(() => import('./UserConfig'));
+const UserConfig = lazy(() => import('./ServicesSubpages/UserConfig'));
 const UserLogin = lazy(() => import('./UserLogin'));
 const DashboardLayout = lazy(() => import('../components/DashboardLayout'));
 const WelcomeMenu = lazy(() => import('./ServicesSubpages/WelcomeMenu'));
@@ -18,7 +18,7 @@ const Catering = lazy(() => import('./ServicesSubpages/Catering'));
 const Supervision = lazy(() => import('./ServicesSubpages/Supervision'));
 const Transportation = lazy(() => import('./ServicesSubpages/Transportation'));
 const AssemblyAndDisassembly = lazy(() => import('./ServicesSubpages/AssemblyAndDisassembly'));
-const Catalogo = lazy(() => import('./CatalogoPage'));
+const Catalogo = lazy(() => import('./Catalog'));
 
 import ProtectedRoute from '../components/ProtectedRoute';
 import PublicRoute from '../components/PublicRoute';

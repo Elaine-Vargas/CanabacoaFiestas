@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import "../styles/Login.scss";
+import "../styles/mainPages/Login.scss";
 import LogoBlanco from "../assets/logoVariants/OVALO-CF(titulo blanco).svg"
 import LogoDorado from "../assets/logoVariants/OVALO-CF(titulo dorado osc).svg"
 import LoginNav from "../components/LoginNav";

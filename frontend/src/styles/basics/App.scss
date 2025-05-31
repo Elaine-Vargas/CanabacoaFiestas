@@ -1,0 +1,10 @@
+@use "../font-faces/Fonts.scss";
+@use "./Theme.scss";
+
+#ColorTheme {
+    display: none;
+}
+
+body{
+      background-color: var(--color-background);
+}

@@ -1,5 +1,6 @@
 import NavBar from '../components/NavBar';
-import "../styles/services.scss";
+import Footer from '../components/Footer';
+import "../styles/mainPages/Services.scss";
 {/*Importacion de cada imagen*/}
 import alquilerImg from '../assets/servicesPhotos/alquilerServices.webp';
 import decoracionImg from '../assets/servicesPhotos/decorServices.webp';
@@ -62,6 +63,7 @@ export default function Services() {
         ))}
       </div>
     </div>
+    <Footer/>
     </>
   );
 }

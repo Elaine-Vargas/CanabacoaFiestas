@@ -11,6 +11,9 @@ export default class Elemento extends Model {
   @Column({ type: DataType.INTEGER, field: 'id_elemento' })
   id_elemento!: number;
 
+  @Column({ type: DataType.STRING(50), allowNull: false })
+  nombre_elemento!: string;
+
   @ForeignKey(() => SubcategoriaElemento)
   @Column({ type: DataType.INTEGER, allowNull: false })
   id_subcategoria!: number;
@@ -32,11 +35,17 @@ export default class Elemento extends Model {
   @BelongsTo(() => ColorElemento)
   color!: ColorElemento;
 
+  @Column({ type: DataType.DECIMAL(10, 2), allowNull: false })
+  precio_elemento!: number;
+
   @Column({ type: DataType.INTEGER, allowNull: true, defaultValue: 0 })
   cantidad_total!: number;
 
   @Column({ type: DataType.INTEGER, allowNull: true, defaultValue: 0 })
   cantidad_disponible!: number;
+
+  @Column({ type: DataType.STRING(255), allowNull: true })
+  imagen_url!: string;
 
   @Column({
     type: DataType.ENUM('Activo', 'Inactivo', 'Eliminado'),
@@ -44,15 +53,6 @@ export default class Elemento extends Model {
     defaultValue: 'Activo'
   })
   estado_elemento!: string;
-
-  @Column({ type: DataType.STRING(50), allowNull: false })
-  nombre_elemento!: string;
-
-  @Column({ type: DataType.DECIMAL(10, 2), allowNull: false })
-  precio_elemento!: number;
-
-  @Column({ type: DataType.STRING(255), allowNull: true })
-  imagen_url!: string;
 
   @HasMany(() => DetalleCompra)
   detallecompras!: DetalleCompra[];

@@ -1,0 +1,265 @@
+
+.footer{
+    margin-top: 24px;
+    background: var(--gold);
+    padding: 2rem 1rem 1rem 1rem;
+    display: flex;
+    flex-direction: row;
+    align-content: flex-end;
+    justify-content:space-around;
+    flex-wrap: wrap;
+    align-items: center;
+    border-radius:45px 45px 0 0;
+    
+    a{
+        color: var(--white);
+        font-weight: 800;
+        font-family: "Nunito Sans", sans-serif;
+        
+        &:hover{
+        color: var(--brown);
+    }
+    p {
+        font-family: "'Nunito Sans', sans-serif";
+    }
+
+        @media screen and (max-width: 663px) {
+        .footer {
+            flex-direction: row;
+            align-items: center;
+        }
+    }
+    }
+}
+
+.footerBox{
+    border: none;
+    background-color: var(--dark-gold);
+    border-radius: 3vw;
+    padding: 2rem 0 0 0;
+    margin-bottom: 0;
+    color: var(--white);
+    align-items: center; 
+    box-sizing: border-box;
+
+    
+    @media screen and (max-width:663px) {
+        width: 82vw;
+        margin: 0;
+        padding: 1.5rem 0 0 0;
+        }
+
+    @media screen and (min-width: 664px) {
+        width: auto; 
+    }
+
+}
+
+.footerMap{
+    margin: 0.5rem; 
+    h3{
+        font-size: 3vw;
+        margin: 0 12px 0 12px;
+        text-align: center;
+        @media screen and (max-width: 663px) {
+            font-size: 6vw;
+        }
+        @media screen and (max-width: 363px) {
+            font-size: 8vw;
+        }
+
+    }
+    h5{
+        font-size: 1.5vw;
+        font-style: normal;
+        padding-bottom: 4px;
+        margin: 0 12px 0 12px;
+        text-align: center;
+        @media screen and (max-width: 663px) {
+            font-size: 4vw;
+        }
+        @media screen and (max-width: 363px) {
+            font-size: 6vw;
+        }
+    }
+    
+.mapFrame {
+    width: 100%;
+    max-width: 400px;     // tamaño máximo controlado
+    height: auto;
+    aspect-ratio: 2 / 1;  // forma cuadrada
+    border-radius: 3vw;
+    border: solid 1vw var(--dark-gold);
+    box-sizing: border-box;
+
+    @media screen and (max-width: 663px) {
+        max-width: 90vw;
+        height: auto;
+        border: solid 2vw var(--dark-gold);
+    }
+ 
+  }
+}
+
+    .footerComments{
+     p {
+        margin: 16px 16px 0 16px;
+        color: var(--color-text);  
+    }
+}
+
+
+
+.footerInfo {
+    display: flex;
+    flex-direction: column;
+    align-items: left;
+    gap: 1rem;    
+    color: var(--white);
+            @media screen and (max-width: 663px) {
+               align-items: center;
+            }
+
+}
+.ContactItem {
+    display: flex;
+    align-items: center; 
+    gap: 0.5rem;
+    justify-content: left; 
+    flex-wrap: wrap;
+    text-align: left;
+}
+
+.contactIcons {
+  display: flex;
+  align-items: center;
+  justify-content: left;
+    font-size: 2vw !important;
+
+        @media screen and (max-width: 663px) {
+                font-size: 4vw !important;
+        }
+        @media screen and (max-width: 363px) {
+            font-size: 6vw !important;
+    }
+}
+
+
+// Comments
+// Estilos para el contenedor principal de comentarios
+.footerComments {
+    background-color: var(--dark-gold);
+    border-radius: 2.5vw;
+    margin: 0.5rem;
+    overflow-y: auto;
+    font-family: "Montserrat Alternates", sans-serif;
+    padding: 1rem 0 0 0; // Igual que .footerBox
+
+
+    // Igual que footerMap
+    width: 100%;
+    max-width: 400px;
+    aspect-ratio: 2 / 1;
+    height: auto;
+    box-sizing: border-box;
+    border: solid 1vw var(--dark-gold);
+
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+
+    @media screen and (max-width: 663px) {
+        max-width: 90vw;
+        aspect-ratio: 2 / 1;
+        border: solid 2vw var(--dark-gold);
+    }
+    @media screen and (min-width: 1061px) {
+        min-height: 248px;
+    }
+    @media screen and (min-width: 1200px) {
+        min-height: 272px;
+    }
+    @media screen and (min-width: 1600px) {
+        min-height: 300px;
+    }
+    @media screen and (min-width: 1700px) {
+        min-height: 315px;
+    }
+
+    .comments-title {
+        font-family: "Pinyon Script", sans-serif;
+        color: var(--white);
+        margin-bottom: 5px;
+        text-align: center;
+        font-size: 2.5vw;
+
+        @media screen and (max-width: 663px) {
+            font-size: 6vw;
+        }
+
+    }
+
+    .comments-vertical-slider {
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+        padding: 0.5rem;
+        color: var(--white);
+        overflow-y: auto;
+        flex-grow: 1;
+      
+        // Ocultar scrollbar en navegadores modernos
+        scrollbar-width: none; // Firefox
+        -ms-overflow-style: none; // IE 10+
+        &::-webkit-scrollbar { // Chrome, Safari, Edge
+          display: none;
+        }
+      }
+
+    .comment-item {
+        background-color: var(--color-background);
+        border-radius: 1rem;
+        padding: 1rem;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+
+        p {
+            font-family: "Nunito Sans", sans-serif;
+            font-size: 0.8rem;
+            line-height: 1.4;
+            color: var(--color-text);
+            margin: 6px 0 0 0;
+            text-align: justify;
+        }
+    }
+
+    .user-info {
+        display: flex;
+        align-items: center;
+        margin-bottom: 0.5rem;
+    }
+
+    .user-name {
+        font-weight: 700;
+        font-size: 0.9rem;
+        color: var(--color-text);
+    }
+
+    .edited-status {
+        font-size: 0.7rem;
+        margin-left: 0.5rem;
+        font-style: italic;
+        color: var(--color-text);
+    }
+
+    .loading-message,
+    .empty-message,
+    .error-message {
+        text-align: center;
+        padding: 1rem;
+        color: var(--color-text);
+    }
+
+    .error-message {
+        color: var(--error-color);
+    }
+}

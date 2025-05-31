@@ -1,4 +1,4 @@
-import { Table, Model, Column, PrimaryKey, AutoIncrement, DataType, ForeignKey, BelongsTo, HasMany, HasOne} from 'sequelize-typescript';
+import { Table, Model, Column, PrimaryKey, AutoIncrement, DataType, ForeignKey, BelongsTo, HasMany, HasOne } from 'sequelize-typescript';
 import Usuario from './Usuario_model';
 import TipoEvento from './TipoEvento_model';
 import Espacio from './Espacio_model';
@@ -24,14 +24,22 @@ export default class Evento extends Model {
   @Column({ type: DataType.CHAR(13), field: 'cedula_cliente' })
   cedula_cliente!: string;
 
-  @BelongsTo(() => Usuario, 'cedula_cliente')
+  @BelongsTo(() => Usuario, { 
+    foreignKey: 'cedula_cliente',
+    targetKey: 'cedula_usuario',
+    as: 'cliente'
+  })
   cliente!: Usuario;
 
   @ForeignKey(() => Usuario)
   @Column({ type: DataType.CHAR(13), field: 'cedula_asesor' })
   cedula_asesor!: string;
 
-  @BelongsTo(() => Usuario, 'cedula_asesor')
+  @BelongsTo(() => Usuario, { 
+    foreignKey: 'cedula_asesor',
+    targetKey: 'cedula_usuario',
+    as: 'asesor'
+  })
   asesor!: Usuario;
 
   @Column({ type: DataType.DATEONLY, allowNull: false })
@@ -40,7 +48,7 @@ export default class Evento extends Model {
   @Column({ type: DataType.TIME, allowNull: false })
   hora_evento!: string;
 
-   @ForeignKey(() => Espacio)
+  @ForeignKey(() => Espacio)
   @Column({ type: DataType.INTEGER, allowNull: false })
   id_espacio!: number;
 
@@ -84,8 +92,11 @@ export default class Evento extends Model {
   @Column({ type: DataType.DECIMAL(10, 2), defaultValue: 0 })
   total_evento!: number;
 
-  //Relaciones
-  @HasMany(() => Comentario)
+  // Relaciones
+  @HasMany(() => Comentario, { 
+    foreignKey: 'id_evento',
+    as: 'comentarios'
+  })
   comentarios!: Comentario[];
 
   @HasMany(() => CostoAgregadoEvento)
@@ -95,19 +106,19 @@ export default class Evento extends Model {
   alquileres_servicio!: AlquilerServicio[];
 
   @HasOne(() => DecoracionServicio)
-  decoracion_servicio!: DecoracionServicio[];
+  decoracion_servicio!: DecoracionServicio;
 
   @HasOne(() => CateringServicio)
-  catering_servicio!: CateringServicio[];
+  catering_servicio!: CateringServicio;
 
   @HasOne(() => MontajeDesmontajeServicio)
-  montaje_desmontaje_servicio!: MontajeDesmontajeServicio[];
+  montaje_desmontaje_servicio!: MontajeDesmontajeServicio;
 
   @HasOne(() => TransporteServicio)
-  transporte_servicio!: TransporteServicio[];
+  transporte_servicio!: TransporteServicio;
 
   @HasOne(() => SupervisionServicio)
-  supervision_servicio!: SupervisionServicio[];
+  supervision_servicio!: SupervisionServicio;
 
   @HasMany(() => Pago)
   pagos!: Pago[];

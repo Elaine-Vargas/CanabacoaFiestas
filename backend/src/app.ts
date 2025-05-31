@@ -6,6 +6,7 @@ import { syncDatabase } from './config/syncDatabase';
 import authRoutes from './routes/authRoutes';
 import elementoRoutes from './routes/elementoRoutes';
 import path from 'path';
+import comentarioRoutes from './routes/comentarioRoutes';
 
 dotenv.config();
 
@@ -30,7 +31,7 @@ app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 // Rutas
 app.use('/api/auth', authRoutes);
 app.use('/api/elementos', elementoRoutes);
-
+app.use('/api/comentarios', comentarioRoutes);
 // Ruta de prueba
 app.get('/', (req, res) => {
   res.send('Servidor funcionando correctamente');
@@ -45,6 +46,8 @@ app.listen(PORT, async () => {
   console.log('- GET /api/elementos/colores/list');
   console.log('- GET /api/elementos/filtrados');
   console.log('- GET /api/elementos/elemento/:id');
+  console.log('- GET /api/comentarios/getComentarios');
+
   
   try {
     await testDbConnection();

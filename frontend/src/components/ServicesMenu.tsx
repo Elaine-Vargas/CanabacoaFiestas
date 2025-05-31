@@ -11,7 +11,7 @@ import {
 import { IoIosExit } from "react-icons/io";
 import { useState } from "react";
 import ColorTheme from "../functions/ColorTheme";
-import "../styles/DashboardServices.scss";
+import "../styles/dashboard/DashboardServices.scss";
 
 export type UserRole = 'admin' | 'client' | 'supervisor' | 'inventory';
 

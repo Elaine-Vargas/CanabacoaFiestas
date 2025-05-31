@@ -1,8 +1,9 @@
 import { lazy, Suspense } from "react";
-import "../styles/Footer.scss";
+import "../styles/mainPages/Footer.scss";
 import InstagramIcon from '@mui/icons-material/Instagram';
 import WhatsAppIcon from '@mui/icons-material/WhatsApp';
 import MailIcon from '@mui/icons-material/MailOutlineRounded';
+import Comments from "./Comments";
 
 // Lazy load the map component
 const MapComponent = lazy(() => import('./MapComponent'));
@@ -11,7 +12,7 @@ const Footer = () => {
   return (
     <footer id="footer">
       <div className='footer'>
-        <div className="footerMap">
+        <div className="footerMap footerBox">
           <h3>Nos encuentras en...</h3>
           <h5>Santiago de los Caballeros</h5>
           <Suspense fallback={<div className="mapFrame">Cargando mapa...</div>}>
@@ -19,11 +20,7 @@ const Footer = () => {
           </Suspense>
         </div>
 
-        <div className="footerComments">
-          <p>comentarios</p>
-        </div>
-
-        <div className='footerInfo'>
+       <div className='footerInfo'>
           <div className='footerInfo'>
             <h3>Contáctanos</h3>
             <div className="ContactItem">
@@ -43,6 +40,11 @@ const Footer = () => {
             </div>
           </div>
         </div>
+
+          <Comments />
+      
+
+ 
       </div>
     </footer>
   );

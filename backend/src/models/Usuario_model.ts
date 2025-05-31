@@ -188,11 +188,4 @@ export default class Usuario extends Model {
   })
   supervisionesRealizadas!: DetalleSupervision[];
 
-  /** Relación con Comentario **/
-  @HasMany(() => Comentario, {
-    foreignKey: 'cedula_usuario',
-    sourceKey: 'cedula_usuario',
-    as: 'comentarios'
-  })
-  comentarios!: Comentario[];
 }

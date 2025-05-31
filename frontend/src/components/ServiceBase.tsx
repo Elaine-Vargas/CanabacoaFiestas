@@ -1,6 +1,6 @@
 import React from 'react';
 //import { useUser } from '../context/UserContext';
-import '../styles/services-subpages.scss';
+import '../styles/dashboard/ServicesSubpages.scss';
 
 export type UserRole = 'admin' | 'coordinator' | 'inventory' | 'client';
 
