@@ -3,7 +3,8 @@ import {
   getElementos, 
   getElementoById, 
   getCategorias,
-  getColores
+  getColores,
+  getMateriales
 } from '../controllers/elementoController';
 
 const router = Router();
@@ -13,6 +14,9 @@ router.get('/categorias/list', getCategorias as RequestHandler);
 
 // Obtener todos los colores
 router.get('/colores/list', getColores as RequestHandler);
+
+// Obtener todos los materiales
+router.get('/materiales/list', getMateriales as RequestHandler);
 
 // Obtener elementos filtrados
 router.get('/filtrados', getElementos as RequestHandler);
