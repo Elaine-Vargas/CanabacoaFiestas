@@ -10,6 +10,7 @@ interface UsuarioComentario {
 
 interface Comentario {
   id_comentario: number;
+  calificacion: number;
   comentario: string;
   estado_comentario: 'Activo' | 'Editado' | 'Eliminado';
   id_evento: number;
@@ -28,14 +29,17 @@ const Comments = () => {
     try {
       setLoading(true);
       setError(null);
-      
+
       const response = await axios.get('http://localhost:3000/api/comentarios', {
         params: { includeEvent: true }
       });
-      
-      const datos = Array.isArray(response.data) ? response.data : 
-                   (response.data.data && Array.isArray(response.data.data)) ? response.data.data : [];
-      
+
+      const datos = Array.isArray(response.data)
+        ? response.data
+        : response.data.data && Array.isArray(response.data.data)
+        ? response.data.data
+        : [];
+
       setComentarios(datos);
     } catch (err) {
       console.error('Error al cargar comentarios:', err);
@@ -75,7 +79,7 @@ const Comments = () => {
       <Typography variant="h5" className="comments-title">
         Comentarios de Clientes
       </Typography>
-      
+
       {comentarios.length === 0 ? (
         <Typography className="empty-message">
           No hay comentarios disponibles
@@ -86,13 +90,32 @@ const Comments = () => {
             <div key={comentario.id_comentario} className="comment-item">
               <div className="user-info">
                 <span className="user-name">
-                  {comentario.evento?.cliente?.nombre_usuario || 'Anónimo'} 
-                  {comentario.evento?.cliente?.apellido_usuario ? ' ' + comentario.evento.cliente.apellido_usuario : ''}
+                  {comentario.evento?.cliente?.nombre_usuario || 'Anónimo'}
+                  {comentario.evento?.cliente?.apellido_usuario
+                    ? ' ' + comentario.evento.cliente.apellido_usuario
+                    : ''}
                 </span>
                 {comentario.estado_comentario === 'Editado' && (
                   <span className="edited-status">(editado)</span>
                 )}
               </div>
+
+              {/* ⭐ Calificación con estrellas */}
+              <div className="rating">
+                {typeof comentario.calificacion === 'number' &&
+                comentario.calificacion >= 0 &&
+                comentario.calificacion <= 5 ? (
+                  <>
+                    {'★'.repeat(comentario.calificacion)}
+                    {'☆'.repeat(5 - comentario.calificacion)}
+                  </>
+                ) : (
+                  <Typography className="error-message">
+                    Calificación no disponible
+                  </Typography>
+                )}
+              </div>
+
               <Typography className="comment-text">
                 {comentario.comentario}
               </Typography>

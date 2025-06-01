@@ -68,6 +68,11 @@ export default class Evento extends Model {
   @BelongsTo(() => TipoEvento)
   tipo_evento!: TipoEvento;
 
+  
+  @Column({ type: DataType.TINYINT, allowNull: false, defaultValue: 0})
+  desea_supervision!: boolean;
+
+
   @Column({ type: DataType.TEXT })
   nota_cliente!: string;
 

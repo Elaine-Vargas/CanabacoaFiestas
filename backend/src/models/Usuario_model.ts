@@ -5,7 +5,6 @@ import * as bcrypt from 'bcryptjs';
 import DetalleTransporte from './DetalleTransporte_model';
 import DetalleMontajedesmontaje from './DetalleMontajeDesmontaje_model';
 import DetalleSupervision from './DetalleSupervision_model';
-import Comentario from './Comentario_model';
 
 @Table({
   tableName: 'usuario',
@@ -26,7 +25,7 @@ export default class Usuario extends Model {
       validate: {
         is: {
           args: [/^[0-9]{3}-[0-9]{7}-[0-9]{1}$/],
-          msg: 'El teléfono debe tener el formato 000-0000000-0'
+          msg: 'La cédula debe tener el formato 000-0000000-0'
         }
     }
   })

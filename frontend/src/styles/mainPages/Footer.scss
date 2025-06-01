@@ -263,3 +263,11 @@
         color: var(--error-color);
     }
 }
+
+.rating {
+    display: flex;
+    align-items: left;
+    justify-content: left;
+    font-size: 1.5rem;
+    color: var(--gold);
+}

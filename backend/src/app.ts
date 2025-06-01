@@ -40,13 +40,7 @@ app.get('/', (req, res) => {
 // Iniciar servidor
 app.listen(PORT, async () => {
   console.log(`Servidor escuchando en http://localhost:${PORT}`);
-  console.log('Rutas disponibles:');
-  console.log('- GET /api/elementos');
-  console.log('- GET /api/elementos/categorias/list');
-  console.log('- GET /api/elementos/colores/list');
-  console.log('- GET /api/elementos/filtrados');
-  console.log('- GET /api/elementos/elemento/:id');
-  console.log('- GET /api/comentarios/getComentarios');
+
 
   
   try {
