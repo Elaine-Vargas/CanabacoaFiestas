@@ -314,11 +314,11 @@ const UserLogin: React.FC = () => {
                 <input 
                   type="text" 
                   id="signup-id" 
-                  placeholder="000-000000-0" 
+                  placeholder="000-0000000-0" 
                   required 
                   value={signupData.cedula_usuario}
                   onChange={handleInputChange}
-                  maxLength={12} 
+                  maxLength={13} 
                 />
               </div>
               <div className="form-row">
