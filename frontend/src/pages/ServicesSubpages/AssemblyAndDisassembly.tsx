@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import type { ChangeEvent } from 'react';
 import '../../styles/dashboard/ServicesSubpages.scss';
 import ServiceBase from '../../components/ServiceBase';
-import { useUser } from "../../context/UserContext";
+import { useUser } from "../../contexts/UserContext";
 
 interface Assembly {
   id_assembly?: number;

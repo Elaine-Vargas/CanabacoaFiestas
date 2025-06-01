@@ -3,7 +3,7 @@ import Principal from './Principal'; // This stays as a regular import
 import { lazy, Suspense } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import ColorTheme from '../functions/ColorTheme';
-import { UserProvider } from '../context/UserContext';
+import { UserProvider } from '../contexts/UserContext';
 
 // Lazy loaded pages
 const AboutUs = lazy(() => import('./AboutUs'));

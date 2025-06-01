@@ -22,7 +22,7 @@
     background: var(--color-background2);
     padding: 20px;
     max-width: 800px;
-    margin: 0 auto;
+    margin: 0 auto 50px auto;
     border-radius: 8px;
     box-shadow: 0 15px 50px var(--color-shadow);
   }
@@ -52,16 +52,18 @@
 
       .toggle-password-button {
         padding: 8px 16px;
-        background-color: #818a93;
-        color: var(--color-text);
+        background-color: var(--beige);
+        color: var(--black);
         border: none;
         border-radius: 4px;
         cursor: pointer;
         font-size: 14px;
+        font-family: 'Montserrat Alternates', sans-serif;
+        font-weight: 800;
         transition: background-color 0.2s;
 
         &:hover {
-          background-color: #727b82;
+          background-color: var(--gold);
         }
       }
     }
@@ -78,6 +80,7 @@
       border: 1px solid var(--color-input-border);
       border-radius: 4px;
       font-size: 14px;
+      font-family: 'Nunito Sans', sans-serif;
       box-sizing: border-box;
       background-color:  var(--color-background2);
       color: var(--color-text);
@@ -133,7 +136,8 @@
     border-radius: 4px;
     cursor: pointer;
     font-size: 16px;
-    font-weight: 500;
+    font-weight: 800;
+    font-family: 'Montserrat Alternates', sans-serif;
 
     &:hover {
       background-color: var(--dark-gold);

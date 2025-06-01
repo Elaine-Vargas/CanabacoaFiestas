@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import type { FormEvent } from 'react';
 import '../../styles/dashboard/ServicesSubpages.scss';
 import ServiceBase from '../../components/ServiceBase';
-import { useUser } from '../../context/UserContext';
+import { useUser } from '../../contexts/UserContext';
 
 export type UserRole = 'admin' | 'client' | 'supervisor' | 'inventory';
 

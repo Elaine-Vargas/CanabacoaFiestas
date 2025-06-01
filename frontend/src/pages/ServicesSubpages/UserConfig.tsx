@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import VisibilityOffIcon from '@mui/icons-material/VisibilityOff';
 import VisibilityIcon from '@mui/icons-material/Visibility';
 import "../../styles/dashboard/UserConfig.scss";
+import { validateEmail, validateCedula, validateUsername, validatePhoneNumber, formatPhoneNumber, formatCedula } from "../../utils/validation";
 
 export default function UserConfig() {
   const [userData, setUserData] = useState({
@@ -72,10 +73,9 @@ export default function UserConfig() {
           usuario_login: data.usuario_login
         }));
 
-        // Actualizar también el localStorage manteniendo el rol
         localStorage.setItem('userData', JSON.stringify({
           ...data,
-          rol: storedUserData.rol // Preservar el rol existente
+          rol: storedUserData.rol
         }));
       } catch (error) {
         setError(error instanceof Error ? error.message : 'Error al cargar datos del usuario');
@@ -100,7 +100,6 @@ export default function UserConfig() {
       usuario_login: userData.usuario_login || "",
       cedula_usuario: userData.cedula_usuario || ""
     });
-    // Guardar los datos iniciales
     setInitialData({
       nombre_usuario: userData.nombre_usuario || "",
       apellido_usuario: userData.apellido_usuario || "",
@@ -137,16 +136,60 @@ export default function UserConfig() {
     const fieldName = fieldMap[id];
     if (!fieldName) return;
 
+    let processedValue = value;
+    
+    if (id === 'config-phone') {
+      processedValue = formatPhoneNumber(value);
+    } else if (id === 'config-email') {
+      processedValue = value.toLowerCase();
+    }
+    
     setUserData(prev => ({
       ...prev,
-      [fieldName]: id === 'config-email' ? value.toLowerCase() : value
+      [fieldName]: processedValue
     }));
+    
+    if (id === 'config-email') {
+      const error = validateEmail(processedValue);
+      setError(error || "");
+    } else if (id === 'config-username') {
+      const error = validateUsername(processedValue);
+      setError(error || "");
+    } else if (id === 'config-phone') {
+      const error = validatePhoneNumber(processedValue);
+      setError(error || "");
+    } else if (id === 'config-password') {
+      const password = processedValue;
+      const hasUpperCase = /[A-Z]/.test(password);
+      const hasNumber = /[0-9]/.test(password);
+      const hasSpecial = /[!@#$%^&*]/.test(password);
+      const isValidLength = password.length >= 8 && password.length <= 25;
+      
+      let errorMsg = [];
+      if (!hasUpperCase) errorMsg.push("una mayúscula");
+      if (!hasNumber) errorMsg.push("un número"); 
+      if (!hasSpecial) errorMsg.push("un carácter especial (!@#$%^&*.?_-)");
+      if (!isValidLength) errorMsg.push("entre 8-25 caracteres");
+      
+      if (errorMsg.length > 0) {
+        setError(`La contraseña debe tener ${errorMsg.join(", ")}`);
+      } else if (userData.confirmar_contrasena && password !== userData.confirmar_contrasena) {
+        setError("Las contraseñas no coinciden");
+      } else {
+        setError("");
+      }
+    } else if (id === 'config-password-confirm') {
+      if (processedValue && processedValue !== userData.contrasena_login) {
+        setError("Las contraseñas no coinciden");
+      } else {
+        setError("");
+      }
+    }
 
-    // Solo verificar cambios en campos que no sean contraseñas
     if (!id.includes('password')) {
       const relevantFields = ['usuario_login', 'correo_usuario', 'tel_usuario'];
       const hasFormChanges = relevantFields.some(field => {
-        const newValue = field === fieldName ? value : userData[field as keyof typeof userData];
+        const newValue = field === fieldName ? processedValue : userData[field as keyof typeof userData];
         return newValue !== initialData[field as keyof typeof initialData];
       });
       setHasChanges(hasFormChanges);
@@ -158,22 +201,18 @@ export default function UserConfig() {
     setError("");
     setSuccess("");
 
-    // Verificar que se haya ingresado la contraseña actual solo si se están cambiando datos
-    if (userData.contrasena_login || userData.usuario_login !== userData.usuario_login || 
-        userData.correo_usuario !== userData.correo_usuario || userData.tel_usuario !== userData.tel_usuario) {
+    if (userData.contrasena_login || hasChanges) {
       if (!userData.contrasena_actual) {
         setError('Debe ingresar su contraseña actual para realizar cambios');
         return;
       }
     }
 
-    // Validar que si se está cambiando la contraseña, coincidan
     if (userData.contrasena_login && userData.contrasena_login !== userData.confirmar_contrasena) {
       setError('Las contraseñas no coinciden');
       return;
     }
 
-    // Validar contraseña si se está cambiando
     if (userData.contrasena_login) {
       const password = userData.contrasena_login;
       const hasUpperCase = /[A-Z]/.test(password);
@@ -220,26 +259,34 @@ export default function UserConfig() {
         throw new Error(data.error || 'Error al actualizar datos');
       }
 
-      // Actualizar datos en localStorage
       const storedUserData = JSON.parse(localStorage.getItem('userData') || '{}');
       const updatedUserData = {
         ...storedUserData,
         correo_usuario: userData.correo_usuario,
         tel_usuario: userData.tel_usuario,
         usuario_login: userData.usuario_login,
-        rol: storedUserData.rol // Preservar el rol existente
+        rol: storedUserData.rol
       };
       localStorage.setItem('userData', JSON.stringify(updatedUserData));
 
       setSuccess('Datos actualizados exitosamente');
       
-      // Limpiar campos de contraseña
       setUserData(prev => ({
         ...prev,
         contrasena_login: "",
         confirmar_contrasena: "",
         contrasena_actual: ""
       }));
+
+      // Actualizar initialData para reflejar los nuevos cambios
+      setInitialData({
+        ...initialData,
+        correo_usuario: userData.correo_usuario,
+        tel_usuario: userData.tel_usuario,
+        usuario_login: userData.usuario_login
+      });
+
+      setHasChanges(false);
 
     } catch (error) {
       setError(error instanceof Error ? error.message : 'Error al actualizar datos');
@@ -326,21 +373,23 @@ export default function UserConfig() {
               required
             />
           </div>
-            <div className="form-group">
-                <label htmlFor="config-current-password">Contraseña Actual</label>
-                <div className="password-input-container">
-                  <input 
-                    type={showCurrentPassword ? "text" : "password"} 
-                    id="config-current-password" 
-                    value={userData.contrasena_actual}
-                    onChange={handleInputChange}
-                    required
-                  />
-                  <span className="password-toggle" onClick={toggleCurrentPasswordVisibility}>
-                    {showCurrentPassword ? <VisibilityOffIcon /> : <VisibilityIcon />}
-                  </span>
-                </div>
-              </div>
+
+          <div className="form-group">
+            <label htmlFor="config-current-password">Contraseña Actual</label>
+            <div className="password-input-container">
+              <input 
+                type={showCurrentPassword ? "text" : "password"} 
+                id="config-current-password" 
+                value={userData.contrasena_actual}
+                onChange={handleInputChange}
+                required
+              />
+              <span className="password-toggle" onClick={toggleCurrentPasswordVisibility}>
+                {showCurrentPassword ? <VisibilityOffIcon /> : <VisibilityIcon />}
+              </span>
+            </div>
+          </div>
+
           <div className="form-group">
             <div className="password-toggle-section">
               <label>¿Desea cambiar su contraseña?</label>
@@ -355,52 +404,46 @@ export default function UserConfig() {
           </div>
 
           {showPasswordFields && (
-            <>
-              
-
-              <div className="form-group row">
-                <div>
-                  <label htmlFor="config-password">Nueva Contraseña</label>
-                  <div className="password-input-container">
-                    <input 
-                      type={showPassword ? "text" : "password"} 
-                      id="config-password" 
-                      value={userData.contrasena_login}
-                      onChange={handleInputChange}
-                      required
-                    />
-                    <span className="password-toggle" onClick={togglePasswordVisibility}>
-                      {showPassword ? <VisibilityOffIcon /> : <VisibilityIcon />}
-                    </span>
-                  </div>
-                </div>
-
-                <div>
-                  <label htmlFor="config-password-confirm">Confirmar Nueva Contraseña</label>
-                  <div className="password-input-container">
-                    <input 
-                      type={showConfirmPassword ? "text" : "password"} 
-                      id="config-password-confirm" 
-                      value={userData.confirmar_contrasena}
-                      onChange={handleInputChange}
-                      required
-                    />
-                    <span className="password-toggle" onClick={toggleConfirmPasswordVisibility}>
-                      {showConfirmPassword ? <VisibilityOffIcon /> : <VisibilityIcon />}
-                    </span>
-                  </div>
+            <div className="form-group row">
+              <div>
+                <label htmlFor="config-password">Nueva Contraseña</label>
+                <div className="password-input-container">
+                  <input 
+                    type={showPassword ? "text" : "password"} 
+                    id="config-password" 
+                    value={userData.contrasena_login}
+                    onChange={handleInputChange}
+                  />
+                  <span className="password-toggle" onClick={togglePasswordVisibility}>
+                    {showPassword ? <VisibilityOffIcon /> : <VisibilityIcon />}
+                  </span>
                 </div>
               </div>
-            </>
+
+              <div>
+                <label htmlFor="config-password-confirm">Confirmar Nueva Contraseña</label>
+                <div className="password-input-container">
+                  <input 
+                    type={showConfirmPassword ? "text" : "password"} 
+                    id="config-password-confirm" 
+                    value={userData.confirmar_contrasena}
+                    onChange={handleInputChange}
+                  />
+                  <span className="password-toggle" onClick={toggleConfirmPasswordVisibility}>
+                    {showConfirmPassword ? <VisibilityOffIcon /> : <VisibilityIcon />}
+                  </span>
+                </div>
+              </div>
+            </div>
           )}
 
           <button 
             type="submit" 
             className="update-button" 
-            disabled={!hasChanges}
+            disabled={!hasChanges && !userData.contrasena_login}
             style={{ 
-              opacity: hasChanges ? 1 : 0.6,
-              cursor: hasChanges ? 'pointer' : 'not-allowed'
+              opacity: (hasChanges || userData.contrasena_login) ? 1 : 0.6,
+              cursor: (hasChanges || userData.contrasena_login) ? 'pointer' : 'not-allowed'
             }}
           >
             Actualizar Datos

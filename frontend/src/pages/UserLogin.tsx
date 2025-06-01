@@ -6,6 +6,7 @@ import LogoDorado from "../assets/logoVariants/OVALO-CF(titulo dorado osc).svg"
 import LoginNav from "../components/LoginNav";
 import VisibilityOffIcon from '@mui/icons-material/VisibilityOff';
 import VisibilityIcon from '@mui/icons-material/Visibility';
+import { formatPhoneNumber, formatCedula, validateEmail, validateCedula, validateUsername, validatePhoneNumber } from "../utils/validation";
 //Se necesita adaptar el formulario de registro para que sea responsive y tenga un scroll vertical si es necesario
 
 const UserLogin: React.FC = () => {
@@ -49,6 +50,7 @@ const UserLogin: React.FC = () => {
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { id, value } = e.target;
+    
     if (id.startsWith('login-')) {
       setLoginData(prev => ({
         ...prev,
@@ -66,13 +68,38 @@ const UserLogin: React.FC = () => {
         'signup-password-confirm': 'confirmar_contrasena'
       };
       
+      let processedValue = value;
+      
+      // Aplicar formatos especiales
+      if (id === 'signup-phone') {
+        processedValue = formatPhoneNumber(value);
+      } else if (id === 'signup-id') {
+        processedValue = formatCedula(value);
+      } else if (id === 'signup-email') {
+        processedValue = value.toLowerCase();
+      }
+      
       setSignupData(prev => ({
         ...prev,
-        [fieldMap[id]]: id === 'signup-email' ? value.toLowerCase() : value
+        [fieldMap[id]]: processedValue
       }));
+      
+      // Validaciones en tiempo real
+      if (id === 'signup-email') {
+        const error = validateEmail(processedValue);
+        setError(error || "");
+      } else if (id === 'signup-username') {
+        const error = validateUsername(processedValue);
+        setError(error || "");
+      } else if (id === 'signup-phone') {
+        const error = validatePhoneNumber(processedValue);
+        setError(error || "");
+      } else if (id === 'signup-id') {
+        const error = validateCedula(processedValue);
+        setError(error || "");
+      }
     }
-  };
-
+  };  
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
@@ -275,21 +302,23 @@ const UserLogin: React.FC = () => {
                 onChange={handleInputChange}
               />
               <div className="form-row">
-                <input 
+              <input 
                   type="tel" 
                   id="signup-phone" 
-                  placeholder="Número de Teléfono" 
+                  placeholder="000-000-0000" 
                   required 
                   value={signupData.tel_usuario}
                   onChange={handleInputChange}
+                  maxLength={12} 
                 />
                 <input 
                   type="text" 
                   id="signup-id" 
-                  placeholder="Cédula" 
+                  placeholder="000-000000-0" 
                   required 
                   value={signupData.cedula_usuario}
                   onChange={handleInputChange}
+                  maxLength={12} 
                 />
               </div>
               <div className="form-row">

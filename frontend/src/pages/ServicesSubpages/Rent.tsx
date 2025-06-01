@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import '../../styles/dashboard/ServicesSubpages.scss';
-import { useUser } from '../../context/UserContext';
+import { useUser } from '../../contexts/UserContext';
 import ServiceBase from '../../components/ServiceBase';
 
 export type UserRole = 'admin' | 'client' | 'supervisor' | 'inventory';

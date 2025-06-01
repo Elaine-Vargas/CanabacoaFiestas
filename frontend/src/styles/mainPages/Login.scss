@@ -190,7 +190,7 @@ section .container .user .formBx form input[type='submit'] {
 
 section .container .user .formBx form .signup {
   position: relative;
-  margin-top: 30px;
+  margin-top: 8px;
   margin-bottom: 20px;
   font-size: 15px;
   letter-spacing: 1px;
@@ -268,23 +268,7 @@ section .container.active .signinBx .imgBx {
   }
 }
 
-.form-row {
-  display: flex;
-  gap: 10px;
-  width: 100%;
-  margin: 8px 0;
-  justify-content: space-between;
 
-  input {
-    flex: 1;
-    min-width: 0; // Prevents flex items from overflowing
-  }
-}
-
-.full-width {
-  width: 100%;
-  margin: 8px 0;
-}
 
 section .container .user .formBx form {
   width: 100%;
@@ -312,7 +296,6 @@ section .container .user .formBx form input {
 @media screen and (min-width: 601px) and (max-width: 1025px) {
   .form-row {
     flex-direction: column;
-    gap: 8px;
     width: 100%;
     max-width: 400px;
     margin: 8px auto;
@@ -332,7 +315,7 @@ section .container .user .formBx form input {
 
   section .container .user .formBx form input {
     width: 100%;
-    max-width: 400px;
+    max-width: 300px;
     margin: 8px auto;
   }
 
@@ -393,10 +376,9 @@ section .container .user .formBx form input {
 
   .form-row {
     flex-direction: column;
-    gap: 8px;
     width: 100%;
     max-width: 300px;
-    margin: 8px auto;
+    margin: 0 auto;
 
     input {
       width: 100%;
@@ -480,4 +462,34 @@ section .container .user .formBx form input {
       color: #333;
     }
   }
+}
+
+/* Esto hará que todos los espacios entre filas sean iguales */
+.form-row {
+  display: flex;
+  gap: 10px; /* Espacio horizontal entre elementos */
+  width: 100%;
+  margin: 8px 0 !important; /* Espacio vertical uniforme (igual que en los inputs) */
+  justify-content: space-between;
+
+  @media (max-width: 600px) {
+    flex-direction: column;
+    gap: 0;
+  }
+
+  /* Para los inputs dentro de las filas */
+  input {
+    margin: 0 !important; /* Elimina cualquier margen adicional */
+  }
+}
+
+/* Para los inputs que van a full width */
+.full-width {
+  width: 100%;
+  margin: 8px 0 !important; /* Mismo espacio vertical */
+}
+
+/* Asegura que los grupos de contraseña tengan el mismo espaciado */
+.password-input-container {
+  margin: 0 !important;
 }
