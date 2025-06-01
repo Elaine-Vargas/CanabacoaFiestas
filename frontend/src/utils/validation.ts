@@ -7,7 +7,7 @@ export const validatePassword = (password: string): string | null => {
   const errorMsg = [];
   if (!hasUpperCase) errorMsg.push("una mayúscula");
   if (!hasNumber) errorMsg.push("un número"); 
-  if (!hasSpecial) errorMsg.push("un carácter especial (!@#$%^&*.?_-)");
+  if (!hasSpecial) errorMsg.push("un carácter especial (!@#$%^&*._-)");
   if (!isValidLength) errorMsg.push("entre 8-25 caracteres");
   
   return errorMsg.length > 0 
