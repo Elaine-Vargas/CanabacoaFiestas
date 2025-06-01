@@ -177,11 +177,13 @@ export default function ServicesMenu({ selectedService }: ServicesMenuProps) {
         onClose={toggleDrawer(false)}
         PaperProps={{
           sx: {
-            background: "var(--color-background)",
+            background: "var(--color-background2)",
             color: "var(--color-text)",
             fontFamily: '"Nunito Sans", sans-serif',
             width: 250,
             padding: 2,
+            display: 'flex',
+            flexDirection: 'column'
           },
         }}
       >
@@ -203,7 +205,9 @@ export default function ServicesMenu({ selectedService }: ServicesMenuProps) {
           </div>
         </div>
 
-        <List>
+        <ColorTheme colorDark="black" colorLight="white" />
+
+        <List sx={{ flexGrow: 1 }}>
           {menuItems.map((item) => (
             <ListItem key={item.text} disablePadding>
               <ListItemButton
@@ -216,10 +220,17 @@ export default function ServicesMenu({ selectedService }: ServicesMenuProps) {
                   "&:hover": {
                     color: "var(--gold)",
                   },
+                  
                 }}
               >
                 <span style={{ marginRight: 10 }}>{item.icon}</span>
-                <ListItemText primary={item.text} />
+                <ListItemText 
+                  primary={item.text} 
+                  primaryTypographyProps={{ 
+                    fontFamily: 'inherit', // Asegura que herede la fuente
+                    fontWeight: selectedService === item.text ? 'bold' : 'normal' // Opcional: resalta el activo
+                  }}
+                />
               </ListItemButton>
             </ListItem>
           ))}
@@ -230,7 +241,6 @@ export default function ServicesMenu({ selectedService }: ServicesMenuProps) {
           title="Cerrar Sesión" 
           onClick={() => {
             setShowLogoutModal(true);
-            setDrawerOpen(false);
           }} 
         />
       </Drawer>
@@ -239,6 +249,19 @@ export default function ServicesMenu({ selectedService }: ServicesMenuProps) {
 
   return (
     <>
+      {/* Modal de cierre de sesión - Renderizado fuera de la lógica responsive */}
+      {showLogoutModal && (
+        <div className="modal-overlay">
+          <div className="modal-content">
+            <h4>¿Está seguro que desea cerrar sesión?</h4>
+            <div className="modal-buttons">
+              <button onClick={handleLogout}>Sí</button>
+              <button onClick={() => setShowLogoutModal(false)}>No</button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {isMobile && (
         <IconButton 
           className="menu-icon" 
@@ -262,42 +285,28 @@ export default function ServicesMenu({ selectedService }: ServicesMenuProps) {
       
       {isMobile && renderMobileMenu()}
 
-      <div className="sidebar">
-        {showLogoutModal && (
-          <div className="modal-overlay">
-            <div className="modal-content">
-              <h4>¿Está seguro que desea cerrar sesión?</h4>
-              <div className="modal-buttons">
-                <button onClick={handleLogout}>Sí</button>
-                <button onClick={() => setShowLogoutModal(false)}>No</button>
-              </div>
+      {/* Sidebar normal - Renderizado solo en desktop */}
+      {!isMobile && (
+        <div className="sidebar">
+          <ColorTheme colorDark="black" colorLight="white" />
+          <div className="user-profile">
+            <FaUserCog size={30} className="user-icon"
+              title="Ajustes de Usuario"
+              onClick={() => navigate("/Menu-Servicios/Ajustes-Usuario")}
+            />
+            <div className="user-info">
+              <p className="user-name">
+                {userData.nombre_usuario || ''} {userData.apellido_usuario || ''}
+              </p>
+              <p className="user-role">
+                {getRolName(userData.rol)}
+              </p>
             </div>
           </div>
-        )}
-        <ColorTheme colorDark="black" colorLight="white" />
-
-        {!isMobile && (
-          <>
-            <div className="user-profile">
-              <FaUserCog size={30} className="user-icon"
-                title="Ajustes de Usuario"
-                onClick={() => navigate("/Menu-Servicios/Ajustes-Usuario")}
-              />
-              <div className="user-info">
-                <p className="user-name">
-                  {userData.nombre_usuario || ''} {userData.apellido_usuario || ''}
-                </p>
-                <p className="user-role">
-                  {getRolName(userData.rol)}
-                </p>
-              </div>
-            </div>
-
-            {renderMenuItems()}
-            <IoIosExit className="logout-button" title="Cerrar Sesión" onClick={() => setShowLogoutModal(true)} />
-          </>
-        )}
-      </div>
+          {renderMenuItems()}
+          <IoIosExit className="logout-button" title="Cerrar Sesión" onClick={() => setShowLogoutModal(true)} />
+        </div>
+      )}
     </>
   );
 }
