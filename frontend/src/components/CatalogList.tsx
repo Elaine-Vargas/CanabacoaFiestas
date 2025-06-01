@@ -1,29 +1,9 @@
-import { useState, useEffect, useMemo, lazy, Suspense } from 'react';
+import { useState, useEffect, lazy, Suspense } from 'react';
 import axios from 'axios';
 import { 
-  Card, 
-  CardContent, 
-  Typography, 
-  Grid, 
-  Container, 
-  TextField, 
-  Select, 
-  MenuItem, 
-  FormControl, 
-  InputLabel, 
-  Box, 
-  CircularProgress,
-  IconButton,
-  Badge,
-  Drawer,
-  List,
-  ListItem,
-  ListItemText,
-  Button,
-  Snackbar,
-  Alert,
-  Divider,
-  Skeleton
+  Card, CardContent, Typography, Grid, Container, TextField, Select, 
+  MenuItem, FormControl, InputLabel, Box, CircularProgress, IconButton, 
+  Badge, Drawer, List, ListItem, ListItemText, Button, Snackbar, Alert, Skeleton
 } from '@mui/material';
 import type { SelectChangeEvent } from '@mui/material';
 import ShoppingCartIcon from '@mui/icons-material/ShoppingCart';
@@ -32,7 +12,9 @@ import RemoveIcon from '@mui/icons-material/Remove';
 import DeleteIcon from '@mui/icons-material/Delete';
 import CloseIcon from '@mui/icons-material/Close';
 import { useNavigate } from 'react-router-dom';
-import NavBar from './NavBar';
+
+// Lazy-loaded components
+const NavBar = lazy(() => import('./NavBar'));
 
 interface CategoriaElemento {
   id_categoria: number;
@@ -89,55 +71,60 @@ interface MaterialElemento {
   nombre_material: string;
 }
 
-// Componente para la imagen optimizada
-const OptimizedImage = ({ src, alt }: { src: string; alt: string }) => {
-  const [isLoaded, setIsLoaded] = useState(false);
-  const [error, setError] = useState(false);
+// Lazy-loaded OptimizedImage component
+const OptimizedImage = lazy(() => {
+  return new Promise<{ default: React.ComponentType<{ src: string; alt: string }> }>((resolve) => {
+    const Component = ({ src, alt }: { src: string; alt: string }) => {
+      const [isLoaded, setIsLoaded] = useState(false);
+      const [error, setError] = useState(false);
 
-  return (
-    <Box sx={{ 
-      position: 'relative', 
-      width: '100%', 
-      paddingTop: '100%', // Cambiado de 75% a 100% para un cuadrado perfecto
-      overflow: 'hidden',
-      borderRadius: '8px'
-    }}>
-      {!isLoaded && !error && (
-        <Skeleton 
-          variant="rectangular" 
-          sx={{ 
-            position: 'absolute',
-            top: 0,
-            left: 0,
-            width: '100%',
-            height: '100%',
-            borderRadius: 1
-          }} 
-        />
-      )}
-      <img
-        src={src}
-        alt={alt}
-        loading="lazy"
-        onLoad={() => setIsLoaded(true)}
-        onError={() => setError(true)}
-        style={{
-          position: 'absolute',
-          top: 0,
-          left: 0,
-          width: '100%',
-          height: '100%',
-          objectFit: 'contain', // Cambiado de 'cover' a 'contain'
-          backgroundColor: 'var(--white)', // Fondo gris claro para imágenes con transparencia
-          padding: '8px', // Espacio alrededor de la imagen
-          borderRadius: '8px',
-          opacity: isLoaded ? 1 : 0,
-          transition: 'opacity 0.3s ease-in-out'
-        }}
-      />
-    </Box>
-  );
-};
+      return (
+        <Box sx={{ 
+          position: 'relative', 
+          width: '100%', 
+          paddingTop: '100%',
+          overflow: 'hidden',
+          borderRadius: '8px'
+        }}>
+          {!isLoaded && !error && (
+            <Skeleton 
+              variant="rectangular" 
+              sx={{ 
+                position: 'absolute',
+                top: 0,
+                left: 0,
+                width: '100%',
+                height: '100%',
+                borderRadius: 1
+              }} 
+            />
+          )}
+          <img
+            src={src}
+            alt={alt}
+            loading="lazy"
+            onLoad={() => setIsLoaded(true)}
+            onError={() => setError(true)}
+            style={{
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              width: '100%',
+              height: '100%',
+              objectFit: 'contain',
+              backgroundColor: 'var(--white)',
+              padding: '8px',
+              borderRadius: '8px',
+              opacity: isLoaded ? 1 : 0,
+              transition: 'opacity 0.3s ease-in-out'
+            }}
+          />
+        </Box>
+      );
+    };
+    resolve({ default: Component });
+  });
+});
 
 const Catalog = () => {
   const navigate = useNavigate();
@@ -161,13 +148,15 @@ const Catalog = () => {
     tipo: 'success' as 'success' | 'error'
   });
   const [cantidadesSeleccionadas, setCantidadesSeleccionadas] = useState<{[key: number]: number}>({});
+  
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 12;
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        console.log('Iniciando carga de datos...');
         setLoading(true);
-
         const [elementosRes, categoriasRes, coloresRes, materialesRes] = await Promise.all([
           axios.get('http://localhost:3000/api/elementos'),
           axios.get('http://localhost:3000/api/elementos/categorias/list'),
@@ -175,31 +164,16 @@ const Catalog = () => {
           axios.get('http://localhost:3000/api/elementos/materiales/list')
         ]);
 
-        console.log('Respuesta de elementos:', elementosRes.data);
-        console.log('Respuesta de categorías:', categoriasRes.data);
-        console.log('Respuesta de colores:', coloresRes.data);
-        console.log('Respuesta de materiales:', materialesRes.data);
-
-        if (!elementosRes.data || elementosRes.data.length === 0) {
-          console.error('No se recibieron elementos del backend');
-          setNotificacion({
-            abierta: true,
-            mensaje: 'No se pudieron cargar los elementos. Por favor, intente más tarde.',
-            tipo: 'error'
-          });
-          return;
-        }
-
         setElementos(elementosRes.data);
         setCategorias(categoriasRes.data);
         setColores(coloresRes.data);
         setMateriales(materialesRes.data);
         setLoading(false);
       } catch (error) {
-        console.error('Error detallado al cargar datos:', error);
+        console.error('Error loading data:', error);
         setNotificacion({
           abierta: true,
-          mensaje: 'Error al cargar los datos. Por favor, verifique que el servidor esté funcionando.',
+          mensaje: 'Error loading data. Please try again later.',
           tipo: 'error'
         });
         setLoading(false);
@@ -213,16 +187,12 @@ const Catalog = () => {
     return elementos.filter(elemento => {
       const cumpleCategoria = !filtros.categoria || 
         elemento.subcategoria.categoria.id_categoria === Number(filtros.categoria);
-      
       const cumpleSubcategoria = !filtros.subcategoria || 
         elemento.id_subcategoria === Number(filtros.subcategoria);
-      
       const cumpleColor = !filtros.color || 
         elemento.color?.id_color === Number(filtros.color);
-
       const cumpleMaterial = !filtros.material ||
         elemento.material?.id_material === Number(filtros.material);
-      
       const busqueda = filtros.busqueda.toLowerCase().trim();
       const cumpleBusqueda = !busqueda || 
         elemento.nombre_elemento.toLowerCase().includes(busqueda);
@@ -230,6 +200,14 @@ const Catalog = () => {
       return cumpleCategoria && cumpleSubcategoria && cumpleColor && cumpleMaterial && cumpleBusqueda;
     });
   };
+
+  // Pagination logic
+  const filteredElements = filtrarElementos();
+  const totalPages = Math.ceil(filteredElements.length / itemsPerPage);
+  const paginatedElements = filteredElements.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
+  );
 
   const handleFiltroChange = (event: SelectChangeEvent<string>) => {
     const { name, value } = event.target;
@@ -362,39 +340,6 @@ const Catalog = () => {
     if (carrito.length === 0) return;
     navigate('/login');
   };
-
-  if (loading) {
-    return (
-      <>
-        <Box sx={{ 
-          background: 'var(--login-bg)',
-          backgroundBlendMode: 'var(--login-blend)',
-          minHeight: '100vh',
-          width: '100%',
-          position: 'fixed',
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          zIndex: -1
-        }} />
-        <Box sx={{ position: 'relative', zIndex: 1 }}>
-        <NavBar />
-          <Container maxWidth="lg" sx={{ 
-            py: { xs: 2, sm: 4 }, 
-            mt: { xs: 6, sm: 8 },
-            px: { xs: 1, sm: 2 },
-            pb: { xs: 4, sm: 6 }
-          }}>
-        <Box display="flex" justifyContent="center" alignItems="center" minHeight="80vh" sx={{ mt: 8 }}>
-          <CircularProgress sx={{ color: 'var(--gold)' }} />
-            </Box>
-          </Container>
-        </Box>
-      </>
-    );
-  }
-
   return (
     <>
       <Box sx={{ 
@@ -416,7 +361,9 @@ const Catalog = () => {
         overflow: 'hidden'
       }} />
       <Box sx={{ position: 'relative', zIndex: 1 }}>
-      <NavBar />
+      <Suspense fallback={<CircularProgress sx={{ color: 'var(--gold)' }} />}>
+        <NavBar />
+      </Suspense>
         <Container maxWidth="lg" sx={{ 
           py: { xs: 2, sm: 4 }, 
           mt: { xs: 6, sm: 8 },
@@ -429,17 +376,16 @@ const Catalog = () => {
             justifyContent: 'space-between', 
             alignItems: 'center',
             flexDirection: { xs: 'column', sm: 'row' },
-            gap: { xs: 2, sm: 0 }
+            gap: { xs: 2, sm: 0 },
           }}>
           <Typography 
             variant="h4" 
             component="h1"
             sx={{ 
-                fontFamily: '"Nunito Sans", sans-serif',
-              fontWeight: 800,
+                fontFamily: '"Pinyon Script", sans-serif',
+              fontWeight: 400,
                 color: 'var(--gold)',
-                fontSize: { xs: '1.8rem', sm: '2.5rem' },
-                textTransform: 'uppercase',
+                fontSize: { xs: '2rem', sm: '2.8rem', md: '3.5rem', lg: '6rem' },
                 letterSpacing: '1px',
                 textAlign: { xs: 'center', sm: 'left' }
             }}
@@ -463,13 +409,13 @@ const Catalog = () => {
                   transition: 'all 0.2s ease-in-out'
                 },
                 '& .MuiBadge-badge': {
-                  backgroundColor: 'var(--error)',
                   color: 'var(--white)',
-                  fontWeight: 'bold',
-                  fontSize: '0.8rem',
-                  minWidth: '20px',
-                  height: '20px',
-                  borderRadius: '10px'
+                  fontWeight: '600',
+                  fontSize: '0.6rem',
+                  Width: '1rem',
+                  height: '1rem',
+                  borderRadius: '10px',
+                  background: 'var(--dark-gold)',
               }
             }}
           >
@@ -478,9 +424,27 @@ const Catalog = () => {
             </Badge>
           </IconButton>
         </Box>
-        
-          <Grid container spacing={{ xs: 1, sm: 2 }} sx={{ mb: { xs: 2, sm: 4 } }}>
-            <Grid item xs={12} md={3} component="div">
+
+        <Grid 
+            container 
+            spacing={{ xs: 1, sm: 2 }} 
+            sx={{ 
+              mb: { xs: 2, sm: 4 },
+              justifyContent: { xs: 'center', sm: 'flex-start' }
+            }}
+          >
+            <Grid 
+            //@ts-ignore
+              item 
+              xs={12} 
+              md={3} 
+              component="div"
+              sx={{
+                display: 'flex',
+                justifyContent: { xs: 'center', sm: 'flex-start' },
+                maxWidth: { xs: '100%', sm: 'none' }
+              }}
+            >
               <TextField
                 fullWidth
                 label="Buscar"
@@ -489,6 +453,7 @@ const Catalog = () => {
                 onChange={(e) => setFiltros(prev => ({ ...prev, busqueda: e.target.value }))}
                 placeholder="Buscar por nombre del elemento..."
                 sx={{
+                  maxWidth: { xs: '100%', sm: 'none' },
                   '& .MuiOutlinedInput-root': {
                     backgroundColor: 'var(--color-input-bg)',
                     '& fieldset': {
@@ -517,8 +482,20 @@ const Catalog = () => {
                 }}
               />
             </Grid>
-            <Grid item xs={12} md={3} component="div">
-              <FormControl fullWidth>
+            
+            <Grid
+            //@ts-ignore
+              item 
+              xs={12} 
+              md={3} 
+              component="div"
+              sx={{
+                display: 'flex',
+                justifyContent: { xs: 'center', sm: 'flex-start' },
+                maxWidth: { xs: '100%', sm: 'none' }
+              }}
+            >
+              <FormControl fullWidth sx={{ maxWidth: { xs: '100%', sm: 'none' } }}>
                 <InputLabel 
                   sx={{ 
                     fontFamily: '"Nunito Sans", sans-serif',
@@ -592,8 +569,20 @@ const Catalog = () => {
                 </Select>
               </FormControl>
             </Grid>
-            <Grid item xs={12} md={3} component="div">
-              <FormControl fullWidth>
+            
+            <Grid 
+            //@ts-ignore
+              item 
+              xs={12} 
+              md={3} 
+              component="div"
+              sx={{
+                display: 'flex',
+                justifyContent: { xs: 'center', sm: 'flex-start' },
+                maxWidth: { xs: '100%', sm: 'none' }
+              }}
+            >
+              <FormControl fullWidth sx={{ maxWidth: { xs: '100%', sm: 'none' } }}>
                 <InputLabel 
                   sx={{
                     fontFamily: '"Nunito Sans", sans-serif',
@@ -667,8 +656,20 @@ const Catalog = () => {
                 </Select>
               </FormControl>
             </Grid>
-            <Grid item xs={12} md={3} component="div">
-              <FormControl fullWidth>
+            
+            <Grid 
+            //@ts-ignore
+              item 
+              xs={12} 
+              md={3} 
+              component="div"
+              sx={{
+                display: 'flex',
+                justifyContent: { xs: 'center', sm: 'flex-start' },
+                maxWidth: { xs: '100%', sm: 'none' }
+              }}
+            >
+              <FormControl fullWidth sx={{ maxWidth: { xs: '100%', sm: 'none' } }}>
                 <InputLabel 
                   sx={{
                     fontFamily: '"Nunito Sans", sans-serif',
@@ -744,19 +745,24 @@ const Catalog = () => {
             </Grid>
           </Grid>
 
-          <Grid container spacing={{ xs: 2, sm: 3, md: 4 }} sx={{
-            display: 'grid',
-            gridTemplateColumns: {
-              xs: 'repeat(1, 1fr)',      // 1 columna en móviles (0px - 599px)
-              sm: 'repeat(2, 1fr)',      // 2 columnas desde 600px
-              md: 'repeat(auto-fill, minmax(280px, 1fr))', // Auto-ajuste en pantallas medianas (900px+)
-            },
-            '@media (max-width: 720px)': {
-              gridTemplateColumns: 'repeat(1, 1fr)', // Fuerza 1 columna cuando el ancho ≤ 720px
-            },
-            justifyContent: 'center',
-          }}>
-              {filtrarElementos().map((elemento: Elemento) => (
+          <Suspense fallback={
+            <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
+              <CircularProgress sx={{ color: 'var(--gold)' }} />
+            </Box>
+          }>
+            <Grid container spacing={{ xs: 2, sm: 3, md: 4 }} sx={{
+              display: 'grid',
+              gridTemplateColumns: {
+                xs: 'repeat(1, 1fr)',
+                sm: 'repeat(2, 1fr)',
+                md: 'repeat(auto-fill, minmax(280px, 1fr))',
+              },
+              '@media (max-width: 720px)': {
+                gridTemplateColumns: 'repeat(1, 1fr)',
+              },
+              justifyContent: 'center',
+            }}>
+              {paginatedElements.map((elemento: Elemento) => (
                 <Grid 
                   key={`${elemento.id_elemento}-${elemento.color.id_color}`} 
                   item
@@ -775,255 +781,308 @@ const Catalog = () => {
                     backgroundColor: 'var(--color-background)',
                     color: 'var(--color-text)',
                     borderRadius: 2,
-                     boxShadow: '0 10px 20px var(--color-shadow)',
+                    boxShadow: '0 10px 20px var(--color-shadow)',
                     '&:hover': {
                       boxShadow: '0 15px 50px var(--color-shadow)',
                       transform: 'translateY(-2px)',
                       transition: 'all ease-in-out .2s'
                     }
                   }}>
-                  <CardContent sx={{ 
-                    p: { xs: 1.5, sm: 3 },
-                    display: 'flex',
-                    flexDirection: 'column',
-                    gap: { xs: 1, sm: 1.5 }
-                  }}>
-                  {elemento.imagen_url && (
-                    <Box sx={{ mb: 2 }}>
-                      <OptimizedImage 
-                        src={elemento.imagen_url} 
-                        alt={elemento.nombre_elemento} 
-                      />
-                    </Box>
-                  )}
-                  <Typography 
-                    gutterBottom 
-                    variant="h5" 
-                    component="div"
-                    sx={{ 
-                      fontFamily: '"Montserrat Alternates", cursive',
-                      fontWeight: 800,
-                      color: 'var(--color-text)',
-                      fontSize: { xs: '1.2rem', sm: '1.5rem' },
-                      mb: { xs: 1, sm: 2 },
-                      textAlign: 'center',
-                      textTransform: 'uppercase',
-                      letterSpacing: '0.5px'
-                    }}
-                  >
-                    {elemento.nombre_elemento}
-                  </Typography>
-                    <Box sx={{ 
-                      display: 'flex', 
-                      flexDirection: 'column', 
-                      gap: 1.5,
-                      mb: 3,
-                      px: 2
+                    <CardContent sx={{ 
+                      p: { xs: 1.5, sm: 3 },
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: { xs: 1, sm: 1.5 }
                     }}>
-                  <Typography 
-                        variant="body1" 
-                    sx={{ 
-                      color: 'var(--color-text2)',
-                          fontFamily: '"Nunito Sans", sans-serif',
-                          fontSize: '1rem',
-                          fontWeight: 600
-                    }}
-                  >
-                    Categoría: {elemento.subcategoria.categoria.nombre_categoria}
-                  </Typography>
-                  <Typography 
-                        variant="body1" 
-                    sx={{ 
-                      color: 'var(--color-text2)',
-                          fontFamily: '"Nunito Sans", sans-serif',
-                          fontSize: '1rem',
-                          fontWeight: 600
+                      {elemento.imagen_url && (
+                        <Box sx={{ mb: 2 }}>
+                          <OptimizedImage 
+                            src={elemento.imagen_url} 
+                            alt={elemento.nombre_elemento} 
+                          />
+                        </Box>
+                      )}
+                      <Typography 
+                        gutterBottom 
+                        variant="h5" 
+                        component="div"
+                        sx={{ 
+                          fontFamily: '"Montserrat Alternates", cursive',
+                          fontWeight: 800,
+                          color: 'var(--color-text)',
+                          fontSize: { xs: '1.2rem', sm: '1.5rem' },
+                          mb: { xs: 1, sm: 2 },
+                          textAlign: 'center',
+                          textTransform: 'uppercase',
+                          letterSpacing: '0.5px'
                         }}
                       >
-                        Subcategoría: {elemento.subcategoria.nombre_subcategoria}
+                        {elemento.nombre_elemento}
                       </Typography>
-                      <Typography 
-                        variant="body1" 
-                        sx={{ 
-                          color: 'var(--color-text2)',
-                          fontFamily: '"Nunito Sans", sans-serif',
-                          fontSize: '1rem',
-                          fontWeight: 600
-                    }}
-                  >
-                    Material: {elemento.material?.nombre_material || 'No especificado'}
-                  </Typography>
-                  <Typography 
-                        variant="body1" 
-                    sx={{ 
-                      color: 'var(--color-text2)',
-                          fontFamily: '"Nunito Sans", sans-serif',
-                          fontSize: '1rem',
-                          fontWeight: 600
-                    }}
-                  >
-                    Color: {elemento.color.nombre_color}
-                  </Typography>
-                    </Box>
-                    <Box sx={{ 
-                      display: 'flex', 
-                      justifyContent: 'space-between', 
-                      alignItems: 'center',
-                      mb: 3,
-                      px: 2
-                    }}>
-                  <Typography 
-                        variant="h5" 
-                    sx={{ 
-                      color: 'var(--gold)',
-                      fontFamily: '"Montserrat Alternates", cursive',
-                          fontWeight: 800,
-                          fontSize: '1.8rem'
-                    }}
-                  >
-                    ${elemento.precio_elemento}
-                  </Typography>
-                  <Typography 
-                        variant="body1" 
-                    sx={{ 
-                      color: elemento.cantidad_disponible > 0 ? 'var(--success)' : 'var(--error)',
-                          fontWeight: 700,
-                          fontFamily: '"Nunito Sans", sans-serif',
-                          fontSize: '1rem',
-                          backgroundColor: elemento.cantidad_disponible > 0 ? 'var(--success-light)' : 'var(--error-light)',
-                          px: 2,
-                          py: 0.5,
-                          borderRadius: 1
-                    }}
-                  >
-                    Stock: {elemento.cantidad_disponible}
-                  </Typography>
-                    </Box>
-                    <Box sx={{ 
-                      mt: 2, 
-                      display: 'flex', 
-                      alignItems: 'center', 
-                      gap: 2,
-                      px: 2
-                    }}>
                       <Box sx={{ 
                         display: 'flex', 
-                        alignItems: 'center', 
-                        gap: 1,
-                        backgroundColor: 'var(--color-background2)',
-                        borderRadius: 1,
-                        p: 0.5
+                        flexDirection: 'column', 
+                        gap: 1.5,
+                        mb: 3,
+                        px: 2
                       }}>
-                        <IconButton
-                          size="small"
-                          onClick={() => handleCantidadChange(elemento.id_elemento, 
-                            (cantidadesSeleccionadas[elemento.id_elemento] || 1) - 1)}
+                        <Typography 
+                          variant="body1" 
                           sx={{ 
-                            color: 'var(--gold)',
-                            '&:hover': {
-                              backgroundColor: 'var(--gold-light)'
-                            }
+                            color: 'var(--color-text2)',
+                            fontFamily: '"Nunito Sans", sans-serif',
+                            fontSize: '1rem',
+                            fontWeight: 600
                           }}
                         >
-                          <RemoveIcon />
-                        </IconButton>
-                        <Typography sx={{ 
-                          color: 'var(--color-text)',
-                          fontFamily: '"Montserrat Alternates", cursive',
-                          fontWeight: 700,
-                          fontSize: '1.2rem',
-                          minWidth: '2rem',
-                          textAlign: 'center'
-                        }}>
-                          {cantidadesSeleccionadas[elemento.id_elemento] || 1}
+                          Categoría: {elemento.subcategoria.categoria.nombre_categoria}
                         </Typography>
-                        <IconButton
-                          size="small"
-                          onClick={() => handleCantidadChange(elemento.id_elemento, 
-                            (cantidadesSeleccionadas[elemento.id_elemento] || 1) + 1)}
+                        <Typography 
+                          variant="body1" 
                           sx={{ 
-                            color: 'var(--gold)',
-                            '&:hover': {
-                              backgroundColor: 'var(--gold-light)'
-                            }
+                            color: 'var(--color-text2)',
+                            fontFamily: '"Nunito Sans", sans-serif',
+                            fontSize: '1rem',
+                            fontWeight: 600
                           }}
                         >
-                          <AddIcon />
-                        </IconButton>
+                          Subcategoría: {elemento.subcategoria.nombre_subcategoria}
+                        </Typography>
+                        <Typography 
+                          variant="body1" 
+                          sx={{ 
+                            color: 'var(--color-text2)',
+                            fontFamily: '"Nunito Sans", sans-serif',
+                            fontSize: '1rem',
+                            fontWeight: 600
+                          }}
+                        >
+                          Material: {elemento.material?.nombre_material || 'No especificado'}
+                        </Typography>
+                        <Typography 
+                          variant="body1" 
+                          sx={{ 
+                            color: 'var(--color-text2)',
+                            fontFamily: '"Nunito Sans", sans-serif',
+                            fontSize: '1rem',
+                            fontWeight: 600
+                          }}
+                        >
+                          Color: {elemento.color.nombre_color}
+                        </Typography>
                       </Box>
-                  <Button
-                    variant="contained"
-                    fullWidth
-                    sx={{ 
-                      backgroundColor: 'var(--gold)',
-                      fontFamily: '"Montserrat Alternates", cursive',
-                      fontWeight: 800,
-                      color: 'var(--white)',
-                          fontSize: {
-                            xs: '0.65rem',  // Tamaño más pequeño para 320x480
-                            sm: '1rem'     // Tamaño normal en tablets y desktop
-                          },
-                          py: {
-                            xs: 0.6,       // Padding vertical más pequeño para 320x480
-                            sm: 1.5        // Padding vertical normal en tablets y desktop
-                          },
-                          px: {
-                            xs: 0.5,       // Padding horizontal más pequeño para 320x480
-                            sm: 2          // Padding horizontal normal en tablets y desktop
-                          },
-                      '&:hover': {
-                        backgroundColor: 'var(--dark-gold)',
-                      },
-                      '&:disabled': {
-                        backgroundColor: 'var(--color-disabled)',
-                        color: 'var(--color-text-disabled)'
-                      }
-                    }}
-                    disabled={elemento.cantidad_disponible === 0}
-                    onClick={() => agregarAlCarrito(elemento)}
-                  >
-                    {elemento.cantidad_disponible === 0 ? 'No disponible' : 'Agregar al carrito'}
-                  </Button>
-                    </Box>
-                    {carrito.find(item => item.id_elemento === elemento.id_elemento) && (
-                      <Typography 
-                        variant="body1" 
-                        sx={{ 
-                          mt: 2,
-                          color: 'var(--success)',
-                          fontFamily: '"Nunito Sans", sans-serif',
-                          fontWeight: 700,
-                          textAlign: 'center',
-                          backgroundColor: 'var(--success-light)',
-                          py: 1,
+                      <Box sx={{ 
+                        display: 'flex', 
+                        justifyContent: 'space-between', 
+                        alignItems: 'center',
+                        mb: 3,
+                        px: 2
+                      }}>
+                        <Typography 
+                          variant="h5" 
+                          sx={{ 
+                            color: 'var(--gold)',
+                            fontFamily: '"Montserrat Alternates", cursive',
+                            fontWeight: 800,
+                            fontSize: '1.8rem'
+                          }}
+                        >
+                          ${elemento.precio_elemento}
+                        </Typography>
+                        <Typography 
+                          variant="body1" 
+                          sx={{ 
+                            color: elemento.cantidad_disponible > 0 ? 'var(--success)' : 'var(--error)',
+                            fontWeight: 700,
+                            fontFamily: '"Nunito Sans", sans-serif',
+                            fontSize: '1rem',
+                            backgroundColor: elemento.cantidad_disponible > 0 ? 'var(--success-light)' : 'var(--error-light)',
+                            px: 2,
+                            py: 0.5,
+                            borderRadius: 1
+                          }}
+                        >
+                          Stock: {elemento.cantidad_disponible}
+                        </Typography>
+                      </Box>
+                      <Box sx={{ 
+                        mt: 2, 
+                        display: 'flex', 
+                        alignItems: 'center', 
+                        gap: 2,
+                        px: 2
+                      }}>
+                        <Box sx={{ 
+                          display: 'flex', 
+                          alignItems: 'center', 
+                          gap: 1,
+                          backgroundColor: 'var(--color-background2)',
                           borderRadius: 1,
-                          mx: 2
-                        }}
-                      >
-                        En carrito: {carrito.find(item => item.id_elemento === elemento.id_elemento)?.cantidad || 0}
-                      </Typography>
-                    )}
-                </CardContent>
-              </Card>
+                          p: 0.5
+                        }}>
+                          <IconButton
+                            size="small"
+                            onClick={() => handleCantidadChange(elemento.id_elemento, 
+                              (cantidadesSeleccionadas[elemento.id_elemento] || 1) - 1)}
+                            sx={{ 
+                              color: 'var(--gold)',
+                              '&:hover': {
+                                backgroundColor: 'var(--gold-light)'
+                              }
+                            }}
+                          >
+                            <RemoveIcon />
+                          </IconButton>
+                          <Typography sx={{ 
+                            color: 'var(--color-text)',
+                            fontFamily: '"Montserrat Alternates", cursive',
+                            fontWeight: 700,
+                            fontSize: '1.2rem',
+                            minWidth: '2rem',
+                            textAlign: 'center'
+                          }}>
+                            {cantidadesSeleccionadas[elemento.id_elemento] || 1}
+                          </Typography>
+                          <IconButton
+                            size="small"
+                            onClick={() => handleCantidadChange(elemento.id_elemento, 
+                              (cantidadesSeleccionadas[elemento.id_elemento] || 1) + 1)}
+                            sx={{ 
+                              color: 'var(--gold)',
+                              '&:hover': {
+                                backgroundColor: 'var(--gold-light)'
+                              }
+                            }}
+                          >
+                            <AddIcon />
+                          </IconButton>
+                        </Box>
+                        <Button
+                          variant="contained"
+                          fullWidth
+                          sx={{ 
+                            backgroundColor: 'var(--gold)',
+                            fontFamily: '"Montserrat Alternates", cursive',
+                            fontWeight: 800,
+                            color: 'var(--white)',
+                            fontSize: {
+                              xs: '0.65rem',
+                              sm: '1rem'
+                            },
+                            py: {
+                              xs: 0.6,
+                              sm: 1.5
+                            },
+                            px: {
+                              xs: 0.5,
+                              sm: 2
+                            },
+                            '&:hover': {
+                              backgroundColor: 'var(--dark-gold)',
+                            },
+                            '&:disabled': {
+                              backgroundColor: 'var(--color-disabled)',
+                              color: 'var(--color-text-disabled)'
+                            }
+                          }}
+                          disabled={elemento.cantidad_disponible === 0}
+                          onClick={() => agregarAlCarrito(elemento)}
+                        >
+                          {elemento.cantidad_disponible === 0 ? 'No disponible' : 'Agregar al carrito'}
+                        </Button>
+                      </Box>
+                      {carrito.find(item => item.id_elemento === elemento.id_elemento) && (
+                        <Typography 
+                          variant="body1" 
+                          sx={{ 
+                            mt: 2,
+                            color: 'var(--success)',
+                            fontFamily: '"Nunito Sans", sans-serif',
+                            fontWeight: 700,
+                            textAlign: 'center',
+                            backgroundColor: 'var(--success-light)',
+                            py: 1,
+                            borderRadius: 1,
+                            mx: 2
+                          }}
+                        >
+                          En carrito: {carrito.find(item => item.id_elemento === elemento.id_elemento)?.cantidad || 0}
+                        </Typography>
+                      )}
+                    </CardContent>
+                  </Card>
+                </Grid>
+              ))}
             </Grid>
-          ))}
-        </Grid>
+          </Suspense>
 
-        <Drawer
-          anchor="right"
-          open={carritoAbierto}
-          onClose={() => setCarritoAbierto(false)}
-          PaperProps={{
-            sx: {
-              backgroundColor: 'var(--color-background)',
-              color: 'var(--color-text)',
+          {/* Pagination Controls */}
+          {filteredElements.length > itemsPerPage && (
+            <Box sx={{ 
+              display: 'flex', 
+              justifyContent: 'center', 
+              alignItems: 'center',
+              mt: 4,
+              gap: 2
+            }}>
+              <Button
+                variant="outlined"
+                onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                disabled={currentPage === 1}
+                sx={{
+                  borderColor: 'var(--gold)',
+                  color: 'var(--gold)',
+                  fontFamily: '"Montserrat Alternates", cursive',
+                  fontWeight: 800,
+                  '&:hover': {
+                    backgroundColor: 'var(--gold-light)'
+                  }
+                }}
+              >
+                Anterior
+              </Button>
+              
+              <Typography sx={{ 
+                fontFamily: '"Nunito Sans", sans-serif',
+                color: 'var(--color-text)'
+              }}>
+                Página {currentPage} de {totalPages}
+              </Typography>
+              
+              <Button
+                variant="outlined"
+                onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                disabled={currentPage === totalPages}
+                sx={{
+                  borderColor: 'var(--gold)',
+                  color: 'var(--gold)',
+                  fontFamily: '"Montserrat Alternates", cursive',
+                  fontWeight: 800,
+                  '&:hover': {
+                    backgroundColor: 'var(--gold-light)'
+                  }
+                }}
+              >
+                Siguiente
+              </Button>
+            </Box>
+          )}
+
+          <Drawer
+            anchor="right"
+            open={carritoAbierto}
+            onClose={() => setCarritoAbierto(false)}
+            PaperProps={{
+              sx: {
+                backgroundColor: 'var(--color-background)',
+                color: 'var(--color-text)',
                 width: {
-                  xs: '100%',    // En móviles ocupa todo el ancho
-                  sm: '350px'    // En tablets y desktop mantiene el ancho fijo
+                  xs: '100%',
+                  sm: '350px'
                 },
                 p: {
-                  xs: 1,        // Padding más pequeño en móviles
-                  sm: 2         // Padding normal en tablets y desktop
+                  xs: 1,
+                  sm: 2
                 }
               }
             }}
@@ -1034,8 +1093,8 @@ const Catalog = () => {
               display: 'flex', 
               flexDirection: 'column',
               gap: {
-                xs: 1,         // Espacio más pequeño en móviles
-                sm: 2          // Espacio normal en tablets y desktop
+                xs: 1,
+                sm: 2
               }
             }}>
               <Box sx={{
@@ -1045,22 +1104,22 @@ const Catalog = () => {
                 mb: 1,
                 px: 1
               }}>
-            <Typography 
-              variant="h6" 
-              sx={{ 
-                fontFamily: '"Montserrat Alternates", cursive',
-                fontWeight: 800,
+                <Typography 
+                  variant="h6" 
+                  sx={{ 
+                    fontFamily: '"Montserrat Alternates", cursive',
+                    fontWeight: 800,
                     color: 'var(--color-text)',
                     fontSize: {
-                      xs: '0.9rem',  // Tamaño más pequeño para 320x480
-                      sm: '1.5rem'   // Tamaño normal en tablets y desktop
+                      xs: '0.9rem',
+                      sm: '1.5rem'
                     },
                     textAlign: 'center',
                     flex: 1
-              }}
-            >
-              Carrito de Compras
-            </Typography>
+                  }}
+                >
+                  Carrito de Compras
+                </Typography>
                 <IconButton
                   onClick={() => setCarritoAbierto(false)}
                   sx={{ 
@@ -1079,22 +1138,22 @@ const Catalog = () => {
                 flexGrow: 1, 
                 overflow: 'auto',
                 mb: {
-                  xs: 1,      // Margen más pequeño en móviles
-                  sm: 2       // Margen normal en tablets y desktop
+                  xs: 1,
+                  sm: 2
                 },
                 maxHeight: {
-                  xs: 'calc(100vh - 200px)',  // Altura ajustada para iPhone 4
-                  sm: 'calc(100vh - 300px)'   // Altura normal para tablets y desktop
+                  xs: 'calc(100vh - 200px)',
+                  sm: 'calc(100vh - 300px)'
                 }
               }}>
-              {carrito.map(item => (
+                {carrito.map(item => (
                   <ListItem 
                     key={item.id_elemento} 
                     divider
                     sx={{
                       flexDirection: {
-                        xs: 'column',  // En móviles, elementos en columna
-                        sm: 'row'      // En tablets y desktop, elementos en fila
+                        xs: 'column',
+                        sm: 'row'
                       },
                       alignItems: {
                         xs: 'flex-start',
@@ -1106,11 +1165,11 @@ const Catalog = () => {
                       }
                     }}
                   >
-                  <ListItemText
-                    primary={
-                      <Typography sx={{ 
-                        fontFamily: '"Montserrat Alternates", cursive',
-                        fontWeight: 700,
+                    <ListItemText
+                      primary={
+                        <Typography sx={{ 
+                          fontFamily: '"Montserrat Alternates", cursive',
+                          fontWeight: 700,
                           color: 'var(--color-text)',
                           fontSize: {
                             xs: '1rem',
@@ -1118,74 +1177,74 @@ const Catalog = () => {
                           }
                         }}>
                           {item.nombre_elemento}
-                      </Typography>
-                    }
-                    secondary={
-                      <Typography sx={{ 
-                        color: 'var(--color-text-secondary)',
+                        </Typography>
+                      }
+                      secondary={
+                        <Typography sx={{ 
+                          color: 'var(--color-text-secondary)',
                           fontFamily: '"Nunito Sans", sans-serif',
                           fontSize: {
                             xs: '0.9rem',
                             sm: '1rem'
                           }
-                      }}>
-                        ${item.precio_elemento} x {item.cantidad}
-                      </Typography>
-                    }
-                  />
+                        }}>
+                          ${item.precio_elemento} x {item.cantidad}
+                        </Typography>
+                      }
+                    />
                     <Box sx={{ 
                       display: 'flex', 
                       alignItems: 'center',
                       width: {
-                        xs: '100%',    // Ancho completo en móviles
-                        sm: 'auto'     // Ancho automático en tablets y desktop
+                        xs: '100%',
+                        sm: 'auto'
                       },
                       justifyContent: {
                         xs: 'space-between',
                         sm: 'flex-end'
                       }
                     }}>
-                    <IconButton
-                      size="small"
-                      onClick={() => actualizarCantidad(item.id_elemento, item.cantidad - 1)}
-                      sx={{ color: 'var(--gold)' }}
-                    >
-                      <RemoveIcon />
-                    </IconButton>
-                    <Typography sx={{ 
-                      mx: 1, 
-                      color: 'var(--color-text)',
+                      <IconButton
+                        size="small"
+                        onClick={() => actualizarCantidad(item.id_elemento, item.cantidad - 1)}
+                        sx={{ color: 'var(--gold)' }}
+                      >
+                        <RemoveIcon />
+                      </IconButton>
+                      <Typography sx={{ 
+                        mx: 1, 
+                        color: 'var(--color-text)',
                         fontFamily: '"Nunito Sans", sans-serif',
                         fontSize: {
                           xs: '0.9rem',
                           sm: '1rem'
                         }
-                    }}>
-                      {item.cantidad}
-                    </Typography>
-                    <IconButton
-                      size="small"
-                      onClick={() => actualizarCantidad(item.id_elemento, item.cantidad + 1)}
-                      sx={{ color: 'var(--gold)' }}
-                    >
-                      <AddIcon />
-                    </IconButton>
-                    <IconButton
-                      size="small"
-                      onClick={() => eliminarDelCarrito(item.id_elemento)}
-                      sx={{ color: 'var(--error)' }}
-                    >
-                      <DeleteIcon />
-                    </IconButton>
-                  </Box>
-                </ListItem>
-              ))}
-            </List>
+                      }}>
+                        {item.cantidad}
+                      </Typography>
+                      <IconButton
+                        size="small"
+                        onClick={() => actualizarCantidad(item.id_elemento, item.cantidad + 1)}
+                        sx={{ color: 'var(--gold)' }}
+                      >
+                        <AddIcon />
+                      </IconButton>
+                      <IconButton
+                        size="small"
+                        onClick={() => eliminarDelCarrito(item.id_elemento)}
+                        sx={{ color: 'var(--error)' }}
+                      >
+                        <DeleteIcon />
+                      </IconButton>
+                    </Box>
+                  </ListItem>
+                ))}
+              </List>
 
               <Box sx={{ 
                 p: {
-                  xs: 1,      // Padding más pequeño en móviles
-                  sm: 2       // Padding normal en tablets y desktop
+                  xs: 1,
+                  sm: 2
                 }, 
                 bgcolor: 'var(--color-background2)',
                 borderRadius: 1,
@@ -1193,108 +1252,108 @@ const Catalog = () => {
                 bottom: 0,
                 zIndex: 1
               }}>
-              <Typography 
-                variant="h6"
-                sx={{ 
-                  fontFamily: '"Montserrat Alternates", cursive',
-                  fontWeight: 800,
+                <Typography 
+                  variant="h6"
+                  sx={{ 
+                    fontFamily: '"Montserrat Alternates", cursive',
+                    fontWeight: 800,
                     color: 'var(--color-text)',
                     mb: {
-                      xs: 1,     // Margen más pequeño en móviles
-                      sm: 2      // Margen normal en tablets y desktop
+                      xs: 1,
+                      sm: 2
                     },
                     fontSize: {
-                      xs: '1.1rem',  // Tamaño más pequeño para iPhone 4
-                      sm: '1.5rem'   // Tamaño normal en tablets y desktop
+                      xs: '1.1rem',
+                      sm: '1.5rem'
                     }
-                }}
-              >
-                Total: ${calcularTotal().toFixed(2)}
-              </Typography>
+                  }}
+                >
+                  Total: ${calcularTotal().toFixed(2)}
+                </Typography>
                 <Box sx={{ 
                   display: 'flex', 
                   gap: {
-                    xs: 0.5,    // Espacio más pequeño en móviles
-                    sm: 1       // Espacio normal en tablets y desktop
+                    xs: 0.5,
+                    sm: 1
                   }
                 }}>
-                <Button
-                  variant="outlined"
-                  fullWidth
-                  onClick={vaciarCarrito}
-                  disabled={carrito.length === 0}
-                  sx={{
-                    borderColor: 'var(--error)',
-                    color: 'var(--error)',
-                    fontFamily: '"Montserrat Alternates", cursive',
-                    fontWeight: 800,
-                      fontSize: {
-                        xs: '0.7rem',  // Tamaño más pequeño para iPhone 4
-                        sm: '1rem'     // Tamaño normal en tablets y desktop
-                      },
-                      py: {
-                        xs: 0.8,       // Padding vertical más pequeño para iPhone 4
-                        sm: 1.5        // Padding vertical normal en tablets y desktop
-                      },
-                    '&:hover': {
+                  <Button
+                    variant="outlined"
+                    fullWidth
+                    onClick={vaciarCarrito}
+                    disabled={carrito.length === 0}
+                    sx={{
                       borderColor: 'var(--error)',
-                      backgroundColor: 'var(--error-light)'
-                    }
-                  }}
-                >
-                  Vaciar Carrito
-                </Button>
-                <Button
-                  variant="contained"
-                  fullWidth
-                  onClick={procederAlPago}
-                  disabled={carrito.length === 0}
-                  sx={{
-                    backgroundColor: 'var(--gold)',
-                    fontFamily: '"Montserrat Alternates", cursive',
-                    fontWeight: 800,
-                    color: 'var(--white)',
+                      color: 'var(--error)',
+                      fontFamily: '"Montserrat Alternates", cursive',
+                      fontWeight: 800,
                       fontSize: {
-                        xs: '0.65rem',  // Tamaño más pequeño para 320x480
-                        sm: '1rem'     // Tamaño normal en tablets y desktop
+                        xs: '0.7rem',
+                        sm: '1rem'
                       },
                       py: {
-                        xs: 0.6,       // Padding vertical más pequeño para 320x480
-                        sm: 1.5        // Padding vertical normal en tablets y desktop
+                        xs: 0.8,
+                        sm: 1.5
+                      },
+                      '&:hover': {
+                        borderColor: 'var(--error)',
+                        backgroundColor: 'var(--error-light)'
+                      }
+                    }}
+                  >
+                    Vaciar Carrito
+                  </Button>
+                  <Button
+                    variant="contained"
+                    fullWidth
+                    onClick={procederAlPago}
+                    disabled={carrito.length === 0}
+                    sx={{
+                      backgroundColor: 'var(--gold)',
+                      fontFamily: '"Montserrat Alternates", cursive',
+                      fontWeight: 800,
+                      color: 'var(--white)',
+                      fontSize: {
+                        xs: '0.65rem',
+                        sm: '1rem'
+                      },
+                      py: {
+                        xs: 0.6,
+                        sm: 1.5
                       },
                       px: {
-                        xs: 0.5,       // Padding horizontal más pequeño para 320x480
-                        sm: 2          // Padding horizontal normal en tablets y desktop
+                        xs: 0.5,
+                        sm: 2
                       },
-                    '&:hover': {
-                      backgroundColor: 'var(--dark-gold)',
-                    },
-                    '&:disabled': {
-                      backgroundColor: 'var(--color-disabled)',
-                      color: 'var(--color-text-disabled)'
-                    }
-                  }}
-                >
-                  Comprar
-                </Button>
+                      '&:hover': {
+                        backgroundColor: 'var(--dark-gold)',
+                      },
+                      '&:disabled': {
+                        backgroundColor: 'var(--color-disabled)',
+                        color: 'var(--color-text-disabled)'
+                      }
+                    }}
+                  >
+                    Comprar
+                  </Button>
+                </Box>
               </Box>
             </Box>
-          </Box>
-        </Drawer>
+          </Drawer>
 
-        <Snackbar
-          open={notificacion.abierta}
-          autoHideDuration={3000}
-          onClose={() => setNotificacion(prev => ({ ...prev, abierta: false }))}
+          <Snackbar
+            open={notificacion.abierta}
+            autoHideDuration={3000}
+            onClose={() => setNotificacion(prev => ({ ...prev, abierta: false }))}
             anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
-        >
-          <Alert 
-            onClose={() => setNotificacion(prev => ({ ...prev, abierta: false }))} 
-            severity={notificacion.tipo}
-            sx={{
-                backgroundColor: notificacion.tipo === 'success' ? '#2e7d32' : '#d32f2f', // Colores sólidos
+          >
+            <Alert 
+              onClose={() => setNotificacion(prev => ({ ...prev, abierta: false }))} 
+              severity={notificacion.tipo}
+              sx={{
+                backgroundColor: notificacion.tipo === 'success' ? '#2e7d32' : '#d32f2f',
                 color: 'var(--white)',
-              '& .MuiAlert-icon': {
+                '& .MuiAlert-icon': {
                   color: 'var(--white)'
                 },
                 fontFamily: '"Nunito Sans", sans-serif',
@@ -1314,15 +1373,15 @@ const Catalog = () => {
                 '& .MuiAlert-standardError': {
                   backgroundColor: '#d32f2f'
                 }
-            }}
-          >
-            {notificacion.mensaje}
-          </Alert>
-        </Snackbar>
-      </Container>
+              }}
+            >
+              {notificacion.mensaje}
+            </Alert>
+          </Snackbar>
+        </Container>
       </Box>
     </>
   );
 };
 
-export default Catalog; 
+export default Catalog;
