@@ -12,6 +12,9 @@ import { IoIosExit } from "react-icons/io";
 import { useState } from "react";
 import ColorTheme from "../functions/ColorTheme";
 import "../styles/dashboard/DashboardServices.scss";
+import { useMediaQuery } from "@mui/material";
+import { Drawer, IconButton, List, ListItem, ListItemButton, ListItemText } from "@mui/material";
+import MenuRoundedIcon from "@mui/icons-material/MenuRounded";
 
 export type UserRole = 'admin' | 'client' | 'supervisor' | 'inventory';
 
@@ -33,8 +36,14 @@ export default function ServicesMenu({ selectedService }: ServicesMenuProps) {
   const navigate = useNavigate();
   const userData = JSON.parse(localStorage.getItem('userData') || '{}');
   const [showLogoutModal, setShowLogoutModal] = useState(false);
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const isMobile = useMediaQuery("(max-width:450px)");
   
   //console.log('User Data from localStorage:', userData); // Debug log
+
+  const toggleDrawer = (open: boolean) => () => {
+    setDrawerOpen(open);
+  };
 
   const getRolName = (rolId: number) => {
     //console.log('Rol ID:', rolId); // Debug log
@@ -54,6 +63,33 @@ export default function ServicesMenu({ selectedService }: ServicesMenuProps) {
   };
 
   const renderMenuItems = () => {
+    const rolId = Number(userData.rol);
+
+    if (rolId === 4) { // Empleado de inventario
+      return (
+        <ul>
+          <li
+            className={selectedService === "Bienvenida" ? "active" : ""}
+            onClick={() => navigate("/Menu-Servicios/Bienvenida")}
+          >
+            <FaTachometerAlt /> Bienvenida
+          </li>
+          <li
+            className={selectedService === "Alquiler" ? "active" : ""}
+            onClick={() => navigate("/Menu-Servicios/Alquiler")}
+          >
+            <FaBoxOpen /> Alquiler
+          </li>
+          <li
+            className={selectedService === "Transporte" ? "active" : ""}
+            onClick={() => navigate("/Menu-Servicios/Transporte")}
+          >
+            <FaCar /> Transporte
+          </li>
+        </ul>
+      );
+    }
+
     return (
       <ul>
         <li
@@ -80,7 +116,7 @@ export default function ServicesMenu({ selectedService }: ServicesMenuProps) {
         >
           <FaConciergeBell /> Catering
         </li>
-        {Number(userData.rol) === 1 && (
+        {(rolId === 1 || rolId === 3) && (
           <>
             <li
               className={selectedService === "Supervision" ? "active" : ""}
@@ -106,38 +142,162 @@ export default function ServicesMenu({ selectedService }: ServicesMenuProps) {
     );
   };
 
-  return (
-    <div className="sidebar">
-      {showLogoutModal && (
-        <div className="modal-overlay">
-          <div className="modal-content">
-            <h4>¿Está seguro que desea cerrar sesión?</h4>
-            <div className="modal-buttons">
-              <button onClick={handleLogout}>Sí</button>
-              <button onClick={() => setShowLogoutModal(false)}>No</button>
-            </div>
+  const renderMobileMenu = () => {
+    const rolId = Number(userData.rol);
+    const menuItems = [
+      { text: "Bienvenida", path: "/Menu-Servicios/Bienvenida", icon: <FaTachometerAlt /> },
+      { text: "Alquiler", path: "/Menu-Servicios/Alquiler", icon: <FaBoxOpen /> },
+    ];
+
+    if (rolId !== 4) {
+      menuItems.push(
+        { text: "Decoracion", path: "/Menu-Servicios/Decoracion", icon: <FaBrush /> },
+        { text: "Catering", path: "/Menu-Servicios/Catering", icon: <FaConciergeBell /> }
+      );
+    }
+
+    if (rolId === 1 || rolId === 3) {
+      menuItems.push(
+        { text: "Supervision", path: "/Menu-Servicios/Supervision", icon: <FaTachometerAlt /> },
+        { text: "Transporte", path: "/Menu-Servicios/Transporte", icon: <FaCar /> },
+        { text: "Montaje y Desmontaje", path: "/Menu-Servicios/Montaje-Desmontaje", icon: <FaTools /> }
+      );
+    }
+
+    if (rolId === 4) {
+      menuItems.push(
+        { text: "Transporte", path: "/Menu-Servicios/Transporte", icon: <FaCar /> }
+      );
+    }
+
+    return (
+      <Drawer
+        anchor="left"
+        open={drawerOpen}
+        onClose={toggleDrawer(false)}
+        PaperProps={{
+          sx: {
+            background: "var(--color-background)",
+            color: "var(--color-text)",
+            fontFamily: '"Nunito Sans", sans-serif',
+            width: 250,
+            padding: 2,
+          },
+        }}
+      >
+        <div className="user-profile">
+          <FaUserCog size={30} className="user-icon"
+            title="Ajustes de Usuario"
+            onClick={() => {
+              navigate("/Menu-Servicios/Ajustes-Usuario");
+              setDrawerOpen(false);
+            }}
+          />
+          <div className="user-info">
+            <p className="user-name">
+              {userData.nombre_usuario || ''} {userData.apellido_usuario || ''}
+            </p>
+            <p className="user-role">
+              {getRolName(userData.rol)}
+            </p>
           </div>
         </div>
-      )}
-      <ColorTheme colorDark="black" colorLight="white" />
 
-      <div className="user-profile">
-        <FaUserCog size={30} className="user-icon"
-          title="Ajustes de Usuario"
-          onClick={() => navigate("/Menu-Servicios/Ajustes-Usuario")}
+        <List>
+          {menuItems.map((item) => (
+            <ListItem key={item.text} disablePadding>
+              <ListItemButton
+                onClick={() => {
+                  navigate(item.path);
+                  setDrawerOpen(false);
+                }}
+                sx={{
+                  color: selectedService === item.text ? "var(--gold)" : "var(--color-text)",
+                  "&:hover": {
+                    color: "var(--gold)",
+                  },
+                }}
+              >
+                <span style={{ marginRight: 10 }}>{item.icon}</span>
+                <ListItemText primary={item.text} />
+              </ListItemButton>
+            </ListItem>
+          ))}
+        </List>
+
+        <IoIosExit 
+          className="logout-button" 
+          title="Cerrar Sesión" 
+          onClick={() => {
+            setShowLogoutModal(true);
+            setDrawerOpen(false);
+          }} 
         />
-        <div className="user-info">
-          <p className="user-name">
-            {userData.nombre_usuario || ''} {userData.apellido_usuario || ''}
-          </p>
-          <p className="user-role">
-            {getRolName(userData.rol)}
-          </p>
-        </div>
-      </div>
+      </Drawer>
+    );
+  };
 
-      {renderMenuItems()}
-      <IoIosExit className="logout-button" title="Cerrar Sesión" onClick={() => setShowLogoutModal(true)} />
-    </div>
+  return (
+    <>
+      {isMobile && (
+        <IconButton 
+          className="menu-icon" 
+          onClick={toggleDrawer(true)}
+          sx={{ 
+            color: "var(--color-text)",
+            position: "fixed",
+            top: 20,
+            left: 20,
+            zIndex: 1000,
+            backgroundColor: "var(--color-background2)",
+            '&:hover': {
+              backgroundColor: "var(--gold)",
+              color: "var(--white)"
+            }
+          }}
+        >
+          <MenuRoundedIcon />
+        </IconButton>
+      )}
+      
+      {isMobile && renderMobileMenu()}
+
+      <div className="sidebar">
+        {showLogoutModal && (
+          <div className="modal-overlay">
+            <div className="modal-content">
+              <h4>¿Está seguro que desea cerrar sesión?</h4>
+              <div className="modal-buttons">
+                <button onClick={handleLogout}>Sí</button>
+                <button onClick={() => setShowLogoutModal(false)}>No</button>
+              </div>
+            </div>
+          </div>
+        )}
+        <ColorTheme colorDark="black" colorLight="white" />
+
+        {!isMobile && (
+          <>
+            <div className="user-profile">
+              <FaUserCog size={30} className="user-icon"
+                title="Ajustes de Usuario"
+                onClick={() => navigate("/Menu-Servicios/Ajustes-Usuario")}
+              />
+              <div className="user-info">
+                <p className="user-name">
+                  {userData.nombre_usuario || ''} {userData.apellido_usuario || ''}
+                </p>
+                <p className="user-role">
+                  {getRolName(userData.rol)}
+                </p>
+              </div>
+            </div>
+
+            {renderMenuItems()}
+            <IoIosExit className="logout-button" title="Cerrar Sesión" onClick={() => setShowLogoutModal(true)} />
+          </>
+        )}
+      </div>
+    </>
   );
 }

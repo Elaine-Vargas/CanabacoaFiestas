@@ -1,5 +1,10 @@
-/* Variables (puedes importarlas desde theme.scss si usas @use o @import) */
 @use "../basics/theme.scss";
+@import '../font-faces/fonts.scss';
+
+/* Variables específicas de servicios */
+$card-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+$border-radius-standard: 8px;
+$transition-standard: all 0.3s ease;
 
 * {
   user-select: none;
@@ -30,6 +35,10 @@
   z-index: 10;
   overflow: hidden;
 
+  @media (max-width: 450px) {
+    display: none;
+  }
+
   .user-profile {
     display: flex;
     flex-direction: column;
@@ -39,11 +48,12 @@
     text-align: center;
     padding: 0 0.25rem;
     
-.active {
-        background-color: var(--dark-gold);
-        color: var(--white);
-        font-weight: bold;
+    .active {
+      background-color: var(--dark-gold);
+      color: var(--white);
+      font-weight: bold;
     }
+
     svg {
       margin-bottom: 0.3rem;
       width: 30px;
@@ -56,10 +66,9 @@
         color: var(--gold);
 
         &.active {
-            color: var(--white);
+          color: var(--white);
         }
       }
-      
     }
 
     .user-info {
@@ -87,8 +96,6 @@
       white-space: normal;
       line-height: 1.2;
     }
-
-    
   }
 
   ul {
@@ -128,6 +135,25 @@
   }
 }
 
+/* Menú móvil */
+.menu-icon {
+  display: none;
+  @media (max-width: 450px) {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+    transition: all 0.3s ease;
+    
+    &:hover {
+      transform: scale(1.1);
+    }
+  }
+}
+
 /* Área de contenido de la derecha */
 .content-area {
   flex-grow: 1;
@@ -138,7 +164,11 @@
   overflow-y: auto;
   position: relative;
 
-  /* Scroll custom (opcional) */
+  @media (max-width: 450px) {
+    padding: 1rem;
+  }
+
+  /* Scroll custom */
   &::-webkit-scrollbar {
     width: 6px;
   }

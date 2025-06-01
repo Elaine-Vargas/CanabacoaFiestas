@@ -645,6 +645,14 @@ const WelcomeMenu: React.FC<WelcomeMenuProps> = () => {
 
   const renderCoordinatorDashboard = () => (
     <>
+    <div className="coordinator-dashboard">
+      <div className="welcome-header">
+        <center>
+        <h1>Bienvenido al Panel de Coordinador</h1>
+        </center>
+        <p>Gestiona todos los servicios y eventos desde aquí</p>
+      </div>
+
       <div className="dashboard__stats">
         <div className="stat-card">
           <span className="stat-card__label">Eventos Asignados</span>
@@ -659,16 +667,37 @@ const WelcomeMenu: React.FC<WelcomeMenuProps> = () => {
         </div>
 
         <div className="stat-card">
-          <span className="stat-card__label">Eventos Supervisados</span>
+          <span className="stat-card__label">Clientes activos</span>
           <strong className="stat-card__number">{stats.totalUsers}</strong>
-          <button className="stat-card__seeInfo">Ver historial</button>
+          <button className="stat-card__seeInfo">Ver clientes</button>
         </div>
+      </div>
+
+      <div className="section-header">
+        <center>
+          <button 
+            className="new-form-btn"
+            onClick={() => setShowEventModal(true)}>
+            + Nuevo evento
+          </button>
+        </center>
+      </div>
+
       </div>
     </>
   );
 
   const renderInventoryDashboard = () => (
     <>
+    
+    <div className="coordinator-dashboard">
+      <div className="welcome-header">
+        <center>
+        <h1>Bienvenido al Panel de Inventario</h1>
+        </center>
+        <p>Gestiona todos los servicios y eventos desde aquí</p>
+      </div>
+
       <div className="dashboard__stats">
         <div className="stat-card">
           <span className="stat-card__label">Elementos Disponibles</span>
@@ -687,6 +716,7 @@ const WelcomeMenu: React.FC<WelcomeMenuProps> = () => {
           <strong className="stat-card__number">{stats.quotations.length}</strong>
           <button className="stat-card__seeInfo">Ver compras</button>
         </div>
+      </div>
       </div>
     </>
   );
