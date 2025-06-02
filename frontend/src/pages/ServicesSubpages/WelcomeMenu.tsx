@@ -27,6 +27,20 @@ interface EventoEnProceso {
   espacio: string;
   servicios_adicionales: string[];
   empleado_encargado: string;
+  contacto_asesor: string;
+  fecha_evento: string;
+  hora_evento: string;
+  estado_evento: string;
+}
+
+interface EventoRealizado {
+  id_evento: number;
+  asesor: string;
+  contacto_asesor: string;
+  fecha_evento: string;
+  hora_evento: string;
+  espacio: string;
+  servicios_adicionales: string[];
 }
 
 interface Usuario {
@@ -44,6 +58,10 @@ interface Cotizacion {
   servicios_adicionales: string[];
   empleado_encargado: string;
   estado: string;
+  contacto_asesor: string;
+  fecha_evento: string;
+  hora_evento: string;
+  monto?: number;
 }
 
 type WelcomeMenuProps = {
@@ -217,7 +235,14 @@ const WelcomeMenu: React.FC<WelcomeMenuProps> = () => {
       try {
         const response = await fetch('/api/cotizaciones/pendientes');
         const data = await response.json();
-        setCotizaciones(data);
+        // Transformar los datos para incluir los campos adicionales
+        const cotizacionesTransformadas = data.map((cotizacion: any) => ({
+          ...cotizacion,
+          contacto_asesor: cotizacion.contacto_asesor || 'No disponible',
+          fecha_evento: cotizacion.fecha_evento || 'No disponible',
+          hora_evento: cotizacion.hora_evento || 'No disponible'
+        }));
+        setCotizaciones(cotizacionesTransformadas);
       } catch (error) {
         console.error('Error al cargar cotizaciones:', error);
       }
@@ -551,58 +576,123 @@ const WelcomeMenu: React.FC<WelcomeMenuProps> = () => {
         <div className="stat-card">
           <span className="stat-card__label">Mis Eventos Activos</span>
           <strong className="stat-card__number">{stats.eventsInProcess}</strong>
-          <button className="stat-card__seeInfo">Ver detalles</button>
+          <button 
+            className="stat-card__seeInfo"
+            onClick={() => setShowEventsInProcessModal(true)}
+          >
+            Ver detalles
+          </button>
         </div>
 
         <div className="stat-card">
           <span className="stat-card__label">Total de Eventos Realizados</span>
           <strong className="stat-card__number">{stats.totalUsers}</strong>
-          <button className="stat-card__seeInfo">Ver historial</button>
+          <button 
+            className="stat-card__seeInfo"
+            onClick={() => setShowQuotationsModal(true)}
+          >
+            Ver historial
+          </button>
         </div>
 
         <div className="stat-card">
           <span className="stat-card__label">Comentarios Enviados</span>
           <strong className="stat-card__number">{stats.quotations.length}</strong>
           <button 
-              className="stat-card__seeInfo2"
-              onClick={() => setShowCommentModal(true)}
-            >
-              Agregar Comentario
-            </button>
+            className="stat-card__seeInfo2"
+            onClick={() => setShowCommentModal(true)}
+          >
+            Agregar Comentario
+          </button>
         </div>
       </div>
 
-       <div className="section-header">
-         <center>
-         <button 
-           className="new-form-btn"
-           onClick={() => setShowEventModal(true)}>
-           + Nuevo evento
-         </button>
-</center>
-         <div className="comment-section">
-         <h3>Mis Comentarios</h3>
-       </div>
-        <div className="comment-list">
-          {stats.quotations.map((comment, index) => (
-            <div key={index} className="comment-card">
-              <div className="comment-header">
-                <div className="user-info">
-                  <div className="user-avatar">
-                    {comment.client.charAt(0).toUpperCase()}
-                  </div>
-                  <span className="user-name">{comment.client}</span>
-                </div>
-                <span className="comment-date">{comment.date}</span>
-              </div>
-              <div className="comment-rating">
-                {renderStars(parseFloat(comment.status))}
-              </div>
-              <p className="comment-text">{comment.client}</p>
-            </div>
-          ))}
-        </div>
+      <div className="section-header">
+        <center>
+          <button 
+            className="new-form-btn"
+            onClick={() => setShowEventModal(true)}>
+            + Nuevo evento
+          </button>
+        </center>
       </div>
+
+      {showEventsInProcessModal && (
+        <div className="modal-overlay">
+          <div className="modal-container">
+            <button className="close-btn" onClick={() => setShowEventsInProcessModal(false)}>×</button>
+            <div className="modal-content">
+              <h3>Mis Eventos Activos</h3>
+              <div className="table-container">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Asesor</th>
+                      <th>Contacto</th>
+                      <th>Fecha</th>
+                      <th>Hora</th>
+                      <th>Espacio</th>
+                      <th>Acciones</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {eventosEnProceso.map((evento) => (
+                      <tr key={evento.id_evento}>
+                        <td>{evento.empleado_encargado}</td>
+                        <td>{evento.contacto_asesor}</td>
+                        <td>{evento.fecha_evento}</td>
+                        <td>{evento.hora_evento}</td>
+                        <td>{evento.espacio}</td>
+                        <td>
+                          <button className="edit-btn">Editar</button>
+                          <button className="delete-btn">Cancelar</button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showQuotationsModal && (
+        <div className="modal-overlay">
+          <div className="modal-container">
+            <button className="close-btn" onClick={() => setShowQuotationsModal(false)}>×</button>
+            <div className="modal-content">
+              <h3>Mis Eventos Realizados</h3>
+              <div className="table-container">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Asesor</th>
+                      <th>Contacto</th>
+                      <th>Fecha</th>
+                      <th>Hora</th>
+                      <th>Espacio</th>
+                      <th>Servicios Adicionales</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {cotizaciones.map((cotizacion) => (
+                      <tr key={cotizacion.id_cotizacion}>
+                        <td>{cotizacion.empleado_encargado}</td>
+                        <td>{cotizacion.contacto_asesor}</td>
+                        <td>{cotizacion.fecha_evento}</td>
+                        <td>{cotizacion.hora_evento}</td>
+                        <td>{cotizacion.espacio}</td>
+                        <td>{cotizacion.servicios_adicionales.join(', ')}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {showCommentModal && (
         <div className="modal-overlay">
@@ -701,13 +791,6 @@ const WelcomeMenu: React.FC<WelcomeMenuProps> = () => {
                 <button onClick={() => handleServiceSelect('catering')}>Catering</button>
                 <button onClick={() => handleServiceSelect('decor')}>Decoración</button>
                 <button onClick={() => handleServiceSelect('rent')}>Renta</button>
-                {Number(userData.rol) === 1 && (
-                  <>
-                    <button onClick={() => handleServiceSelect('transportation')}>Transporte</button>
-                    <button onClick={() => handleServiceSelect('supervision')}>Supervisión</button>
-                    <button onClick={() => handleServiceSelect('assembly')}>Montaje y Desmontaje</button>
-                  </>
-                )}
                 <button onClick={() => setShowServicesModal(false)}>No, gracias</button>
               </div>
             </div>
@@ -786,7 +869,7 @@ const WelcomeMenu: React.FC<WelcomeMenuProps> = () => {
           <button onClick={() => navigate('/Menu-Servicios/Montaje-Desmontaje')}>Gestionar Montaje</button>
           <button onClick={() => navigate('/Menu-Servicios/Catering')}>Gestionar Catering</button>
           <button onClick={() => navigate('/Menu-Servicios/Decoracion')}>Gestionar Decoración</button>
-          <button onClick={() => navigate('/Menu-Servicios/Aquiler')}>Gestionar Alquiler</button>
+          <button onClick={() => navigate('/Menu-Servicios/Alquiler')}>Gestionar Alquiler</button>
         </div>
       </div>
     </div>
@@ -911,236 +994,6 @@ const WelcomeMenu: React.FC<WelcomeMenuProps> = () => {
       alert('Hubo un error al crear el usuario. Por favor, intente nuevamente.');
     }
   };
-
-  const renderEventsInProcessModal = () => (
-    <div className="modal-overlay">
-      <div className="modal-container">
-        <button className="close-btn" onClick={() => setShowEventsInProcessModal(false)}>×</button>
-        <div className="modal-content">
-          <h3>Eventos en Proceso</h3>
-          <div className="table-container">
-            <table>
-              <thead>
-                <tr>
-                  <th>Cliente</th>
-                  <th>Espacio</th>
-                  <th>Servicios Adicionales</th>
-                  <th>Empleado Encargado</th>
-                </tr>
-              </thead>
-              <tbody>
-                {eventosEnProceso.map((evento) => (
-                  <tr key={evento.id_evento}>
-                    <td>{evento.cliente}</td>
-                    <td>{evento.espacio}</td>
-                    <td>{evento.servicios_adicionales.join(', ')}</td>
-                    <td>{evento.empleado_encargado}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-
-  const renderUsersModal = () => (
-    <div className="modal-overlay">
-      <div className="modal-container">
-        <button className="close-btn" onClick={() => setShowUsersModal(false)}>×</button>
-        <div className="modal-content">
-          <div className="modal-header">
-            <h3>Usuarios Registrados</h3>
-            <button 
-              className="add-user-btn"
-              onClick={() => setShowAddUserModal(true)}
-            >
-              + Agregar Usuario
-            </button>
-          </div>
-          <div className="table-container">
-            <table>
-              <thead>
-                <tr>
-                  <th>Nombre</th>
-                  <th>Cédula</th>
-                  <th>Usuario</th>
-                  <th>Rol</th>
-                </tr>
-              </thead>
-              <tbody>
-                {usuarios.map((usuario) => (
-                  <tr key={usuario.id_usuario}>
-                    <td>{usuario.nombre}</td>
-                    <td>{usuario.cedula}</td>
-                    <td>{usuario.usuario}</td>
-                    <td>{usuario.rol}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-
-  const renderAddUserModal = () => (
-    <div className="modal-overlay">
-      <div className="modal-container">
-        <button className="close-btn" onClick={() => setShowAddUserModal(false)}>×</button>
-        <form className="modal-form" onSubmit={handleNuevoUsuarioSubmit}>
-          <h3>Agregar Nuevo Usuario</h3>
-          
-          <label>
-            Cédula:
-            <input
-              type="text"
-              name="cedula"
-              value={nuevoUsuario.cedula}
-              onChange={handleNuevoUsuarioChange}
-              required
-              maxLength={13}
-              pattern="[0-9]{11,13}"
-              title="La cédula debe tener entre 11 y 13 dígitos"
-            />
-          </label>
-
-          <label>
-            Nombre:
-            <input
-              type="text"
-              name="nombre"
-              value={nuevoUsuario.nombre}
-              onChange={handleNuevoUsuarioChange}
-              required
-            />
-          </label>
-
-          <label>
-            Apellido:
-            <input
-              type="text"
-              name="apellido"
-              value={nuevoUsuario.apellido}
-              onChange={handleNuevoUsuarioChange}
-              required
-            />
-          </label>
-
-          <label>
-            Rol:
-            <select
-              name="rol"
-              value={nuevoUsuario.rol}
-              onChange={handleNuevoUsuarioChange}
-              required
-            >
-              <option value="">Seleccionar rol</option>
-              <option value="Cliente">Cliente</option>
-              <option value="Coordinador">Coordinador</option>
-              <option value="Encargado de inventario">Encargado de inventario</option>
-            </select>
-          </label>
-
-          <label>
-            Nombre de Usuario:
-            <input
-              type="text"
-              name="usuario"
-              value={nuevoUsuario.usuario}
-              onChange={handleNuevoUsuarioChange}
-              required
-            />
-          </label>
-
-          <label>
-            Contraseña:
-            <input
-              type="password"
-              name="contrasena"
-              value={nuevoUsuario.contrasena}
-              onChange={handleNuevoUsuarioChange}
-              required
-            />
-          </label>
-
-          <label>
-            Teléfono:
-            <input
-              type="tel"
-              name="telefono"
-              value={nuevoUsuario.telefono}
-              onChange={handleNuevoUsuarioChange}
-              required
-              pattern="[0-9]{10}"
-              title="El teléfono debe tener 10 dígitos"
-            />
-          </label>
-
-          <label>
-            Correo:
-            <input
-              type="email"
-              name="correo"
-              value={nuevoUsuario.correo}
-              onChange={handleNuevoUsuarioChange}
-              required
-            />
-          </label>
-
-          <div className="form-buttons">
-            <button type="submit" className="submit-btn">
-              Crear Usuario
-            </button>
-            <button
-              type="button"
-              className="reset-btn"
-              onClick={() => setShowAddUserModal(false)}
-            >
-              Cancelar
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
-  );
-
-  const renderQuotationsModal = () => (
-    <div className="modal-overlay">
-      <div className="modal-container">
-        <button className="close-btn" onClick={() => setShowQuotationsModal(false)}>×</button>
-        <div className="modal-content">
-          <h3>Cotizaciones Pendientes</h3>
-          <div className="table-container">
-            <table>
-              <thead>
-                <tr>
-                  <th>Cliente</th>
-                  <th>Espacio</th>
-                  <th>Servicios Adicionales</th>
-                  <th>Empleado Encargado</th>
-                  <th>Estado</th>
-                </tr>
-              </thead>
-              <tbody>
-                {cotizaciones.map((cotizacion) => (
-                  <tr key={cotizacion.id_cotizacion}>
-                    <td>{cotizacion.cliente}</td>
-                    <td>{cotizacion.espacio}</td>
-                    <td>{cotizacion.servicios_adicionales.join(', ')}</td>
-                    <td>{cotizacion.empleado_encargado}</td>
-                    <td>{cotizacion.estado}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
 
   const renderSpacesModal = () => (
     <div className="modal-overlay">
@@ -1331,7 +1184,7 @@ const WelcomeMenu: React.FC<WelcomeMenuProps> = () => {
               </div>
 
               <label>
-               Comentario:
+                Comentario:
                 <textarea
                   value={comment}
                   onChange={(e) => setComment(e.target.value)}
@@ -1342,13 +1195,22 @@ const WelcomeMenu: React.FC<WelcomeMenuProps> = () => {
               </label>
 
               <div className="form-buttons">
-                <button type="submit" className="submit-btn">
+                <button 
+                  type="submit" 
+                  className="submit-btn"
+                  disabled={!selectedEventId || !rating}
+                >
                   Enviar Comentario
                 </button>
                 <button
                   type="button"
                   className="reset-btn"
-                  onClick={() => setShowCommentModal(false)}
+                  onClick={() => {
+                    setShowCommentModal(false);
+                    setSelectedEventId(null);
+                    setRating(0);
+                    setComment('');
+                  }}
                 >
                   Cancelar
                 </button>
@@ -1377,13 +1239,6 @@ const WelcomeMenu: React.FC<WelcomeMenuProps> = () => {
                 <button onClick={() => handleServiceSelect('catering')}>Catering</button>
                 <button onClick={() => handleServiceSelect('decor')}>Decoración</button>
                 <button onClick={() => handleServiceSelect('rent')}>Renta</button>
-                {Number(userData.rol) === 1 && (
-                  <>
-                    <button onClick={() => handleServiceSelect('transportation')}>Transporte</button>
-                    <button onClick={() => handleServiceSelect('supervision')}>Supervisión</button>
-                    <button onClick={() => handleServiceSelect('assembly')}>Montaje y Desmontaje</button>
-                  </>
-                )}
                 <button onClick={() => setShowServicesModal(false)}>No, gracias</button>
               </div>
             </div>
@@ -1391,10 +1246,6 @@ const WelcomeMenu: React.FC<WelcomeMenuProps> = () => {
         </div>
       )}
 
-      {showEventsInProcessModal && renderEventsInProcessModal()}
-      {showUsersModal && renderUsersModal()}
-      {showAddUserModal && renderAddUserModal()}
-      {showQuotationsModal && renderQuotationsModal()}
       {showSpacesModal && renderSpacesModal()}
       {showAddSpaceModal && renderAddSpaceModal()}
     </div>

@@ -1121,10 +1121,34 @@ $transition-standard: all 0.3s ease;
   padding: 1.5rem;
   border-radius: $border-radius-standard;
   box-shadow: $card-shadow;
+  flex-wrap: wrap;
 
   .search-container {
+    flex: 1;
+    min-width: 250px;
     position: relative;
-    margin-bottom: 1.5rem;
+    margin-bottom: 0;
+
+    input {
+      width: 100%;
+      padding: 1rem 1rem 1rem 3rem;
+      border: 1px solid var(--color-input-border);
+      border-radius: 8px;
+      font-size: 1rem;
+      background-color: var(--color-background);
+      color: var(--text-color);
+      transition: all 0.3s ease;
+
+      &:focus {
+        outline: none;
+        border-color: var(--gold);
+        box-shadow: 0 0 5px rgba(212, 175, 55, 0.3);
+      }
+
+      &::placeholder {
+        color: var(--text-color-light);
+      }
+    }
 
     &::before {
       content: "🔍";
@@ -1134,6 +1158,7 @@ $transition-standard: all 0.3s ease;
       transform: translateY(-50%);
       color: var(--dark-gold);
       font-size: 1.2rem;
+      pointer-events: none;
     }
   }
 
@@ -1156,7 +1181,7 @@ $transition-standard: all 0.3s ease;
       &:focus {
         outline: none;
         border-color: var(--gold);
-        box-shadow: 0 0 5px rgba(74, 144, 226, 0.3);
+        box-shadow: 0 0 5px rgba(212, 175, 55, 0.3);
       }
 
       option {
@@ -1192,6 +1217,22 @@ $transition-standard: all 0.3s ease;
     &:hover {
       background-color: var(--dark-gold);
       transform: translateY(-2px);
+    }
+  }
+
+  @media screen and (max-width: 768px) {
+    flex-direction: column;
+    gap: 1rem;
+    padding: 1rem;
+
+    .search-container,
+    .category-select {
+      width: 100%;
+      min-width: 100%;
+    }
+
+    .create-menu-btn {
+      width: 100%;
     }
   }
 }
