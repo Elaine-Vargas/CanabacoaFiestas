@@ -1,7 +1,11 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import '../../styles/dashboard/ServicesSubpages.scss';
 import { useUser } from '../../contexts/UserContext';
 import ServiceBase from '../../components/ServiceBase';
+import Catalogo from '../../components/CatalogList';
+import { Box, Typography, Button, Dialog, DialogTitle, DialogContent, DialogActions, TextField, MenuItem, Snackbar, Alert } from '@mui/material';
+import ViewModuleIcon from '@mui/icons-material/ViewModule';
 
 export type UserRole = 'admin' | 'client' | 'supervisor' | 'inventory';
 
@@ -16,21 +20,23 @@ export type RolePermissions = {
 };
 
 interface Rent {
-  id_rent: number;
+  id_rent?: number;
   id_evento: number;
   tipo_elemento: string;
   cantidad: number;
   precio_unitario: number;
-  fecha_inicio: string;
-  fecha_fin: string;
   estado: string;
-  notas: string;
+  fecha_inicio?: string;
+  fecha_fin?: string;
+  notas?: string;
 }
 
 interface Evento {
   id_evento: number;
-  fecha_evento: string;
   tipo_evento: string;
+  fecha_evento: string;
+  hora_evento: string;
+  estado_evento: string;
 }
 
 interface RentStats {
@@ -40,11 +46,15 @@ interface RentStats {
 }
 
 export default function Rent() {
+  const navigate = useNavigate();
   const { userRole } = useUser();
   const userData = JSON.parse(localStorage.getItem('userData') || '{}');
   const [showModal, setShowModal] = useState(false);
+  const [showEventoModal, setShowEventoModal] = useState(false);
+  const [showNuevoEventoModal, setShowNuevoEventoModal] = useState(false);
   const [rents, setRents] = useState<Rent[]>([]);
   const [eventos, setEventos] = useState<Evento[]>([]);
+  const [mostrarCatalogo, setMostrarCatalogo] = useState(false);
   const [stats, setStats] = useState<RentStats>({
     totalPedidos: 0,
     pedidosPendientes: 0,
@@ -60,6 +70,23 @@ export default function Rent() {
   });
   const [editId, setEditId] = useState<number | null>(null);
   const [filtroEvento, setFiltroEvento] = useState<string>('');
+  const [showCarrito, setShowCarrito] = useState(false);
+  const [carritoItems, setCarritoItems] = useState<any[]>([]);
+  const [notificacion, setNotificacion] = useState<{
+    abierta: boolean;
+    mensaje: string;
+    tipo: 'success' | 'error' | 'info' | 'warning';
+  }>({
+    abierta: false,
+    mensaje: '',
+    tipo: 'success'
+  });
+  const [nuevoEvento, setNuevoEvento] = useState({
+    tipo_evento: '',
+    fecha_evento: '',
+    hora_evento: '',
+    estado_evento: 'Pendiente'
+  });
 
   useEffect(() => {
     const fetchData = async () => {
@@ -102,15 +129,6 @@ export default function Rent() {
     }
   }, [userRole]);
 
-  useEffect(() => {
-    // Verificar el rol del usuario
-    const rolId = Number(userData.rol);
-    if (![1, 3, 4].includes(rolId)) {
-      // Si no es admin, organizador o inventario, redirigir a bienvenida
-      window.location.href = '/Menu-Servicios/Bienvenida';
-    }
-  }, [userData.rol]);
-
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({
@@ -130,33 +148,28 @@ export default function Rent() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      if (editId) {
-        await fetch(`/api/rent/${editId}`, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(formData)
-        });
-      } else {
-        await fetch('/api/rent', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(formData)
-        });
-      }
-
-      const response = await fetch('/api/rent');
-      const data = await response.json();
-      setRents(data);
-      setShowModal(false);
-      setFormData({
-        id_evento: 0,
-        tipo_elemento: '',
-        cantidad: 0,
-        precio_unitario: 0,
-        estado: 'Pendiente',
-        notas: ''
+      const url = editId ? `/api/rent/${editId}` : '/api/rent';
+      const method = editId ? 'PUT' : 'POST';
+      
+      const response = await fetch(url, {
+        method,
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(formData),
       });
-      setEditId(null);
+
+      if (response.ok) {
+        const updatedRent = await response.json();
+        if (editId) {
+          setRents(prev => prev.map(r => r.id_rent === editId ? updatedRent : r));
+        } else {
+          setRents(prev => [...prev, updatedRent]);
+        }
+        setShowModal(false);
+        setFormData({});
+        setEditId(null);
+      }
     } catch (error) {
       console.error('Error al guardar:', error);
     }
@@ -164,7 +177,7 @@ export default function Rent() {
 
   const handleEdit = (rent: Rent) => {
     setFormData(rent);
-    setEditId(rent.id_rent);
+    setEditId(rent.id_rent!);
     setShowModal(true);
   };
 
@@ -177,10 +190,364 @@ export default function Rent() {
     }
   };
 
+  const handleAddToCart = (item: any) => {
+    setCarritoItems(prev => [...prev, item]);
+    setShowEventoModal(true);
+  };
+
+  const handleCrearEvento = async () => {
+    try {
+      const response = await fetch('/api/eventos', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(nuevoEvento),
+      });
+
+      if (response.ok) {
+        const eventoCreado = await response.json();
+        setEventos(prev => [...prev, eventoCreado]);
+        setFormData(prev => ({ ...prev, id_evento: eventoCreado.id_evento }));
+        setShowNuevoEventoModal(false);
+        setNuevoEvento({
+          tipo_evento: '',
+          fecha_evento: '',
+          hora_evento: '',
+          estado_evento: 'Pendiente'
+        });
+        
+        setNotificacion({
+          abierta: true,
+          mensaje: 'Evento creado con éxito',
+          tipo: 'success'
+        });
+      }
+    } catch (error) {
+      console.error('Error al crear evento:', error);
+      setNotificacion({
+        abierta: true,
+        mensaje: 'Error al crear el evento',
+        tipo: 'error'
+      });
+    }
+  };
+
   const renderClientView = () => (
-    <div className="service-content">
+    <div className="service-content" style={{ position: 'relative' }}>
+      <Box sx={{ 
+        position: 'absolute', 
+        top: { xs: 8, sm: 16 }, 
+        right: { xs: 8, sm: 16 }, 
+        zIndex: 2,
+        width: { xs: 'calc(100% - 16px)', sm: 'auto' }
+      }}>
+        <Button
+          variant="contained"
+          color="primary"
+          onClick={() => setMostrarCatalogo(!mostrarCatalogo)}
+          startIcon={<ViewModuleIcon sx={{ 
+            fontSize: { xs: 20, sm: 24, md: 28 } 
+          }} />}
+          sx={{
+            background: mostrarCatalogo
+              ? 'linear-gradient(90deg, #fff 0%, #f7e9c6 100%)'
+              : 'linear-gradient(90deg, var(--gold) 0%, var(--dark-gold) 100%)',
+            color: mostrarCatalogo ? 'var(--gold)' : 'var(--white)',
+            border: mostrarCatalogo ? '2px solid #fff' : 'none',
+            borderRadius: { xs: '1rem', sm: '2rem' },
+            boxShadow: mostrarCatalogo ? '0 4px 24px rgba(0,0,0,0.10)' : '0 2px 8px rgba(0,0,0,0.10)',
+            fontWeight: 700,
+            fontSize: { xs: '0.9rem', sm: '1rem', md: '1.1rem' },
+            px: { xs: 2, sm: 3 },
+            py: { xs: 1, sm: 1.2 },
+            width: { xs: '100%', sm: 'auto' },
+            transition: 'all 0.3s',
+            '&:hover': {
+              background: 'linear-gradient(90deg, #fff 0%, #f7e9c6 100%)',
+              color: 'var(--gold)',
+              border: '2px solid #fff',
+              boxShadow: '0 8px 32px rgba(0,0,0,0.15)'
+            },
+          }}
+        >
+          {mostrarCatalogo ? 'Ocultar Catálogo' : 'Mostrar Catálogo'}
+        </Button>
+      </Box>
+
+      {mostrarCatalogo && (
+        <Box sx={{
+          mb: { xs: 2, sm: 4 },
+          mt: { xs: 8, sm: 10, md: 12 },
+          mx: { xs: 1, sm: 2, md: 'auto' },
+          maxWidth: { xs: '100%', sm: 800, md: 1200 },
+          background: '#fff',
+          borderRadius: { xs: '1rem', sm: '2rem' },
+          boxShadow: '0 8px 32px rgba(0,0,0,0.15)',
+          p: { xs: 1, sm: 2, md: 4 },
+          minHeight: { xs: 200, sm: 300 },
+          position: 'relative',
+          zIndex: 1,
+          overflow: 'hidden'
+        }}>
+          <Catalogo 
+            onAddToCart={handleAddToCart}
+            showNavBar={false}
+          />
+        </Box>
+      )}
+
+      <Dialog 
+        open={showEventoModal} 
+        onClose={() => {
+          setShowEventoModal(false);
+          setCarritoItems([]);
+        }} 
+        maxWidth="md" 
+        fullWidth
+        PaperProps={{
+          sx: {
+            borderRadius: '1rem',
+            background: 'var(--color-background)',
+            color: 'var(--color-text)'
+          }
+        }}
+      >
+        <DialogTitle sx={{ 
+          fontFamily: '"Montserrat Alternates", cursive',
+          fontWeight: 800,
+          color: 'var(--gold)',
+          fontSize: { xs: '1.2rem', sm: '1.5rem' }
+        }}>
+          Confirmar Alquiler
+        </DialogTitle>
+        <DialogContent>
+          <Box sx={{ mb: 3 }}>
+            <Button 
+              variant="outlined" 
+              onClick={() => setShowNuevoEventoModal(true)}
+              sx={{ 
+                mb: 2,
+                borderColor: 'var(--gold)',
+                color: 'var(--gold)',
+                '&:hover': {
+                  borderColor: 'var(--dark-gold)',
+                  backgroundColor: 'var(--gold-light)'
+                }
+              }}
+            >
+              + Crear Nuevo Evento
+            </Button>
+
+            <TextField
+              select
+              fullWidth
+              label="Seleccionar Evento"
+              value={formData.id_evento || ''}
+              onChange={(e) => setFormData(prev => ({ ...prev, id_evento: Number(e.target.value) }))}
+              sx={{ mb: 3 }}
+            >
+              {eventos.map((evento) => (
+                <MenuItem key={evento.id_evento} value={evento.id_evento}>
+                  {evento.tipo_evento} - {evento.fecha_evento}
+                </MenuItem>
+              ))}
+            </TextField>
+
+            <Typography variant="h6" sx={{ mb: 2, color: 'var(--color-text)' }}>
+              Items Seleccionados
+            </Typography>
+            <Box sx={{ 
+              maxHeight: '300px', 
+              overflow: 'auto',
+              mb: 2,
+              p: 2,
+              backgroundColor: 'var(--color-background2)',
+              borderRadius: '1rem'
+            }}>
+              {carritoItems.map((item, index) => (
+                <Box key={index} sx={{ 
+                  mb: 2, 
+                  p: 2, 
+                  border: '1px solid var(--color-border)',
+                  borderRadius: '0.5rem',
+                  backgroundColor: 'var(--color-background)'
+                }}>
+                  <Typography variant="h6" sx={{ color: 'var(--gold)' }}>
+                    {item.nombre_elemento}
+                  </Typography>
+                  <Typography>Cantidad: {item.cantidad}</Typography>
+                  <Typography>Precio: ${item.precio_elemento}</Typography>
+                  <Typography>Subtotal: ${item.precio_elemento * item.cantidad}</Typography>
+                </Box>
+              ))}
+            </Box>
+
+            <Typography variant="h6" sx={{ 
+              textAlign: 'right',
+              color: 'var(--gold)',
+              fontWeight: 800
+            }}>
+              Total: ${carritoItems.reduce((sum, item) => sum + (item.precio_elemento * item.cantidad), 0)}
+            </Typography>
+          </Box>
+        </DialogContent>
+        <DialogActions sx={{ p: 3 }}>
+          <Button 
+            onClick={() => {
+              setShowEventoModal(false);
+              setCarritoItems([]);
+            }}
+            sx={{ 
+              color: 'var(--error)',
+              '&:hover': {
+                backgroundColor: 'var(--error-light)'
+              }
+            }}
+          >
+            Cancelar
+          </Button>
+          <Button 
+            onClick={async () => {
+              try {
+                const alquilerPromises = carritoItems.map(item => 
+                  fetch('/api/alquiler-servicio', {
+                    method: 'POST',
+                    headers: {
+                      'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                      id_evento: formData.id_evento,
+                      id_elemento: item.id_elemento,
+                      precio_unitario: item.precio_elemento,
+                      cantidad_alquiler: item.cantidad,
+                      precioneto_alquiler: item.precio_elemento * item.cantidad,
+                      itbis_alquiler: (item.precio_elemento * item.cantidad) * 0.18,
+                      total_alquiler: (item.precio_elemento * item.cantidad) * 1.18
+                    }),
+                  })
+                );
+
+                await Promise.all(alquilerPromises);
+                setShowEventoModal(false);
+                setCarritoItems([]);
+                
+                const response = await fetch('/api/rent');
+                const data = await response.json();
+                setRents(data);
+                
+                setNotificacion({
+                  abierta: true,
+                  mensaje: 'Alquiler realizado con éxito',
+                  tipo: 'success'
+                });
+              } catch (error) {
+                console.error('Error al procesar el alquiler:', error);
+                setNotificacion({
+                  abierta: true,
+                  mensaje: 'Error al procesar el alquiler',
+                  tipo: 'error'
+                });
+              }
+            }}
+            variant="contained"
+            disabled={!formData.id_evento}
+            sx={{
+              backgroundColor: 'var(--gold)',
+              '&:hover': {
+                backgroundColor: 'var(--dark-gold)',
+              },
+              '&:disabled': {
+                backgroundColor: 'var(--color-disabled)',
+                color: 'var(--color-text-disabled)'
+              }
+            }}
+          >
+            Confirmar Alquiler
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      <Dialog
+        open={showNuevoEventoModal}
+        onClose={() => setShowNuevoEventoModal(false)}
+        maxWidth="sm"
+        fullWidth
+        PaperProps={{
+          sx: {
+            borderRadius: '1rem',
+            background: 'var(--color-background)',
+            color: 'var(--color-text)'
+          }
+        }}
+      >
+        <DialogTitle sx={{ 
+          fontFamily: '"Montserrat Alternates", cursive',
+          fontWeight: 800,
+          color: 'var(--gold)'
+        }}>
+          Crear Nuevo Evento
+        </DialogTitle>
+        <DialogContent>
+          <Box sx={{ mt: 2, display: 'flex', flexDirection: 'column', gap: 2 }}>
+            <TextField
+              label="Tipo de Evento"
+              value={nuevoEvento.tipo_evento}
+              onChange={(e) => setNuevoEvento(prev => ({ ...prev, tipo_evento: e.target.value }))}
+              fullWidth
+              required
+            />
+            <TextField
+              label="Fecha del Evento"
+              type="date"
+              value={nuevoEvento.fecha_evento}
+              onChange={(e) => setNuevoEvento(prev => ({ ...prev, fecha_evento: e.target.value }))}
+              fullWidth
+              required
+              InputLabelProps={{ shrink: true }}
+            />
+            <TextField
+              label="Hora del Evento"
+              type="time"
+              value={nuevoEvento.hora_evento}
+              onChange={(e) => setNuevoEvento(prev => ({ ...prev, hora_evento: e.target.value }))}
+              fullWidth
+              required
+              InputLabelProps={{ shrink: true }}
+            />
+          </Box>
+        </DialogContent>
+        <DialogActions sx={{ p: 3 }}>
+          <Button 
+            onClick={() => setShowNuevoEventoModal(false)}
+            sx={{ color: 'var(--error)' }}
+          >
+            Cancelar
+          </Button>
+          <Button 
+            onClick={handleCrearEvento}
+            variant="contained"
+            disabled={!nuevoEvento.tipo_evento || !nuevoEvento.fecha_evento || !nuevoEvento.hora_evento}
+            sx={{
+              backgroundColor: 'var(--gold)',
+              '&:hover': {
+                backgroundColor: 'var(--dark-gold)',
+              },
+              '&:disabled': {
+                backgroundColor: 'var(--color-disabled)',
+                color: 'var(--color-text-disabled)'
+              }
+            }}
+          >
+            Crear Evento
+          </Button>
+        </DialogActions>
+      </Dialog>
+
       <div className="table-section">
-        <p>Servicios de Alquiler Registrados</p>
+        <Typography variant="h4" sx={{ mb: 2, color: 'var(--color-text)' }}>
+          Mis Alquileres
+        </Typography>
         <input
           type="text"
           className="escri"
@@ -532,6 +899,38 @@ export default function Rent() {
 
         return null;
       })()}
+
+      <Snackbar
+        open={notificacion.abierta}
+        autoHideDuration={3000}
+        onClose={() => setNotificacion(prev => ({ ...prev, abierta: false }))}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+      >
+        <Alert 
+          onClose={() => setNotificacion(prev => ({ ...prev, abierta: false }))} 
+          severity={notificacion.tipo}
+          sx={{
+            backgroundColor: notificacion.tipo === 'success' ? '#2e7d32' : '#d32f2f',
+            color: 'var(--white)',
+            '& .MuiAlert-icon': {
+              color: 'var(--white)'
+            },
+            fontFamily: '"Nunito Sans", sans-serif',
+            fontSize: { xs: '0.75rem', sm: '1rem' },
+            width: { xs: '98%', sm: 'auto' },
+            maxWidth: '600px',
+            boxShadow: '0 4px 12px rgba(0,0,0,0.4)',
+            '& .MuiAlert-message': {
+              fontWeight: 600
+            },
+            '& .MuiAlert-action': {
+              color: 'var(--white)'
+            }
+          }}
+        >
+          {notificacion.mensaje}
+        </Alert>
+      </Snackbar>
     </ServiceBase>
   );
 }

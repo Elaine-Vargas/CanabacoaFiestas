@@ -1,5 +1,6 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import type { FormEvent } from 'react';
+import { useNavigate } from 'react-router-dom';
 import '../../styles/dashboard/ServicesSubpages.scss';
 import ServiceBase from '../../components/ServiceBase';
 import { useUser } from '../../contexts/UserContext';
@@ -56,6 +57,7 @@ interface CateringStats {
 }
 
 export default function Catering() {
+  const navigate = useNavigate();
   const { userRole } = useUser();
   const userData = JSON.parse(localStorage.getItem('userData') || '{}');
   const [showModal, setShowModal] = useState(false);
@@ -131,15 +133,6 @@ export default function Catering() {
       fetchStats();
     }
   }, [userRole]);
-
-  useEffect(() => {
-    // Verificar el rol del usuario
-    const rolId = Number(userData.rol);
-    if (![1, 3, 4].includes(rolId)) {
-      // Si no es admin, organizador o inventario, redirigir a bienvenida
-      window.location.href = '/Menu-Servicios/Bienvenida';
-    }
-  }, [userData.rol]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;

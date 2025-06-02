@@ -19,6 +19,7 @@ const Supervision = lazy(() => import('./pages/ServicesSubpages/Supervision'));
 const Transportation = lazy(() => import('./pages/ServicesSubpages/Transportation'));
 const AssemblyAndDisassembly = lazy(() => import('./pages/ServicesSubpages/AssemblyAndDisassembly'));
 const Catalogo = lazy(() => import('./pages/Catalog'));
+const Eventos = lazy(() => import('./pages/ServicesSubpages/Eventos'));
 
 import ProtectedRoute from './components/ProtectedRoute';
 import PublicRoute from './components/PublicRoute';
@@ -52,6 +53,7 @@ function App() {
               <Route path="Bienvenida" element={<WelcomeMenu eventsInProcess={38} averageRating={4.0} totalUsers={150} quotations={[]}/>} />
               <Route path="Ajustes-Usuario" element={<UserConfig />} />
               <Route path="Alquiler" element={<Rent />} />
+              <Route path="Eventos" element={<Eventos />} />
               <Route path="Decoracion" element={<Decor />} />
               <Route path="Catering" element={<Catering />} />
               <Route path="Supervision" element={<Supervision />} />

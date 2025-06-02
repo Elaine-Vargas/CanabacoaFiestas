@@ -32,6 +32,7 @@ app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 app.use('/api/auth', authRoutes);
 app.use('/api/elementos', elementoRoutes);
 app.use('/api/comentarios', comentarioRoutes);
+
 // Ruta de prueba
 app.get('/', (req, res) => {
   res.send('Servidor funcionando correctamente');
@@ -40,12 +41,16 @@ app.get('/', (req, res) => {
 // Iniciar servidor
 app.listen(PORT, async () => {
   console.log(`Servidor escuchando en http://localhost:${PORT}`);
-
-
+  console.log('Rutas disponibles:');
+  console.log('- GET /api/elementos/filtrados');
+  console.log('- GET /api/elementos/categorias/list');
+  console.log('- GET /api/elementos/colores/list');
+  console.log('- GET /api/elementos/materiales/list');
   
   try {
     await testDbConnection();
     await syncDatabase();
+    console.log('Base de datos sincronizada correctamente');
   } catch (error) {
     console.error('Error al inicializar la base de datos:', error);
   }

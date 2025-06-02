@@ -1,3 +1,4 @@
+import React from 'react';
 import { useNavigate } from "react-router-dom";
 import {
   FaUserCog,
@@ -62,6 +63,10 @@ export default function ServicesMenu({ selectedService }: ServicesMenuProps) {
     navigate("/");
   };
 
+  const handleNavigation = (path: string) => {
+    navigate(path);
+  };
+
   const renderMenuItems = () => {
     const rolId = Number(userData.rol);
 
@@ -70,19 +75,19 @@ export default function ServicesMenu({ selectedService }: ServicesMenuProps) {
         <ul>
           <li
             className={selectedService === "Bienvenida" ? "active" : ""}
-            onClick={() => navigate("/Menu-Servicios/Bienvenida")}
+            onClick={() => handleNavigation("/Menu-Servicios/Bienvenida")}
           >
             <FaTachometerAlt /> Bienvenida
           </li>
           <li
             className={selectedService === "Alquiler" ? "active" : ""}
-            onClick={() => navigate("/Menu-Servicios/Alquiler")}
+            onClick={() => handleNavigation("/Menu-Servicios/Alquiler")}
           >
             <FaBoxOpen /> Alquiler
           </li>
           <li
             className={selectedService === "Transporte" ? "active" : ""}
-            onClick={() => navigate("/Menu-Servicios/Transporte")}
+            onClick={() => handleNavigation("/Menu-Servicios/Transporte")}
           >
             <FaCar /> Transporte
           </li>
@@ -94,25 +99,25 @@ export default function ServicesMenu({ selectedService }: ServicesMenuProps) {
       <ul>
         <li
           className={selectedService === "Bienvenida" ? "active" : ""}
-          onClick={() => navigate("/Menu-Servicios/Bienvenida")}
+          onClick={() => handleNavigation("/Menu-Servicios/Bienvenida")}
         >
           <FaTachometerAlt /> Bienvenida
         </li>
         <li
           className={selectedService === "Alquiler" ? "active" : ""}
-          onClick={() => navigate("/Menu-Servicios/Alquiler")}
+          onClick={() => handleNavigation("/Menu-Servicios/Alquiler")}
         >
           <FaBoxOpen /> Alquiler
         </li>
         <li
           className={selectedService === "Decoracion" ? "active" : ""}
-          onClick={() => navigate("/Menu-Servicios/Decoracion")}
+          onClick={() => handleNavigation("/Menu-Servicios/Decoracion")}
         >
           <FaBrush /> Decoracion
         </li>
         <li
           className={selectedService === "Catering" ? "active" : ""}
-          onClick={() => navigate("/Menu-Servicios/Catering")}
+          onClick={() => handleNavigation("/Menu-Servicios/Catering")}
         >
           <FaConciergeBell /> Catering
         </li>
@@ -120,19 +125,19 @@ export default function ServicesMenu({ selectedService }: ServicesMenuProps) {
           <>
             <li
               className={selectedService === "Supervision" ? "active" : ""}
-              onClick={() => navigate("/Menu-Servicios/Supervision")}
+              onClick={() => handleNavigation("/Menu-Servicios/Supervision")}
             >
               <FaTachometerAlt /> Supervision
             </li>
             <li
               className={selectedService === "Transporte" ? "active" : ""}
-              onClick={() => navigate("/Menu-Servicios/Transporte")}
+              onClick={() => handleNavigation("/Menu-Servicios/Transporte")}
             >
               <FaCar /> Transporte
             </li>
             <li
               className={selectedService === "Montaje-Desmontaje" ? "active" : ""}
-              onClick={() => navigate("/Menu-Servicios/Montaje-Desmontaje")}
+              onClick={() => handleNavigation("/Menu-Servicios/Montaje-Desmontaje")}
             >
               <FaTools /> Montaje y Desmontaje
             </li>
@@ -212,7 +217,7 @@ export default function ServicesMenu({ selectedService }: ServicesMenuProps) {
             <ListItem key={item.text} disablePadding>
               <ListItemButton
                 onClick={() => {
-                  navigate(item.path);
+                  handleNavigation(item.path);
                   setDrawerOpen(false);
                 }}
                 sx={{

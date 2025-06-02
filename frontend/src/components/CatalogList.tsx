@@ -1,9 +1,10 @@
-import { useState, useEffect, lazy, Suspense } from 'react';
+import { useState, useEffect, lazy, Suspense, useMemo, useCallback } from 'react';
 import axios from 'axios';
 import { 
   Card, CardContent, Typography, Grid, Container, TextField, Select, 
   MenuItem, FormControl, InputLabel, Box, CircularProgress, IconButton, 
-  Badge, Drawer, List, ListItem, ListItemText, Button, Snackbar, Alert, Skeleton
+  Badge, Drawer, List, ListItem, ListItemText, Button, Snackbar, Alert, Skeleton, Dialog, DialogTitle, DialogContent, DialogActions, Table, TableBody, TableCell,
+  TableContainer, TableHead, TableRow, Paper
 } from '@mui/material';
 import type { SelectChangeEvent } from '@mui/material';
 import ShoppingCartIcon from '@mui/icons-material/ShoppingCart';
@@ -126,7 +127,13 @@ const OptimizedImage = lazy(() => {
   });
 });
 
-const Catalog = () => {
+interface CatalogProps {
+  onAddToCart?: (item: Elemento) => void;
+  showNavBar?: boolean;
+  onComprarCarrito?: (carrito: CarritoItem[]) => void;
+}
+
+const Catalog: React.FC<CatalogProps> = ({ onAddToCart, showNavBar = true, onComprarCarrito }) => {
   const navigate = useNavigate();
   const [elementos, setElementos] = useState<Elemento[]>([]);
   const [categorias, setCategorias] = useState<CategoriaElemento[]>([]);
@@ -148,34 +155,56 @@ const Catalog = () => {
     tipo: 'success' as 'success' | 'error'
   });
   const [cantidadesSeleccionadas, setCantidadesSeleccionadas] = useState<{[key: number]: number}>({});
-  
-  // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 12;
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [userRole, setUserRole] = useState<string | null>(null);
+  const [showAlquilerModal, setShowAlquilerModal] = useState(false);
+  const [showEventoModal, setShowEventoModal] = useState(false);
+  const [eventos, setEventos] = useState([]);
+  const [selectedEventoId, setSelectedEventoId] = useState('');
+  const [showNuevoEventoModal, setShowNuevoEventoModal] = useState(false);
+  const [nuevoEvento, setNuevoEvento] = useState({
+    nombre_evento: '',
+    fecha_evento: '',
+    hora_inicio: '',
+    hora_fin: '',
+    lugar_evento: '',
+    descripcion: ''
+  });
 
   useEffect(() => {
     const fetchData = async () => {
       try {
         setLoading(true);
+        console.log('Iniciando carga de datos...');
+        
         const [elementosRes, categoriasRes, coloresRes, materialesRes] = await Promise.all([
-          axios.get('http://localhost:3000/api/elementos'),
+          axios.get('http://localhost:3000/api/elementos/filtrados'),
           axios.get('http://localhost:3000/api/elementos/categorias/list'),
           axios.get('http://localhost:3000/api/elementos/colores/list'),
           axios.get('http://localhost:3000/api/elementos/materiales/list')
         ]);
 
+        console.log('Datos recibidos:', {
+          elementos: elementosRes.data,
+          categorias: categoriasRes.data,
+          colores: coloresRes.data,
+          materiales: materialesRes.data
+        });
+
         setElementos(elementosRes.data);
         setCategorias(categoriasRes.data);
         setColores(coloresRes.data);
         setMateriales(materialesRes.data);
-        setLoading(false);
       } catch (error) {
-        console.error('Error loading data:', error);
+        console.error('Error al cargar los datos:', error);
         setNotificacion({
           abierta: true,
-          mensaje: 'Error loading data. Please try again later.',
+          mensaje: 'Error al cargar el catálogo. Por favor, intente nuevamente.',
           tipo: 'error'
         });
+      } finally {
         setLoading(false);
       }
     };
@@ -183,39 +212,48 @@ const Catalog = () => {
     fetchData();
   }, []);
 
-  const filtrarElementos = () => {
-    return elementos.filter(elemento => {
-      const cumpleCategoria = !filtros.categoria || 
-        elemento.subcategoria.categoria.id_categoria === Number(filtros.categoria);
-      const cumpleSubcategoria = !filtros.subcategoria || 
-        elemento.id_subcategoria === Number(filtros.subcategoria);
-      const cumpleColor = !filtros.color || 
-        elemento.color?.id_color === Number(filtros.color);
-      const cumpleMaterial = !filtros.material ||
-        elemento.material?.id_material === Number(filtros.material);
-      const busqueda = filtros.busqueda.toLowerCase().trim();
-      const cumpleBusqueda = !busqueda || 
-        elemento.nombre_elemento.toLowerCase().includes(busqueda);
+  useEffect(() => {
+    const checkAuth = () => {
+      const token = localStorage.getItem('token');
+      const role = localStorage.getItem('userRole');
+      setIsAuthenticated(!!token);
+      setUserRole(role);
+    };
 
-      return cumpleCategoria && cumpleSubcategoria && cumpleColor && cumpleMaterial && cumpleBusqueda;
+    checkAuth();
+    window.addEventListener('storage', checkAuth);
+    return () => window.removeEventListener('storage', checkAuth);
+  }, []);
+
+  useEffect(() => {
+    const fetchEventos = async () => {
+      try {
+        const response = await axios.get('http://localhost:3000/api/eventos');
+        setEventos(response.data);
+      } catch (error) {
+        console.error('Error al cargar eventos:', error);
+        setNotificacion({
+          abierta: true,
+          mensaje: 'Error al cargar los eventos',
+          tipo: 'error'
+        });
+      }
+    };
+
+    if (showEventoModal) {
+      fetchEventos();
+    }
+  }, [showEventoModal]);
+
+  const handleAddToCart = (item: Elemento) => {
+    const cantidad = cantidadesSeleccionadas[item.id_elemento] || 1;
+    const itemConCantidad = { ...item, cantidad };
+    setCarrito(prev => [...prev, itemConCantidad]);
+    setNotificacion({
+      abierta: true,
+      mensaje: 'Producto agregado al carrito',
+      tipo: 'success'
     });
-  };
-
-  // Pagination logic
-  const filteredElements = filtrarElementos();
-  const totalPages = Math.ceil(filteredElements.length / itemsPerPage);
-  const paginatedElements = filteredElements.slice(
-    (currentPage - 1) * itemsPerPage,
-    currentPage * itemsPerPage
-  );
-
-  const handleFiltroChange = (event: SelectChangeEvent<string>) => {
-    const { name, value } = event.target;
-    setFiltros(prev => ({
-      ...prev,
-      [name as string]: value,
-      ...(name === 'categoria' && { subcategoria: '' })
-    }));
   };
 
   const handleCantidadChange = (id: number, cantidad: number) => {
@@ -228,97 +266,22 @@ const Catalog = () => {
       });
       return;
     }
-
     if (cantidad < 1) return;
-    
     setCantidadesSeleccionadas(prev => ({
       ...prev,
       [id]: cantidad
     }));
   };
 
-  const agregarAlCarrito = (elemento: Elemento) => {
-    const cantidad = cantidadesSeleccionadas[elemento.id_elemento] || 1;
-    
-    if (elemento.cantidad_disponible <= 0) {
-      setNotificacion({
-        abierta: true,
-        mensaje: `No hay stock disponible de ${elemento.nombre_elemento}`,
-        tipo: 'error'
-      });
-      return;
-    }
-
-    if (cantidad > elemento.cantidad_disponible) {
-      setNotificacion({
-        abierta: true,
-        mensaje: `No hay suficiente stock disponible de ${elemento.nombre_elemento}`,
-        tipo: 'error'
-      });
-      return;
-    }
-
-    const itemExistente = carrito.find(item => item.id_elemento === elemento.id_elemento);
-    
-    if (itemExistente) {
-      const nuevaCantidad = itemExistente.cantidad + cantidad;
-      if (nuevaCantidad > elemento.cantidad_disponible) {
-        setNotificacion({
-          abierta: true,
-          mensaje: `No hay suficiente stock disponible de ${elemento.nombre_elemento}`,
-          tipo: 'error'
-        });
-        return;
-      }
-      setCarrito(carrito.map(item =>
-        item.id_elemento === elemento.id_elemento
-          ? { ...item, cantidad: nuevaCantidad }
-          : item
-      ));
-    } else {
-      setCarrito([...carrito, { ...elemento, cantidad }]);
-    }
-
-    setNotificacion({
-      abierta: true,
-      mensaje: `${elemento.nombre_elemento} agregado al carrito`,
-      tipo: 'success'
-    });
-
-    // Limpiar la cantidad seleccionada
-    setCantidadesSeleccionadas(prev => {
-      const newState = { ...prev };
-      delete newState[elemento.id_elemento];
-      return newState;
-    });
-  };
-
-  const actualizarCantidad = (id: number, nuevaCantidad: number) => {
-    const elemento = elementos.find(e => e.id_elemento === id);
-    if (!elemento || nuevaCantidad > elemento.cantidad_disponible) {
-      setNotificacion({
-        abierta: true,
-        mensaje: `No hay suficiente stock disponible de ${elemento?.nombre_elemento}`,
-        tipo: 'error'
-      });
-      return;
-    }
-
-    if (nuevaCantidad < 1) return;
-    
-    setCarrito(carrito.map(item =>
-      item.id_elemento === id
-        ? { ...item, cantidad: nuevaCantidad }
-        : item
-    ));
+  const handleOpenCart = () => {
+    setCarritoAbierto(true);
   };
 
   const eliminarDelCarrito = (id: number) => {
-    const elemento = elementos.find(e => e.id_elemento === id);
-    setCarrito(carrito.filter(item => item.id_elemento !== id));
+    setCarrito(prev => prev.filter(item => item.id_elemento !== id));
     setNotificacion({
       abierta: true,
-      mensaje: `${elemento?.nombre_elemento} eliminado del carrito`,
+      mensaje: 'Producto eliminado del carrito',
       tipo: 'success'
     });
   };
@@ -336,10 +299,33 @@ const Catalog = () => {
     });
   };
 
-  const procederAlPago = () => {
-    if (carrito.length === 0) return;
-    navigate('/login');
+  const handleNuevoEvento = async () => {
+    try {
+      await axios.post('http://localhost:3000/api/eventos', nuevoEvento);
+      setShowNuevoEventoModal(false);
+      setNotificacion({
+        abierta: true,
+        mensaje: 'Evento creado exitosamente',
+        tipo: 'success'
+      });
+      // Recargar eventos
+      const response = await axios.get('http://localhost:3000/api/eventos');
+      setEventos(response.data);
+    } catch (error) {
+      console.error('Error al crear evento:', error);
+      setNotificacion({
+        abierta: true,
+        mensaje: 'Error al crear el evento',
+        tipo: 'error'
+      });
+    }
   };
+
+  const handleComprar = () => {
+    setCarritoAbierto(false);
+    setShowEventoModal(true);
+  };
+
   return (
     <>
       <Box sx={{ 
@@ -361,9 +347,11 @@ const Catalog = () => {
         overflow: 'hidden'
       }} />
       <Box sx={{ position: 'relative', zIndex: 1 }}>
-      <Suspense fallback={<CircularProgress sx={{ color: 'var(--gold)' }} />}>
-        <NavBar />
-      </Suspense>
+        {showNavBar && (
+          <Suspense fallback={<CircularProgress sx={{ color: 'var(--gold)' }} />}>
+            <NavBar />
+          </Suspense>
+        )}
         <Container maxWidth="lg" sx={{ 
           py: { xs: 2, sm: 4 }, 
           mt: { xs: 6, sm: 8 },
@@ -378,32 +366,32 @@ const Catalog = () => {
             flexDirection: { xs: 'column', sm: 'row' },
             gap: { xs: 2, sm: 0 },
           }}>
-          <Typography 
-            variant="h4" 
-            component="h1"
-            sx={{ 
+            <Typography 
+              variant="h4" 
+              component="h1"
+              sx={{ 
                 fontFamily: '"Pinyon Script", sans-serif',
-              fontWeight: 400,
+                fontWeight: 400,
                 color: 'var(--gold)',
                 fontSize: { xs: '2rem', sm: '2.8rem', md: '3.5rem', lg: '6rem' },
                 letterSpacing: '1px',
                 textAlign: { xs: 'center', sm: 'left' }
-            }}
-          >
-            Catálogo de Elementos
-          </Typography>
-          
-          <IconButton 
-            color="primary" 
-            onClick={() => setCarritoAbierto(true)}
-            sx={{ 
-              position: 'relative',
+              }}
+            >
+              Catálogo de Elementos
+            </Typography>
+            
+            <IconButton 
+              color="primary" 
+              onClick={handleOpenCart}
+              sx={{ 
+                position: 'relative',
                 backgroundColor: 'var(--gold)',
                 color: 'var(--white)',
                 width: { xs: '45px', sm: '50px' },
                 height: { xs: '45px', sm: '50px' },
                 boxShadow: '0 15px 50px var(--color-shadow)',
-              '&:hover': {
+                '&:hover': {
                   backgroundColor: 'var(--dark-gold)',
                   transform: 'scale(1.05)',
                   transition: 'all 0.2s ease-in-out'
@@ -416,366 +404,390 @@ const Catalog = () => {
                   height: '1rem',
                   borderRadius: '10px',
                   background: 'var(--dark-gold)',
-              }
-            }}
-          >
-            <Badge badgeContent={carrito.length} color="error">
+                }
+              }}
+            >
+              <Badge badgeContent={carrito.length} color="error">
                 <ShoppingCartIcon sx={{ fontSize: { xs: '1.5rem', sm: '1.8rem' } }} />
-            </Badge>
-          </IconButton>
-        </Box>
+              </Badge>
+            </IconButton>
+          </Box>
 
-        <Grid 
-            container 
-            spacing={{ xs: 1, sm: 2 }} 
-            sx={{ 
-              mb: { xs: 2, sm: 4 },
-              justifyContent: { xs: 'center', sm: 'flex-start' }
-            }}
-          >
+          {loading ? (
+            <Box sx={{ 
+              display: 'flex', 
+              justifyContent: 'center', 
+              alignItems: 'center',
+              minHeight: '400px'
+            }}>
+              <CircularProgress sx={{ color: 'var(--gold)' }} />
+            </Box>
+          ) : (
             <Grid 
-            //@ts-ignore
-              item 
-              xs={12} 
-              md={3} 
-              component="div"
-              sx={{
-                display: 'flex',
-                justifyContent: { xs: 'center', sm: 'flex-start' },
-                maxWidth: { xs: '100%', sm: 'none' }
+              container 
+              spacing={{ xs: 1, sm: 2 }} 
+              sx={{ 
+                mb: { xs: 2, sm: 4 },
+                justifyContent: { xs: 'center', sm: 'flex-start' }
               }}
             >
-              <TextField
-                fullWidth
-                label="Buscar"
-                name="busqueda"
-                value={filtros.busqueda}
-                onChange={(e) => setFiltros(prev => ({ ...prev, busqueda: e.target.value }))}
-                placeholder="Buscar por nombre del elemento..."
+              <Grid 
+              //@ts-ignore
+                item 
+                xs={12} 
+                md={3} 
+                component="div"
                 sx={{
-                  maxWidth: { xs: '100%', sm: 'none' },
-                  '& .MuiOutlinedInput-root': {
-                    backgroundColor: 'var(--color-input-bg)',
-                    '& fieldset': {
-                      borderColor: 'var(--color-input-border)',
-                    },
-                    '&:hover fieldset': {
-                      borderColor: 'var(--gold)',
-                    },
-                    '&.Mui-focused fieldset': {
-                      borderColor: 'var(--gold)',
-                    },
-                  },
-                  '& .MuiInputLabel-root': {
-                    color: 'var(--color-text)',
-                    fontFamily: '"Nunito Sans", sans-serif',
-                    fontSize: { xs: '0.9rem', sm: '1rem' },
-                    '&.Mui-focused': {
-                      color: 'var(--gold)',
-                    },
-                  },
-                  '& .MuiInputBase-input': {
-                    fontFamily: '"Nunito Sans", sans-serif',
-                    color: 'var(--color-text)',
-                    fontSize: { xs: '0.9rem', sm: '1rem' }
-                  }
+                  display: 'flex',
+                  justifyContent: { xs: 'center', sm: 'flex-start' },
+                  maxWidth: { xs: '100%', sm: 'none' }
                 }}
-              />
-            </Grid>
-            
-            <Grid
-            //@ts-ignore
-              item 
-              xs={12} 
-              md={3} 
-              component="div"
-              sx={{
-                display: 'flex',
-                justifyContent: { xs: 'center', sm: 'flex-start' },
-                maxWidth: { xs: '100%', sm: 'none' }
-              }}
-            >
-              <FormControl fullWidth sx={{ maxWidth: { xs: '100%', sm: 'none' } }}>
-                <InputLabel 
-                  sx={{ 
-                    fontFamily: '"Nunito Sans", sans-serif',
-                    color: 'var(--color-text)',
-                    fontSize: { xs: '0.9rem', sm: '1rem' },
-                    '&.Mui-focused': {
-                      color: 'var(--gold)',
-                    }
-                  }}
-                >
-                  Categoría
-                </InputLabel>
-                <Select
-                  name="categoria"
-                  value={filtros.categoria}
-                  onChange={handleFiltroChange}
-                  label="Categoría"
+              >
+                <TextField
+                  fullWidth
+                  label="Buscar"
+                  name="busqueda"
+                  value={filtros.busqueda}
+                  onChange={(e) => setFiltros(prev => ({ ...prev, busqueda: e.target.value }))}
+                  placeholder="Buscar por nombre del elemento..."
                   sx={{
-                    backgroundColor: 'var(--color-input-bg)',
-                    '& .MuiOutlinedInput-notchedOutline': {
-                      borderColor: 'var(--color-input-border)',
-                    },
-                    '&:hover .MuiOutlinedInput-notchedOutline': {
-                      borderColor: 'var(--gold)',
-                    },
-                    '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                      borderColor: 'var(--gold)',
+                    maxWidth: { xs: '100%', sm: 'none' },
+                    '& .MuiOutlinedInput-root': {
+                      backgroundColor: 'var(--color-input-bg)',
+                      '& fieldset': {
+                        borderColor: 'var(--color-input-border)',
+                      },
+                      '&:hover fieldset': {
+                        borderColor: 'var(--gold)',
+                      },
+                      '&.Mui-focused fieldset': {
+                        borderColor: 'var(--gold)',
+                      },
                     },
                     '& .MuiInputLabel-root': {
                       color: 'var(--color-text)',
                       fontFamily: '"Nunito Sans", sans-serif',
                       fontSize: { xs: '0.9rem', sm: '1rem' },
+                      '&.Mui-focused': {
+                        color: 'var(--gold)',
+                      },
                     },
-                    '& .MuiSelect-select': {
+                    '& .MuiInputBase-input': {
+                      fontFamily: '"Nunito Sans", sans-serif',
+                      color: 'var(--color-text)',
+                      fontSize: { xs: '0.9rem', sm: '1rem' }
+                    }
+                  }}
+                />
+              </Grid>
+              
+              <Grid
+              //@ts-ignore
+                item 
+                xs={12} 
+                md={3} 
+                component="div"
+                sx={{
+                  display: 'flex',
+                  justifyContent: { xs: 'center', sm: 'flex-start' },
+                  maxWidth: { xs: '100%', sm: 'none' }
+                }}
+              >
+                <FormControl fullWidth sx={{ maxWidth: { xs: '100%', sm: 'none' } }}>
+                  <InputLabel 
+                    sx={{ 
                       fontFamily: '"Nunito Sans", sans-serif',
                       color: 'var(--color-text)',
                       fontSize: { xs: '0.9rem', sm: '1rem' },
-                      minWidth: { xs: '100px', sm: '120px' }
-                    },
-                    '& .MuiSelect-icon': {
-                      color: 'var(--gold)',
-                    }
-                  }}
-                >
-                  <MenuItem value="" sx={{ 
-                    fontFamily: '"Nunito Sans", sans-serif',
-                    color: 'var(--color-text)',
-                    backgroundColor: 'var(--color-input-bg)',
-                    '&:hover': {
-                      backgroundColor: 'var(--color-background2)',
-                    }
-                  }}>
-                    Todas las categorías
-                  </MenuItem>
-                  {categorias.map(categoria => (
-                    <MenuItem 
-                      key={categoria.id_categoria} 
-                      value={categoria.id_categoria}
-                      sx={{ 
+                      '&.Mui-focused': {
+                        color: 'var(--gold)',
+                      }
+                    }}
+                  >
+                    Categoría
+                  </InputLabel>
+                  <Select
+                    name="categoria"
+                    value={filtros.categoria}
+                    onChange={(e) => setFiltros(prev => ({
+                      ...prev,
+                      categoria: e.target.value,
+                      ...(e.target.value === '' && { subcategoria: '' })
+                    }))}
+                    label="Categoría"
+                    sx={{
+                      backgroundColor: 'var(--color-input-bg)',
+                      '& .MuiOutlinedInput-notchedOutline': {
+                        borderColor: 'var(--color-input-border)',
+                      },
+                      '&:hover .MuiOutlinedInput-notchedOutline': {
+                        borderColor: 'var(--gold)',
+                      },
+                      '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                        borderColor: 'var(--gold)',
+                      },
+                      '& .MuiInputLabel-root': {
+                        color: 'var(--color-text)',
+                        fontFamily: '"Nunito Sans", sans-serif',
+                        fontSize: { xs: '0.9rem', sm: '1rem' },
+                      },
+                      '& .MuiSelect-select': {
                         fontFamily: '"Nunito Sans", sans-serif',
                         color: 'var(--color-text)',
-                        backgroundColor: 'var(--color-input-bg)',
-                        '&:hover': {
-                          backgroundColor: 'var(--color-background2)',
-                        }
-                      }}
-                    >
-                      {categoria.nombre_categoria}
+                        fontSize: { xs: '0.9rem', sm: '1rem' },
+                        minWidth: { xs: '100px', sm: '120px' }
+                      },
+                      '& .MuiSelect-icon': {
+                        color: 'var(--gold)',
+                      }
+                    }}
+                  >
+                    <MenuItem value="" sx={{ 
+                      fontFamily: '"Nunito Sans", sans-serif',
+                      color: 'var(--color-text)',
+                      backgroundColor: 'var(--color-input-bg)',
+                      '&:hover': {
+                        backgroundColor: 'var(--color-background2)',
+                      }
+                    }}>
+                      Todas las categorías
                     </MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
-            </Grid>
-            
-            <Grid 
-            //@ts-ignore
-              item 
-              xs={12} 
-              md={3} 
-              component="div"
-              sx={{
-                display: 'flex',
-                justifyContent: { xs: 'center', sm: 'flex-start' },
-                maxWidth: { xs: '100%', sm: 'none' }
-              }}
-            >
-              <FormControl fullWidth sx={{ maxWidth: { xs: '100%', sm: 'none' } }}>
-                <InputLabel 
-                  sx={{
-                    fontFamily: '"Nunito Sans", sans-serif',
-                    color: 'var(--color-text)',
-                    fontSize: { xs: '0.9rem', sm: '1rem' },
-                    '&.Mui-focused': {
-                      color: 'var(--gold)',
-                    }
-                  }}
-                >
-                  Color
-                </InputLabel>
-                <Select
-                  name="color"
-                  value={filtros.color}
-                  onChange={handleFiltroChange}
-                  label="Color"
-                  sx={{
-                    backgroundColor: 'var(--color-input-bg)',
-                    '& .MuiOutlinedInput-notchedOutline': {
-                      borderColor: 'var(--color-input-border)',
-                    },
-                    '&:hover .MuiOutlinedInput-notchedOutline': {
-                      borderColor: 'var(--gold)',
-                    },
-                    '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                      borderColor: 'var(--gold)',
-                    },
-                    '& .MuiInputLabel-root': {
-                      color: 'var(--color-text)',
-                      fontFamily: '"Nunito Sans", sans-serif',
-                      fontSize: { xs: '0.9rem', sm: '1rem' },
-                    },
-                    '& .MuiSelect-select': {
+                    {categorias.map(categoria => (
+                      <MenuItem 
+                        key={categoria.id_categoria} 
+                        value={categoria.id_categoria}
+                        sx={{ 
+                          fontFamily: '"Nunito Sans", sans-serif',
+                          color: 'var(--color-text)',
+                          backgroundColor: 'var(--color-input-bg)',
+                          '&:hover': {
+                            backgroundColor: 'var(--color-background2)',
+                          }
+                        }}
+                      >
+                        {categoria.nombre_categoria}
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+              </Grid>
+              
+              <Grid 
+              //@ts-ignore
+                item 
+                xs={12} 
+                md={3} 
+                component="div"
+                sx={{
+                  display: 'flex',
+                  justifyContent: { xs: 'center', sm: 'flex-start' },
+                  maxWidth: { xs: '100%', sm: 'none' }
+                }}
+              >
+                <FormControl fullWidth sx={{ maxWidth: { xs: '100%', sm: 'none' } }}>
+                  <InputLabel 
+                    sx={{
                       fontFamily: '"Nunito Sans", sans-serif',
                       color: 'var(--color-text)',
                       fontSize: { xs: '0.9rem', sm: '1rem' },
-                      minWidth: { xs: '100px', sm: '120px' }
-                    },
-                    '& .MuiSelect-icon': {
-                      color: 'var(--gold)',
-                    }
-                  }}
-                >
-                  <MenuItem value="" sx={{ 
-                    fontFamily: '"Nunito Sans", sans-serif',
-                    color: 'var(--color-text)',
-                    backgroundColor: 'var(--color-input-bg)',
-                    '&:hover': {
-                      backgroundColor: 'var(--color-background2)',
-                    }
-                  }}>
-                    Todos los colores
-                  </MenuItem>
-                  {colores.map(color => (
-                    <MenuItem 
-                      key={color.id_color} 
-                      value={color.id_color}
-                      sx={{ 
+                      '&.Mui-focused': {
+                        color: 'var(--gold)',
+                      }
+                    }}
+                  >
+                    Color
+                  </InputLabel>
+                  <Select
+                    name="color"
+                    value={filtros.color}
+                    onChange={(e) => setFiltros(prev => ({
+                      ...prev,
+                      color: e.target.value,
+                      ...(e.target.value === '' && { subcategoria: '' })
+                    }))}
+                    label="Color"
+                    sx={{
+                      backgroundColor: 'var(--color-input-bg)',
+                      '& .MuiOutlinedInput-notchedOutline': {
+                        borderColor: 'var(--color-input-border)',
+                      },
+                      '&:hover .MuiOutlinedInput-notchedOutline': {
+                        borderColor: 'var(--gold)',
+                      },
+                      '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                        borderColor: 'var(--gold)',
+                      },
+                      '& .MuiInputLabel-root': {
+                        color: 'var(--color-text)',
+                        fontFamily: '"Nunito Sans", sans-serif',
+                        fontSize: { xs: '0.9rem', sm: '1rem' },
+                      },
+                      '& .MuiSelect-select': {
                         fontFamily: '"Nunito Sans", sans-serif',
                         color: 'var(--color-text)',
-                        backgroundColor: 'var(--color-input-bg)',
-                        '&:hover': {
-                          backgroundColor: 'var(--color-background2)',
-                        }
-                      }}
-                    >
-                      {color.nombre_color}
+                        fontSize: { xs: '0.9rem', sm: '1rem' },
+                        minWidth: { xs: '100px', sm: '120px' }
+                      },
+                      '& .MuiSelect-icon': {
+                        color: 'var(--gold)',
+                      }
+                    }}
+                  >
+                    <MenuItem value="" sx={{ 
+                      fontFamily: '"Nunito Sans", sans-serif',
+                      color: 'var(--color-text)',
+                      backgroundColor: 'var(--color-input-bg)',
+                      '&:hover': {
+                        backgroundColor: 'var(--color-background2)',
+                      }
+                    }}>
+                      Todos los colores
                     </MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
-            </Grid>
-            
-            <Grid 
-            //@ts-ignore
-              item 
-              xs={12} 
-              md={3} 
-              component="div"
-              sx={{
-                display: 'flex',
-                justifyContent: { xs: 'center', sm: 'flex-start' },
-                maxWidth: { xs: '100%', sm: 'none' }
-              }}
-            >
-              <FormControl fullWidth sx={{ maxWidth: { xs: '100%', sm: 'none' } }}>
-                <InputLabel 
-                  sx={{
-                    fontFamily: '"Nunito Sans", sans-serif',
-                    color: 'var(--color-text)',
-                    fontSize: { xs: '0.9rem', sm: '1rem' },
-                    '&.Mui-focused': {
-                      color: 'var(--gold)',
-                    }
-                  }}
-                >
-                  Material
-                </InputLabel>
-                <Select
-                  name="material"
-                  value={filtros.material}
-                  onChange={handleFiltroChange}
-                  label="Material"
-                  sx={{
-                    backgroundColor: 'var(--color-input-bg)',
-                    '& .MuiOutlinedInput-notchedOutline': {
-                      borderColor: 'var(--color-input-border)',
-                    },
-                    '&:hover .MuiOutlinedInput-notchedOutline': {
-                      borderColor: 'var(--gold)',
-                    },
-                    '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                      borderColor: 'var(--gold)',
-                    },
-                    '& .MuiInputLabel-root': {
-                      color: 'var(--color-text)',
-                      fontFamily: '"Nunito Sans", sans-serif',
-                      fontSize: { xs: '0.9rem', sm: '1rem' },
-                    },
-                    '& .MuiSelect-select': {
+                    {colores.map(color => (
+                      <MenuItem 
+                        key={color.id_color} 
+                        value={color.id_color}
+                        sx={{ 
+                          fontFamily: '"Nunito Sans", sans-serif',
+                          color: 'var(--color-text)',
+                          backgroundColor: 'var(--color-input-bg)',
+                          '&:hover': {
+                            backgroundColor: 'var(--color-background2)',
+                          }
+                        }}
+                      >
+                        {color.nombre_color}
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+              </Grid>
+              
+              <Grid 
+              //@ts-ignore
+                item 
+                xs={12} 
+                md={3} 
+                component="div"
+                sx={{
+                  display: 'flex',
+                  justifyContent: { xs: 'center', sm: 'flex-start' },
+                  maxWidth: { xs: '100%', sm: 'none' }
+                }}
+              >
+                <FormControl fullWidth sx={{ maxWidth: { xs: '100%', sm: 'none' } }}>
+                  <InputLabel 
+                    sx={{
                       fontFamily: '"Nunito Sans", sans-serif',
                       color: 'var(--color-text)',
                       fontSize: { xs: '0.9rem', sm: '1rem' },
-                      minWidth: { xs: '100px', sm: '120px' }
-                    },
-                    '& .MuiSelect-icon': {
-                      color: 'var(--gold)',
-                    }
-                  }}
-                >
-                  <MenuItem value="" sx={{ 
-                    fontFamily: '"Nunito Sans", sans-serif',
-                    color: 'var(--color-text)',
-                    backgroundColor: 'var(--color-input-bg)',
-                    '&:hover': {
-                      backgroundColor: 'var(--color-background2)',
-                    }
-                  }}>
-                    Todos los materiales
-                  </MenuItem>
-                  {materiales.map(material => (
-                    <MenuItem 
-                      key={material.id_material} 
-                      value={material.id_material}
-                      sx={{ 
+                      '&.Mui-focused': {
+                        color: 'var(--gold)',
+                      }
+                    }}
+                  >
+                    Material
+                  </InputLabel>
+                  <Select
+                    name="material"
+                    value={filtros.material}
+                    onChange={(e) => setFiltros(prev => ({
+                      ...prev,
+                      material: e.target.value,
+                      ...(e.target.value === '' && { subcategoria: '' })
+                    }))}
+                    label="Material"
+                    sx={{
+                      backgroundColor: 'var(--color-input-bg)',
+                      '& .MuiOutlinedInput-notchedOutline': {
+                        borderColor: 'var(--color-input-border)',
+                      },
+                      '&:hover .MuiOutlinedInput-notchedOutline': {
+                        borderColor: 'var(--gold)',
+                      },
+                      '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                        borderColor: 'var(--gold)',
+                      },
+                      '& .MuiInputLabel-root': {
+                        color: 'var(--color-text)',
+                        fontFamily: '"Nunito Sans", sans-serif',
+                        fontSize: { xs: '0.9rem', sm: '1rem' },
+                      },
+                      '& .MuiSelect-select': {
                         fontFamily: '"Nunito Sans", sans-serif',
                         color: 'var(--color-text)',
-                        backgroundColor: 'var(--color-input-bg)',
-                        '&:hover': {
-                          backgroundColor: 'var(--color-background2)',
-                        }
-                      }}
-                    >
-                      {material.nombre_material}
+                        fontSize: { xs: '0.9rem', sm: '1rem' },
+                        minWidth: { xs: '100px', sm: '120px' }
+                      },
+                      '& .MuiSelect-icon': {
+                        color: 'var(--gold)',
+                      }
+                    }}
+                  >
+                    <MenuItem value="" sx={{ 
+                      fontFamily: '"Nunito Sans", sans-serif',
+                      color: 'var(--color-text)',
+                      backgroundColor: 'var(--color-input-bg)',
+                      '&:hover': {
+                        backgroundColor: 'var(--color-background2)',
+                      }
+                    }}>
+                      Todos los materiales
                     </MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
+                    {materiales.map(material => (
+                      <MenuItem 
+                        key={material.id_material} 
+                        value={material.id_material}
+                        sx={{ 
+                          fontFamily: '"Nunito Sans", sans-serif',
+                          color: 'var(--color-text)',
+                          backgroundColor: 'var(--color-input-bg)',
+                          '&:hover': {
+                            backgroundColor: 'var(--color-background2)',
+                          }
+                        }}
+                      >
+                        {material.nombre_material}
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+              </Grid>
             </Grid>
-          </Grid>
+          )}
 
           <Suspense fallback={
             <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
               <CircularProgress sx={{ color: 'var(--gold)' }} />
             </Box>
           }>
-            <Grid container spacing={{ xs: 2, sm: 3, md: 4 }} sx={{
+            <Box sx={{
               display: 'grid',
               gridTemplateColumns: {
                 xs: 'repeat(1, 1fr)',
                 sm: 'repeat(2, 1fr)',
-                md: 'repeat(auto-fill, minmax(280px, 1fr))',
+                md: 'repeat(3, 1fr)',
+                lg: 'repeat(3, 1fr)'
               },
-              '@media (max-width: 720px)': {
-                gridTemplateColumns: 'repeat(1, 1fr)',
-              },
-              justifyContent: 'center',
+              gap: { xs: 2, sm: 2, md: 3 },
+              width: '100%',
+              maxWidth: '100%',
+              margin: '0 auto',
+              padding: { xs: 1, sm: 2 }
             }}>
-              {paginatedElements.map((elemento: Elemento) => (
-                <Grid 
-                  key={`${elemento.id_elemento}-${elemento.color.id_color}`} 
-                  item
-                  component="div"
+              {elementos.map((elemento: Elemento) => (
+                <Box
+                  key={`${elemento.id_elemento}-${elemento.color.id_color}`}
                   sx={{
                     display: 'flex',
                     justifyContent: 'center',
-                    minWidth: '280px',
-                    maxWidth: '100%'
+                    width: '100%'
                   }}
                 >
                   <Card sx={{ 
                     height: '100%',
+                    width: '100%',
+                    maxWidth: '400px',
                     display: 'flex',
                     flexDirection: 'column',
                     backgroundColor: 'var(--color-background)',
@@ -789,10 +801,11 @@ const Catalog = () => {
                     }
                   }}>
                     <CardContent sx={{ 
-                      p: { xs: 1.5, sm: 3 },
+                      p: { xs: 1.5, sm: 2 },
                       display: 'flex',
                       flexDirection: 'column',
-                      gap: { xs: 1, sm: 1.5 }
+                      gap: { xs: 1, sm: 1.5 },
+                      height: '100%'
                     }}>
                       {elemento.imagen_url && (
                         <Box sx={{ mb: 2 }}>
@@ -986,7 +999,7 @@ const Catalog = () => {
                             }
                           }}
                           disabled={elemento.cantidad_disponible === 0}
-                          onClick={() => agregarAlCarrito(elemento)}
+                          onClick={() => handleAddToCart(elemento)}
                         >
                           {elemento.cantidad_disponible === 0 ? 'No disponible' : 'Agregar al carrito'}
                         </Button>
@@ -1011,13 +1024,13 @@ const Catalog = () => {
                       )}
                     </CardContent>
                   </Card>
-                </Grid>
+                </Box>
               ))}
-            </Grid>
+            </Box>
           </Suspense>
 
           {/* Pagination Controls */}
-          {filteredElements.length > itemsPerPage && (
+          {elementos.length > itemsPerPage && (
             <Box sx={{ 
               display: 'flex', 
               justifyContent: 'center', 
@@ -1046,13 +1059,13 @@ const Catalog = () => {
                 fontFamily: '"Nunito Sans", sans-serif',
                 color: 'var(--color-text)'
               }}>
-                Página {currentPage} de {totalPages}
+                Página {currentPage} de {Math.ceil(elementos.length / itemsPerPage)}
               </Typography>
               
               <Button
                 variant="outlined"
-                onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
-                disabled={currentPage === totalPages}
+                onClick={() => setCurrentPage(prev => Math.min(prev + 1, Math.ceil(elementos.length / itemsPerPage)))}
+                disabled={currentPage === Math.ceil(elementos.length / itemsPerPage)}
                 sx={{
                   borderColor: 'var(--gold)',
                   color: 'var(--gold)',
@@ -1206,7 +1219,7 @@ const Catalog = () => {
                     }}>
                       <IconButton
                         size="small"
-                        onClick={() => actualizarCantidad(item.id_elemento, item.cantidad - 1)}
+                        onClick={() => handleCantidadChange(item.id_elemento, item.cantidad - 1)}
                         sx={{ color: 'var(--gold)' }}
                       >
                         <RemoveIcon />
@@ -1224,7 +1237,7 @@ const Catalog = () => {
                       </Typography>
                       <IconButton
                         size="small"
-                        onClick={() => actualizarCantidad(item.id_elemento, item.cantidad + 1)}
+                        onClick={() => handleCantidadChange(item.id_elemento, item.cantidad + 1)}
                         sx={{ color: 'var(--gold)' }}
                       >
                         <AddIcon />
@@ -1306,7 +1319,7 @@ const Catalog = () => {
                   <Button
                     variant="contained"
                     fullWidth
-                    onClick={procederAlPago}
+                    onClick={handleComprar}
                     disabled={carrito.length === 0}
                     sx={{
                       backgroundColor: 'var(--gold)',
@@ -1340,6 +1353,506 @@ const Catalog = () => {
               </Box>
             </Box>
           </Drawer>
+
+          <Dialog
+            open={showAlquilerModal}
+            onClose={() => setShowAlquilerModal(false)}
+            maxWidth="md"
+            fullWidth
+            PaperProps={{
+              sx: {
+                backgroundColor: 'var(--color-background)',
+                color: 'var(--color-text)',
+                borderRadius: 2,
+                p: { xs: 2, sm: 3 }
+              }
+            }}
+          >
+            <DialogTitle sx={{ 
+              fontFamily: '"Montserrat Alternates", cursive',
+              fontWeight: 800,
+              color: 'var(--gold)',
+              fontSize: { xs: '1.2rem', sm: '1.5rem' }
+            }}>
+              Confirmar Alquiler
+            </DialogTitle>
+            <DialogContent>
+              <TableContainer component={Paper} sx={{ mt: 2 }}>
+                <Table>
+                  <TableHead>
+                    <TableRow>
+                      <TableCell sx={{ fontFamily: '"Montserrat Alternates", cursive', fontWeight: 600 }}>Elemento</TableCell>
+                      <TableCell sx={{ fontFamily: '"Montserrat Alternates", cursive', fontWeight: 600 }}>Cantidad</TableCell>
+                      <TableCell sx={{ fontFamily: '"Montserrat Alternates", cursive', fontWeight: 600 }}>Precio Unitario</TableCell>
+                      <TableCell sx={{ fontFamily: '"Montserrat Alternates", cursive', fontWeight: 600 }}>Subtotal</TableCell>
+                    </TableRow>
+                  </TableHead>
+                  <TableBody>
+                    {carrito.map((item) => (
+                      <TableRow key={item.id_elemento}>
+                        <TableCell>{item.nombre_elemento}</TableCell>
+                        <TableCell>{item.cantidad}</TableCell>
+                        <TableCell>${item.precio_elemento}</TableCell>
+                        <TableCell>${(item.precio_elemento * item.cantidad).toFixed(2)}</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </TableContainer>
+              <Typography 
+                variant="h6" 
+                sx={{ 
+                  mt: 3,
+                  fontFamily: '"Montserrat Alternates", cursive',
+                  fontWeight: 800,
+                  color: 'var(--gold)'
+                }}
+              >
+                Total: ${calcularTotal().toFixed(2)}
+              </Typography>
+            </DialogContent>
+            <DialogActions sx={{ p: 3 }}>
+              <Button
+                onClick={() => setShowAlquilerModal(false)}
+                sx={{
+                  color: 'var(--error)',
+                  fontFamily: '"Montserrat Alternates", cursive',
+                  fontWeight: 600
+                }}
+              >
+                Cancelar
+              </Button>
+              <Button
+                onClick={() => {
+                  if (onComprarCarrito) {
+                    onComprarCarrito(carrito);
+                  }
+                  setShowAlquilerModal(false);
+                  setCarrito([]);
+                  setNotificacion({
+                    abierta: true,
+                    mensaje: 'Alquiler confirmado',
+                    tipo: 'success'
+                  });
+                }}
+                variant="contained"
+                sx={{
+                  backgroundColor: 'var(--gold)',
+                  fontFamily: '"Montserrat Alternates", cursive',
+                  fontWeight: 800,
+                  '&:hover': {
+                    backgroundColor: 'var(--dark-gold)'
+                  }
+                }}
+              >
+                Confirmar Alquiler
+              </Button>
+            </DialogActions>
+          </Dialog>
+
+          <Dialog
+            open={showEventoModal}
+            onClose={() => setShowEventoModal(false)}
+            maxWidth="md"
+            fullWidth
+            PaperProps={{
+              sx: {
+                backgroundColor: 'var(--color-background)',
+                color: 'var(--color-text)',
+                borderRadius: 2,
+                p: { xs: 2, sm: 3 }
+              }
+            }}
+          >
+            <DialogTitle sx={{ 
+              fontFamily: '"Montserrat Alternates", cursive',
+              fontWeight: 800,
+              color: 'var(--gold)',
+              fontSize: { xs: '1.2rem', sm: '1.5rem' }
+            }}>
+              Seleccionar Evento
+            </DialogTitle>
+            <DialogContent>
+              <Box sx={{ mb: 3, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <TextField
+                  label="ID del Evento"
+                  type="number"
+                  value={selectedEventoId}
+                  onChange={(e) => setSelectedEventoId(e.target.value)}
+                  sx={{
+                    width: '200px',
+                    '& .MuiOutlinedInput-root': {
+                      '& fieldset': {
+                        borderColor: 'var(--color-input-border)',
+                      },
+                      '&:hover fieldset': {
+                        borderColor: 'var(--gold)',
+                      },
+                      '&.Mui-focused fieldset': {
+                        borderColor: 'var(--gold)',
+                      },
+                    },
+                    '& .MuiInputLabel-root': {
+                      color: 'var(--color-text)',
+                      '&.Mui-focused': {
+                        color: 'var(--gold)',
+                      },
+                    },
+                  }}
+                />
+                <Button
+                  variant="contained"
+                  onClick={() => setShowNuevoEventoModal(true)}
+                  sx={{
+                    backgroundColor: 'var(--gold)',
+                    fontFamily: '"Montserrat Alternates", cursive',
+                    fontWeight: 800,
+                    '&:hover': {
+                      backgroundColor: 'var(--dark-gold)'
+                    }
+                  }}
+                >
+                  Agregar Nuevo Evento
+                </Button>
+              </Box>
+
+              <TableContainer component={Paper} sx={{ mt: 2 }}>
+                <Table>
+                  <TableHead>
+                    <TableRow>
+                      <TableCell sx={{ fontFamily: '"Montserrat Alternates", cursive', fontWeight: 600 }}>ID</TableCell>
+                      <TableCell sx={{ fontFamily: '"Montserrat Alternates", cursive', fontWeight: 600 }}>Nombre</TableCell>
+                      <TableCell sx={{ fontFamily: '"Montserrat Alternates", cursive', fontWeight: 600 }}>Fecha</TableCell>
+                      <TableCell sx={{ fontFamily: '"Montserrat Alternates", cursive', fontWeight: 600 }}>Lugar</TableCell>
+                      <TableCell sx={{ fontFamily: '"Montserrat Alternates", cursive', fontWeight: 600 }}>Acciones</TableCell>
+                    </TableRow>
+                  </TableHead>
+                  <TableBody>
+                    {eventos.map((evento: any) => (
+                      <TableRow key={evento.id_evento}>
+                        <TableCell>{evento.id_evento}</TableCell>
+                        <TableCell>{evento.nombre_evento}</TableCell>
+                        <TableCell>{new Date(evento.fecha_evento).toLocaleDateString()}</TableCell>
+                        <TableCell>{evento.lugar_evento}</TableCell>
+                        <TableCell>
+                          <Button
+                            variant="contained"
+                            size="small"
+                            onClick={() => {
+                              setSelectedEventoId(evento.id_evento.toString());
+                              setShowEventoModal(false);
+                              setShowAlquilerModal(true);
+                            }}
+                            sx={{
+                              backgroundColor: 'var(--gold)',
+                              fontFamily: '"Montserrat Alternates", cursive',
+                              fontWeight: 600,
+                              '&:hover': {
+                                backgroundColor: 'var(--dark-gold)'
+                              }
+                            }}
+                          >
+                            Seleccionar
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </TableContainer>
+
+              {/* Resumen de elementos seleccionados */}
+              <Box sx={{ mt: 4 }}>
+                <Typography 
+                  variant="h6" 
+                  sx={{ 
+                    fontFamily: '"Montserrat Alternates", cursive',
+                    fontWeight: 800,
+                    color: 'var(--gold)',
+                    mb: 2
+                  }}
+                >
+                  Resumen de Elementos Seleccionados
+                </Typography>
+                <TableContainer component={Paper}>
+                  <Table>
+                    <TableHead>
+                      <TableRow>
+                        <TableCell sx={{ fontFamily: '"Montserrat Alternates", cursive', fontWeight: 600 }}>Elemento</TableCell>
+                        <TableCell sx={{ fontFamily: '"Montserrat Alternates", cursive', fontWeight: 600 }}>Cantidad</TableCell>
+                        <TableCell sx={{ fontFamily: '"Montserrat Alternates", cursive', fontWeight: 600 }}>Precio Unitario</TableCell>
+                        <TableCell sx={{ fontFamily: '"Montserrat Alternates", cursive', fontWeight: 600 }}>Subtotal</TableCell>
+                      </TableRow>
+                    </TableHead>
+                    <TableBody>
+                      {carrito.map((item) => (
+                        <TableRow key={item.id_elemento}>
+                          <TableCell>{item.nombre_elemento}</TableCell>
+                          <TableCell>{item.cantidad}</TableCell>
+                          <TableCell>${item.precio_elemento}</TableCell>
+                          <TableCell>${(item.precio_elemento * item.cantidad).toFixed(2)}</TableCell>
+                        </TableRow>
+                      ))}
+                      <TableRow>
+                        <TableCell colSpan={3} align="right" sx={{ fontWeight: 'bold' }}>Total:</TableCell>
+                        <TableCell sx={{ fontWeight: 'bold' }}>${calcularTotal().toFixed(2)}</TableCell>
+                      </TableRow>
+                    </TableBody>
+                  </Table>
+                </TableContainer>
+              </Box>
+
+              <Box sx={{ mt: 3, display: 'flex', justifyContent: 'flex-end', gap: 2 }}>
+                <Button
+                  onClick={() => setShowEventoModal(false)}
+                  sx={{
+                    color: 'var(--error)',
+                    fontFamily: '"Montserrat Alternates", cursive',
+                    fontWeight: 600
+                  }}
+                >
+                  Cancelar
+                </Button>
+                <Button
+                  variant="contained"
+                  onClick={() => {
+                    if (selectedEventoId) {
+                      setShowEventoModal(false);
+                      setShowAlquilerModal(true);
+                    } else {
+                      setNotificacion({
+                        abierta: true,
+                        mensaje: 'Por favor, seleccione o ingrese un ID de evento',
+                        tipo: 'error'
+                      });
+                    }
+                  }}
+                  sx={{
+                    backgroundColor: 'var(--gold)',
+                    fontFamily: '"Montserrat Alternates", cursive',
+                    fontWeight: 800,
+                    '&:hover': {
+                      backgroundColor: 'var(--dark-gold)'
+                    }
+                  }}
+                >
+                  Continuar con Alquiler
+                </Button>
+              </Box>
+            </DialogContent>
+          </Dialog>
+
+          <Dialog
+            open={showNuevoEventoModal}
+            onClose={() => setShowNuevoEventoModal(false)}
+            maxWidth="sm"
+            fullWidth
+            PaperProps={{
+              sx: {
+                backgroundColor: 'var(--color-background)',
+                color: 'var(--color-text)',
+                borderRadius: 2,
+                p: { xs: 2, sm: 3 }
+              }
+            }}
+          >
+            <DialogTitle sx={{ 
+              fontFamily: '"Montserrat Alternates", cursive',
+              fontWeight: 800,
+              color: 'var(--gold)',
+              fontSize: { xs: '1.2rem', sm: '1.5rem' }
+            }}>
+              Nuevo Evento
+            </DialogTitle>
+            <DialogContent>
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 2 }}>
+                <TextField
+                  label="Nombre del Evento"
+                  value={nuevoEvento.nombre_evento}
+                  onChange={(e) => setNuevoEvento(prev => ({ ...prev, nombre_evento: e.target.value }))}
+                  fullWidth
+                  sx={{
+                    '& .MuiOutlinedInput-root': {
+                      '& fieldset': {
+                        borderColor: 'var(--color-input-border)',
+                      },
+                      '&:hover fieldset': {
+                        borderColor: 'var(--gold)',
+                      },
+                      '&.Mui-focused fieldset': {
+                        borderColor: 'var(--gold)',
+                      },
+                    },
+                    '& .MuiInputLabel-root': {
+                      color: 'var(--color-text)',
+                      '&.Mui-focused': {
+                        color: 'var(--gold)',
+                      },
+                    },
+                  }}
+                />
+                <TextField
+                  label="Fecha del Evento"
+                  type="date"
+                  value={nuevoEvento.fecha_evento}
+                  onChange={(e) => setNuevoEvento(prev => ({ ...prev, fecha_evento: e.target.value }))}
+                  fullWidth
+                  InputLabelProps={{ shrink: true }}
+                  sx={{
+                    '& .MuiOutlinedInput-root': {
+                      '& fieldset': {
+                        borderColor: 'var(--color-input-border)',
+                      },
+                      '&:hover fieldset': {
+                        borderColor: 'var(--gold)',
+                      },
+                      '&.Mui-focused fieldset': {
+                        borderColor: 'var(--gold)',
+                      },
+                    },
+                    '& .MuiInputLabel-root': {
+                      color: 'var(--color-text)',
+                      '&.Mui-focused': {
+                        color: 'var(--gold)',
+                      },
+                    },
+                  }}
+                />
+                <TextField
+                  label="Hora de Inicio"
+                  type="time"
+                  value={nuevoEvento.hora_inicio}
+                  onChange={(e) => setNuevoEvento(prev => ({ ...prev, hora_inicio: e.target.value }))}
+                  fullWidth
+                  InputLabelProps={{ shrink: true }}
+                  sx={{
+                    '& .MuiOutlinedInput-root': {
+                      '& fieldset': {
+                        borderColor: 'var(--color-input-border)',
+                      },
+                      '&:hover fieldset': {
+                        borderColor: 'var(--gold)',
+                      },
+                      '&.Mui-focused fieldset': {
+                        borderColor: 'var(--gold)',
+                      },
+                    },
+                    '& .MuiInputLabel-root': {
+                      color: 'var(--color-text)',
+                      '&.Mui-focused': {
+                        color: 'var(--gold)',
+                      },
+                    },
+                  }}
+                />
+                <TextField
+                  label="Hora de Fin"
+                  type="time"
+                  value={nuevoEvento.hora_fin}
+                  onChange={(e) => setNuevoEvento(prev => ({ ...prev, hora_fin: e.target.value }))}
+                  fullWidth
+                  InputLabelProps={{ shrink: true }}
+                  sx={{
+                    '& .MuiOutlinedInput-root': {
+                      '& fieldset': {
+                        borderColor: 'var(--color-input-border)',
+                      },
+                      '&:hover fieldset': {
+                        borderColor: 'var(--gold)',
+                      },
+                      '&.Mui-focused fieldset': {
+                        borderColor: 'var(--gold)',
+                      },
+                    },
+                    '& .MuiInputLabel-root': {
+                      color: 'var(--color-text)',
+                      '&.Mui-focused': {
+                        color: 'var(--gold)',
+                      },
+                    },
+                  }}
+                />
+                <TextField
+                  label="Lugar del Evento"
+                  value={nuevoEvento.lugar_evento}
+                  onChange={(e) => setNuevoEvento(prev => ({ ...prev, lugar_evento: e.target.value }))}
+                  fullWidth
+                  sx={{
+                    '& .MuiOutlinedInput-root': {
+                      '& fieldset': {
+                        borderColor: 'var(--color-input-border)',
+                      },
+                      '&:hover fieldset': {
+                        borderColor: 'var(--gold)',
+                      },
+                      '&.Mui-focused fieldset': {
+                        borderColor: 'var(--gold)',
+                      },
+                    },
+                    '& .MuiInputLabel-root': {
+                      color: 'var(--color-text)',
+                      '&.Mui-focused': {
+                        color: 'var(--gold)',
+                      },
+                    },
+                  }}
+                />
+                <TextField
+                  label="Descripción"
+                  value={nuevoEvento.descripcion}
+                  onChange={(e) => setNuevoEvento(prev => ({ ...prev, descripcion: e.target.value }))}
+                  fullWidth
+                  multiline
+                  rows={4}
+                  sx={{
+                    '& .MuiOutlinedInput-root': {
+                      '& fieldset': {
+                        borderColor: 'var(--color-input-border)',
+                      },
+                      '&:hover fieldset': {
+                        borderColor: 'var(--gold)',
+                      },
+                      '&.Mui-focused fieldset': {
+                        borderColor: 'var(--gold)',
+                      },
+                    },
+                    '& .MuiInputLabel-root': {
+                      color: 'var(--color-text)',
+                      '&.Mui-focused': {
+                        color: 'var(--gold)',
+                      },
+                    },
+                  }}
+                />
+              </Box>
+            </DialogContent>
+            <DialogActions sx={{ p: 3 }}>
+              <Button
+                onClick={() => setShowNuevoEventoModal(false)}
+                sx={{
+                  color: 'var(--error)',
+                  fontFamily: '"Montserrat Alternates", cursive',
+                  fontWeight: 600
+                }}
+              >
+                Cancelar
+              </Button>
+              <Button
+                onClick={handleNuevoEvento}
+                variant="contained"
+                sx={{
+                  backgroundColor: 'var(--gold)',
+                  fontFamily: '"Montserrat Alternates", cursive',
+                  fontWeight: 800,
+                  '&:hover': {
+                    backgroundColor: 'var(--dark-gold)'
+                  }
+                }}
+              >
+                Crear Evento
+              </Button>
+            </DialogActions>
+          </Dialog>
 
           <Snackbar
             open={notificacion.abierta}
