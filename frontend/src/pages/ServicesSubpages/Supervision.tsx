@@ -29,12 +29,44 @@ interface SupervisionStats {
   supervisionesCompletadas: number;
 }
 
+interface EventoSupervisado {
+  id_evento: number;
+  nombre_evento: string;
+  cliente: string;
+  lugar: string;
+  hora_inicio: string;
+  hora_fin: string;
+}
+
+interface EmpleadoSupervision {
+  id_empleado: number;
+  nombre: string;
+  cantidad_eventos: number;
+  cantidad_clientes: number;
+}
+
+interface SupervisionCompletada {
+  id_supervision: number;
+  evento: string;
+  cliente: string;
+  cantidad_empleados: number;
+  fecha: string;
+  hora_inicio: string;
+  hora_fin: string;
+}
+
 export default function Supervision() {
   const { userRole } = useUser();
   const userData = JSON.parse(localStorage.getItem('userData') || '{}');
   const [showModal, setShowModal] = useState(false);
+  const [showEventosModal, setShowEventosModal] = useState(false);
+  const [showEmpleadosModal, setShowEmpleadosModal] = useState(false);
+  const [showCompletadasModal, setShowCompletadasModal] = useState(false);
   const [supervisions, setSupervisions] = useState<Supervision[]>([]);
   const [eventos, setEventos] = useState<Evento[]>([]);
+  const [eventosSupervisados, setEventosSupervisados] = useState<EventoSupervisado[]>([]);
+  const [empleadosSupervision, setEmpleadosSupervision] = useState<EmpleadoSupervision[]>([]);
+  const [supervisionesCompletadas, setSupervisionesCompletadas] = useState<SupervisionCompletada[]>([]);
   const [stats, setStats] = useState<SupervisionStats>({
     eventosSupervisados: 0,
     empleadosEncargados: 0,
@@ -100,6 +132,48 @@ export default function Supervision() {
       window.location.href = '/Menu-Servicios/Bienvenida';
     }
   }, [userData.rol]);
+
+  useEffect(() => {
+    const fetchEventosSupervisados = async () => {
+      if (showEventosModal) {
+        try {
+          const response = await fetch('/api/supervision/eventos');
+          const data = await response.json();
+          setEventosSupervisados(data);
+        } catch (error) {
+          console.error('Error al cargar eventos supervisados:', error);
+        }
+      }
+    };
+
+    const fetchEmpleadosSupervision = async () => {
+      if (showEmpleadosModal) {
+        try {
+          const response = await fetch('/api/supervision/empleados');
+          const data = await response.json();
+          setEmpleadosSupervision(data);
+        } catch (error) {
+          console.error('Error al cargar empleados:', error);
+        }
+      }
+    };
+
+    const fetchSupervisionesCompletadas = async () => {
+      if (showCompletadasModal) {
+        try {
+          const response = await fetch('/api/supervision/completadas');
+          const data = await response.json();
+          setSupervisionesCompletadas(data);
+        } catch (error) {
+          console.error('Error al cargar supervisiones completadas:', error);
+        }
+      }
+    };
+
+    fetchEventosSupervisados();
+    fetchEmpleadosSupervision();
+    fetchSupervisionesCompletadas();
+  }, [showEventosModal, showEmpleadosModal, showCompletadasModal]);
 
   const handleInputChange = (e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
@@ -171,19 +245,34 @@ export default function Supervision() {
           <div className="stat-card">
             <span className="stat-card__label">Eventos Supervisados</span>
             <strong className="stat-card__number">{stats.eventosSupervisados}</strong>
-            <button className="stat-card__seeInfo">Ver eventos</button>
+            <button 
+              className="stat-card__seeInfo"
+              onClick={() => setShowEventosModal(true)}
+            >
+              Ver eventos
+            </button>
           </div>
 
           <div className="stat-card">
             <span className="stat-card__label">Empleados a Cargo</span>
             <strong className="stat-card__number">{stats.empleadosEncargados}</strong>
-            <button className="stat-card__seeInfo">Ver empleados</button>
+            <button 
+              className="stat-card__seeInfo"
+              onClick={() => setShowEmpleadosModal(true)}
+            >
+              Ver empleados
+            </button>
           </div>
 
           <div className="stat-card">
             <span className="stat-card__label">Supervisiones Completadas</span>
             <strong className="stat-card__number">{stats.supervisionesCompletadas}</strong>
-            <button className="stat-card__seeInfo">Ver completadas</button>
+            <button 
+              className="stat-card__seeInfo"
+              onClick={() => setShowCompletadasModal(true)}
+            >
+              Ver completadas
+            </button>
           </div>
         </div>
 
@@ -258,50 +347,55 @@ export default function Supervision() {
             <div className="modal-container">
               <button className="close-btn" onClick={() => setShowModal(false)}>×</button>
               <form className="modal-form" onSubmit={handleSubmit}>
-                <h2>{editId ? 'Editar Servicio' : 'Nuevo Servicio'}</h2>
+                <h3>{editId ? 'Editar Supervisión' : 'Nueva Supervisión'}</h3>
                 
                 <label>
                   Evento:
                   <select
                     name="id_evento"
-                    value={formData.id_evento || ''}
+                    value={formData.id_evento}
                     onChange={handleSelectChange}
                     required
                   >
                     <option value="">Seleccionar evento</option>
-                    {eventos.map((evento) => (
+                    {eventos.map(evento => (
                       <option key={evento.id_evento} value={evento.id_evento}>
-                        {evento.fecha_evento} - {evento.tipo_evento}
+                        {evento.tipo_evento} - {evento.fecha_evento}
                       </option>
                     ))}
                   </select>
                 </label>
 
                 <label>
-                  Tipo de Supervisión:
-                  <select
-                    name="tipo_supervision"
-                    value={formData.tipo_supervision || ''}
-                    onChange={handleSelectChange}
+                  Fecha:
+                  <input
+                    type="date"
+                    name="fecha"
+                    value={formData.fecha}
+                    onChange={handleInputChange}
                     required
-                  >
-                    <option value="">Seleccionar tipo</option>
-                    <option value="General">General</option>
-                    <option value="Seguridad">Seguridad</option>
-                    <option value="Logística">Logística</option>
-                    <option value="Calidad">Calidad</option>
-                    <option value="Otros">Otros</option>
-                  </select>
+                  />
                 </label>
 
                 <label>
-                  Descripción:
-                  <textarea
-                    name="descripcion"
-                    value={formData.descripcion || ''}
+                  Hora de inicio:
+                  <input
+                    type="time"
+                    name="hora_inicio"
+                    value={formData.hora_inicio}
                     onChange={handleInputChange}
                     required
-                    rows={4}
+                  />
+                </label>
+
+                <label>
+                  Hora de fin:
+                  <input
+                    type="time"
+                    name="hora_fin"
+                    value={formData.hora_fin}
+                    onChange={handleInputChange}
+                    required
                   />
                 </label>
 
@@ -309,16 +403,25 @@ export default function Supervision() {
                   Estado:
                   <select
                     name="estado"
-                    value={formData.estado || ''}
+                    value={formData.estado}
                     onChange={handleSelectChange}
                     required
                   >
-                    <option value="">Seleccionar estado</option>
                     <option value="Pendiente">Pendiente</option>
-                    <option value="En Progreso">En Progreso</option>
+                    <option value="En Proceso">En Proceso</option>
                     <option value="Completado">Completado</option>
                     <option value="Cancelado">Cancelado</option>
                   </select>
+                </label>
+
+                <label>
+                  Notas:
+                  <textarea
+                    name="notas"
+                    value={formData.notas}
+                    onChange={handleInputChange}
+                    rows={4}
+                  />
                 </label>
 
                 <div className="form-buttons">
@@ -328,7 +431,18 @@ export default function Supervision() {
                   <button
                     type="button"
                     className="reset-btn"
-                    onClick={() => setShowModal(false)}
+                    onClick={() => {
+                      setShowModal(false);
+                      setEditId(null);
+                      setFormData({
+                        id_evento: 0,
+                        fecha: '',
+                        hora_inicio: '',
+                        hora_fin: '',
+                        estado: 'Pendiente',
+                        notas: ''
+                      });
+                    }}
                   >
                     Cancelar
                   </button>
@@ -427,6 +541,109 @@ export default function Supervision() {
     </div>
   );
 
+  const renderEventosModal = () => (
+    <div className="modal-overlay">
+      <div className="modal-container">
+        <button className="close-btn" onClick={() => setShowEventosModal(false)}>×</button>
+        <div className="modal-content">
+          <h3>Eventos Supervisados</h3>
+          <div className="table-container">
+            <table>
+              <thead>
+                <tr>
+                  <th>Evento</th>
+                  <th>Cliente</th>
+                  <th>Lugar</th>
+                  <th>Hora Inicio</th>
+                  <th>Hora Fin</th>
+                </tr>
+              </thead>
+              <tbody>
+                {eventosSupervisados.map((evento) => (
+                  <tr key={evento.id_evento}>
+                    <td>{evento.nombre_evento}</td>
+                    <td>{evento.cliente}</td>
+                    <td>{evento.lugar}</td>
+                    <td>{evento.hora_inicio}</td>
+                    <td>{evento.hora_fin}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+
+  const renderEmpleadosModal = () => (
+    <div className="modal-overlay">
+      <div className="modal-container">
+        <button className="close-btn" onClick={() => setShowEmpleadosModal(false)}>×</button>
+        <div className="modal-content">
+          <h3>Empleados Encargados</h3>
+          <div className="table-container">
+            <table>
+              <thead>
+                <tr>
+                  <th>Nombre del Empleado</th>
+                  <th>Cantidad de Eventos</th>
+                  <th>Clientes Atendidos</th>
+                </tr>
+              </thead>
+              <tbody>
+                {empleadosSupervision.map((empleado) => (
+                  <tr key={empleado.id_empleado}>
+                    <td>{empleado.nombre}</td>
+                    <td>{empleado.cantidad_eventos}</td>
+                    <td>{empleado.cantidad_clientes}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+
+  const renderCompletadasModal = () => (
+    <div className="modal-overlay">
+      <div className="modal-container">
+        <button className="close-btn" onClick={() => setShowCompletadasModal(false)}>×</button>
+        <div className="modal-content">
+          <h3>Supervisiones Completadas</h3>
+          <div className="table-container">
+            <table>
+              <thead>
+                <tr>
+                  <th>Evento</th>
+                  <th>Cliente</th>
+                  <th>Cantidad Empleados</th>
+                  <th>Fecha</th>
+                  <th>Hora Inicio</th>
+                  <th>Hora Fin</th>
+                </tr>
+              </thead>
+              <tbody>
+                {supervisionesCompletadas.map((supervision) => (
+                  <tr key={supervision.id_supervision}>
+                    <td>{supervision.evento}</td>
+                    <td>{supervision.cliente}</td>
+                    <td>{supervision.cantidad_empleados}</td>
+                    <td>{supervision.fecha}</td>
+                    <td>{supervision.hora_inicio}</td>
+                    <td>{supervision.hora_fin}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+
   return (
     <ServiceBase 
       title="Supervisión" 
@@ -447,6 +664,118 @@ export default function Supervision() {
 
         return null;
       })()}
+      {showModal && (
+        <div className="modal-overlay">
+          <div className="modal-container">
+            <button className="close-btn" onClick={() => setShowModal(false)}>×</button>
+            <form className="modal-form" onSubmit={handleSubmit}>
+              <h3>{editId ? 'Editar Supervisión' : 'Nueva Supervisión'}</h3>
+              
+              <label>
+                Evento:
+                <select
+                  name="id_evento"
+                  value={formData.id_evento}
+                  onChange={handleSelectChange}
+                  required
+                >
+                  <option value="">Seleccionar evento</option>
+                  {eventos.map(evento => (
+                    <option key={evento.id_evento} value={evento.id_evento}>
+                      {evento.tipo_evento} - {evento.fecha_evento}
+                    </option>
+                  ))}
+                </select>
+              </label>
+
+              <label>
+                Fecha:
+                <input
+                  type="date"
+                  name="fecha"
+                  value={formData.fecha}
+                  onChange={handleInputChange}
+                  required
+                />
+              </label>
+
+              <label>
+                Hora de inicio:
+                <input
+                  type="time"
+                  name="hora_inicio"
+                  value={formData.hora_inicio}
+                  onChange={handleInputChange}
+                  required
+                />
+              </label>
+
+              <label>
+                Hora de fin:
+                <input
+                  type="time"
+                  name="hora_fin"
+                  value={formData.hora_fin}
+                  onChange={handleInputChange}
+                  required
+                />
+              </label>
+
+              <label>
+                Estado:
+                <select
+                  name="estado"
+                  value={formData.estado}
+                  onChange={handleSelectChange}
+                  required
+                >
+                  <option value="Pendiente">Pendiente</option>
+                  <option value="En Proceso">En Proceso</option>
+                  <option value="Completado">Completado</option>
+                  <option value="Cancelado">Cancelado</option>
+                </select>
+              </label>
+
+              <label>
+                Notas:
+                <textarea
+                  name="notas"
+                  value={formData.notas}
+                  onChange={handleInputChange}
+                  rows={4}
+                />
+              </label>
+
+              <div className="form-buttons">
+                <button type="submit" className="submit-btn">
+                  {editId ? 'Actualizar' : 'Guardar'}
+                </button>
+                <button
+                  type="button"
+                  className="reset-btn"
+                  onClick={() => {
+                    setShowModal(false);
+                    setEditId(null);
+                    setFormData({
+                      id_evento: 0,
+                      fecha: '',
+                      hora_inicio: '',
+                      hora_fin: '',
+                      estado: 'Pendiente',
+                      notas: ''
+                    });
+                  }}
+                >
+                  Cancelar
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+      {showEventosModal && renderEventosModal()}
+      {showEmpleadosModal && renderEmpleadosModal()}
+      {showCompletadasModal && renderCompletadasModal()}
     </ServiceBase>
   );
 }
