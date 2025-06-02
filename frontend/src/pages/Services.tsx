@@ -6,6 +6,7 @@ import cateringImg from '../assets/servicesPhotos/cateringServices.webp';
 import transporteImg from '../assets/servicesPhotos/transportServices.webp';
 import supervisionImg from '../assets/servicesPhotos/supervisionServices.webp';
 import montdesImg from '../assets/servicesPhotos/MonyDesServices.webp';
+import { Box, Container } from "@mui/material";
 
 const servicesData = [
   {
@@ -43,27 +44,54 @@ const servicesData = [
 export default function Services() {
   return (
     <>
-      <main className="info-page">
-        <div className="page-header">
-          <h1 className="page-title">Nuestros servicios</h1>
-        </div>
-        
-        <div className="full-width-card">
-          <p className="card-text">
-            <strong>Canabacoa Fiestas</strong> te ofrece una buena variedad de servicios para que puedas disfrutar de tu evento. Desde el alquiler de equipos hasta la decoración y el catering, nos encargamos de todo para que tu evento sea perfecto. Incluimos una serie de adicionales como la supervisión del evento, el montaje y desmontaje, y el transporte de los alimentos pedidos y elementos alquilados.
-          </p>
-        </div>
-       
-        <div className="content-grid">
-          {servicesData.map((service, index) => (
-            <div key={index} className="info-card">
-              <img src={service.image} alt={service.title} className="card-image" />
-              <h3 className="card-title">{service.title}</h3>
-              <p className="card-text">{service.description}</p>
-            </div>
-          ))}
-        </div>
-      </main>
+      <Box sx={{ 
+        background: 'var(--login-bg)',
+        backgroundBlendMode: 'var(--login-blend)',
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+        backgroundRepeat: 'no-repeat',
+        minHeight: '100vh',
+        width: '100vw',
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        zIndex: -1,
+        margin: 0,
+        padding: 0,
+        overflow: 'hidden'
+      }} />
+      <Container maxWidth="lg" sx={{ 
+        position: 'relative',
+        zIndex: 1,
+        py: { xs: 2, sm: 4 }, 
+        mt: { xs: 6, sm: 8 },
+        px: { xs: 1, sm: 2 },
+        pb: { xs: 4, sm: 6 }
+      }}>
+        <main className="info-page">
+          <div className="page-header">
+            <h1 className="page-title">Nuestros servicios</h1>
+          </div>
+          
+          <div className="full-width-card">
+            <p className="card-text">
+              <strong>Canabacoa Fiestas</strong> te ofrece una buena variedad de servicios para que puedas disfrutar de tu evento. Desde el alquiler de equipos hasta la decoración y el catering, nos encargamos de todo para que tu evento sea perfecto. Incluimos una serie de adicionales como la supervisión del evento, el montaje y desmontaje, y el transporte de los alimentos pedidos y elementos alquilados.
+            </p>
+          </div>
+         
+          <div className="content-grid">
+            {servicesData.map((service, index) => (
+              <div key={index} className="info-card">
+                <img src={service.image} alt={service.title} className="card-image" />
+                <h3 className="card-title">{service.title}</h3>
+                <p className="card-text">{service.description}</p>
+              </div>
+            ))}
+          </div>
+        </main>
+      </Container>
       <Footer/>
     </>
   );
