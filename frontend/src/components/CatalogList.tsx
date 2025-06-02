@@ -176,7 +176,6 @@ const Catalog: React.FC<CatalogProps> = ({ onAddToCart = true, onComprarCarrito 
     const fetchData = async () => {
       try {
         setLoading(true);
-        console.log('Iniciando carga de datos...');
         
         const [elementosRes, categoriasRes, coloresRes, materialesRes] = await Promise.all([
           axios.get('http://localhost:3000/api/elementos/filtrados'),
@@ -185,24 +184,14 @@ const Catalog: React.FC<CatalogProps> = ({ onAddToCart = true, onComprarCarrito 
           axios.get('http://localhost:3000/api/elementos/materiales/list')
         ]);
 
-        console.log('Datos recibidos:', {
-          elementos: elementosRes.data,
-          categorias: categoriasRes.data,
-          colores: coloresRes.data,
-          materiales: materialesRes.data
-        });
+        // Establecer los datos
+        setElementos(elementosRes.data || []);
+        setCategorias(categoriasRes.data || []);
+        setColores(coloresRes.data || []);
+        setMateriales(materialesRes.data || []);
 
-        setElementos(elementosRes.data);
-        setCategorias(categoriasRes.data);
-        setColores(coloresRes.data);
-        setMateriales(materialesRes.data);
       } catch (error) {
         console.error('Error al cargar los datos:', error);
-        setNotificacion({
-          abierta: true,
-          mensaje: 'Error al cargar el catálogo. Por favor, intente nuevamente.',
-          tipo: 'error'
-        });
       } finally {
         setLoading(false);
       }
@@ -343,6 +332,26 @@ const Catalog: React.FC<CatalogProps> = ({ onAddToCart = true, onComprarCarrito 
     const startIndex = (currentPage - 1) * itemsPerPage;
     return filteredElementos.slice(startIndex, startIndex + itemsPerPage);
   }, [filteredElementos, currentPage, itemsPerPage]);
+
+  // Mostrar solo el indicador de carga mientras se cargan los datos
+  if (loading) {
+    return (
+      <Box sx={{ 
+        display: 'flex', 
+        justifyContent: 'center', 
+        alignItems: 'center',
+        minHeight: '100vh',
+        width: '100%',
+        background: 'var(--login-bg)',
+        backgroundBlendMode: 'var(--login-blend)',
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+        backgroundRepeat: 'no-repeat'
+      }}>
+        <CircularProgress sx={{ color: 'var(--gold)' }} />
+      </Box>
+    );
+  }
 
   return (
     <>
