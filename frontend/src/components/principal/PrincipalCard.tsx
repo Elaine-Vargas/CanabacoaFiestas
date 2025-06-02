@@ -39,7 +39,7 @@ const PrincipalCard = React.memo(() => {
       </p>
     </div>
   </div>
-        <button className="ButtonFindMore"><Link to='/Servicios'>Descubre más</Link></button>
+        <button className="ButtonFindMore"><Link to='/Principal/Servicios'>Descubre más</Link></button>
 
 </div>
 
