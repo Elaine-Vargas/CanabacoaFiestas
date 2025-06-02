@@ -4,7 +4,6 @@ import React from "react";
 
 const PrincipalMenu: React.FC = React.memo(() => (
   <>
-    <Navbar />
   <header className="principalHeader">
     <div className="principalContent">
       <h4 className="welcome">Te damos la bienvenida a</h4>

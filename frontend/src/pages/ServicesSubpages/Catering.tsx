@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import type { FormEvent } from 'react';
-import { useNavigate } from 'react-router-dom';
 import '../../styles/dashboard/ServicesSubpages.scss';
 import ServiceBase from '../../components/ServiceBase';
 import { useUser } from '../../contexts/UserContext';
@@ -57,7 +56,6 @@ interface CateringStats {
 }
 
 export default function Catering() {
-  const navigate = useNavigate();
   const { userRole } = useUser();
   const userData = JSON.parse(localStorage.getItem('userData') || '{}');
   const [showModal, setShowModal] = useState(false);
@@ -86,6 +84,12 @@ export default function Catering() {
   const [caterings, setCaterings] = useState<Catering[]>([]);
   const [eventos, setEventos] = useState<Evento[]>([]);
   const [editId, setEditId] = useState<number | null>(null);
+  const [showPedidosModal, setShowPedidosModal] = useState(false);
+  const [showPendientesModal, setShowPendientesModal] = useState(false);
+  const [showProveedoresModal, setShowProveedoresModal] = useState(false);
+  const [pedidos, setPedidos] = useState<any[]>([]);
+  const [pedidosPendientes, setPedidosPendientes] = useState<any[]>([]);
+  const [proveedores, setProveedores] = useState<any[]>([]);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -133,6 +137,48 @@ export default function Catering() {
       fetchStats();
     }
   }, [userRole]);
+
+  useEffect(() => {
+    const fetchPedidos = async () => {
+      try {
+        const response = await fetch('/api/catering/pedidos');
+        const data = await response.json();
+        setPedidos(data);
+      } catch (error) {
+        console.error('Error al cargar pedidos:', error);
+      }
+    };
+
+    const fetchPedidosPendientes = async () => {
+      try {
+        const response = await fetch('/api/catering/pendientes');
+        const data = await response.json();
+        setPedidosPendientes(data);
+      } catch (error) {
+        console.error('Error al cargar pedidos pendientes:', error);
+      }
+    };
+
+    const fetchProveedores = async () => {
+      try {
+        const response = await fetch('/api/catering/proveedores');
+        const data = await response.json();
+        setProveedores(data);
+      } catch (error) {
+        console.error('Error al cargar proveedores:', error);
+      }
+    };
+
+    if (showPedidosModal) {
+      fetchPedidos();
+    }
+    if (showPendientesModal) {
+      fetchPedidosPendientes();
+    }
+    if (showProveedoresModal) {
+      fetchProveedores();
+    }
+  }, [showPedidosModal, showPendientesModal, showProveedoresModal]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
@@ -248,6 +294,113 @@ export default function Catering() {
       }
     }
   };
+
+  const renderPedidosModal = () => (
+    <div className="modal-overlay">
+      <div className="modal-container">
+        <button className="close-btn" onClick={() => setShowPedidosModal(false)}>×</button>
+        <div className="modal-content">
+          <h3>Total de Pedidos</h3>
+          <div className="table-container">
+            <table>
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>Evento</th>
+                  <th>Personas</th>
+                  <th>Precio Neto</th>
+                  <th>ITBIS</th>
+                  <th>Total</th>
+                  <th>Estado</th>
+                </tr>
+              </thead>
+              <tbody>
+                {pedidos.map((pedido) => (
+                  <tr key={pedido.id_catering}>
+                    <td>{pedido.id_catering}</td>
+                    <td>{pedido.nombre_evento}</td>
+                    <td>{pedido.personas}</td>
+                    <td>${pedido.precio_neto}</td>
+                    <td>${pedido.itbis}</td>
+                    <td>${pedido.total}</td>
+                    <td>{pedido.estado}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+
+  const renderPendientesModal = () => (
+    <div className="modal-overlay">
+      <div className="modal-container">
+        <button className="close-btn" onClick={() => setShowPendientesModal(false)}>×</button>
+        <div className="modal-content">
+          <h3>Pedidos Pendientes</h3>
+          <div className="table-container">
+            <table>
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>Evento</th>
+                  <th>Personas</th>
+                  <th>Precio Neto</th>
+                  <th>ITBIS</th>
+                  <th>Total</th>
+                </tr>
+              </thead>
+              <tbody>
+                {pedidosPendientes.map((pedido) => (
+                  <tr key={pedido.id_catering}>
+                    <td>{pedido.id_catering}</td>
+                    <td>{pedido.nombre_evento}</td>
+                    <td>{pedido.personas}</td>
+                    <td>${pedido.precio_neto}</td>
+                    <td>${pedido.itbis}</td>
+                    <td>${pedido.total}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+
+  const renderProveedoresModal = () => (
+    <div className="modal-overlay">
+      <div className="modal-container">
+        <button className="close-btn" onClick={() => setShowProveedoresModal(false)}>×</button>
+        <div className="modal-content">
+          <h3>Proveedores Activos</h3>
+          <div className="table-container">
+            <table>
+              <thead>
+                <tr>
+                  <th>Nombre</th>
+                  <th>Teléfono</th>
+                  <th>Correo</th>
+                </tr>
+              </thead>
+              <tbody>
+                {proveedores.map((proveedor) => (
+                  <tr key={proveedor.id_proveedor}>
+                    <td>{proveedor.nombre}</td>
+                    <td>{proveedor.telefono}</td>
+                    <td>{proveedor.correo}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
 
   const renderClientView = () => (
     <div className="catering-content">
@@ -415,21 +568,40 @@ export default function Catering() {
           <div className="stat-card">
             <span className="stat-card__label">Total de Pedidos</span>
             <strong className="stat-card__number">{stats.totalPedidos}</strong>
-            <button className="stat-card__seeInfo">Ver pedidos</button>
+            <button 
+              className="stat-card__seeInfo"
+              onClick={() => setShowPedidosModal(true)}
+            >
+              Ver pedidos
+            </button>
           </div>
 
           <div className="stat-card">
             <span className="stat-card__label">Pedidos Pendientes</span>
             <strong className="stat-card__number">{stats.pedidosPendientes}</strong>
-            <button className="stat-card__seeInfo">Ver pendientes</button>
+            <button 
+              className="stat-card__seeInfo"
+              onClick={() => setShowPendientesModal(true)}
+            >
+              Ver pendientes
+            </button>
           </div>
 
           <div className="stat-card">
-            <span className="stat-card__label">Total de Personas</span>
-            <strong className="stat-card__number">{stats.totalPersonas}</strong>
-            <button className="stat-card__seeInfo">Ver detalles</button>
+            <span className="stat-card__label">Proveedores Activos</span>
+            <strong className="stat-card__number">{stats.proveedorActivo}</strong>
+            <button 
+              className="stat-card__seeInfo"
+              onClick={() => setShowProveedoresModal(true)}
+            >
+              Ver proveedores
+            </button>
           </div>
         </div>
+
+        {showPedidosModal && renderPedidosModal()}
+        {showPendientesModal && renderPendientesModal()}
+        {showProveedoresModal && renderProveedoresModal()}
 
         <button className="new-form-btn" onClick={() => setShowModal(true)}>
           + Agregar Servicio
@@ -437,13 +609,19 @@ export default function Catering() {
 
         <div className="table-section">
           <p>Servicios de Catering Registrados</p>
-          <input
-            type="text"
-            className="escri"
-            placeholder="Filtrar por evento..."
-            value={filtroEvento}
-            onChange={(e) => setFiltroEvento(e.target.value)}
-          />
+          <div className="search-container">
+            <select
+              className="escri"
+              value={filtroEvento}
+              onChange={(e) => setFiltroEvento(e.target.value)}
+            >
+              <option value="">Todos los eventos</option>
+              <option value="recientes">Eventos recientes</option>
+              <option value="pendientes">Eventos pendientes</option>
+              <option value="completados">Eventos completados</option>
+              <option value="cancelados">Eventos cancelados</option>
+            </select>
+          </div>
           <table>
             <thead>
               <tr>

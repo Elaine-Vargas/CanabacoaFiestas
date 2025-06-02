@@ -202,13 +202,19 @@ export default function Transportation() {
 
         <div className="table-section">
           <p>Servicios de Transporte Registrados</p>
-          <input
-            type="text"
-            className="escri"
-            placeholder="Filtrar por evento..."
-            value={filtroEvento}
-            onChange={(e) => setFiltroEvento(e.target.value)}
-          />
+          <div className="search-container">
+            <select
+              className="escri"
+              value={filtroEvento}
+              onChange={(e) => setFiltroEvento(e.target.value)}
+            >
+              <option value="">Todos los eventos</option>
+              <option value="recientes">Eventos recientes</option>
+              <option value="pendientes">Eventos pendientes</option>
+              <option value="completados">Eventos completados</option>
+              <option value="cancelados">Eventos cancelados</option>
+            </select>
+          </div>
           <table>
             <thead>
               <tr>
@@ -383,13 +389,19 @@ export default function Transportation() {
 
       <div className="table-section">
         <p>Servicios de Transporte Registrados</p>
-        <input
-          type="text"
-          className="escri"
-          placeholder="Filtrar por evento..."
-          value={filtroEvento}
-          onChange={(e) => setFiltroEvento(e.target.value)}
-        />
+        <div className="search-container">
+          <select
+            className="escri"
+            value={filtroEvento}
+            onChange={(e) => setFiltroEvento(e.target.value)}
+          >
+            <option value="">Todos los eventos</option>
+            <option value="recientes">Eventos recientes</option>
+            <option value="pendientes">Eventos pendientes</option>
+            <option value="completados">Eventos completados</option>
+            <option value="cancelados">Eventos cancelados</option>
+          </select>
+        </div>
         <table>
           <thead>
             <tr>

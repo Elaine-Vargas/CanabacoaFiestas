@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Typography } from "@mui/material";
+import { Typography, Button, CircularProgress } from "@mui/material";
 import axios from "axios";
 
 interface UsuarioComentario {
@@ -34,16 +34,34 @@ const Comments = () => {
         params: { includeEvent: true }
       });
 
-      const datos = Array.isArray(response.data)
-        ? response.data
-        : response.data.data && Array.isArray(response.data.data)
-        ? response.data.data
-        : [];
+      console.log('Respuesta completa:', response);
 
-      setComentarios(datos);
+      let datos = [];
+      if (Array.isArray(response.data)) {
+        datos = response.data;
+      } else if (response.data?.data && Array.isArray(response.data.data)) {
+        datos = response.data.data;
+      } else if (response.data?.comentarios && Array.isArray(response.data.comentarios)) {
+        datos = response.data.comentarios;
+      }
+
+      console.log('Datos extraídos:', datos);
+
+      // Validación adicional de estructura
+      const datosValidados = datos.filter(
+        //@ts-ignore
+        item => 
+        item?.id_comentario &&
+        typeof item?.calificacion === 'number' &&
+        item?.comentario
+      );
+
+      console.log('Datos validados:', datosValidados);
+      
+      setComentarios(datosValidados);
     } catch (err) {
-      console.error('Error al cargar comentarios:', err);
-      setError('Error al cargar los comentarios');
+      console.error('Error completo:', err);
+      setError('No se pudieron cargar los comentarios');
       setComentarios([]);
     } finally {
       setLoading(false);
@@ -51,26 +69,40 @@ const Comments = () => {
   };
 
   useEffect(() => {
-    cargarComentarios();
-  }, []);
+    let mounted = true;
+    
+    const fetchData = async () => {
+      await cargarComentarios();
+    };
 
-  if (!Array.isArray(comentarios)) {
-    return <Typography color="error">Error: Formato de datos incorrecto</Typography>;
-  }
+    fetchData();
+
+    return () => {
+      mounted = false;
+    };
+  }, []);
 
   if (loading) {
     return (
-      <div className="loading-message">
-        <Typography>Cargando comentarios...</Typography>
+      <div style={{ display: 'flex', justifyContent: 'center', padding: '20px' }}>
+        <CircularProgress sx={{ color: 'var(--white)' }} />
+        <Typography style={{ marginLeft: '10px', fontFamily: '"Nunito Sans", sans-serif' }}>Cargando comentarios...</Typography>
       </div>
     );
   }
 
   if (error) {
     return (
-      <Typography className="error-message">
-        {error}
-      </Typography>
+      <div style={{ textAlign: 'center', padding: '20px' }}>
+        <Typography color="error">{error}</Typography>
+        <Button 
+          variant="contained" 
+          onClick={cargarComentarios}
+          style={{ marginTop: '10px', backgroundColor: 'var(--dark-gold)', color: 'var(--white)', fontFamily: '"Nunito Sans", sans-serif', fontWeight: '800'}}
+        >
+          Reintentar
+        </Button>
+      </div>
     );
   }
 
@@ -100,7 +132,6 @@ const Comments = () => {
                 )}
               </div>
 
-              {/* ⭐ Calificación con estrellas */}
               <div className="rating">
                 {typeof comentario.calificacion === 'number' &&
                 comentario.calificacion >= 0 &&

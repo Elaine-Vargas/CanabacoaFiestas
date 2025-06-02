@@ -1,39 +1,34 @@
 import React from "react";
-import "../styles/mainPages/AboutUs.scss"; 
-import "../styles/basics/Theme.scss";
-import NavBar from "../components/NavBar";
+import "../styles/mainPages/Info.scss";
 import Footer from "../components/Footer";
 
 const Nosotros: React.FC = () => {
   return (
     <>
-    <section className="sobre-nosotros">
-      <NavBar />
-      <div className="contenido">
-        <div className="header">
-        <div style={{ height: "50px" }}></div>
-          <h2 className="titulo-seccion">Sobre Nosotros</h2>
+      <main className="info-page">
+        <div className="page-header">
+          <h1 className="page-title">Sobre Nosotros</h1>
         </div>
 
-        <div className="info-section">
+        <div className="full-width-card">
+          <p className="card-text">
+            <strong>Canabacoa Fiestas</strong> es un negocio especializado en ofrecer servicios de alquiler de equipos y espacios para eventos especiales, desde fiestas privadas hasta eventos corporativos. Además del alquiler de equipo, ofrecemos servicios adicionales como decoración y planificación de eventos para garantizar una experiencia completa y sin problemas para nuestros clientes.
+          </p>
+        </div>
+
+        <div className="content-grid">
           <div className="info-card">
-            <p className="descripcion">
-              <strong>Canabacoa Fiestas</strong> es una empresa especializada en alquiler de espacios y artículos para eventos, así como en la planificación y decoración de celebraciones memorables. Nos apasiona convertir tus ideas en experiencias inolvidables, combinando profesionalismo, creatividad e innovación.
-            </p>
+            <h3 className="card-title">Misión</h3>
+            <p className="card-text">Nuestra misión es crear experiencias memorables, proporcionando servicios de alquiler y planificación de eventos personalizados, que superen las expectativas de nuestros clientes a través de una atención meticulosa al detalle, calidad excepcional y una ejecución impecable. Nos esforzamos por transformar cada evento en un momento inolvidable, ofreciendo soluciones integrales y personalizadas que reflejen los deseos y necesidades únicos de cada cliente.</p>
           </div>
 
           <div className="info-card">
-            <h3 className="subtitulo">Misión</h3>
-            <p>Crear experiencias memorables a través de servicios personalizados de alquiler y planificación de eventos, con atención meticulosa al detalle, calidad excepcional y ejecución impecable.</p>
+            <h3 className="card-title">Visión</h3>
+            <p className="card-text">Ser reconocidos como la empresa líder en el sector de alquiler y eventos en la región, destacándonos por nuestra innovación, creatividad y compromiso con la excelencia. Aspiramos a expandir nuestra presencia y convertirse en la primera opción para aquellos que buscan celebrar momentos especiales con estilo y sofisticación, estableciendo nuevos estándares de calidad y servicio en la industria de eventos.</p>
           </div>
 
           <div className="info-card">
-            <h3 className="subtitulo">Visión</h3>
-            <p>Ser líderes regionales en el sector de eventos, destacándonos por la innovación, creatividad y excelencia en cada celebración.</p>
-          </div>
-
-          <div className="info-card">
-            <h3 className="subtitulo">Valores</h3>
+            <h3 className="card-title">Valores</h3>
             <ul>
               <li><strong>Calidad:</strong> Comprometidos con la excelencia en cada detalle.</li>
               <li><strong>Creatividad:</strong> Innovamos para ofrecer experiencias únicas.</li>
@@ -43,28 +38,28 @@ const Nosotros: React.FC = () => {
           </div>
         </div>
 
-        <div className="personal-section">
-          <h3 className="subtitulo">Nuestro Equipo</h3>
-          <div className="info-section">
-            <div className="info-card">
-              <h4 className="cargo">Encargada de Decoración</h4>
-              <p className="nombre">Claribel Tavárez</p>
+        <div className="team-section">
+          <h3 className="section-title">Nuestro Equipo</h3>
+          <div className="team-grid">
+            <div className="team-card">
+              <h4 className="team-position">Encargada de Decoración</h4>
+              <p className="team-member">Claribel Tavárez</p>
             </div>
-            <div className="info-card">
-              <h4 className="cargo">Conductores</h4>
-              <p className="nombre">Jose Radhames</p>
-              <p className="nombre">Josué Contreras</p>
+            
+            <div className="team-card">
+              <h4 className="team-position">Conductores</h4>
+              <p className="team-member">Jose Radhames</p>
+              <p className="team-member">Josué Contreras</p>
             </div>
-            <div className="info-card">
-              <h4 className="cargo">Encargada de Marketing</h4>
-              <p className="nombre">Abigail Contreras</p>
+            
+            <div className="team-card">
+              <h4 className="team-position">Encargada de Marketing</h4>
+              <p className="team-member">Abigail Contreras</p>
             </div>
           </div>
         </div>
-      </div>
-
-    </section>      
-    <Footer/>
+      </main>
+      <Footer/>
     </>
   );
 };
