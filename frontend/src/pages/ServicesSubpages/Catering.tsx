@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import type { FormEvent } from 'react';
-import { useNavigate } from 'react-router-dom';
 import '../../styles/dashboard/ServicesSubpages.scss';
 import ServiceBase from '../../components/ServiceBase';
 import { useUser } from '../../contexts/UserContext';
@@ -57,7 +56,6 @@ interface CateringStats {
 }
 
 export default function Catering() {
-  const navigate = useNavigate();
   const { userRole } = useUser();
   const userData = JSON.parse(localStorage.getItem('userData') || '{}');
   const [showModal, setShowModal] = useState(false);
