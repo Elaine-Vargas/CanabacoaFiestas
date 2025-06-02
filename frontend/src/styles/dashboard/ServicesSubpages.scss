@@ -154,7 +154,10 @@ $transition-standard: all 0.3s ease;
 /* Modal común */
 .modal-overlay {
   position: fixed;
-  inset: 0;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
   background-color: rgba(0, 0, 0, 0.5);
   display: flex;
   justify-content: center;
@@ -163,135 +166,164 @@ $transition-standard: all 0.3s ease;
 }
 
 .modal-container {
-  background-color: var(--color-background2);
-  padding: 2rem;
+  background-color: var(--color-background);
   border-radius: 10px;
-  box-shadow: 0px 4px 20px rgba(0, 0, 0, 0.3);
+  padding: 2rem;
   width: 90%;
-  max-width: 900px;
+  max-width: 800px;
   max-height: 90vh;
   overflow-y: auto;
   position: relative;
-  display: flex;
-  gap: 2rem;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
 }
 
-.close-btn {
-  position: absolute;
-  top: 10px;
-  right: 15px;
-  font-size: 1.5rem;
-  cursor: pointer;
-  background: none;
-  border: none;
-  color: var(--brown);
-  z-index: 1;
-
-  &:hover {
-    color: red;
+.modal-content {
+  h3 {
+    color: var(--color-text);
+    font-size: 1.5rem;
+    margin-bottom: 1.5rem;
+    text-align: center;
   }
 }
 
-/* Formulario común */
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+
+  h3 {
+    margin: 0;
+  }
+
+  .add-user-btn {
+    padding: 0.5rem 1rem;
+    background-color: var(--gold);
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-weight: 500;
+    transition: all 0.3s ease;
+
+    &:hover {
+      background-color: var (--gold);
+    }
+  }
+}
+
+.table-container {
+  overflow-x: auto;
+  margin-top: 1rem;
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 1rem;
+    background-color: var(--color-background2);
+    border-radius: 8px;
+    overflow: hidden;
+
+    th, td {
+      padding: 1rem;
+      text-align: left;
+      border-bottom: 1px solid var(--color-border);
+    }
+
+    th {
+      background-color: var(--color-background);
+      font-weight: 600;
+      color: var(--color-text);
+    }
+
+    tr:hover {
+      background-color: var(--color-background);
+    }
+  }
+}
+
 .modal-form {
-  flex: 1;
   display: flex;
   flex-direction: column;
   gap: 1rem;
-  width: 100%;
-  padding: 1rem;
-  max-height: 30rem;
-
-  h2 {
-    color: var(--dark-gold);
-    font-size: clamp(1.5rem, 3vw, 4rem);
-    margin-bottom: 1.5rem;
-    text-align: center;
-    font-weight: normal;
-  }
 
   label {
-    display: block;
-    margin-bottom: 1rem;
-    color: var(--dark-gold);
-    font-weight: 500;
-    font-size: 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    color: var(--color-text);
 
-    input,
-    select,
-    textarea {
-      width: 100%;
-      padding: 0.8rem;
-      margin-top: 0.5rem;
-      border: 1px solid var(--color-input-border);
-      border-radius: 4px;
+    input, select {
+      padding: 0.75rem;
+      border: 1px solid var(--color-border);
+      border-radius: 5px;
       background-color: var(--color-background2);
-      color: var(--text-color);
+      color: var(--color-text);
       font-size: 1rem;
-      transition: all 0.3s ease;
 
       &:focus {
         outline: none;
         border-color: var(--gold);
-        box-shadow: 0 0 5px rgba(74, 144, 226, 0.3);
       }
     }
 
     select {
       cursor: pointer;
-      appearance: none;
-      background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
-      background-repeat: no-repeat;
-      background-position: right 0.8rem center;
-      background-size: 1em;
-      padding-right: 2.5rem;
-
-      option {
-        background-color: var(--color-background2);
-        color: var(--text-color);
-      }
-    }
-
-    textarea {
-      resize: vertical;
-      min-height: 100px;
     }
   }
 
   .form-buttons {
     display: flex;
     gap: 1rem;
-    margin-top: 1.5rem;
+    margin-top: 1rem;
 
     button {
       flex: 1;
-      padding: 0.8rem;
+      padding: 0.75rem;
       border: none;
-      border-radius: 4px;
-      font-size: 1rem;
+      border-radius: 5px;
+      font-weight: 500;
       cursor: pointer;
       transition: all 0.3s ease;
 
       &.submit-btn {
         background-color: var(--gold);
-        color: var(--white);
+        color: white;
 
         &:hover {
-          background-color: var(--dark-gold);
+          background-color: var (--gold);
         }
       }
 
       &.reset-btn {
         background-color: var(--color-background2);
-        color: var(--dark-gold);
-        border: 1px solid var(--gold);
+        color: var(--color-text);
 
         &:hover {
-          background-color: var(--gold);
-          color: var(--white);
+          background-color: var(--color-border);
         }
       }
     }
+  }
+}
+
+.close-btn {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  color: var(--color-text);
+  cursor: pointer;
+  padding: 0.5rem;
+  line-height: 1;
+  border-radius: 50%;
+  transition: all 0.3s ease;
+
+  &:hover {
+    background-color: var(--color-background2);
+    color: var(--gold);
   }
 }
 
@@ -837,6 +869,17 @@ $transition-standard: all 0.3s ease;
   .admin-actions {
     .action-buttons {
       grid-template-columns: 1fr;
+    }
+  }
+
+  .modal-container {
+    width: 95%;
+    padding: 1.5rem;
+  }
+
+  .modal-form {
+    .form-buttons {
+      flex-direction: column;
     }
   }
 }
