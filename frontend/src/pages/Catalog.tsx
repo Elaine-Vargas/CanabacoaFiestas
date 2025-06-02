@@ -1,15 +1,42 @@
 import { Container } from '@mui/material';
-import Catalogo from '../components/CatalogList';
+import ViewerCatalog from '../components/ViewerCatalog';
+import CatalogAlquiler from '../components/CatalogList';
 import Footer from '../components/Footer';
-const CatalogoPage = () => {
-  return (
-    <>
+import { useLocation } from 'react-router-dom';
+
+const Catalog = () => {
+  const location = useLocation();
+
+  let content = null;
+
+  if (location.pathname === '/Principal/Catalogo') {
+    content = (
+<>
     <Container maxWidth="lg" sx={{ py: 4 }}>
-      <Catalogo />
+      <ViewerCatalog />
     </Container>
     <Footer/>
     </>
+    );
+  } else if (location.pathname === '/Alquiler/Catalogo') {
+    content = (
+      <>
+      <Container maxWidth="lg" sx={{ py: 4 }}>
+        <CatalogAlquiler />
+      </Container>
+      <Footer/>
+      </>
+    );
+  } else {
+    content = (
+        <p>Ruta no reconocida</p>
+    );
+  }
+
+  return (
+    <div>
+      {content}
+    </div>
   );
 };
-
-export default CatalogoPage; 
+export default Catalog;
