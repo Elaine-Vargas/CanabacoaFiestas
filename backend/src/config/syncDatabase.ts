@@ -1,5 +1,6 @@
 import sequelize from './index';
 
+
 export const syncDatabase = async () => {
   try {
     await sequelize.sync({ alter: true });
