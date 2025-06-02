@@ -1,4 +1,5 @@
-import React, { useState, useEffect, FormEvent } from 'react';
+import React, { useState, useEffect } from 'react';
+import type { FormEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
 import '../../styles/dashboard/ServicesSubpages.scss';
 import ServiceBase from '../../components/ServiceBase';
@@ -31,6 +32,10 @@ interface Evento {
   id_evento: number;
   fecha_evento: string;
   tipo_evento: string;
+  nombre_evento?: string;
+  nombre_cliente?: string;
+  empleado_responsable?: string;
+  decoracion_solicitada?: string;
 }
 
 interface DecorStats {
@@ -64,6 +69,11 @@ export default function Decor() {
   });
   const [editId, setEditId] = useState<number | null>(null);
   const [filtroEvento, setFiltroEvento] = useState<string>('');
+  const [showEmpleadosModal, setShowEmpleadosModal] = useState(false);
+  const [showEventosModal, setShowEventosModal] = useState(false);
+  const [showCompletadosModal, setShowCompletadosModal] = useState(false);
+  const [empleados, setEmpleados] = useState<any[]>([]);
+  const [completados, setCompletados] = useState<any[]>([]);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -105,6 +115,35 @@ export default function Decor() {
       fetchStats();
     }
   }, [userRole]);
+
+  useEffect(() => {
+    const fetchEmpleados = async () => {
+      try {
+        const response = await fetch('/api/decoracion/empleados');
+        const data = await response.json();
+        setEmpleados(data);
+      } catch (error) {
+        console.error('Error al cargar empleados:', error);
+      }
+    };
+
+    const fetchCompletados = async () => {
+      try {
+        const response = await fetch('/api/decoracion/completados');
+        const data = await response.json();
+        setCompletados(data);
+      } catch (error) {
+        console.error('Error al cargar decoraciones completadas:', error);
+      }
+    };
+
+    if (showEmpleadosModal) {
+      fetchEmpleados();
+    }
+    if (showCompletadosModal) {
+      fetchCompletados();
+    }
+  }, [showEmpleadosModal, showCompletadosModal]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
@@ -223,6 +262,105 @@ export default function Decor() {
     </div>
   );
 
+  const renderEmpleadosModal = () => (
+    <div className="modal-overlay">
+      <div className="modal-container">
+        <button className="close-btn" onClick={() => setShowEmpleadosModal(false)}>×</button>
+        <div className="modal-content">
+          <h3>Empleados Encargados</h3>
+          <div className="table-container">
+            <table>
+              <thead>
+                <tr>
+                  <th>Nombre</th>
+                  <th>ID</th>
+                  <th>Eventos Participados</th>
+                </tr>
+              </thead>
+              <tbody>
+                {empleados.map((empleado) => (
+                  <tr key={empleado.id_empleado}>
+                    <td>{empleado.nombre}</td>
+                    <td>{empleado.id_empleado}</td>
+                    <td>{empleado.eventos_participados}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+
+  const renderEventosModal = () => (
+    <div className="modal-overlay">
+      <div className="modal-container">
+        <button className="close-btn" onClick={() => setShowEventosModal(false)}>×</button>
+        <div className="modal-content">
+          <h3>Eventos con Decoraciones</h3>
+          <div className="table-container">
+            <table>
+              <thead>
+                <tr>
+                  <th>Evento</th>
+                  <th>Cliente</th>
+                  <th>Empleado Responsable</th>
+                  <th>Decoración Solicitada</th>
+                </tr>
+              </thead>
+              <tbody>
+                {eventos.map((evento) => (
+                  <tr key={evento.id_evento}>
+                    <td>{evento.nombre_evento || evento.tipo_evento}</td>
+                    <td>{evento.nombre_cliente || 'No especificado'}</td>
+                    <td>{evento.empleado_responsable || 'No asignado'}</td>
+                    <td>{evento.decoracion_solicitada || 'No especificada'}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+
+  const renderCompletadosModal = () => (
+    <div className="modal-overlay">
+      <div className="modal-container">
+        <button className="close-btn" onClick={() => setShowCompletadosModal(false)}>×</button>
+        <div className="modal-content">
+          <h3>Decoraciones Completadas</h3>
+          <div className="table-container">
+            <table>
+              <thead>
+                <tr>
+                  <th>Evento</th>
+                  <th>Fecha Inicio</th>
+                  <th>Fecha Fin</th>
+                  <th>Número de Empleados</th>
+                  <th>Cliente</th>
+                </tr>
+              </thead>
+              <tbody>
+                {completados.map((completado) => (
+                  <tr key={completado.id_decoracion}>
+                    <td>{completado.nombre_evento}</td>
+                    <td>{completado.fecha_inicio}</td>
+                    <td>{completado.fecha_fin}</td>
+                    <td>{completado.num_empleados}</td>
+                    <td>{completado.nombre_cliente}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+
   const renderAdminView = () => {
     return (
       <div className="decor-content">
@@ -230,21 +368,40 @@ export default function Decor() {
           <div className="stat-card">
             <span className="stat-card__label">Empleados Encargados</span>
             <strong className="stat-card__number">{stats.empleadosEncargados}</strong>
-            <button className="stat-card__seeInfo">Ver empleados</button>
+            <button 
+              className="stat-card__seeInfo"
+              onClick={() => setShowEmpleadosModal(true)}
+            >
+              Ver empleados
+            </button>
           </div>
 
           <div className="stat-card">
             <span className="stat-card__label">Eventos con Decoración</span>
             <strong className="stat-card__number">{stats.eventosConDecoracion}</strong>
-            <button className="stat-card__seeInfo">Ver eventos</button>
+            <button 
+              className="stat-card__seeInfo"
+              onClick={() => setShowEventosModal(true)}
+            >
+              Ver eventos
+            </button>
           </div>
 
           <div className="stat-card">
             <span className="stat-card__label">Decoraciones Completadas</span>
             <strong className="stat-card__number">{stats.decoracionesCompletadas}</strong>
-            <button className="stat-card__seeInfo">Ver completadas</button>
+            <button 
+              className="stat-card__seeInfo"
+              onClick={() => setShowCompletadosModal(true)}
+            >
+              Ver completadas
+            </button>
           </div>
         </div>
+
+        {showEmpleadosModal && renderEmpleadosModal()}
+        {showEventosModal && renderEventosModal()}
+        {showCompletadosModal && renderCompletadosModal()}
 
         <button className="new-form-btn" onClick={() => setShowModal(true)}>
           + Agregar Servicio
@@ -252,13 +409,19 @@ export default function Decor() {
 
         <div className="table-section">
           <p>Servicios de Decoración Registrados</p>
-          <input
-            type="text"
-            className="escri"
-            placeholder="Filtrar por evento..."
-            value={filtroEvento}
-            onChange={(e) => setFiltroEvento(e.target.value)}
-          />
+          <div className="search-container">
+            <select
+              className="escri"
+              value={filtroEvento}
+              onChange={(e) => setFiltroEvento(e.target.value)}
+            >
+              <option value="">Todos los eventos</option>
+              <option value="recientes">Eventos recientes</option>
+              <option value="pendientes">Eventos pendientes</option>
+              <option value="completados">Eventos completados</option>
+              <option value="cancelados">Eventos cancelados</option>
+            </select>
+          </div>
           <table>
             <thead>
               <tr>
@@ -433,13 +596,19 @@ export default function Decor() {
 
       <div className="table-section">
         <p>Servicios de Decoración Registrados</p>
-        <input
-          type="text"
-          className="escri"
-          placeholder="Filtrar por evento..."
-          value={filtroEvento}
-          onChange={(e) => setFiltroEvento(e.target.value)}
-        />
+        <div className="search-container">
+          <select
+            className="escri"
+            value={filtroEvento}
+            onChange={(e) => setFiltroEvento(e.target.value)}
+          >
+            <option value="">Todos los eventos</option>
+            <option value="recientes">Eventos recientes</option>
+            <option value="pendientes">Eventos pendientes</option>
+            <option value="completados">Eventos completados</option>
+            <option value="cancelados">Eventos cancelados</option>
+          </select>
+        </div>
         <table>
           <thead>
             <tr>

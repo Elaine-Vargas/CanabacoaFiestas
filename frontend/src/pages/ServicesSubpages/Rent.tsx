@@ -87,6 +87,12 @@ export default function Rent() {
     hora_evento: '',
     estado_evento: 'Pendiente'
   });
+  const [showTotalPedidosModal, setShowTotalPedidosModal] = useState(false);
+  const [showPedidosPendientesModal, setShowPedidosPendientesModal] = useState(false);
+  const [showTotalItemsModal, setShowTotalItemsModal] = useState(false);
+  const [pedidos, setPedidos] = useState<any[]>([]);
+  const [pedidosPendientes, setPedidosPendientes] = useState<any[]>([]);
+  const [items, setItems] = useState<any[]>([]);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -128,6 +134,48 @@ export default function Rent() {
       fetchStats();
     }
   }, [userRole]);
+
+  useEffect(() => {
+    const fetchPedidos = async () => {
+      try {
+        const response = await fetch('/api/alquiler/pedidos');
+        const data = await response.json();
+        setPedidos(data);
+      } catch (error) {
+        console.error('Error al cargar pedidos:', error);
+      }
+    };
+
+    const fetchPedidosPendientes = async () => {
+      try {
+        const response = await fetch('/api/alquiler/pendientes');
+        const data = await response.json();
+        setPedidosPendientes(data);
+      } catch (error) {
+        console.error('Error al cargar pedidos pendientes:', error);
+      }
+    };
+
+    const fetchItems = async () => {
+      try {
+        const response = await fetch('/api/alquiler/items');
+        const data = await response.json();
+        setItems(data);
+      } catch (error) {
+        console.error('Error al cargar items:', error);
+      }
+    };
+
+    if (showTotalPedidosModal) {
+      fetchPedidos();
+    }
+    if (showPedidosPendientesModal) {
+      fetchPedidosPendientes();
+    }
+    if (showTotalItemsModal) {
+      fetchItems();
+    }
+  }, [showTotalPedidosModal, showPedidosPendientesModal, showTotalItemsModal]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
@@ -548,13 +596,19 @@ export default function Rent() {
         <Typography variant="h4" sx={{ mb: 2, color: 'var(--color-text)' }}>
           Mis Alquileres
         </Typography>
-        <input
-          type="text"
-          className="escri"
-          placeholder="Filtrar por evento..."
-          value={filtroEvento}
-          onChange={(e) => setFiltroEvento(e.target.value)}
-        />
+        <div className="search-container">
+          <select
+            className="escri"
+            value={filtroEvento}
+            onChange={(e) => setFiltroEvento(e.target.value)}
+          >
+            <option value="">Todos los eventos</option>
+            <option value="recientes">Eventos recientes</option>
+            <option value="pendientes">Eventos pendientes</option>
+            <option value="completados">Eventos completados</option>
+            <option value="cancelados">Eventos cancelados</option>
+          </select>
+        </div>
         <table>
           <thead>
             <tr>
@@ -595,6 +649,105 @@ export default function Rent() {
     </div>
   );
 
+  const renderTotalPedidosModal = () => (
+    <div className="modal-overlay">
+      <div className="modal-container">
+        <button className="close-btn" onClick={() => setShowTotalPedidosModal(false)}>×</button>
+        <div className="modal-content">
+          <h3>Total de Pedidos de Alquiler</h3>
+          <div className="table-container">
+            <table>
+              <thead>
+                <tr>
+                  <th>Evento</th>
+                  <th>Cliente</th>
+                  <th>Cantidad</th>
+                  <th>Precio Total</th>
+                  <th>Estado</th>
+                </tr>
+              </thead>
+              <tbody>
+                {pedidos.map((pedido) => (
+                  <tr key={pedido.id_alquiler}>
+                    <td>{pedido.nombre_evento}</td>
+                    <td>{pedido.nombre_cliente}</td>
+                    <td>{pedido.cantidad}</td>
+                    <td>${pedido.precio_total}</td>
+                    <td>{pedido.estado}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+
+  const renderPedidosPendientesModal = () => (
+    <div className="modal-overlay">
+      <div className="modal-container">
+        <button className="close-btn" onClick={() => setShowPedidosPendientesModal(false)}>×</button>
+        <div className="modal-content">
+          <h3>Pedidos Pendientes</h3>
+          <div className="table-container">
+            <table>
+              <thead>
+                <tr>
+                  <th>Evento</th>
+                  <th>Cliente</th>
+                  <th>Cantidad</th>
+                  <th>Precio Total</th>
+                </tr>
+              </thead>
+              <tbody>
+                {pedidosPendientes.map((pedido) => (
+                  <tr key={pedido.id_alquiler}>
+                    <td>{pedido.nombre_evento}</td>
+                    <td>{pedido.nombre_cliente}</td>
+                    <td>{pedido.cantidad}</td>
+                    <td>${pedido.precio_total}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+
+  const renderTotalItemsModal = () => (
+    <div className="modal-overlay">
+      <div className="modal-container">
+        <button className="close-btn" onClick={() => setShowTotalItemsModal(false)}>×</button>
+        <div className="modal-content">
+          <h3>Catálogo de Items</h3>
+          <div className="table-container">
+            <table>
+              <thead>
+                <tr>
+                  <th>Item</th>
+                  <th>Cantidad Disponible</th>
+                  <th>Veces Alquilado</th>
+                </tr>
+              </thead>
+              <tbody>
+                {items.map((item) => (
+                  <tr key={item.id_item}>
+                    <td>{item.nombre}</td>
+                    <td>{item.cantidad_disponible}</td>
+                    <td>{item.veces_alquilado}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+
   const renderAdminView = () => {
     return (
       <div className="rent-content">
@@ -602,21 +755,40 @@ export default function Rent() {
           <div className="stat-card">
             <span className="stat-card__label">Total de Pedidos</span>
             <strong className="stat-card__number">{stats.totalPedidos}</strong>
-            <button className="stat-card__seeInfo">Ver pedidos</button>
+            <button 
+              className="stat-card__seeInfo"
+              onClick={() => setShowTotalPedidosModal(true)}
+            >
+              Ver pedidos
+            </button>
           </div>
 
           <div className="stat-card">
             <span className="stat-card__label">Pedidos Pendientes</span>
             <strong className="stat-card__number">{stats.pedidosPendientes}</strong>
-            <button className="stat-card__seeInfo">Ver pendientes</button>
+            <button 
+              className="stat-card__seeInfo"
+              onClick={() => setShowPedidosPendientesModal(true)}
+            >
+              Ver pendientes
+            </button>
           </div>
 
           <div className="stat-card">
-            <span className="stat-card__label">Total de Items</span>
+            <span className="stat-card__label">Items en Catálogo</span>
             <strong className="stat-card__number">{stats.totalElementos}</strong>
-            <button className="stat-card__seeInfo">Ver items</button>
+            <button 
+              className="stat-card__seeInfo"
+              onClick={() => setShowTotalItemsModal(true)}
+            >
+              Ver catálogo
+            </button>
           </div>
         </div>
+
+        {showTotalPedidosModal && renderTotalPedidosModal()}
+        {showPedidosPendientesModal && renderPedidosPendientesModal()}
+        {showTotalItemsModal && renderTotalItemsModal()}
 
         <button className="new-form-btn" onClick={() => setShowModal(true)}>
           + Agregar Servicio
@@ -624,13 +796,19 @@ export default function Rent() {
 
         <div className="table-section">
           <p>Servicios de Alquiler Registrados</p>
-          <input
-            type="text"
-            className="escri"
-            placeholder="Filtrar por evento..."
-            value={filtroEvento}
-            onChange={(e) => setFiltroEvento(e.target.value)}
-          />
+          <div className="search-container">
+            <select
+              className="escri"
+              value={filtroEvento}
+              onChange={(e) => setFiltroEvento(e.target.value)}
+            >
+              <option value="">Todos los eventos</option>
+              <option value="recientes">Eventos recientes</option>
+              <option value="pendientes">Eventos pendientes</option>
+              <option value="completados">Eventos completados</option>
+              <option value="cancelados">Eventos cancelados</option>
+            </select>
+          </div>
           <table>
             <thead>
               <tr>
@@ -816,13 +994,15 @@ export default function Rent() {
 
       <div className="table-section">
         <p>Servicios de Alquiler Registrados</p>
-        <input
-          type="text"
-          className="escri"
-          placeholder="Filtrar por evento..."
-          value={filtroEvento}
-          onChange={(e) => setFiltroEvento(e.target.value)}
-        />
+        <div className="search-container">
+          <input
+            type="text"
+            className="escri"
+            placeholder="Buscar por evento..."
+            value={filtroEvento}
+            onChange={(e) => setFiltroEvento(e.target.value)}
+          />
+        </div>
         <table>
           <thead>
             <tr>
