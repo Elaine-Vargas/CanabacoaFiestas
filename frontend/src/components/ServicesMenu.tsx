@@ -256,7 +256,7 @@ export default function ServicesMenu({ selectedService }: ServicesMenuProps) {
       {/* Modal de cierre de sesión - Renderizado fuera de la lógica responsive */}
       {showLogoutModal && (
         <div className="modal-overlay">
-          <div className="modal-content">
+          <div className="modal-content logout-modal">
             <h4>¿Está seguro que desea cerrar sesión?</h4>
             <div className="modal-buttons">
               <button onClick={handleLogout}>Sí</button>
