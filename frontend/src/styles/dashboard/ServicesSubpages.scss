@@ -296,6 +296,7 @@ $transition-standard: all 0.3s ease;
     border-radius: 50%;
     transition: all 0.3s ease;
     z-index: 1001;
+    padding: 0.5rem;
 
     @media screen and (max-width: 768px) {
       top: 0.7rem;
@@ -303,6 +304,7 @@ $transition-standard: all 0.3s ease;
       width: 25px;
       height: 25px;
       font-size: 1.1rem;
+      padding: 0.3rem;
     }
 
     @media screen and (max-width: 320px) {
@@ -311,6 +313,7 @@ $transition-standard: all 0.3s ease;
       width: 20px;
       height: 20px;
       font-size: 1rem;
+      padding: 0.2rem;
     }
 
     &:hover {
@@ -322,6 +325,10 @@ $transition-standard: all 0.3s ease;
 }
 
 .modal-content {
+  padding: 0.5rem;
+
+  
+
   h3 {
     color: var(--color-text);
     font-size: 1.5rem;
