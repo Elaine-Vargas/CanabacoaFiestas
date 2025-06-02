@@ -69,6 +69,54 @@ $transition-standard: all 0.3s ease;
 }
 
 /* Media queries */
+@media (max-width: 1253px) {
+  .dashboard {
+    &__stats {
+      grid-template-columns: 1fr;
+      gap: 5rem;
+      margin: 0;
+      padding-top: 2rem;
+    }
+  }
+
+  .stat-card {
+    padding: 1.2rem;
+    margin: 0;
+
+    &__label {
+      font-size: 1.1rem;
+    }
+
+    &__number {
+      font-size: 2rem;
+    }
+
+    &__stars {
+      font-size: 1.3rem;
+    }
+
+    &__seeInfo,
+    &__seeInfo2 {
+      padding: 0.7rem 1.2rem;
+      font-size: 0.9rem;
+    }
+  }
+
+  .modal-container {
+    width: 95%;
+    padding: 1.5rem;
+  }
+
+  .table-container {
+    table {
+      th, td {
+        padding: 0.8rem;
+        font-size: 0.9rem;
+      }
+    }
+  }
+}
+
 @media (max-width: 768px) {
   .dashboard {
     padding: 1rem;
@@ -84,6 +132,37 @@ $transition-standard: all 0.3s ease;
 
   .content-area {
     padding: 1rem;
+  }
+
+  /* Ajuste para tablas en pantallas pequeñas */
+  .table-container,
+  .table-section {
+    padding: 0.8rem; /* Reducir padding */
+    overflow-x: auto; /* Permitir scroll horizontal si el contenido es demasiado ancho */
+    width: 100%; /* Asegurar que el contenedor ocupe el ancho completo */
+    box-sizing: border-box; /* Incluir padding en el ancho */
+
+    table {
+      width: 100%; /* Asegurar que la tabla ocupe el ancho del contenedor */
+      display: block; /* Cambiar a display block para mejor manejo del scroll */
+
+      th,
+      td {
+        white-space: nowrap; /* Evitar que el texto se divida en varias líneas */
+        padding: 0.6rem 0.8rem; /* Ajustar padding de celdas */
+      }
+    }
+  }
+
+  .modal-container {
+    width: 95%;
+    padding: 1.5rem;
+  }
+
+  .modal-form {
+    .form-buttons {
+      flex-direction: column;
+    }
   }
 }
 
@@ -529,10 +608,14 @@ $transition-standard: all 0.3s ease;
   border-radius: 5px;
   cursor: pointer;
   font-size: 1rem;
-  transition: $transition-standard;
-  width: 100%;
-  max-width: 1000px;
-  margin-top: 6rem;
+  transition: all 0.3s ease;
+  width: 90%;
+  margin: 6rem auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  align-content: center;
+  flex-wrap: wrap;
 
   &:hover {
     background-color: var(--gold);
@@ -544,8 +627,6 @@ $transition-standard: all 0.3s ease;
 .services-modal {
   max-width: 600px !important;
   text-align: center;
-
-  
 
   &__content {
     padding: 2rem;
@@ -562,6 +643,9 @@ $transition-standard: all 0.3s ease;
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
     gap: 1rem;
+    justify-items: center;
+    align-items: center;
+    text-align: center;
 
     button {
       background-color: var(--gold);
@@ -572,6 +656,7 @@ $transition-standard: all 0.3s ease;
       cursor: pointer;
       font-size: 1rem;
       transition: $transition-standard;
+      width: 100%;
 
       &:hover {
         background-color: var(--dark-gold);
@@ -583,6 +668,14 @@ $transition-standard: all 0.3s ease;
         background-color: var(--color-background2);
         color: var(--dark-gold);
         border: 1px solid var(--gold);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        max-width: 250px;
+        margin: 1rem auto;
+        justify-self: center;
+        align-self: center;
+        text-align: center;
 
         &:hover {
           background-color: var(--gold);
