@@ -33,7 +33,7 @@ interface Evento {
   tipo_evento: string;
   nombre_evento?: string;
   nombre_cliente?: string;
-  empleado_responsable?: string;
+  lugar?: string;
   decoracion_solicitada?: string;
 }
 
@@ -72,6 +72,7 @@ export default function Decor() {
   const [showCompletadosModal, setShowCompletadosModal] = useState(false);
   const [empleados, setEmpleados] = useState<any[]>([]);
   const [completados, setCompletados] = useState<any[]>([]);
+  const [showPendientesModal, setShowPendientesModal] = useState(false);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -302,26 +303,29 @@ export default function Decor() {
       <div className="modal-container">
         <button className="close-btn" onClick={() => setShowEventosModal(false)}>×</button>
         <div className="modal-content">
-          <h3>Eventos con Decoraciones</h3>
+          <h3>Eventos con Decoración</h3>
           <div className="table-container">
             <table>
               <thead>
                 <tr>
                   <th>Evento</th>
                   <th>Cliente</th>
-                  <th>Empleado Responsable</th>
-                  <th>Decoración Solicitada</th>
+                  <th>Espacio</th>
+                  <th>Decoración</th>
                 </tr>
               </thead>
               <tbody>
-                {eventos.map((evento) => (
-                  <tr key={evento.id_evento}>
-                    <td>{evento.nombre_evento || evento.tipo_evento}</td>
-                    <td>{evento.nombre_cliente || 'No especificado'}</td>
-                    <td>{evento.empleado_responsable || 'No asignado'}</td>
-                    <td>{evento.decoracion_solicitada || 'No especificada'}</td>
-                  </tr>
-                ))}
+                {decors.map((decor) => {
+                  const evento = eventos.find(e => e.id_evento === decor.id_evento);
+                  return (
+                    <tr key={decor.id_decor}>
+                      <td>{evento?.tipo_evento}</td>
+                      <td>{evento?.nombre_cliente}</td>
+                      <td>{evento?.lugar || 'No especificado'}</td>
+                      <td>{decor.tipo_decoracion}</td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
@@ -357,6 +361,50 @@ export default function Decor() {
                     <td>{completado.nombre_cliente}</td>
                   </tr>
                 ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+
+  const renderPendientesModal = () => (
+    <div className="modal-overlay">
+      <div className="modal-container">
+        <button className="close-btn" onClick={() => setShowPendientesModal(false)}>×</button>
+        <div className="modal-content">
+          <h3>Decoraciones Pendientes</h3>
+          <div className="table-container">
+            <table>
+              <thead>
+                <tr>
+                  <th>Evento</th>
+                  <th>Cliente</th>
+                  <th>Espacio</th>
+                  <th>Tipo de Decoración</th>
+                  <th>Estado</th>
+                </tr>
+              </thead>
+              <tbody>
+                {decors
+                  .filter(decor => decor.estado === 'Pendiente')
+                  .map((decor) => {
+                    const evento = eventos.find(e => e.id_evento === decor.id_evento);
+                    return (
+                      <tr key={decor.id_decor}>
+                        <td>{evento?.tipo_evento}</td>
+                        <td>{evento?.nombre_cliente}</td>
+                        <td>{evento?.lugar || 'No especificado'}</td>
+                        <td>{decor.tipo_decoracion}</td>
+                        <td>
+                          <span className={`estado-badge ${decor.estado.toLowerCase()}`}>
+                            {decor.estado}
+                          </span>
+                        </td>
+                      </tr>
+                    );
+                  })}
               </tbody>
             </table>
           </div>
@@ -580,23 +628,42 @@ export default function Decor() {
     <div className="decor-content">
       <div className="dashboard__stats">
         <div className="stat-card">
-          <span className="stat-card__label">Empleados Encargados</span>
-          <strong className="stat-card__number">{stats.empleadosEncargados}</strong>
-          <button className="stat-card__seeInfo">Ver empleados</button>
-        </div>
-
-        <div className="stat-card">
-          <span className="stat-card__label">Eventos con Decoración</span>
+          <span className="stat-card__label">Eventos en los que participé</span>
           <strong className="stat-card__number">{stats.eventosConDecoracion}</strong>
-          <button className="stat-card__seeInfo">Ver eventos</button>
+          <button 
+            className="stat-card__seeInfo"
+            onClick={() => setShowEventosModal(true)}
+          >
+            Ver eventos
+          </button>
         </div>
 
         <div className="stat-card">
-          <span className="stat-card__label">Decoraciones Completadas</span>
-          <strong className="stat-card__number">{stats.decoracionesCompletadas}</strong>
-          <button className="stat-card__seeInfo">Ver completadas</button>
+          <span className="stat-card__label">Decoraciones Pendientes</span>
+          <strong className="stat-card__number">{stats.decoracionesPendintes}</strong>
+          <button 
+            className="stat-card__seeInfo"
+            onClick={() => setShowPendientesModal(true)}
+          >
+            Ver pendientes
+          </button>
+        </div>
+
+        <div className="stat-card">
+          <span className="stat-card__label">Personal Encargado</span>
+          <strong className="stat-card__number">{stats.empleadosEncargados}</strong>
+          <button 
+            className="stat-card__seeInfo"
+            onClick={() => setShowEmpleadosModal(true)}
+          >
+            Ver personal
+          </button>
         </div>
       </div>
+
+      <button className="new-form-btn" onClick={() => setShowModal(true)}>
+        + Agregar Servicio
+      </button>
 
       <div className="table-section">
         <p>Servicios de Decoración Registrados</p>
@@ -661,6 +728,121 @@ export default function Decor() {
           </tbody>
         </table>
       </div>
+
+      {showEventosModal && (
+        <div className="modal-overlay">
+          <div className="modal-container">
+            <button className="close-btn" onClick={() => setShowEventosModal(false)}>×</button>
+            <div className="modal-content">
+              <h3>Eventos con Decoración</h3>
+              <div className="table-container">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Evento</th>
+                      <th>Cliente</th>
+                      <th>Espacio</th>
+                      <th>Decoración</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {decors.map((decor) => {
+                      const evento = eventos.find(e => e.id_evento === decor.id_evento);
+                      return (
+                        <tr key={decor.id_decor}>
+                          <td>{evento?.tipo_evento}</td>
+                          <td>{evento?.nombre_cliente}</td>
+                          <td>{evento?.lugar || 'No especificado'}</td>
+                          <td>{decor.tipo_decoracion}</td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showPendientesModal && (
+        <div className="modal-overlay">
+          <div className="modal-container">
+            <button className="close-btn" onClick={() => setShowPendientesModal(false)}>×</button>
+            <div className="modal-content">
+              <h3>Decoraciones Pendientes</h3>
+              <div className="table-container">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Evento</th>
+                      <th>Cliente</th>
+                      <th>Espacio</th>
+                      <th>Tipo de Decoración</th>
+                      <th>Estado</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {decors
+                      .filter(decor => decor.estado === 'Pendiente')
+                      .map((decor) => {
+                        const evento = eventos.find(e => e.id_evento === decor.id_evento);
+                        return (
+                          <tr key={decor.id_decor}>
+                            <td>{evento?.tipo_evento}</td>
+                            <td>{evento?.nombre_cliente}</td>
+                            <td>{evento?.lugar || 'No especificado'}</td>
+                            <td>{decor.tipo_decoracion}</td>
+                            <td>
+                              <span className={`estado-badge ${decor.estado.toLowerCase()}`}>
+                                {decor.estado}
+                              </span>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showEmpleadosModal && (
+        <div className="modal-overlay">
+          <div className="modal-container">
+            <button className="close-btn" onClick={() => setShowEmpleadosModal(false)}>×</button>
+            <div className="modal-content">
+              <h3>Personal Encargado</h3>
+              <div className="table-container">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Nombre</th>
+                      <th>Apellido</th>
+                      <th>Cédula</th>
+                      <th>Contacto</th>
+                      <th>Total de Eventos</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {empleados.map((empleado) => (
+                      <tr key={empleado.id_empleado}>
+                        <td>{empleado.nombre}</td>
+                        <td>{empleado.apellido}</td>
+                        <td>{empleado.cedula}</td>
+                        <td>{empleado.contacto}</td>
+                        <td>{empleado.total_eventos}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 

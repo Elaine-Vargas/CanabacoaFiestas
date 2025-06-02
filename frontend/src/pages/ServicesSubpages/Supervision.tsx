@@ -347,18 +347,18 @@ export default function Supervision() {
             <div className="modal-container">
               <button className="close-btn" onClick={() => setShowModal(false)}>×</button>
               <form className="modal-form" onSubmit={handleSubmit}>
-                <h3>{editId ? 'Editar Supervisión' : 'Nueva Supervisión'}</h3>
+                <h2>{editId ? 'Editar Supervisión' : 'Nueva Supervisión'}</h2>
                 
                 <label>
                   Evento:
                   <select
                     name="id_evento"
-                    value={formData.id_evento}
+                    value={formData.id_evento || ''}
                     onChange={handleSelectChange}
                     required
                   >
                     <option value="">Seleccionar evento</option>
-                    {eventos.map(evento => (
+                    {eventos.map((evento) => (
                       <option key={evento.id_evento} value={evento.id_evento}>
                         {evento.tipo_evento} - {evento.fecha_evento}
                       </option>
@@ -367,35 +367,29 @@ export default function Supervision() {
                 </label>
 
                 <label>
-                  Fecha:
-                  <input
-                    type="date"
-                    name="fecha"
-                    value={formData.fecha}
-                    onChange={handleInputChange}
+                  Tipo de Supervisión:
+                  <select
+                    name="tipo_supervision"
+                    value={formData.tipo_supervision || ''}
+                    onChange={handleSelectChange}
                     required
-                  />
+                  >
+                    <option value="">Seleccionar tipo</option>
+                    <option value="General">General</option>
+                    <option value="Seguridad">Seguridad</option>
+                    <option value="Logística">Logística</option>
+                    <option value="Calidad">Calidad</option>
+                  </select>
                 </label>
 
                 <label>
-                  Hora de inicio:
-                  <input
-                    type="time"
-                    name="hora_inicio"
-                    value={formData.hora_inicio}
+                  Descripción:
+                  <textarea
+                    name="descripcion"
+                    value={formData.descripcion || ''}
                     onChange={handleInputChange}
                     required
-                  />
-                </label>
-
-                <label>
-                  Hora de fin:
-                  <input
-                    type="time"
-                    name="hora_fin"
-                    value={formData.hora_fin}
-                    onChange={handleInputChange}
-                    required
+                    rows={4}
                   />
                 </label>
 
@@ -403,25 +397,16 @@ export default function Supervision() {
                   Estado:
                   <select
                     name="estado"
-                    value={formData.estado}
+                    value={formData.estado || ''}
                     onChange={handleSelectChange}
                     required
                   >
+                    <option value="">Seleccionar estado</option>
                     <option value="Pendiente">Pendiente</option>
-                    <option value="En Proceso">En Proceso</option>
+                    <option value="En Progreso">En Progreso</option>
                     <option value="Completado">Completado</option>
                     <option value="Cancelado">Cancelado</option>
                   </select>
-                </label>
-
-                <label>
-                  Notas:
-                  <textarea
-                    name="notas"
-                    value={formData.notas}
-                    onChange={handleInputChange}
-                    rows={4}
-                  />
                 </label>
 
                 <div className="form-buttons">
@@ -431,18 +416,7 @@ export default function Supervision() {
                   <button
                     type="button"
                     className="reset-btn"
-                    onClick={() => {
-                      setShowModal(false);
-                      setEditId(null);
-                      setFormData({
-                        id_evento: 0,
-                        fecha: '',
-                        hora_inicio: '',
-                        hora_fin: '',
-                        estado: 'Pendiente',
-                        notas: ''
-                      });
-                    }}
+                    onClick={() => setShowModal(false)}
                   >
                     Cancelar
                   </button>
@@ -476,6 +450,10 @@ export default function Supervision() {
           <button className="stat-card__seeInfo">Ver completadas</button>
         </div>
       </div>
+
+      <button className="new-form-btn" onClick={() => setShowModal(true)}>
+        + Agregar Servicio
+      </button>
 
       <div className="table-section">
         <p>Servicios de Supervisión Registrados</p>
@@ -669,18 +647,18 @@ export default function Supervision() {
           <div className="modal-container">
             <button className="close-btn" onClick={() => setShowModal(false)}>×</button>
             <form className="modal-form" onSubmit={handleSubmit}>
-              <h3>{editId ? 'Editar Supervisión' : 'Nueva Supervisión'}</h3>
+              <h2>{editId ? 'Editar Supervisión' : 'Nueva Supervisión'}</h2>
               
               <label>
                 Evento:
                 <select
                   name="id_evento"
-                  value={formData.id_evento}
+                  value={formData.id_evento || ''}
                   onChange={handleSelectChange}
                   required
                 >
                   <option value="">Seleccionar evento</option>
-                  {eventos.map(evento => (
+                  {eventos.map((evento) => (
                     <option key={evento.id_evento} value={evento.id_evento}>
                       {evento.tipo_evento} - {evento.fecha_evento}
                     </option>
@@ -689,35 +667,29 @@ export default function Supervision() {
               </label>
 
               <label>
-                Fecha:
-                <input
-                  type="date"
-                  name="fecha"
-                  value={formData.fecha}
-                  onChange={handleInputChange}
+                Tipo de Supervisión:
+                <select
+                  name="tipo_supervision"
+                  value={formData.tipo_supervision || ''}
+                  onChange={handleSelectChange}
                   required
-                />
+                >
+                  <option value="">Seleccionar tipo</option>
+                  <option value="General">General</option>
+                  <option value="Seguridad">Seguridad</option>
+                  <option value="Logística">Logística</option>
+                  <option value="Calidad">Calidad</option>
+                </select>
               </label>
 
               <label>
-                Hora de inicio:
-                <input
-                  type="time"
-                  name="hora_inicio"
-                  value={formData.hora_inicio}
+                Descripción:
+                <textarea
+                  name="descripcion"
+                  value={formData.descripcion || ''}
                   onChange={handleInputChange}
                   required
-                />
-              </label>
-
-              <label>
-                Hora de fin:
-                <input
-                  type="time"
-                  name="hora_fin"
-                  value={formData.hora_fin}
-                  onChange={handleInputChange}
-                  required
+                  rows={4}
                 />
               </label>
 
@@ -725,25 +697,16 @@ export default function Supervision() {
                 Estado:
                 <select
                   name="estado"
-                  value={formData.estado}
+                  value={formData.estado || ''}
                   onChange={handleSelectChange}
                   required
                 >
+                  <option value="">Seleccionar estado</option>
                   <option value="Pendiente">Pendiente</option>
-                  <option value="En Proceso">En Proceso</option>
+                  <option value="En Progreso">En Progreso</option>
                   <option value="Completado">Completado</option>
                   <option value="Cancelado">Cancelado</option>
                 </select>
-              </label>
-
-              <label>
-                Notas:
-                <textarea
-                  name="notas"
-                  value={formData.notas}
-                  onChange={handleInputChange}
-                  rows={4}
-                />
               </label>
 
               <div className="form-buttons">
@@ -753,18 +716,7 @@ export default function Supervision() {
                 <button
                   type="button"
                   className="reset-btn"
-                  onClick={() => {
-                    setShowModal(false);
-                    setEditId(null);
-                    setFormData({
-                      id_evento: 0,
-                      fecha: '',
-                      hora_inicio: '',
-                      hora_fin: '',
-                      estado: 'Pendiente',
-                      notas: ''
-                    });
-                  }}
+                  onClick={() => setShowModal(false)}
                 >
                   Cancelar
                 </button>

@@ -393,7 +393,7 @@ export default function Transportation() {
             <div className="modal-container">
               <button className="close-btn" onClick={() => setShowModal(false)}>×</button>
               <form className="modal-form" onSubmit={handleSubmit}>
-                <h2>{editId ? 'Editar Servicio' : 'Nuevo Servicio'}</h2>
+                <h2>{editId ? 'Editar Servicio de Transporte' : 'Nuevo Servicio de Transporte'}</h2>
                 
                 <label>
                   Evento:
@@ -406,7 +406,7 @@ export default function Transportation() {
                     <option value="">Seleccionar evento</option>
                     {eventos.map((evento) => (
                       <option key={evento.id_evento} value={evento.id_evento}>
-                        {evento.fecha_evento} - {evento.tipo_evento}
+                        {evento.tipo_evento} - {evento.fecha_evento}
                       </option>
                     ))}
                   </select>
@@ -424,7 +424,7 @@ export default function Transportation() {
                     <option value="Bus">Bus</option>
                     <option value="Van">Van</option>
                     <option value="Carro">Carro</option>
-                    <option value="Otros">Otros</option>
+                    <option value="Camioneta">Camioneta</option>
                   </select>
                 </label>
 
@@ -510,6 +510,10 @@ export default function Transportation() {
           <button className="stat-card__seeInfo" onClick={() => setShowVehiculosModal(true)}>Ver vehículos</button>
         </div>
       </div>
+
+      <button className="new-form-btn" onClick={() => setShowModal(true)}>
+        + Agregar Servicio
+      </button>
 
       <div className="table-section">
         <p>Servicios de Transporte Registrados</p>

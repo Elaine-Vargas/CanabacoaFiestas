@@ -110,6 +110,27 @@ interface Evento {
   tipo_evento: string;
 }
 
+interface EventoAsignado {
+  id_evento: number;
+  tipo_evento: string;
+  cliente: string;
+  contacto_cliente: string;
+  fecha_evento: string;
+  servicios_realizados: string[];
+  estado_evento: string;
+  activo: boolean;
+}
+
+interface ClienteActivo {
+  id_usuario: number;
+  nombre: string;
+  apellido: string;
+  cedula: string;
+  contacto: string;
+  eventos_realizados: number;
+  activo: boolean;
+}
+
 const WelcomeMenu: React.FC<WelcomeMenuProps> = () => {
   const navigate = useNavigate();
   const { userRole } = useUser();
@@ -171,6 +192,12 @@ const WelcomeMenu: React.FC<WelcomeMenuProps> = () => {
     telefono: '',
     correo: ''
   });
+  const [showEventosAsignadosModal, setShowEventosAsignadosModal] = useState(false);
+  const [showClientesActivosModal, setShowClientesActivosModal] = useState(false);
+  const [eventosAsignados, setEventosAsignados] = useState<EventoAsignado[]>([]);
+  const [clientesActivos, setClientesActivos] = useState<ClienteActivo[]>([]);
+  const [eventoEditando, setEventoEditando] = useState<EventoAsignado | null>(null);
+  const [clienteEditando, setClienteEditando] = useState<ClienteActivo | null>(null);
 
   useEffect(() => {
     const fetchEspacios = async () => {
@@ -277,6 +304,35 @@ const WelcomeMenu: React.FC<WelcomeMenuProps> = () => {
       fetchSpaces();
     }
   }, [showSpacesModal]);
+
+  useEffect(() => {
+    const fetchEventosAsignados = async () => {
+      try {
+        const response = await fetch('/api/eventos/asignados');
+        const data = await response.json();
+        setEventosAsignados(data);
+      } catch (error) {
+        console.error('Error al cargar eventos asignados:', error);
+      }
+    };
+
+    const fetchClientesActivos = async () => {
+      try {
+        const response = await fetch('/api/clientes/activos');
+        const data = await response.json();
+        setClientesActivos(data);
+      } catch (error) {
+        console.error('Error al cargar clientes activos:', error);
+      }
+    };
+
+    if (showEventosAsignadosModal) {
+      fetchEventosAsignados();
+    }
+    if (showClientesActivosModal) {
+      fetchClientesActivos();
+    }
+  }, [showEventosAsignadosModal, showClientesActivosModal]);
 
   const handleCommentSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -877,45 +933,57 @@ const WelcomeMenu: React.FC<WelcomeMenuProps> = () => {
 
   const renderCoordinatorDashboard = () => (
     <>
-    <div className="coordinator-dashboard">
-      <div className="welcome-header">
-        <center>
-        <h1>Bienvenido al Panel de Coordinador</h1>
-        </center>
-        <p>Gestiona todos los servicios y eventos desde aquí</p>
-      </div>
-
-      <div className="dashboard__stats">
-        <div className="stat-card">
-          <span className="stat-card__label">Eventos Asignados</span>
-          <strong className="stat-card__number">{stats.eventsInProcess}</strong>
-          <button className="stat-card__seeInfo">Ver eventos</button>
+      <div className="coordinator-dashboard">
+        <div className="welcome-header">
+          <center>
+            <h1>Bienvenido al Panel de Coordinador</h1>
+          </center>
+          <p>Gestiona todos los servicios y eventos desde aquí</p>
         </div>
 
-        <div className="stat-card">
-          <span className="stat-card__label">Calificación Promedio</span>
-          <strong className="stat-card__number">{stats.averageRating.toFixed(1)}</strong>
-          <div className="stat-card__stars">{renderStars(stats.averageRating)}</div>
+        <div className="dashboard__stats">
+          <div className="stat-card">
+            <span className="stat-card__label">Eventos Asignados</span>
+            <strong className="stat-card__number">{stats.eventsInProcess}</strong>
+            <button 
+              className="stat-card__seeInfo"
+              onClick={() => setShowEventosAsignadosModal(true)}
+            >
+              Ver eventos
+            </button>
+          </div>
+
+          <div className="stat-card">
+            <span className="stat-card__label">Calificación Promedio</span>
+            <strong className="stat-card__number">{stats.averageRating.toFixed(1)}</strong>
+            <div className="stat-card__stars">{renderStars(stats.averageRating)}</div>
+          </div>
+
+          <div className="stat-card">
+            <span className="stat-card__label">Clientes activos</span>
+            <strong className="stat-card__number">{stats.totalUsers}</strong>
+            <button 
+              className="stat-card__seeInfo"
+              onClick={() => setShowClientesActivosModal(true)}
+            >
+              Ver clientes
+            </button>
+          </div>
         </div>
 
-        <div className="stat-card">
-          <span className="stat-card__label">Clientes activos</span>
-          <strong className="stat-card__number">{stats.totalUsers}</strong>
-          <button className="stat-card__seeInfo">Ver clientes</button>
+        <div className="section-header">
+          <center>
+            <button 
+              className="new-form-btn"
+              onClick={() => setShowEventModal(true)}>
+              + Nuevo evento
+            </button>
+          </center>
         </div>
       </div>
 
-      <div className="section-header">
-        <center>
-          <button 
-            className="new-form-btn"
-            onClick={() => setShowEventModal(true)}>
-            + Nuevo evento
-          </button>
-        </center>
-      </div>
-
-      </div>
+      {showEventosAsignadosModal && renderEventosAsignadosModal()}
+      {showClientesActivosModal && renderClientesActivosModal()}
     </>
   );
 
@@ -1131,6 +1199,178 @@ const WelcomeMenu: React.FC<WelcomeMenuProps> = () => {
             </button>
           </div>
         </form>
+      </div>
+    </div>
+  );
+
+  const handleEditarEvento = (evento: EventoAsignado) => {
+    setEventoEditando(evento);
+    // Aquí puedes abrir un modal de edición o navegar a una página de edición
+  };
+
+  const handleDeshabilitarEvento = async (id: number) => {
+    if (window.confirm('¿Estás seguro de que deseas deshabilitar este evento?')) {
+      try {
+        const response = await fetch(`/api/eventos/${id}/deshabilitar`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+          }
+        });
+
+        if (response.ok) {
+          setEventosAsignados(prev => 
+            prev.map(evento => 
+              evento.id_evento === id 
+                ? { ...evento, activo: false }
+                : evento
+            )
+          );
+        }
+      } catch (error) {
+        console.error('Error al deshabilitar evento:', error);
+      }
+    }
+  };
+
+  const handleEditarCliente = (cliente: ClienteActivo) => {
+    setClienteEditando(cliente);
+    // Aquí puedes abrir un modal de edición o navegar a una página de edición
+  };
+
+  const handleDeshabilitarCliente = async (id: number) => {
+    if (window.confirm('¿Estás seguro de que deseas deshabilitar este cliente?')) {
+      try {
+        const response = await fetch(`/api/clientes/${id}/deshabilitar`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+          }
+        });
+
+        if (response.ok) {
+          setClientesActivos(prev => 
+            prev.map(cliente => 
+              cliente.id_usuario === id 
+                ? { ...cliente, activo: false }
+                : cliente
+            )
+          );
+        }
+      } catch (error) {
+        console.error('Error al deshabilitar cliente:', error);
+      }
+    }
+  };
+
+  const renderEventosAsignadosModal = () => (
+    <div className="modal-overlay">
+      <div className="modal-container">
+        <button className="close-btn" onClick={() => setShowEventosAsignadosModal(false)}>×</button>
+        <div className="modal-content">
+          <h3>Eventos Asignados</h3>
+          <div className="table-container">
+            <table>
+              <thead>
+                <tr>
+                  <th>Evento</th>
+                  <th>Cliente</th>
+                  <th>Contacto</th>
+                  <th>Fecha</th>
+                  <th>Servicios</th>
+                  <th>Estado</th>
+                  <th>Acciones</th>
+                </tr>
+              </thead>
+              <tbody>
+                {eventosAsignados.map((evento) => (
+                  <tr key={evento.id_evento} className={!evento.activo ? 'deshabilitado' : ''}>
+                    <td>{evento.tipo_evento}</td>
+                    <td>{evento.cliente}</td>
+                    <td>{evento.contacto_cliente}</td>
+                    <td>{evento.fecha_evento}</td>
+                    <td>{evento.servicios_realizados.join(', ')}</td>
+                    <td>
+                      <span className={`estado-badge ${evento.estado_evento.toLowerCase()}`}>
+                        {evento.estado_evento}
+                      </span>
+                    </td>
+                    <td>
+                      <div className="acciones-buttons">
+                        <button 
+                          className="edit-btn"
+                          onClick={() => handleEditarEvento(evento)}
+                          disabled={!evento.activo}
+                        >
+                          Editar
+                        </button>
+                        <button 
+                          className={`${evento.activo ? 'delete-btn' : 'enable-btn'}`}
+                          onClick={() => handleDeshabilitarEvento(evento.id_evento)}
+                        >
+                          {evento.activo ? 'Deshabilitar' : 'Habilitar'}
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+
+  const renderClientesActivosModal = () => (
+    <div className="modal-overlay">
+      <div className="modal-container">
+        <button className="close-btn" onClick={() => setShowClientesActivosModal(false)}>×</button>
+        <div className="modal-content">
+          <h3>Clientes Activos</h3>
+          <div className="table-container">
+            <table>
+              <thead>
+                <tr>
+                  <th>Nombre</th>
+                  <th>Apellido</th>
+                  <th>Cédula</th>
+                  <th>Contacto</th>
+                  <th>Eventos Realizados</th>
+                  <th>Acciones</th>
+                </tr>
+              </thead>
+              <tbody>
+                {clientesActivos.map((cliente) => (
+                  <tr key={cliente.id_usuario} className={!cliente.activo ? 'deshabilitado' : ''}>
+                    <td>{cliente.nombre}</td>
+                    <td>{cliente.apellido}</td>
+                    <td>{cliente.cedula}</td>
+                    <td>{cliente.contacto}</td>
+                    <td>{cliente.eventos_realizados}</td>
+                    <td>
+                      <div className="acciones-buttons">
+                        <button 
+                          className="edit-btn"
+                          onClick={() => handleEditarCliente(cliente)}
+                          disabled={!cliente.activo}
+                        >
+                          Editar
+                        </button>
+                        <button 
+                          className={`${cliente.activo ? 'delete-btn' : 'enable-btn'}`}
+                          onClick={() => handleDeshabilitarCliente(cliente.id_usuario)}
+                        >
+                          {cliente.activo ? 'Deshabilitar' : 'Habilitar'}
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
       </div>
     </div>
   );

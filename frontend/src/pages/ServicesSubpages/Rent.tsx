@@ -1027,32 +1027,59 @@ export default function Rent() {
         <div className="stat-card">
           <span className="stat-card__label">Total de Pedidos</span>
           <strong className="stat-card__number">{stats.totalPedidos}</strong>
-          <button className="stat-card__seeInfo">Ver pedidos</button>
+          <button 
+            className="stat-card__seeInfo"
+            onClick={() => setShowTotalPedidosModal(true)}
+          >
+            Ver pedidos
+          </button>
         </div>
 
         <div className="stat-card">
           <span className="stat-card__label">Pedidos Pendientes</span>
           <strong className="stat-card__number">{stats.pedidosPendientes}</strong>
-          <button className="stat-card__seeInfo">Ver pendientes</button>
+          <button 
+            className="stat-card__seeInfo"
+            onClick={() => setShowPedidosPendientesModal(true)}
+          >
+            Ver pendientes
+          </button>
         </div>
 
         <div className="stat-card">
-          <span className="stat-card__label">Total de Items</span>
+          <span className="stat-card__label">Items en Catálogo</span>
           <strong className="stat-card__number">{stats.totalElementos}</strong>
-          <button className="stat-card__seeInfo">Ver items</button>
+          <button 
+            className="stat-card__seeInfo"
+            onClick={() => setShowTotalItemsModal(true)}
+          >
+            Ver catálogo
+          </button>
         </div>
       </div>
+
+      {showTotalPedidosModal && renderTotalPedidosModal()}
+      {showPedidosPendientesModal && renderPedidosPendientesModal()}
+      {showTotalItemsModal && renderTotalItemsModal()}
+
+      <button className="new-form-btn" onClick={() => setShowModal(true)}>
+        + Agregar Servicio
+      </button>
 
       <div className="table-section">
         <p>Servicios de Alquiler Registrados</p>
         <div className="search-container">
-          <input
-            type="text"
+          <select
             className="escri"
-            placeholder="Buscar por evento..."
             value={filtroEvento}
             onChange={(e) => setFiltroEvento(e.target.value)}
-          />
+          >
+            <option value="">Todos los eventos</option>
+            <option value="recientes">Eventos recientes</option>
+            <option value="pendientes">Eventos pendientes</option>
+            <option value="completados">Eventos completados</option>
+            <option value="cancelados">Eventos cancelados</option>
+          </select>
         </div>
         <table>
           <thead>
@@ -1102,6 +1129,115 @@ export default function Rent() {
           </tbody>
         </table>
       </div>
+
+      {showModal && (
+        <div className="modal-overlay">
+          <div className="modal-container">
+            <button className="close-btn" onClick={() => setShowModal(false)}>×</button>
+            <form className="modal-form" onSubmit={handleSubmit}>
+              <h2>{editId ? 'Editar Servicio' : 'Nuevo Servicio'}</h2>
+              
+              <label>
+                Evento:
+                <select
+                  name="id_evento"
+                  value={formData.id_evento || ''}
+                  onChange={handleSelectChange}
+                  required
+                >
+                  <option value="">Seleccionar evento</option>
+                  {eventos.map((evento) => (
+                    <option key={evento.id_evento} value={evento.id_evento}>
+                      {evento.fecha_evento} - {evento.tipo_evento}
+                    </option>
+                  ))}
+                </select>
+              </label>
+
+              <label>
+                Tipo de Item:
+                <select
+                  name="tipo_elemento"
+                  value={formData.tipo_elemento || ''}
+                  onChange={handleSelectChange}
+                  required
+                >
+                  <option value="">Seleccionar tipo</option>
+                  <option value="Mesa">Mesa</option>
+                  <option value="Silla">Silla</option>
+                  <option value="Mantel">Mantel</option>
+                  <option value="Cubiertos">Cubiertos</option>
+                  <option value="Otros">Otros</option>
+                </select>
+              </label>
+
+              <label>
+                Cantidad:
+                <input
+                  type="number"
+                  name="cantidad"
+                  value={formData.cantidad || ''}
+                  onChange={handleInputChange}
+                  required
+                  min="1"
+                />
+              </label>
+
+              <label>
+                Precio:
+                <input
+                  type="number"
+                  name="precio_unitario"
+                  value={formData.precio_unitario || ''}
+                  onChange={handleInputChange}
+                  required
+                  min="0"
+                  step="0.01"
+                />
+              </label>
+
+              <label>
+                Estado:
+                <select
+                  name="estado"
+                  value={formData.estado || ''}
+                  onChange={handleSelectChange}
+                  required
+                >
+                  <option value="">Seleccionar estado</option>
+                  <option value="Pendiente">Pendiente</option>
+                  <option value="En Progreso">En Progreso</option>
+                  <option value="Completado">Completado</option>
+                  <option value="Cancelado">Cancelado</option>
+                </select>
+              </label>
+
+              <label>
+                Notas:
+                <textarea
+                  name="notas"
+                  value={formData.notas || ''}
+                  onChange={handleInputChange}
+                  rows={4}
+                />
+              </label>
+
+              <div className="form-buttons">
+                <button type="submit" className="submit-btn">
+                  {editId ? 'Actualizar' : 'Guardar'}
+                </button>
+                <button
+                  type="button"
+                  className="reset-btn"
+                  onClick={() => setShowModal(false)}
+                >
+                  Cancelar
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 

@@ -327,15 +327,25 @@ export default function AssemblyAndDisassembly() {
         </div>
       </div>
 
+      <button className="new-form-btn" onClick={() => setShowModal(true)}>
+        + Agregar Servicio
+      </button>
+
       <div className="table-section">
         <p>Servicios de Montaje y Desmontaje</p>
-        <input
-          type="text"
-          className="escri"
-          placeholder="Filtrar por evento..."
-          value={filtroEvento}
-          onChange={(e) => setFiltroEvento(e.target.value)}
-        />
+        <div className="search-container">
+          <select
+            className="escri"
+            value={filtroEvento}
+            onChange={(e) => setFiltroEvento(e.target.value)}
+          >
+            <option value="">Todos los eventos</option>
+            <option value="recientes">Eventos recientes</option>
+            <option value="pendientes">Eventos pendientes</option>
+            <option value="completados">Eventos completados</option>
+            <option value="cancelados">Eventos cancelados</option>
+          </select>
+        </div>
         <table>
           <thead>
             <tr>
@@ -502,7 +512,7 @@ export default function AssemblyAndDisassembly() {
             <div className="modal-container">
               <button className="close-btn" onClick={() => setShowModal(false)}>×</button>
               <form className="modal-form" onSubmit={handleSubmit}>
-                <h2>{editId ? 'Editar Servicio' : 'Nuevo Servicio'}</h2>
+                <h2>{editId ? 'Editar Servicio de Montaje' : 'Nuevo Servicio de Montaje'}</h2>
                 
                 <label>
                   Evento:
@@ -515,9 +525,24 @@ export default function AssemblyAndDisassembly() {
                     <option value="">Seleccionar evento</option>
                     {eventos.map((evento) => (
                       <option key={evento.id_evento} value={evento.id_evento}>
-                        {evento.fecha_evento} - {evento.tipo_evento}
+                        {evento.tipo_evento} - {evento.fecha_evento}
                       </option>
                     ))}
+                  </select>
+                </label>
+
+                <label>
+                  Tipo de Servicio:
+                  <select
+                    name="tipo_servicio"
+                    value={formData.tipo_servicio || ''}
+                    onChange={handleSelectChange}
+                    required
+                  >
+                    <option value="">Seleccionar tipo</option>
+                    <option value="Montaje">Montaje</option>
+                    <option value="Desmontaje">Desmontaje</option>
+                    <option value="Montaje y Desmontaje">Montaje y Desmontaje</option>
                   </select>
                 </label>
 
@@ -529,6 +554,28 @@ export default function AssemblyAndDisassembly() {
                     onChange={handleInputChange}
                     required
                     rows={4}
+                  />
+                </label>
+
+                <label>
+                  Fecha de Inicio:
+                  <input
+                    type="datetime-local"
+                    name="fecha_inicio"
+                    value={formData.fecha_inicio || ''}
+                    onChange={handleInputChange}
+                    required
+                  />
+                </label>
+
+                <label>
+                  Fecha de Fin:
+                  <input
+                    type="datetime-local"
+                    name="fecha_fin"
+                    value={formData.fecha_fin || ''}
+                    onChange={handleInputChange}
+                    required
                   />
                 </label>
 
@@ -546,16 +593,6 @@ export default function AssemblyAndDisassembly() {
                     <option value="Completado">Completado</option>
                     <option value="Cancelado">Cancelado</option>
                   </select>
-                </label>
-
-                <label>
-                  Notas:
-                  <textarea
-                    name="notas"
-                    value={formData.notas || ''}
-                    onChange={handleInputChange}
-                    rows={4}
-                  />
                 </label>
 
                 <div className="form-buttons">
