@@ -1,5 +1,4 @@
 import '../styles/basics/App.scss';
-import Principal from './Principal'; // This stays as a regular import
 import { lazy, Suspense } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import ColorTheme from '../functions/ColorTheme';
@@ -19,9 +18,12 @@ const Supervision = lazy(() => import('./ServicesSubpages/Supervision'));
 const Transportation = lazy(() => import('./ServicesSubpages/Transportation'));
 const AssemblyAndDisassembly = lazy(() => import('./ServicesSubpages/AssemblyAndDisassembly'));
 const Catalogo = lazy(() => import('./Catalog'));
+const Principal = lazy(() => import('./Principal')); // Ahora puede ser lazy-loaded
 
 import ProtectedRoute from '../components/ProtectedRoute';
 import PublicRoute from '../components/PublicRoute';
+import PrincipalLayout from './PrincipalLayout'; // Importa el nuevo Layout
+import { LoadingScreen } from '../components/LoadingScreen';
 
 function App() {
   return (
@@ -29,25 +31,33 @@ function App() {
       <div id="ColorTheme">
         <ColorTheme colorLight="none" colorDark="none" />
       </div>
-      <Suspense fallback={<div>Loading...</div>}>
-        <BrowserRouter>
-          <Routes>
-            <Route path="/" element={<Navigate to="/Principal" replace />} />
-            <Route path="/Principal" element={<Principal />} />
-            <Route path="/Nosotros" element={<AboutUs />} />
-            <Route path="/Servicios" element={<Services />} />
-            <Route path="/Catalogo" element={<Catalogo />} />
-            <Route path="/Login" element={
-              <PublicRoute>
+      <BrowserRouter>
+        <Routes>
+          <Route path="/" element={<Navigate to="/Principal" replace />} />
+          
+          {/* Rutas bajo /Principal: Navbar persistente + Suspense interno */}
+          <Route path="/Principal" element={<PrincipalLayout />}>
+            <Route index element={<Principal />} />
+            <Route path="Nosotros" element={<AboutUs />} />
+            <Route path="Servicios" element={<Services />} />
+            <Route path="Catalogo" element={<Catalogo />} />
+          </Route>
+
+          <Route path="/Login" element={
+            <PublicRoute>
+              <Suspense fallback={<LoadingScreen />}>
                 <UserLogin />
-              </PublicRoute>
-            } />
+              </Suspense>
+            </PublicRoute>
+          } />
         
-            <Route path="/Menu-Servicios/*" element={
-              <ProtectedRoute>
+        <Route path="/Menu-Servicios/*" element={
+            <ProtectedRoute>
+              <Suspense fallback={<LoadingScreen />}>
                 <DashboardLayout />
-              </ProtectedRoute>
-            }>
+              </Suspense>
+            </ProtectedRoute>
+          }>
               <Route index element={<Navigate to="Bienvenida" replace />} />
               <Route path="Bienvenida" element={<WelcomeMenu eventsInProcess={38} averageRating={4.0} totalUsers={150} quotations={[]}/>} />
               <Route path="Ajustes-Usuario" element={<UserConfig />} />
@@ -60,7 +70,6 @@ function App() {
             </Route>
           </Routes>
         </BrowserRouter>
-      </Suspense>
     </UserProvider>
   );
 }

@@ -28,14 +28,6 @@ export const getComentarios = async (req: Request, res: Response) => {
 
     // 👇 Aquí puedes inspeccionar lo que trae directamente Sequelize
     console.log('Comentarios obtenidos desde la base de datos:');
-    comentarios.forEach(c => {
-      console.log({
-        id: c.id_comentario,
-        calificacion: c.calificacion,
-        comentario: c.comentario,
-        cliente: c.evento?.cliente?.nombre_usuario
-      });
-    });
 
     const comentariosTransformados = comentarios.map(comentario => ({
       id_comentario: comentario.id_comentario,

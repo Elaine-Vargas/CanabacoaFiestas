@@ -1,0 +1,322 @@
+.info-page {
+  background-color: var(--color-background);
+  color: var(--color-text);
+  width: 100%;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  overflow-x: hidden;
+  box-sizing: border-box;
+  padding: 0.5rem;
+
+  .page-header {
+    text-align: center;
+    width: 100%;
+    padding: 4vw 0 2vw 0;
+    margin-bottom: 2rem;
+
+    .page-title {
+      font-family: "Pinyon Script", Georgia, 'Times New Roman', Times, serif;
+      font-size: 5rem;
+      font-weight: 400;
+      color: var(--color-text2);
+      margin: 4rem 0 0.5rem 0;
+    }
+
+    .page-subtitle {
+      font-size: 1.5rem;
+      font-weight: 500;
+      color: var(--color-text);
+    }
+  }
+
+  /* Estilos para grids de contenido */
+  .content-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 2rem;
+    width: 100%;
+    max-width: 1200px;
+    padding: 0 1rem;
+    margin-bottom: 3rem;
+    box-sizing: border-box;
+  }
+
+  /* Tarjetas de información */
+
+
+  .info-card {
+    background: var(--color-background2);
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+    padding: 1.5rem;
+    transition: transform 0.3s ease;
+
+    &:hover {
+      transform: translateY(-5px);
+    }
+    
+    .card-title {
+      font-family: "Parisienne", cursive;
+      font-size: 1.8rem;
+      color: var(--dark-gold);
+      margin-bottom: 1rem;
+      text-align: center;
+    }
+
+    .cargo h4 {
+        font-size: 2rem;
+    }
+    .card-subtitle {
+      font-family: "Nunito Sans", sans-serif;
+      font-size: 1.1rem;
+      color: var(--brown);
+      font-weight: 600;
+      margin-bottom: 0.5rem;
+      text-align: center;
+    }
+
+    .card-text {
+      font-family: "Nunito Sans", sans-serif;
+      font-size: 0.95rem;
+      line-height: 1.5;
+      text-align: justify;
+      margin-bottom: 0.5rem;
+
+      strong {
+        color: var(--brown);
+        font-weight: 600;
+      }
+    }
+
+    .card-image {
+      width: 100%;
+      height: 200px;
+      object-fit: cover;
+      border-radius: 8px 8px 0 0;
+      margin-bottom: 1rem;
+    }
+
+    ul {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+
+      li {
+        position: relative;
+        padding-left: 1.2rem;
+        margin-bottom: 0.5rem;
+        text-align: justify;
+        font-family: "Nunito Sans", sans-serif;
+
+        &::before {
+          content: "•";
+          position: absolute;
+          left: 0;
+          color: var(--dark-gold);
+        }
+
+        strong {
+          color: var(--brown);
+          font-weight: 600;
+        }
+      }
+    }
+  }
+
+  /* Sección de equipo */
+
+  /* RESPONSIVE */
+  @media (max-width: 1024px) {
+    .page-header {
+      .page-title {
+        font-size: 2.2rem;
+      }
+    }
+
+    .info-card .card-title {
+      font-size: 1.6rem;
+    }
+  }
+
+  @media (max-width: 768px) {
+    .content-grid {
+      grid-template-columns: 1fr;
+      gap: 1.5rem;
+    }
+
+    .page-header {
+      padding: 2rem 0;
+
+      .page-title {
+        font-size: 2rem;
+      }
+
+      .page-subtitle {
+        font-size: 1.2rem;
+      }
+    }
+
+    .info-card {
+      padding: 1.2rem;
+
+      .card-title {
+        font-size: 1.5rem;
+      }
+
+      .card-text {
+        font-size: 0.9rem;
+      }
+    }
+
+    .team-section .section-title {
+      font-size: 1.8rem;
+    }
+  }
+
+  @media (max-width: 480px) {
+    .page-header {
+      .page-title {
+        font-size: 1.8rem;
+      }
+
+      .page-subtitle {
+        font-size: 1rem;
+      }
+    }
+
+    .info-card {
+      padding: 1rem;
+
+      .card-title {
+        font-size: 1.4rem;
+      }
+
+      .card-text {
+        font-size: 0.85rem;
+      }
+    }
+
+    .team-section .section-title {
+      font-size: 1.6rem;
+      margin-bottom: 1.5rem;
+    }
+  }
+}
+
+  /* Estilo especial para la tarjeta de descripción */
+  .full-width-card {
+    grid-column: 1 / -1; /* Ocupa todas las columnas */
+    text-align: center;
+    max-width: 1105px;
+    margin: 0 auto 2rem;
+    background: var(--color-background2);
+    padding: 2rem;
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+
+    .card-text {
+      text-align: center;
+      font-size: 1.1rem;
+      line-height: 1.6;
+    }
+  }
+
+  /* Ajustes responsive */
+  @media (max-width: 768px) {
+    .full-width-card {
+      padding: 1.5rem;
+      
+      .card-text {
+        font-size: 1rem;
+      }
+    }
+  }
+
+  @media (max-width: 480px) {
+    .full-width-card {
+      padding: 1.2rem;
+      
+      .card-text {
+        font-size: 0.95rem;
+      }
+    }
+  }
+
+
+  .team-section {
+    width: 100%;
+    max-width: 1200px;
+    text-align: center;
+    margin-bottom: 3rem;
+    padding: 0 1rem;
+
+    .section-title {
+      font-family: "Parisienne", cursive;
+      font-size: 2rem;
+      color: var(--dark-gold);
+      margin-bottom: 2rem;
+      text-align: center;
+      grid-column: 1 / -1; /* Hace que el título ocupe todo el ancho */
+    }
+
+    .team-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 1.5rem;
+      width: 100%;
+    }
+
+    .team-card {
+      background: var(--color-background2);
+      border-radius: 12px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+      padding: 1.5rem;
+      transition: transform 0.3s ease;
+
+      &:hover {
+        transform: translateY(-5px);
+      }
+
+      .team-position {
+        font-family: "Nunito Sans", sans-serif;
+        font-size: 1.2rem;
+        color: var(--brown);
+        font-weight: 600;
+        margin-bottom: 0.5rem;
+      }
+
+      .team-member {
+        font-family: "Nunito Sans", sans-serif;
+        font-size: 1rem;
+        color: var(--color-text);
+        margin: 0.3rem 0;
+      }
+    }
+  }
+
+  /* Responsive para la sección del equipo */
+  @media (max-width: 768px) {
+    .team-section {
+      .team-grid {
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      }
+    }
+  }
+
+  @media (max-width: 480px) {
+    .team-section {
+      .team-grid {
+        grid-template-columns: 1fr;
+      }
+      
+      .team-card {
+        padding: 1rem;
+        
+        .team-position {
+          font-size: 1.1rem;
+        }
+      }
+    }
+  }

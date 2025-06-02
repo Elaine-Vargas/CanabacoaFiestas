@@ -1,7 +1,5 @@
-import NavBar from '../components/NavBar';
 import Footer from '../components/Footer';
-import "../styles/mainPages/Services.scss";
-{/*Importacion de cada imagen*/}
+import "../styles/mainPages/Info.scss";
 import alquilerImg from '../assets/servicesPhotos/alquilerServices.webp';
 import decoracionImg from '../assets/servicesPhotos/decorServices.webp';
 import cateringImg from '../assets/servicesPhotos/cateringServices.webp';
@@ -45,25 +43,28 @@ const servicesData = [
 export default function Services() {
   return (
     <>
-    <div className="servicioContent">
-      <div className="servicesHeader">
-        <NavBar />
-        <div className="servicesHeaderContent">
-          <h1>Nuestros servicios</h1>
-          <p>Canabacoa Fiestas te ofrece una buena variedad de servicios</p>
+      <main className="info-page">
+        <div className="page-header">
+          <h1 className="page-title">Nuestros servicios</h1>
         </div>
-      </div>
-      <div className="servicesGrid">
-        {servicesData.map((service, index) => (
-          <div key={index} className="serviceCard">
-            <img src={service.image} alt={service.title} className="serviceImage" />
-            <h4>{service.title}</h4>
-            <p>{service.description}</p>
-          </div>
-        ))}
-      </div>
-    </div>
-    <Footer/>
+        
+        <div className="full-width-card">
+          <p className="card-text">
+            <strong>Canabacoa Fiestas</strong> te ofrece una buena variedad de servicios para que puedas disfrutar de tu evento. Desde el alquiler de equipos hasta la decoración y el catering, nos encargamos de todo para que tu evento sea perfecto. Incluimos una serie de adicionales como la supervisión del evento, el montaje y desmontaje, y el transporte de los alimentos pedidos y elementos alquilados.
+          </p>
+        </div>
+       
+        <div className="content-grid">
+          {servicesData.map((service, index) => (
+            <div key={index} className="info-card">
+              <img src={service.image} alt={service.title} className="card-image" />
+              <h3 className="card-title">{service.title}</h3>
+              <p className="card-text">{service.description}</p>
+            </div>
+          ))}
+        </div>
+      </main>
+      <Footer/>
     </>
   );
 }

@@ -1,16 +1,4 @@
-import {
-  Drawer,
-  List,
-  ListItem,
-  ListItemButton,
-  ListItemText,
-  Button,
-  IconButton,
-  AppBar,
-  Toolbar,
-  Typography,
-  Box,
-} from "@mui/material";
+import {Drawer, List, ListItem, ListItemButton, ListItemText, Button, IconButton} from "@mui/material";
 import MenuRoundedIcon from "@mui/icons-material/MenuRounded";
 import circuloLogo from "../assets/logoVariants/CIRCULO-CF(blanco).svg";
 import ColorTheme from "../functions/ColorTheme";
@@ -39,13 +27,13 @@ const NavBar = React.memo(() => {
           <a href="/">Inicio</a>
         </li>
         <li className="navItem">
-          <a href="/Nosotros">Nosotros</a>
+          <a href="/Principal/Nosotros">Nosotros</a>
         </li>
         <li className="navItem">
-          <a href="/Servicios">Servicios</a>
+          <a href="/Principal/Servicios">Servicios</a>
         </li>
         <li className="navItem">
-          <a href="/Catalogo">Catálogo</a>
+          <a href="/Principal/Catalogo">Catálogo</a>
         </li>
         <li className="navItem">
           <a href="#footer">Contacto</a>

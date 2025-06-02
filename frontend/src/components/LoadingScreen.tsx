@@ -1,10 +1,27 @@
-import '../styles/Loading.scss'
-const LoadingScreen = () => {
-  return (
-<div id="loader">
-  <div className="spinner"></div>
-</div>
-  )
-}
+import '../styles/mainPages/Loading.scss'; 
+import Navbar from './NavBar';
 
-export default LoadingScreen
+
+export const MainLoadingScreen = () => {
+  return (
+    <>
+    <div className="loading-spinner-container">
+          <Navbar />
+<div className="spinner"></div>
+      <p className="loading-text">Cargando...</p>
+    </div>
+    </>
+  );
+};
+
+export const LoadingScreen = () => {
+  return (
+    <>
+    <div className="loading-spinner-container">
+          <Navbar />
+<div className="spinner"></div>
+      <p className="loading-text">Cargando...</p>
+    </div>
+    </>
+  );
+};

@@ -347,11 +347,6 @@ const Catalog: React.FC<CatalogProps> = ({ onAddToCart, showNavBar = true, onCom
         overflow: 'hidden'
       }} />
       <Box sx={{ position: 'relative', zIndex: 1 }}>
-        {showNavBar && (
-          <Suspense fallback={<CircularProgress sx={{ color: 'var(--gold)' }} />}>
-            <NavBar />
-          </Suspense>
-        )}
         <Container maxWidth="lg" sx={{ 
           py: { xs: 2, sm: 4 }, 
           mt: { xs: 6, sm: 8 },
