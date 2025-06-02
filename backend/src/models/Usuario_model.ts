@@ -1,7 +1,17 @@
-import { Table, Model, Column, DataType, ForeignKey, BelongsTo, HasMany, BeforeCreate, BeforeUpdate } from 'sequelize-typescript';
+import {
+  Table,
+  Model,
+  Column,
+  DataType,
+  ForeignKey,
+  BelongsTo,
+  HasMany,
+  BeforeCreate,
+  BeforeUpdate
+} from 'sequelize-typescript';
+import * as bcrypt from 'bcryptjs';
 import Rol from './Rol_model';
 import Evento from './Evento_model';
-import * as bcrypt from 'bcryptjs';
 import DetalleTransporte from './DetalleTransporte_model';
 import DetalleMontajedesmontaje from './DetalleMontajeDesmontaje_model';
 import DetalleSupervision from './DetalleSupervision_model';
@@ -22,11 +32,11 @@ export default class Usuario extends Model {
     type: DataType.CHAR(13),
     primaryKey: true,
     field: 'cedula_usuario',
-      validate: {
-        is: {
-          args: [/^[0-9]{3}-[0-9]{7}-[0-9]{1}$/],
-          msg: 'La cédula debe tener el formato 000-0000000-0'
-        }
+    validate: {
+      is: {
+        args: [/^[0-9]{3}-[0-9]{7}-[0-9]{1}$/],
+        msg: 'La cédula debe tener el formato 000-0000000-0'
+      }
     }
   })
   cedula_usuario!: string;
@@ -53,15 +63,14 @@ export default class Usuario extends Model {
   })
   apellido_usuario!: string;
 
-
   @ForeignKey(() => Rol)
-  @Column({ 
-    type: DataType.INTEGER, 
-    allowNull: false, 
+  @Column({
+    type: DataType.INTEGER,
+    allowNull: false,
     field: 'id_rol',
     validate: {
       min: 1
-    } 
+    }
   })
   id_rol!: number;
 
@@ -85,13 +94,7 @@ export default class Usuario extends Model {
   @Column({
     type: DataType.STRING(60),
     allowNull: false,
-    field: 'contrasena_login',
-    validate: {
-      is: {
-        args: /^(?=.*[A-Z])(?=.*[0-9])(?=.*[!@#$%^&*.?_-])[a-zA-Z0-9!@#$%^&*.?_-]{8,25}$/,
-        msg: 'La contraseña debe tener entre 8-25 caracteres, al menos una mayúscula, un número y un carácter especial'
-      }
-    }
+    field: 'contrasena_login'
   })
   contrasena_login!: string;
 
@@ -99,6 +102,11 @@ export default class Usuario extends Model {
   @BeforeUpdate
   static async hashPassword(usuario: Usuario) {
     if (usuario.changed('contrasena_login')) {
+      const passwordRegex = /^(?=.*[A-Z])(?=.*[0-9])(?=.*[!@#$%^&*.?_-])[a-zA-Z0-9!@#$%^&*.?_-]{8,25}$/;
+      if (!passwordRegex.test(usuario.contrasena_login)) {
+        throw new Error('La contraseña debe tener entre 8-25 caracteres, al menos una mayúscula, un número y un carácter especial');
+      }
+
       usuario.contrasena_login = await bcrypt.hash(usuario.contrasena_login, 10);
     }
   }
@@ -106,7 +114,7 @@ export default class Usuario extends Model {
   async compararContrasena(contrasena: string): Promise<boolean> {
     return bcrypt.compare(contrasena, this.contrasena_login);
   }
-  
+
   @Column({
     type: DataType.STRING(12),
     allowNull: false,
@@ -186,5 +194,4 @@ export default class Usuario extends Model {
     as: 'supervisionesRealizadas'
   })
   supervisionesRealizadas!: DetalleSupervision[];
-
 }
