@@ -129,11 +129,10 @@ const OptimizedImage = lazy(() => {
 
 interface CatalogProps {
   onAddToCart?: (item: Elemento) => void;
-  showNavBar?: boolean;
   onComprarCarrito?: (carrito: CarritoItem[]) => void;
 }
 
-const Catalog: React.FC<CatalogProps> = ({ onAddToCart, showNavBar = true, onComprarCarrito }) => {
+const Catalog: React.FC<CatalogProps> = ({ onAddToCart = true, onComprarCarrito }) => {
   const navigate = useNavigate();
   const [elementos, setElementos] = useState<Elemento[]>([]);
   const [categorias, setCategorias] = useState<CategoriaElemento[]>([]);
@@ -347,6 +346,7 @@ const Catalog: React.FC<CatalogProps> = ({ onAddToCart, showNavBar = true, onCom
         overflow: 'hidden'
       }} />
       <Box sx={{ position: 'relative', zIndex: 1 }}>
+
         <Container maxWidth="lg" sx={{ 
           py: { xs: 2, sm: 4 }, 
           mt: { xs: 6, sm: 8 },

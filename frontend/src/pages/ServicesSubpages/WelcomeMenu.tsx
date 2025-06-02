@@ -56,9 +56,21 @@ type WelcomeMenuProps = {
 interface Espacio {
   id_espacio: number;
   nombre: string;
+  telefono: string;
+  espacio: string;
+  direccion: string;
+  estado: string;
 }
 
-interface NuevoEvento {
+interface WelcomeStats {
+  quotations: any[];
+  spaces: Espacio[];
+  eventsInProcess: number;
+  totalUsers: number;
+  averageRating: number;
+}
+
+interface EventoFormData {
   cedula_cliente: string;
   cedula_asesor: string;
   fecha_evento: string;
@@ -92,16 +104,19 @@ const WelcomeMenu: React.FC<WelcomeMenuProps> = () => {
   const [showUsersModal, setShowUsersModal] = useState(false);
   const [showAddUserModal, setShowAddUserModal] = useState(false);
   const [showQuotationsModal, setShowQuotationsModal] = useState(false);
+  const [showSpacesModal, setShowSpacesModal] = useState(false);
+  const [showAddSpaceModal, setShowAddSpaceModal] = useState(false);
   const [comment, setComment] = useState('');
   const [rating, setRating] = useState(0);
-  const [stats, setStats] = useState({
+  const [stats, setStats] = useState<WelcomeStats>({
+    quotations: [],
+    spaces: [],
     eventsInProcess: 0,
-    averageRating: 0,
     totalUsers: 0,
-    quotations: [] as Quotation[]
+    averageRating: 0
   });
   const [espacios, setEspacios] = useState<Espacio[]>([]);
-  const [formData, setFormData] = useState<NuevoEvento>({
+  const [formData, setFormData] = useState<Partial<EventoFormData>>({
     cedula_cliente: '',
     cedula_asesor: '',
     fecha_evento: '',
@@ -115,6 +130,13 @@ const WelcomeMenu: React.FC<WelcomeMenuProps> = () => {
     subtotal_evento: 0.00,
     itbis_evento: 0.00,
     total_evento: 0.00
+  });
+  const [spaceFormData, setSpaceFormData] = useState<Partial<Espacio>>({
+    nombre: '',
+    telefono: '',
+    espacio: '',
+    direccion: '',
+    estado: 'Disponible'
   });
   const [eventos, setEventos] = useState<Evento[]>([]);
   const [selectedEventId, setSelectedEventId] = useState<number | null>(null);
@@ -212,6 +234,25 @@ const WelcomeMenu: React.FC<WelcomeMenuProps> = () => {
     }
   }, [showEventsInProcessModal, showUsersModal, showQuotationsModal]);
 
+  useEffect(() => {
+    const fetchSpaces = async () => {
+      try {
+        const response = await fetch('/api/espacios');
+        const data = await response.json();
+        setStats(prev => ({
+          ...prev,
+          spaces: data
+        }));
+      } catch (error) {
+        console.error('Error al cargar espacios:', error);
+      }
+    };
+
+    if (showSpacesModal) {
+      fetchSpaces();
+    }
+  }, [showSpacesModal]);
+
   const handleCommentSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedEventId) {
@@ -248,9 +289,17 @@ const WelcomeMenu: React.FC<WelcomeMenuProps> = () => {
     }
   };
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
+
+  const handleSpaceInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setSpaceFormData(prev => ({
       ...prev,
       [name]: value
     }));
@@ -587,7 +636,8 @@ const WelcomeMenu: React.FC<WelcomeMenuProps> = () => {
                       key={star}
                       className={`star ${star <= rating ? 'active' : ''}`}
                       onClick={() => setRating(star)}
-                      style={{ cursor: 'pointer', fontSize: '24px' }}
+                      onMouseEnter={() => setRating(star)}
+                      onMouseLeave={() => setRating(rating)}
                     >
                       ★
                     </span>
@@ -706,13 +756,13 @@ const WelcomeMenu: React.FC<WelcomeMenuProps> = () => {
         </div>
 
         <div className="stat-card">
-          <span className="stat-card__label">Cotizaciones Pendientes</span>
-          <strong className="stat-card__number">{stats.quotations.length}</strong>
+          <span className="stat-card__label">Espacios Disponibles</span>
+          <strong className="stat-card__number">{stats.spaces.length}</strong>
           <button 
             className="stat-card__seeInfo"
-            onClick={() => setShowQuotationsModal(true)}
+            onClick={() => setShowSpacesModal(true)}
           >
-            Ver cotizaciones
+            Ver espacios
           </button>
         </div>
       </div>
@@ -1092,6 +1142,146 @@ const WelcomeMenu: React.FC<WelcomeMenuProps> = () => {
     </div>
   );
 
+  const renderSpacesModal = () => (
+    <div className="modal-overlay">
+      <div className="modal-container">
+        <button className="close-btn" onClick={() => setShowSpacesModal(false)}>×</button>
+        <div className="modal-content">
+          <div className="modal-header">
+            <h3>Espacios Disponibles</h3>
+            <button 
+              className="add-user-btn"
+              onClick={() => setShowAddSpaceModal(true)}
+            >
+              + Agregar Espacio
+            </button>
+          </div>
+          <div className="table-container">
+            <table>
+              <thead>
+                <tr>
+                  <th>Nombre</th>
+                  <th>Teléfono</th>
+                  <th>Dirección</th>
+                  <th>Estado</th>
+                </tr>
+              </thead>
+              <tbody>
+                {stats.spaces.map((espacio) => (
+                  <tr key={espacio.id_espacio}>
+                    <td>{espacio.nombre}</td>
+                    <td>{espacio.telefono}</td>
+                    <td>{espacio.direccion}</td>
+                    <td>{espacio.estado}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      const response = await fetch('/api/espacios', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(spaceFormData),
+      });
+
+      if (response.ok) {
+        const updatedSpaces = await fetch('/api/espacios').then(res => res.json());
+        setStats(prev => ({
+          ...prev,
+          spaces: updatedSpaces
+        }));
+        setShowAddSpaceModal(false);
+        setSpaceFormData({
+          nombre: '',
+          telefono: '',
+          espacio: '',
+          direccion: '',
+          estado: 'Disponible'
+        });
+      }
+    } catch (error) {
+      console.error('Error al agregar espacio:', error);
+    }
+  };
+
+  const renderAddSpaceModal = () => (
+    <div className="modal-overlay">
+      <div className="modal-container">
+        <button className="close-btn" onClick={() => setShowAddSpaceModal(false)}>×</button>
+        <form className="modal-form" onSubmit={handleSubmit}>
+          <h2>Agregar Nuevo Espacio</h2>
+          
+          <label>
+            Nombre:
+            <input
+              type="text"
+              name="nombre"
+              value={spaceFormData.nombre}
+              onChange={handleSpaceInputChange}
+              required
+            />
+          </label>
+
+          <label>
+            Teléfono:
+            <input
+              type="tel"
+              name="telefono"
+              value={spaceFormData.telefono}
+              onChange={handleSpaceInputChange}
+              required
+            />
+          </label>
+
+          <label>
+            Espacio:
+            <input
+              type="text"
+              name="espacio"
+              value={spaceFormData.espacio}
+              onChange={handleSpaceInputChange}
+              required
+            />
+          </label>
+
+          <label>
+            Dirección:
+            <input
+              type="text"
+              name="direccion"
+              value={spaceFormData.direccion}
+              onChange={handleSpaceInputChange}
+              required
+            />
+          </label>
+
+          <div className="form-buttons">
+            <button type="submit" className="submit-btn">
+              Guardar
+            </button>
+            <button
+              type="button"
+              className="reset-btn"
+              onClick={() => setShowAddSpaceModal(false)}
+            >
+              Cancelar
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+
   return (
     <div className="welcome-menu">
       {Number(userData.rol) === 1 && renderAdminDashboard()}
@@ -1205,6 +1395,8 @@ const WelcomeMenu: React.FC<WelcomeMenuProps> = () => {
       {showUsersModal && renderUsersModal()}
       {showAddUserModal && renderAddUserModal()}
       {showQuotationsModal && renderQuotationsModal()}
+      {showSpacesModal && renderSpacesModal()}
+      {showAddSpaceModal && renderAddSpaceModal()}
     </div>
   );
 };

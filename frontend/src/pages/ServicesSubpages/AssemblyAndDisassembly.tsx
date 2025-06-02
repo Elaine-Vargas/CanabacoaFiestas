@@ -23,20 +23,51 @@ interface Evento {
 
 interface AssemblyStats {
   eventosCompletados: number;
-  equiposDisponibles: number;
-  personalAsignado: number;
+  eventosPendientes: number;
+  personalEncargado: number;
+}
+
+interface EventoCompletado {
+  id_evento: number;
+  nombre_evento: string;
+  lugar: string;
+  cantidad_empleados: number;
+  fecha: string;
+  hora: string;
+}
+
+interface EventoPendiente {
+  id_evento: number;
+  nombre_evento: string;
+  lugar: string;
+  cantidad_empleados: number;
+  fecha: string;
+  hora: string;
+}
+
+interface EmpleadoMontaje {
+  id_empleado: number;
+  nombre: string;
+  cedula: string;
+  cantidad_eventos: number;
 }
 
 export default function AssemblyAndDisassembly() {
   const { userRole } = useUser();
   const userData = JSON.parse(localStorage.getItem('userData') || '{}');
   const [showModal, setShowModal] = useState(false);
+  const [showEventosCompletadosModal, setShowEventosCompletadosModal] = useState(false);
+  const [showEventosPendientesModal, setShowEventosPendientesModal] = useState(false);
+  const [showPersonalModal, setShowPersonalModal] = useState(false);
   const [assemblies, setAssemblies] = useState<Assembly[]>([]);
   const [eventos, setEventos] = useState<Evento[]>([]);
+  const [eventosCompletados, setEventosCompletados] = useState<EventoCompletado[]>([]);
+  const [eventosPendientes, setEventosPendientes] = useState<EventoPendiente[]>([]);
+  const [empleadosMontaje, setEmpleadosMontaje] = useState<EmpleadoMontaje[]>([]);
   const [stats, setStats] = useState<AssemblyStats>({
     eventosCompletados: 0,
-    equiposDisponibles: 0,
-    personalAsignado: 0
+    eventosPendientes: 0,
+    personalEncargado: 0
   });
   const [formData, setFormData] = useState<Partial<Assembly>>({
     id_evento: 0,
@@ -96,6 +127,48 @@ export default function AssemblyAndDisassembly() {
       fetchStats();
     }
   }, [userRole]);
+
+  useEffect(() => {
+    const fetchEventosCompletados = async () => {
+      if (showEventosCompletadosModal) {
+        try {
+          const response = await fetch('/api/montaje/eventos-completados');
+          const data = await response.json();
+          setEventosCompletados(data);
+        } catch (error) {
+          console.error('Error al cargar eventos completados:', error);
+        }
+      }
+    };
+
+    const fetchEventosPendientes = async () => {
+      if (showEventosPendientesModal) {
+        try {
+          const response = await fetch('/api/montaje/eventos-pendientes');
+          const data = await response.json();
+          setEventosPendientes(data);
+        } catch (error) {
+          console.error('Error al cargar eventos pendientes:', error);
+        }
+      }
+    };
+
+    const fetchPersonalMontaje = async () => {
+      if (showPersonalModal) {
+        try {
+          const response = await fetch('/api/montaje/personal');
+          const data = await response.json();
+          setEmpleadosMontaje(data);
+        } catch (error) {
+          console.error('Error al cargar personal:', error);
+        }
+      }
+    };
+
+    fetchEventosCompletados();
+    fetchEventosPendientes();
+    fetchPersonalMontaje();
+  }, [showEventosCompletadosModal, showEventosPendientesModal, showPersonalModal]);
 
   const handleInputChange = (e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
@@ -162,21 +235,21 @@ export default function AssemblyAndDisassembly() {
     <div className="assembly-content">
       <div className="dashboard__stats">
         <div className="stat-card">
-          <span className="stat-card__label">Equipos Disponibles</span>
-          <strong className="stat-card__number">{stats.equiposDisponibles}</strong>
-          <button className="stat-card__seeInfo">Ver equipos</button>
+          <span className="stat-card__label">Personal Encargado</span>
+          <strong className="stat-card__number">{stats.personalEncargado}</strong>
+          <button className="stat-card__seeInfo">Ver personal</button>
         </div>
 
         <div className="stat-card">
-          <span className="stat-card__label">Equipos en Uso</span>
+          <span className="stat-card__label">Eventos Completados</span>
           <strong className="stat-card__number">{stats.eventosCompletados}</strong>
-          <button className="stat-card__seeInfo">Ver en uso</button>
+          <button className="stat-card__seeInfo">Ver completados</button>
         </div>
 
         <div className="stat-card">
-          <span className="stat-card__label">Equipos en Mantenimiento</span>
-          <strong className="stat-card__number">{stats.personalAsignado}</strong>
-          <button className="stat-card__seeInfo">Ver mantenimiento</button>
+          <span className="stat-card__label">Eventos Pendientes</span>
+          <strong className="stat-card__number">{stats.eventosPendientes}</strong>
+          <button className="stat-card__seeInfo">Ver pendientes</button>
         </div>
       </div>
 
@@ -242,14 +315,14 @@ export default function AssemblyAndDisassembly() {
         </div>
 
         <div className="stat-card">
-          <span className="stat-card__label">Personal Asignado</span>
-          <strong className="stat-card__number">{stats.personalAsignado}</strong>
+          <span className="stat-card__label">Personal Encargado</span>
+          <strong className="stat-card__number">{stats.personalEncargado}</strong>
           <button className="stat-card__seeInfo">Ver personal</button>
         </div>
 
         <div className="stat-card">
-          <span className="stat-card__label">Servicios Pendientes</span>
-          <strong className="stat-card__number">{stats.equiposDisponibles}</strong>
+          <span className="stat-card__label">Eventos Pendientes</span>
+          <strong className="stat-card__number">{stats.eventosPendientes}</strong>
           <button className="stat-card__seeInfo">Ver pendientes</button>
         </div>
       </div>
@@ -323,19 +396,34 @@ export default function AssemblyAndDisassembly() {
           <div className="stat-card">
             <span className="stat-card__label">Eventos Completados</span>
             <strong className="stat-card__number">{stats.eventosCompletados}</strong>
-            <button className="stat-card__seeInfo">Ver completados</button>
+            <button 
+              className="stat-card__seeInfo"
+              onClick={() => setShowEventosCompletadosModal(true)}
+            >
+              Ver completados
+            </button>
           </div>
 
           <div className="stat-card">
-            <span className="stat-card__label">Equipos Disponibles</span>
-            <strong className="stat-card__number">{stats.equiposDisponibles}</strong>
-            <button className="stat-card__seeInfo">Ver equipos</button>
+            <span className="stat-card__label">Eventos Pendientes</span>
+            <strong className="stat-card__number">{stats.eventosPendientes}</strong>
+            <button 
+              className="stat-card__seeInfo"
+              onClick={() => setShowEventosPendientesModal(true)}
+            >
+              Ver pendientes
+            </button>
           </div>
 
           <div className="stat-card">
-            <span className="stat-card__label">Personal Asignado</span>
-            <strong className="stat-card__number">{stats.personalAsignado}</strong>
-            <button className="stat-card__seeInfo">Ver personal</button>
+            <span className="stat-card__label">Personal Encargado</span>
+            <strong className="stat-card__number">{stats.personalEncargado}</strong>
+            <button 
+              className="stat-card__seeInfo"
+              onClick={() => setShowPersonalModal(true)}
+            >
+              Ver personal
+            </button>
           </div>
         </div>
 
@@ -490,6 +578,107 @@ export default function AssemblyAndDisassembly() {
     );
   };
 
+  const renderEventosCompletadosModal = () => (
+    <div className="modal-overlay">
+      <div className="modal-container">
+        <button className="close-btn" onClick={() => setShowEventosCompletadosModal(false)}>×</button>
+        <div className="modal-content">
+          <h3>Eventos Completados</h3>
+          <div className="table-container">
+            <table>
+              <thead>
+                <tr>
+                  <th>Evento</th>
+                  <th>Lugar</th>
+                  <th>Cantidad de Empleados</th>
+                  <th>Fecha</th>
+                  <th>Hora</th>
+                </tr>
+              </thead>
+              <tbody>
+                {eventosCompletados.map((evento) => (
+                  <tr key={evento.id_evento}>
+                    <td>{evento.nombre_evento}</td>
+                    <td>{evento.lugar}</td>
+                    <td>{evento.cantidad_empleados}</td>
+                    <td>{evento.fecha}</td>
+                    <td>{evento.hora}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+
+  const renderEventosPendientesModal = () => (
+    <div className="modal-overlay">
+      <div className="modal-container">
+        <button className="close-btn" onClick={() => setShowEventosPendientesModal(false)}>×</button>
+        <div className="modal-content">
+          <h3>Eventos Pendientes</h3>
+          <div className="table-container">
+            <table>
+              <thead>
+                <tr>
+                  <th>Evento</th>
+                  <th>Lugar</th>
+                  <th>Cantidad de Empleados</th>
+                  <th>Fecha</th>
+                  <th>Hora</th>
+                </tr>
+              </thead>
+              <tbody>
+                {eventosPendientes.map((evento) => (
+                  <tr key={evento.id_evento}>
+                    <td>{evento.nombre_evento}</td>
+                    <td>{evento.lugar}</td>
+                    <td>{evento.cantidad_empleados}</td>
+                    <td>{evento.fecha}</td>
+                    <td>{evento.hora}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+
+  const renderPersonalModal = () => (
+    <div className="modal-overlay">
+      <div className="modal-container">
+        <button className="close-btn" onClick={() => setShowPersonalModal(false)}>×</button>
+        <div className="modal-content">
+          <h3>Personal Encargado de Montajes</h3>
+          <div className="table-container">
+            <table>
+              <thead>
+                <tr>
+                  <th>Nombre</th>
+                  <th>Cédula</th>
+                  <th>Cantidad de Eventos</th>
+                </tr>
+              </thead>
+              <tbody>
+                {empleadosMontaje.map((empleado) => (
+                  <tr key={empleado.id_empleado}>
+                    <td>{empleado.nombre}</td>
+                    <td>{empleado.cedula}</td>
+                    <td>{empleado.cantidad_eventos}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+
   return (
     <ServiceBase 
       title="Montaje y Desmontaje" 
@@ -502,7 +691,14 @@ export default function AssemblyAndDisassembly() {
         const isInventory = rolId === 4;
 
         if (isAdmin) {
-          return renderAdminView();
+          return (
+            <>
+              {renderAdminView()}
+              {showEventosCompletadosModal && renderEventosCompletadosModal()}
+              {showEventosPendientesModal && renderEventosPendientesModal()}
+              {showPersonalModal && renderPersonalModal()}
+            </>
+          );
         }
 
         if (isInventory) {
