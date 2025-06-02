@@ -340,7 +340,6 @@ export default function Rent() {
         }}>
           <Catalogo 
             onAddToCart={handleAddToCart}
-            showNavBar={false}
           />
         </Box>
       )}
@@ -593,9 +592,7 @@ export default function Rent() {
       </Dialog>
 
       <div className="table-section">
-        <Typography variant="h4" sx={{ mb: 2, color: 'var(--color-text)' }}>
-          Mis Alquileres
-        </Typography>
+        <h4>Mis Alquileres</h4>
         <div className="search-container">
           <select
             className="escri"
