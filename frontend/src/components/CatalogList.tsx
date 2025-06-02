@@ -325,6 +325,25 @@ const Catalog: React.FC<CatalogProps> = ({ onAddToCart = true, onComprarCarrito 
     setShowEventoModal(true);
   };
 
+  // Filtrar y paginar los elementos
+  const filteredElementos = useMemo(() => {
+    return elementos.filter(elemento => {
+      const matchesCategoria = !filtros.categoria || elemento.subcategoria.categoria.id_categoria === Number(filtros.categoria);
+      const matchesSubcategoria = !filtros.subcategoria || elemento.subcategoria.id_subcategoria === Number(filtros.subcategoria);
+      const matchesColor = !filtros.color || elemento.color.id_color === Number(filtros.color);
+      const matchesMaterial = !filtros.material || elemento.material.id_material === Number(filtros.material);
+      const matchesBusqueda = !filtros.busqueda || 
+        elemento.nombre_elemento.toLowerCase().includes(filtros.busqueda.toLowerCase());
+
+      return matchesCategoria && matchesSubcategoria && matchesColor && matchesMaterial && matchesBusqueda;
+    });
+  }, [elementos, filtros]);
+
+  const paginatedElementos = useMemo(() => {
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    return filteredElementos.slice(startIndex, startIndex + itemsPerPage);
+  }, [filteredElementos, currentPage, itemsPerPage]);
+
   return (
     <>
       <Box sx={{ 
@@ -770,7 +789,7 @@ const Catalog: React.FC<CatalogProps> = ({ onAddToCart = true, onComprarCarrito 
               margin: '0 auto',
               padding: { xs: 1, sm: 2 }
             }}>
-              {elementos.map((elemento: Elemento) => (
+              {paginatedElementos.map((elemento: Elemento) => (
                 <Box
                   key={`${elemento.id_elemento}-${elemento.color.id_color}`}
                   sx={{
@@ -1025,7 +1044,7 @@ const Catalog: React.FC<CatalogProps> = ({ onAddToCart = true, onComprarCarrito 
           </Suspense>
 
           {/* Pagination Controls */}
-          {elementos.length > itemsPerPage && (
+          {filteredElementos.length > itemsPerPage && (
             <Box sx={{ 
               display: 'flex', 
               justifyContent: 'center', 
@@ -1054,13 +1073,13 @@ const Catalog: React.FC<CatalogProps> = ({ onAddToCart = true, onComprarCarrito 
                 fontFamily: '"Nunito Sans", sans-serif',
                 color: 'var(--color-text)'
               }}>
-                Página {currentPage} de {Math.ceil(elementos.length / itemsPerPage)}
+                Página {currentPage} de {Math.ceil(filteredElementos.length / itemsPerPage)}
               </Typography>
               
               <Button
                 variant="outlined"
-                onClick={() => setCurrentPage(prev => Math.min(prev + 1, Math.ceil(elementos.length / itemsPerPage)))}
-                disabled={currentPage === Math.ceil(elementos.length / itemsPerPage)}
+                onClick={() => setCurrentPage(prev => Math.min(prev + 1, Math.ceil(filteredElementos.length / itemsPerPage)))}
+                disabled={currentPage === Math.ceil(filteredElementos.length / itemsPerPage)}
                 sx={{
                   borderColor: 'var(--gold)',
                   color: 'var(--gold)',
