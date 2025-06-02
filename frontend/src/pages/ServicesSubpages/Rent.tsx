@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import '../../styles/dashboard/ServicesSubpages.scss';
 import { useUser } from '../../contexts/UserContext';
 import ServiceBase from '../../components/ServiceBase';
-import Catalogo from '../../components/CatalogList';
+import DashboardCatalog from '../../components/DashboardCatalog';
 import { Box, Typography, Button, Dialog, DialogTitle, DialogContent, DialogActions, TextField, MenuItem, Snackbar, Alert } from '@mui/material';
 import ViewModuleIcon from '@mui/icons-material/ViewModule';
 
@@ -338,9 +338,8 @@ export default function Rent() {
           zIndex: 1,
           overflow: 'hidden'
         }}>
-          <Catalogo 
+          <DashboardCatalog 
             onAddToCart={handleAddToCart}
-            showNavBar={false}
           />
         </Box>
       )}
@@ -365,15 +364,21 @@ export default function Rent() {
           fontFamily: '"Montserrat Alternates", cursive',
           fontWeight: 800,
           color: 'var(--gold)',
-          fontSize: { xs: '1.2rem', sm: '1.5rem' }
+          fontSize: { xs: '1.2rem', sm: '1.5rem' },
+          textAlign: 'center',
+          borderBottom: '2px solid var(--gold)',
+          pb: 2
         }}>
-          Confirmar Alquiler
+          Cotización de Alquiler
         </DialogTitle>
         <DialogContent>
           <Box sx={{ mb: 3 }}>
             <Button 
               variant="outlined" 
-              onClick={() => setShowNuevoEventoModal(true)}
+              onClick={() => {
+                setShowEventoModal(false);
+                navigate('/dashboard/bienvenida');
+              }}
               sx={{ 
                 mb: 2,
                 borderColor: 'var(--gold)',
@@ -402,42 +407,90 @@ export default function Rent() {
               ))}
             </TextField>
 
-            <Typography variant="h6" sx={{ mb: 2, color: 'var(--color-text)' }}>
-              Items Seleccionados
-            </Typography>
             <Box sx={{ 
-              maxHeight: '300px', 
-              overflow: 'auto',
-              mb: 2,
-              p: 2,
+              p: 3,
               backgroundColor: 'var(--color-background2)',
-              borderRadius: '1rem'
+              borderRadius: '1rem',
+              boxShadow: '0 4px 12px rgba(0,0,0,0.1)'
             }}>
-              {carritoItems.map((item, index) => (
-                <Box key={index} sx={{ 
-                  mb: 2, 
-                  p: 2, 
-                  border: '1px solid var(--color-border)',
-                  borderRadius: '0.5rem',
-                  backgroundColor: 'var(--color-background)'
-                }}>
-                  <Typography variant="h6" sx={{ color: 'var(--gold)' }}>
-                    {item.nombre_elemento}
-                  </Typography>
-                  <Typography>Cantidad: {item.cantidad}</Typography>
-                  <Typography>Precio: ${item.precio_elemento}</Typography>
-                  <Typography>Subtotal: ${item.precio_elemento * item.cantidad}</Typography>
-                </Box>
-              ))}
-            </Box>
+              <Typography variant="h6" sx={{ 
+                mb: 2, 
+                color: 'var(--gold)',
+                textAlign: 'center',
+                fontWeight: 700
+              }}>
+                Detalles de la Cotización
+              </Typography>
 
-            <Typography variant="h6" sx={{ 
-              textAlign: 'right',
-              color: 'var(--gold)',
-              fontWeight: 800
-            }}>
-              Total: ${carritoItems.reduce((sum, item) => sum + (item.precio_elemento * item.cantidad), 0)}
-            </Typography>
+              <Box sx={{ 
+                maxHeight: '300px', 
+                overflow: 'auto',
+                mb: 2,
+                p: 2,
+                backgroundColor: 'var(--color-background)',
+                borderRadius: '1rem'
+              }}>
+                {carritoItems.map((item, index) => (
+                  <Box key={index} sx={{ 
+                    mb: 2, 
+                    p: 2, 
+                    border: '1px solid var(--color-border)',
+                    borderRadius: '0.5rem',
+                    backgroundColor: 'var(--color-background)',
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center'
+                  }}>
+                    <Box>
+                      <Typography variant="h6" sx={{ color: 'var(--gold)' }}>
+                        {item.nombre_elemento}
+                      </Typography>
+                      <Typography>Cantidad: {item.cantidad}</Typography>
+                      <Typography>Precio por día: ${item.precio_elemento}</Typography>
+                    </Box>
+                    <Typography sx={{ 
+                      fontWeight: 700,
+                      color: 'var(--gold)',
+                      fontSize: '1.1rem'
+                    }}>
+                      ${item.precio_elemento * item.cantidad}
+                    </Typography>
+                  </Box>
+                ))}
+              </Box>
+
+              <Box sx={{ 
+                borderTop: '2px solid var(--gold)',
+                pt: 2,
+                mt: 2
+              }}>
+                <Typography variant="h6" sx={{ 
+                  textAlign: 'right',
+                  color: 'var(--gold)',
+                  fontWeight: 800,
+                  fontSize: '1.2rem'
+                }}>
+                  Subtotal: ${carritoItems.reduce((sum, item) => sum + (item.precio_elemento * item.cantidad), 0)}
+                </Typography>
+                <Typography variant="h6" sx={{ 
+                  textAlign: 'right',
+                  color: 'var(--gold)',
+                  fontWeight: 800,
+                  fontSize: '1.2rem'
+                }}>
+                  ITBIS (18%): ${(carritoItems.reduce((sum, item) => sum + (item.precio_elemento * item.cantidad), 0) * 0.18).toFixed(2)}
+                </Typography>
+                <Typography variant="h5" sx={{ 
+                  textAlign: 'right',
+                  color: 'var(--gold)',
+                  fontWeight: 800,
+                  fontSize: '1.4rem',
+                  mt: 1
+                }}>
+                  Total: ${(carritoItems.reduce((sum, item) => sum + (item.precio_elemento * item.cantidad), 0) * 1.18).toFixed(2)}
+                </Typography>
+              </Box>
+            </Box>
           </Box>
         </DialogContent>
         <DialogActions sx={{ p: 3 }}>
@@ -486,14 +539,14 @@ export default function Rent() {
                 
                 setNotificacion({
                   abierta: true,
-                  mensaje: 'Alquiler realizado con éxito',
+                  mensaje: 'Cotización enviada con éxito',
                   tipo: 'success'
                 });
               } catch (error) {
-                console.error('Error al procesar el alquiler:', error);
+                console.error('Error al procesar la cotización:', error);
                 setNotificacion({
                   abierta: true,
-                  mensaje: 'Error al procesar el alquiler',
+                  mensaje: 'Error al procesar la cotización',
                   tipo: 'error'
                 });
               }
@@ -511,7 +564,7 @@ export default function Rent() {
               }
             }}
           >
-            Confirmar Alquiler
+            Enviar Cotización
           </Button>
         </DialogActions>
       </Dialog>

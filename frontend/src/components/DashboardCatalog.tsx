@@ -176,6 +176,7 @@ const Catalog: React.FC<CatalogProps> = ({ onAddToCart = true, onComprarCarrito 
     const fetchData = async () => {
       try {
         setLoading(true);
+        console.log('Iniciando carga de datos...');
         
         const [elementosRes, categoriasRes, coloresRes, materialesRes] = await Promise.all([
           axios.get('http://localhost:3000/api/elementos/filtrados'),
@@ -184,14 +185,24 @@ const Catalog: React.FC<CatalogProps> = ({ onAddToCart = true, onComprarCarrito 
           axios.get('http://localhost:3000/api/elementos/materiales/list')
         ]);
 
-        // Establecer los datos
-        setElementos(elementosRes.data || []);
-        setCategorias(categoriasRes.data || []);
-        setColores(coloresRes.data || []);
-        setMateriales(materialesRes.data || []);
+        console.log('Datos recibidos:', {
+          elementos: elementosRes.data,
+          categorias: categoriasRes.data,
+          colores: coloresRes.data,
+          materiales: materialesRes.data
+        });
 
+        setElementos(elementosRes.data);
+        setCategorias(categoriasRes.data);
+        setColores(coloresRes.data);
+        setMateriales(materialesRes.data);
       } catch (error) {
         console.error('Error al cargar los datos:', error);
+        setNotificacion({
+          abierta: true,
+          mensaje: 'Error al cargar el catálogo. Por favor, intente nuevamente.',
+          tipo: 'error'
+        });
       } finally {
         setLoading(false);
       }
@@ -233,35 +244,6 @@ const Catalog: React.FC<CatalogProps> = ({ onAddToCart = true, onComprarCarrito 
     }
   }, [showEventoModal]);
 
-  const handleAddToCart = (item: Elemento) => {
-    if (!isAuthenticated) {
-      setNotificacion({
-        abierta: true,
-        mensaje: 'Debe iniciar sesión o registrarse para agregar elementos al carrito',
-        tipo: 'error'
-      });
-      return;
-    }
-
-    if (userRole !== 'cliente') {
-      setNotificacion({
-        abierta: true,
-        mensaje: 'Solo los clientes pueden agregar elementos al carrito',
-        tipo: 'error'
-      });
-      return;
-    }
-
-    const cantidad = cantidadesSeleccionadas[item.id_elemento] || 1;
-    const itemConCantidad = { ...item, cantidad };
-    setCarrito(prev => [...prev, itemConCantidad]);
-    setNotificacion({
-      abierta: true,
-      mensaje: 'Producto agregado al carrito',
-      tipo: 'success'
-    });
-  };
-
   const handleCantidadChange = (id: number, cantidad: number) => {
     const elemento = elementos.find(e => e.id_elemento === id);
     if (!elemento || cantidad > elemento.cantidad_disponible) {
@@ -277,6 +259,78 @@ const Catalog: React.FC<CatalogProps> = ({ onAddToCart = true, onComprarCarrito 
       ...prev,
       [id]: cantidad
     }));
+  };
+
+  const handleCantidadInputChange = (id: number, value: string) => {
+    const cantidad = parseInt(value) || 0;
+    
+    const elemento = elementos.find(e => e.id_elemento === id);
+    if (cantidad > 0 && (!elemento || cantidad > elemento.cantidad_disponible)) {
+      setNotificacion({
+        abierta: true,
+        mensaje: 'No hay suficiente stock disponible',
+        tipo: 'error'
+      });
+      return;
+    }
+
+    setCarrito(prev => 
+      prev.map(item => 
+        item.id_elemento === id 
+          ? { ...item, cantidad: cantidad }
+          : item
+      )
+    );
+
+    setCantidadesSeleccionadas(prev => ({
+      ...prev,
+      [id]: cantidad
+    }));
+  };
+
+  const handleAddToCart = (item: Elemento) => {
+    const cantidad = cantidadesSeleccionadas[item.id_elemento] || 1;
+    const itemConCantidad = { ...item, cantidad };
+    
+    setCarrito(prev => {
+      const itemExistente = prev.find(i => i.id_elemento === item.id_elemento);
+      if (itemExistente) {
+        return prev.map(i => 
+          i.id_elemento === item.id_elemento 
+            ? { ...i, cantidad: cantidad }
+            : i
+        );
+      }
+      return [...prev, itemConCantidad];
+    });
+    
+    setNotificacion({
+      abierta: true,
+      mensaje: 'Producto agregado al carrito',
+      tipo: 'success'
+    });
+  };
+
+  const actualizarCantidadCarrito = (id: number, nuevaCantidad: number) => {
+    if (nuevaCantidad < 1) return;
+    
+    const elemento = elementos.find(e => e.id_elemento === id);
+    if (!elemento || nuevaCantidad > elemento.cantidad_disponible) {
+      setNotificacion({
+        abierta: true,
+        mensaje: 'No hay suficiente stock disponible',
+        tipo: 'error'
+      });
+      return;
+    }
+
+    setCarrito(prev => 
+      prev.map(item => 
+        item.id_elemento === id 
+          ? { ...item, cantidad: nuevaCantidad }
+          : item
+      )
+    );
   };
 
   const handleOpenCart = () => {
@@ -328,8 +382,20 @@ const Catalog: React.FC<CatalogProps> = ({ onAddToCart = true, onComprarCarrito 
   };
 
   const handleComprar = () => {
-    setCarritoAbierto(false);
+    if (carrito.length === 0) {
+      setNotificacion({
+        abierta: true,
+        mensaje: 'El carrito está vacío',
+        tipo: 'error'
+      });
+      return;
+    }
     setShowEventoModal(true);
+  };
+
+  const handleCrearEvento = () => {
+    setShowEventoModal(false);
+    navigate('/dashboard/bienvenida');
   };
 
   // Filtrar y paginar los elementos
@@ -350,26 +416,6 @@ const Catalog: React.FC<CatalogProps> = ({ onAddToCart = true, onComprarCarrito 
     const startIndex = (currentPage - 1) * itemsPerPage;
     return filteredElementos.slice(startIndex, startIndex + itemsPerPage);
   }, [filteredElementos, currentPage, itemsPerPage]);
-
-  // Mostrar solo el indicador de carga mientras se cargan los datos
-  if (loading) {
-    return (
-      <Box sx={{ 
-        display: 'flex', 
-        justifyContent: 'center', 
-        alignItems: 'center',
-        minHeight: '100vh',
-        width: '100%',
-        background: 'var(--login-bg)',
-        backgroundBlendMode: 'var(--login-blend)',
-        backgroundSize: 'cover',
-        backgroundPosition: 'center',
-        backgroundRepeat: 'no-repeat'
-      }}>
-        <CircularProgress sx={{ color: 'var(--gold)' }} />
-      </Box>
-    );
-  }
 
   return (
     <>
@@ -422,38 +468,36 @@ const Catalog: React.FC<CatalogProps> = ({ onAddToCart = true, onComprarCarrito 
               Catálogo de Elementos
             </Typography>
             
-            {isAuthenticated && userRole === 'cliente' && (
-              <IconButton 
-                color="primary" 
-                onClick={handleOpenCart}
-                sx={{ 
-                  position: 'relative',
-                  backgroundColor: 'var(--gold)',
+            <IconButton 
+              color="primary" 
+              onClick={handleOpenCart}
+              sx={{ 
+                position: 'relative',
+                backgroundColor: 'var(--gold)',
+                color: 'var(--white)',
+                width: { xs: '45px', sm: '50px' },
+                height: { xs: '45px', sm: '50px' },
+                boxShadow: '0 15px 50px var(--color-shadow)',
+                '&:hover': {
+                  backgroundColor: 'var(--dark-gold)',
+                  transform: 'scale(1.05)',
+                  transition: 'all 0.2s ease-in-out'
+                },
+                '& .MuiBadge-badge': {
                   color: 'var(--white)',
-                  width: { xs: '45px', sm: '50px' },
-                  height: { xs: '45px', sm: '50px' },
-                  boxShadow: '0 15px 50px var(--color-shadow)',
-                  '&:hover': {
-                    backgroundColor: 'var(--dark-gold)',
-                    transform: 'scale(1.05)',
-                    transition: 'all 0.2s ease-in-out'
-                  },
-                  '& .MuiBadge-badge': {
-                    color: 'var(--white)',
-                    fontWeight: '600',
-                    fontSize: '0.6rem',
-                    Width: '1rem',
-                    height: '1rem',
-                    borderRadius: '10px',
-                    background: 'var(--dark-gold)',
-                  }
-                }}
-              >
-                <Badge badgeContent={carrito.length} color="error">
-                  <ShoppingCartIcon sx={{ fontSize: { xs: '1.5rem', sm: '1.8rem' } }} />
-                </Badge>
-              </IconButton>
-            )}
+                  fontWeight: '600',
+                  fontSize: '0.6rem',
+                  Width: '1rem',
+                  height: '1rem',
+                  borderRadius: '10px',
+                  background: 'var(--dark-gold)',
+                }
+              }}
+            >
+              <Badge badgeContent={carrito.length} color="error">
+                <ShoppingCartIcon sx={{ fontSize: { xs: '1.5rem', sm: '1.8rem' } }} />
+              </Badge>
+            </IconButton>
           </Box>
 
           {loading ? (
@@ -968,117 +1012,110 @@ const Catalog: React.FC<CatalogProps> = ({ onAddToCart = true, onComprarCarrito 
                         gap: 2,
                         px: 2
                       }}>
-                        {isAuthenticated && userRole === 'cliente' ? (
-                          <>
-                            <Box sx={{ 
-                              display: 'flex', 
-                              alignItems: 'center', 
-                              gap: 1,
-                              backgroundColor: 'var(--color-background2)',
-                              borderRadius: 1,
-                              p: 0.5
-                            }}>
-                              <IconButton
-                                size="small"
-                                onClick={() => handleCantidadChange(elemento.id_elemento, 
-                                  (cantidadesSeleccionadas[elemento.id_elemento] || 1) - 1)}
-                                sx={{ 
-                                  color: 'var(--gold)',
-                                  '&:hover': {
-                                    backgroundColor: 'var(--gold-light)'
-                                  }
-                                }}
-                              >
-                                <RemoveIcon />
-                              </IconButton>
-                              <Typography sx={{ 
-                                color: 'var(--color-text)',
-                                fontFamily: '"Montserrat Alternates", cursive',
-                                fontWeight: 700,
-                                fontSize: '1.2rem',
-                                minWidth: '2rem',
-                                textAlign: 'center'
-                              }}>
-                                {cantidadesSeleccionadas[elemento.id_elemento] || 1}
-                              </Typography>
-                              <IconButton
-                                size="small"
-                                onClick={() => handleCantidadChange(elemento.id_elemento, 
-                                  (cantidadesSeleccionadas[elemento.id_elemento] || 1) + 1)}
-                                sx={{ 
-                                  color: 'var(--gold)',
-                                  '&:hover': {
-                                    backgroundColor: 'var(--gold-light)'
-                                  }
-                                }}
-                              >
-                                <AddIcon />
-                              </IconButton>
-                            </Box>
-                            <Button
-                              variant="contained"
-                              fullWidth
-                              sx={{ 
-                                backgroundColor: 'var(--gold)',
-                                fontFamily: '"Montserrat Alternates", cursive',
-                                fontWeight: 800,
-                                color: 'var(--white)',
-                                fontSize: {
-                                  xs: '0.65rem',
-                                  sm: '1rem'
-                                },
-                                py: {
-                                  xs: 0.6,
-                                  sm: 1.5
-                                },
-                                px: {
-                                  xs: 0.5,
-                                  sm: 2
-                                },
-                                '&:hover': {
-                                  backgroundColor: 'var(--dark-gold)',
-                                },
-                                '&:disabled': {
-                                  backgroundColor: 'var(--color-disabled)',
-                                  color: 'var(--color-text-disabled)'
-                                }
-                              }}
-                              disabled={elemento.cantidad_disponible === 0}
-                              onClick={() => handleAddToCart(elemento)}
-                            >
-                              {elemento.cantidad_disponible === 0 ? 'No disponible' : 'Agregar al carrito'}
-                            </Button>
-                          </>
-                        ) : (
-                          <Button
-                            variant="contained"
-                            fullWidth
-                            onClick={() => navigate('/login')}
+                        <Box sx={{ 
+                          display: 'flex', 
+                          alignItems: 'center', 
+                          gap: 1,
+                          backgroundColor: 'var(--color-background2)',
+                          borderRadius: 1,
+                          p: 0.5
+                        }}>
+                          <IconButton
+                            size="small"
+                            onClick={() => handleCantidadChange(elemento.id_elemento, 
+                              (cantidadesSeleccionadas[elemento.id_elemento] || 1) - 1)}
                             sx={{ 
-                              backgroundColor: 'var(--gold)',
-                              fontFamily: '"Montserrat Alternates", cursive',
-                              fontWeight: 800,
-                              color: 'var(--white)',
-                              fontSize: {
-                                xs: '0.65rem',
-                                sm: '1rem'
-                              },
-                              py: {
-                                xs: 0.6,
-                                sm: 1.5
-                              },
-                              px: {
-                                xs: 0.5,
-                                sm: 2
-                              },
+                              color: 'var(--gold)',
                               '&:hover': {
-                                backgroundColor: 'var(--dark-gold)',
+                                backgroundColor: 'var(--gold-light)'
                               }
                             }}
                           >
-                            Iniciar sesión para alquilar
-                          </Button>
-                        )}
+                            <RemoveIcon />
+                          </IconButton>
+                          <TextField
+                            type="number"
+                            value={cantidadesSeleccionadas[elemento.id_elemento] || 1}
+                            onChange={(e) => handleCantidadInputChange(elemento.id_elemento, e.target.value)}
+                            inputProps={{
+                              min: 1,
+                              style: {
+                                textAlign: 'center',
+                                padding: '4px',
+                                width: '60px',
+                                fontFamily: '"Montserrat Alternates", cursive',
+                                fontWeight: 700,
+                                fontSize: '1.2rem',
+                                color: 'var(--color-text)',
+                                WebkitAppearance: 'none',
+                                MozAppearance: 'textfield'
+                              }
+                            }}
+                            sx={{
+                              '& .MuiOutlinedInput-root': {
+                                '& fieldset': {
+                                  border: 'none'
+                                },
+                                '&:hover fieldset': {
+                                  border: 'none'
+                                },
+                                '&.Mui-focused fieldset': {
+                                  border: 'none'
+                                },
+                                '& input::-webkit-outer-spin-button, & input::-webkit-inner-spin-button': {
+                                  WebkitAppearance: 'none',
+                                  margin: 0
+                                }
+                              }
+                            }}
+                          />
+                          <IconButton
+                            size="small"
+                            onClick={() => handleCantidadChange(elemento.id_elemento, 
+                              (cantidadesSeleccionadas[elemento.id_elemento] || 1) + 1)}
+                            sx={{ 
+                              color: 'var(--gold)',
+                              '&:hover': {
+                                backgroundColor: 'var(--gold-light)'
+                              }
+                            }}
+                          >
+                            <AddIcon />
+                          </IconButton>
+                        </Box>
+                        <Button
+                          variant="contained"
+                          fullWidth
+                          sx={{ 
+                            backgroundColor: 'var(--gold)',
+                            fontFamily: '"Montserrat Alternates", cursive',
+                            fontWeight: 800,
+                            color: 'var(--white)',
+                            fontSize: {
+                              xs: '0.65rem',
+                              sm: '1rem'
+                            },
+                            py: {
+                              xs: 0.6,
+                              sm: 1.5
+                            },
+                            px: {
+                              xs: 0.5,
+                              sm: 2
+                            },
+                            '&:hover': {
+                              backgroundColor: 'var(--dark-gold)',
+                            },
+                            '&:disabled': {
+                              backgroundColor: 'var(--color-disabled)',
+                              color: 'var(--color-text-disabled)'
+                            }
+                          }}
+                          disabled={elemento.cantidad_disponible === 0}
+                          onClick={() => handleAddToCart(elemento)}
+                        >
+                          {elemento.cantidad_disponible === 0 ? 'No disponible' : 'Agregar al carrito'}
+                        </Button>
                       </Box>
                       {carrito.find(item => item.id_elemento === elemento.id_elemento) && (
                         <Typography 
@@ -1157,581 +1194,212 @@ const Catalog: React.FC<CatalogProps> = ({ onAddToCart = true, onComprarCarrito 
             </Box>
           )}
 
-          {/* Solo mostrar el carrito si el usuario está autenticado y es cliente */}
-          {isAuthenticated && userRole === 'cliente' && (
-            <Drawer
-              anchor="right"
-              open={carritoAbierto}
-              onClose={() => setCarritoAbierto(false)}
-              PaperProps={{
-                sx: {
-                  backgroundColor: 'var(--color-background)',
-                  color: 'var(--color-text)',
-                  width: {
-                    xs: '100%',
-                    sm: '350px'
-                  },
-                  p: {
-                    xs: 1,
-                    sm: 2
-                  }
-                }
-              }}
-            >
-              <Box sx={{ 
-                width: '100%', 
-                height: '100%', 
-                display: 'flex', 
-                flexDirection: 'column',
-                gap: {
-                  xs: 1,
-                  sm: 2
-                }
+          <Drawer
+            anchor="right"
+            open={carritoAbierto}
+            onClose={() => setCarritoAbierto(false)}
+            PaperProps={{
+              sx: {
+                width: { xs: '100%', sm: 400 },
+                p: 3,
+                backgroundColor: 'var(--color-background)',
+                color: 'var(--color-text)'
+              }
+            }}
+          >
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+              <Typography variant="h5" sx={{ 
+                color: 'var(--gold)',
+                fontWeight: 700,
+                fontFamily: '"Montserrat Alternates", cursive'
               }}>
-                <Box sx={{
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  alignItems: 'center',
-                  mb: 1,
-                  px: 1
-                }}>
-                  <Typography 
-                    variant="h6" 
-                    sx={{ 
-                      fontFamily: '"Montserrat Alternates", cursive',
-                      fontWeight: 800,
-                      color: 'var(--color-text)',
-                      fontSize: {
-                        xs: '0.9rem',
-                        sm: '1.5rem'
-                      },
-                      textAlign: 'center',
-                      flex: 1
-                    }}
-                  >
-                    Carrito de Compras
-                  </Typography>
-                  <IconButton
-                    onClick={() => setCarritoAbierto(false)}
-                    sx={{ 
-                      color: 'var(--gold)',
-                      p: 0.5,
-                      '&:hover': {
-                        color: 'var(--dark-gold)'
-                      }
-                    }}
-                  >
-                    <CloseIcon fontSize="small" />
-                  </IconButton>
-                </Box>
-                
-                <List sx={{ 
-                  flexGrow: 1, 
-                  overflow: 'auto',
-                  mb: {
-                    xs: 1,
-                    sm: 2
-                  },
-                  maxHeight: {
-                    xs: 'calc(100vh - 200px)',
-                    sm: 'calc(100vh - 300px)'
-                  }
-                }}>
-                  {carrito.map(item => (
-                    <ListItem 
-                      key={item.id_elemento} 
-                      divider
+                Cotización de Alquiler
+              </Typography>
+              <IconButton onClick={() => setCarritoAbierto(false)}>
+                <CloseIcon />
+              </IconButton>
+            </Box>
+
+            {carrito.length === 0 ? (
+              <Typography sx={{ textAlign: 'center', color: 'var(--color-text)' }}>
+                No hay elementos en el carrito
+              </Typography>
+            ) : (
+              <>
+                <List>
+                  {carrito.map((item) => (
+                    <ListItem
+                      key={item.id_elemento}
                       sx={{
-                        flexDirection: {
-                          xs: 'column',
-                          sm: 'row'
-                        },
-                        alignItems: {
-                          xs: 'flex-start',
-                          sm: 'center'
-                        },
-                        gap: {
-                          xs: 1,
-                          sm: 0
-                        }
+                        mb: 2,
+                        p: 2,
+                        backgroundColor: 'var(--color-background2)',
+                        borderRadius: '1rem',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: 1,
+                        opacity: item.cantidad === 0 ? 0.5 : 1,
+                        transition: 'opacity 0.3s ease'
                       }}
                     >
-                      <ListItemText
-                        primary={
-                          <Typography sx={{ 
-                            fontFamily: '"Montserrat Alternates", cursive',
-                            fontWeight: 700,
-                            color: 'var(--color-text)',
-                            fontSize: {
-                              xs: '1rem',
-                              sm: '1.1rem'
-                            }
-                          }}>
-                            {item.nombre_elemento}
-                          </Typography>
-                        }
-                        secondary={
-                          <Typography sx={{ 
-                            color: 'var(--color-text-secondary)',
-                            fontFamily: '"Nunito Sans", sans-serif',
-                            fontSize: {
-                              xs: '0.9rem',
-                              sm: '1rem'
-                            }
-                          }}>
-                            ${item.precio_elemento} x {item.cantidad}
-                          </Typography>
-                        }
-                      />
-                      <Box sx={{ 
-                        display: 'flex', 
-                        alignItems: 'center',
-                        width: {
-                          xs: '100%',
-                          sm: 'auto'
-                        },
-                        justifyContent: {
-                          xs: 'space-between',
-                          sm: 'flex-end'
-                        }
-                      }}>
-                        <IconButton
-                          size="small"
-                          onClick={() => handleCantidadChange(item.id_elemento, item.cantidad - 1)}
-                          sx={{ color: 'var(--gold)' }}
-                        >
-                          <RemoveIcon />
-                        </IconButton>
-                        <Typography sx={{ 
-                          mx: 1, 
-                          color: 'var(--color-text)',
-                          fontFamily: '"Nunito Sans", sans-serif',
-                          fontSize: {
-                            xs: '0.9rem',
-                            sm: '1rem'
-                          }
-                        }}>
-                          {item.cantidad}
+                      <Box sx={{ display: 'flex', justifyContent: 'space-between', width: '100%' }}>
+                        <Typography variant="h6" sx={{ color: 'var(--gold)' }}>
+                          {item.nombre_elemento}
                         </Typography>
-                        <IconButton
-                          size="small"
-                          onClick={() => handleCantidadChange(item.id_elemento, item.cantidad + 1)}
-                          sx={{ color: 'var(--gold)' }}
-                        >
-                          <AddIcon />
-                        </IconButton>
-                        <IconButton
-                          size="small"
+                        <IconButton 
+                          size="small" 
                           onClick={() => eliminarDelCarrito(item.id_elemento)}
                           sx={{ color: 'var(--error)' }}
                         >
                           <DeleteIcon />
                         </IconButton>
                       </Box>
+                      <Box sx={{ display: 'flex', justifyContent: 'space-between', width: '100%', alignItems: 'center' }}>
+                        <Box sx={{ 
+                          display: 'flex', 
+                          alignItems: 'center', 
+                          gap: 1,
+                          backgroundColor: 'var(--color-background)',
+                          borderRadius: 1,
+                          p: 0.5
+                        }}>
+                          <IconButton
+                            size="small"
+                            onClick={() => handleCantidadChange(item.id_elemento, item.cantidad - 1)}
+                            sx={{ 
+                              color: 'var(--gold)',
+                              '&:hover': {
+                                backgroundColor: 'var(--gold-light)'
+                              }
+                            }}
+                          >
+                            <RemoveIcon />
+                          </IconButton>
+                          <TextField
+                            type="number"
+                            value={item.cantidad}
+                            onChange={(e) => handleCantidadInputChange(item.id_elemento, e.target.value)}
+                            inputProps={{
+                              min: 1,
+                              style: {
+                                textAlign: 'center',
+                                padding: '4px',
+                                width: '60px',
+                                fontFamily: '"Montserrat Alternates", cursive',
+                                fontWeight: 700,
+                                fontSize: '1rem',
+                                color: 'var(--color-text)',
+                                WebkitAppearance: 'none',
+                                MozAppearance: 'textfield'
+                              }
+                            }}
+                            sx={{
+                              '& .MuiOutlinedInput-root': {
+                                '& fieldset': {
+                                  border: 'none'
+                                },
+                                '&:hover fieldset': {
+                                  border: 'none'
+                                },
+                                '&.Mui-focused fieldset': {
+                                  border: 'none'
+                                },
+                                '& input::-webkit-outer-spin-button, & input::-webkit-inner-spin-button': {
+                                  WebkitAppearance: 'none',
+                                  margin: 0
+                                }
+                              }
+                            }}
+                          />
+                          <IconButton
+                            size="small"
+                            onClick={() => handleCantidadChange(item.id_elemento, item.cantidad + 1)}
+                            sx={{ 
+                              color: 'var(--gold)',
+                              '&:hover': {
+                                backgroundColor: 'var(--gold-light)'
+                              }
+                            }}
+                          >
+                            <AddIcon />
+                          </IconButton>
+                        </Box>
+                        <Typography>Precio por Unidad: ${item.precio_elemento}</Typography>
+                      </Box>
+                      <Typography sx={{ 
+                        textAlign: 'right',
+                        color: 'var(--gold)',
+                        fontWeight: 700
+                      }}>
+                        Subtotal: ${item.precio_elemento * item.cantidad}
+                      </Typography>
                     </ListItem>
                   ))}
                 </List>
 
                 <Box sx={{ 
-                  p: {
-                    xs: 1,
-                    sm: 2
-                  }, 
-                  bgcolor: 'var(--color-background2)',
-                  borderRadius: 1,
-                  position: 'sticky',
-                  bottom: 0,
-                  zIndex: 1
-                }}>
-                  <Typography 
-                    variant="h6"
-                    sx={{ 
-                      fontFamily: '"Montserrat Alternates", cursive',
-                      fontWeight: 800,
-                      color: 'var(--color-text)',
-                      mb: {
-                        xs: 1,
-                        sm: 2
-                      },
-                      fontSize: {
-                        xs: '1.1rem',
-                        sm: '1.5rem'
-                      }
-                    }}
-                  >
-                    Total: ${calcularTotal().toFixed(2)}
-                  </Typography>
-                  <Box sx={{ 
-                    display: 'flex', 
-                    gap: {
-                      xs: 0.5,
-                      sm: 1
-                    }
-                  }}>
-                    <Button
-                      variant="outlined"
-                      fullWidth
-                      onClick={vaciarCarrito}
-                      disabled={carrito.length === 0}
-                      sx={{
-                        borderColor: 'var(--error)',
-                        color: 'var(--error)',
-                        fontFamily: '"Montserrat Alternates", cursive',
-                        fontWeight: 800,
-                        fontSize: {
-                          xs: '0.7rem',
-                          sm: '1rem'
-                        },
-                        py: {
-                          xs: 0.8,
-                          sm: 1.5
-                        },
-                        '&:hover': {
-                          borderColor: 'var(--error)',
-                          backgroundColor: 'var(--error-light)'
-                        }
-                      }}
-                    >
-                      Vaciar Carrito
-                    </Button>
-                    <Button
-                      variant="contained"
-                      fullWidth
-                      onClick={handleComprar}
-                      disabled={carrito.length === 0}
-                      sx={{
-                        backgroundColor: 'var(--gold)',
-                        fontFamily: '"Montserrat Alternates", cursive',
-                        fontWeight: 800,
-                        color: 'var(--white)',
-                        fontSize: {
-                          xs: '0.65rem',
-                          sm: '1rem'
-                        },
-                        py: {
-                          xs: 0.6,
-                          sm: 1.5
-                        },
-                        px: {
-                          xs: 0.5,
-                          sm: 2
-                        },
-                        '&:hover': {
-                          backgroundColor: 'var(--dark-gold)',
-                        },
-                        '&:disabled': {
-                          backgroundColor: 'var(--color-disabled)',
-                          color: 'var(--color-text-disabled)'
-                        }
-                      }}
-                    >
-                      Comprar
-                    </Button>
-                  </Box>
-                </Box>
-              </Box>
-            </Drawer>
-          )}
-
-          <Dialog
-            open={showAlquilerModal}
-            onClose={() => setShowAlquilerModal(false)}
-            maxWidth="md"
-            fullWidth
-            PaperProps={{
-              sx: {
-                backgroundColor: 'var(--color-background)',
-                color: 'var(--color-text)',
-                borderRadius: 2,
-                p: { xs: 2, sm: 3 }
-              }
-            }}
-          >
-            <DialogTitle sx={{ 
-              fontFamily: '"Montserrat Alternates", cursive',
-              fontWeight: 800,
-              color: 'var(--gold)',
-              fontSize: { xs: '1.2rem', sm: '1.5rem' }
-            }}>
-              Confirmar Alquiler
-            </DialogTitle>
-            <DialogContent>
-              <TableContainer component={Paper} sx={{ mt: 2 }}>
-                <Table>
-                  <TableHead>
-                    <TableRow>
-                      <TableCell sx={{ fontFamily: '"Montserrat Alternates", cursive', fontWeight: 600 }}>Elemento</TableCell>
-                      <TableCell sx={{ fontFamily: '"Montserrat Alternates", cursive', fontWeight: 600 }}>Cantidad</TableCell>
-                      <TableCell sx={{ fontFamily: '"Montserrat Alternates", cursive', fontWeight: 600 }}>Precio Unitario</TableCell>
-                      <TableCell sx={{ fontFamily: '"Montserrat Alternates", cursive', fontWeight: 600 }}>Subtotal</TableCell>
-                    </TableRow>
-                  </TableHead>
-                  <TableBody>
-                    {carrito.map((item) => (
-                      <TableRow key={item.id_elemento}>
-                        <TableCell>{item.nombre_elemento}</TableCell>
-                        <TableCell>{item.cantidad}</TableCell>
-                        <TableCell>${item.precio_elemento}</TableCell>
-                        <TableCell>${(item.precio_elemento * item.cantidad).toFixed(2)}</TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </TableContainer>
-              <Typography 
-                variant="h6" 
-                sx={{ 
                   mt: 3,
-                  fontFamily: '"Montserrat Alternates", cursive',
-                  fontWeight: 800,
-                  color: 'var(--gold)'
-                }}
-              >
-                Total: ${calcularTotal().toFixed(2)}
-              </Typography>
-            </DialogContent>
-            <DialogActions sx={{ p: 3 }}>
-              <Button
-                onClick={() => setShowAlquilerModal(false)}
-                sx={{
-                  color: 'var(--error)',
-                  fontFamily: '"Montserrat Alternates", cursive',
-                  fontWeight: 600
-                }}
-              >
-                Cancelar
-              </Button>
-              <Button
-                onClick={() => {
-                  if (onComprarCarrito) {
-                    onComprarCarrito(carrito);
-                  }
-                  setShowAlquilerModal(false);
-                  setCarrito([]);
-                  setNotificacion({
-                    abierta: true,
-                    mensaje: 'Alquiler confirmado',
-                    tipo: 'success'
-                  });
-                }}
-                variant="contained"
-                sx={{
-                  backgroundColor: 'var(--gold)',
-                  fontFamily: '"Montserrat Alternates", cursive',
-                  fontWeight: 800,
-                  '&:hover': {
-                    backgroundColor: 'var(--dark-gold)'
-                  }
-                }}
-              >
-                Confirmar Alquiler
-              </Button>
-            </DialogActions>
-          </Dialog>
+                  p: 2,
+                  backgroundColor: 'var(--color-background2)',
+                  borderRadius: '1rem'
+                }}>
+                  <Typography variant="h6" sx={{ 
+                    textAlign: 'right',
+                    color: 'var(--gold)',
+                    fontWeight: 700,
+                    mb: 1
+                  }}>
+                    Subtotal: ${calcularTotal()}
+                  </Typography>
+                  <Typography variant="h6" sx={{ 
+                    textAlign: 'right',
+                    color: 'var(--gold)',
+                    fontWeight: 700,
+                    mb: 1
+                  }}>
+                    ITBIS (18%): ${(calcularTotal() * 0.18).toFixed(2)}
+                  </Typography>
+                  <Typography variant="h5" sx={{ 
+                    textAlign: 'right',
+                    color: 'var(--gold)',
+                    fontWeight: 800,
+                    borderTop: '2px solid var(--gold)',
+                    pt: 1,
+                    mt: 1
+                  }}>
+                    Total: ${(calcularTotal() * 1.18).toFixed(2)}
+                  </Typography>
+                </Box>
+
+                <Button
+                  variant="contained"
+                  fullWidth
+                  onClick={handleComprar}
+                  sx={{
+                    mt: 3,
+                    mb: 4,
+                    backgroundColor: 'var(--gold)',
+                    '&:hover': {
+                      backgroundColor: 'var(--dark-gold)',
+                    }
+                  }}
+                >
+                  Enviar Cotización
+                </Button>
+              </>
+            )}
+          </Drawer>
 
           <Dialog
             open={showEventoModal}
             onClose={() => setShowEventoModal(false)}
-            maxWidth="md"
-            fullWidth
-            PaperProps={{
-              sx: {
-                backgroundColor: 'var(--color-background)',
-                color: 'var(--color-text)',
-                borderRadius: 2,
-                p: { xs: 2, sm: 3 }
-              }
-            }}
-          >
-            <DialogTitle sx={{ 
-              fontFamily: '"Montserrat Alternates", cursive',
-              fontWeight: 800,
-              color: 'var(--gold)',
-              fontSize: { xs: '1.2rem', sm: '1.5rem' }
-            }}>
-              Seleccionar Evento
-            </DialogTitle>
-            <DialogContent>
-              <Box sx={{ mb: 3, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <TextField
-                  label="ID del Evento"
-                  type="number"
-                  value={selectedEventoId}
-                  onChange={(e) => setSelectedEventoId(e.target.value)}
-                  sx={{
-                    width: '200px',
-                    '& .MuiOutlinedInput-root': {
-                      '& fieldset': {
-                        borderColor: 'var(--color-input-border)',
-                      },
-                      '&:hover fieldset': {
-                        borderColor: 'var(--gold)',
-                      },
-                      '&.Mui-focused fieldset': {
-                        borderColor: 'var(--gold)',
-                      },
-                    },
-                    '& .MuiInputLabel-root': {
-                      color: 'var(--color-text)',
-                      '&.Mui-focused': {
-                        color: 'var(--gold)',
-                      },
-                    },
-                  }}
-                />
-                <Button
-                  variant="contained"
-                  onClick={() => setShowNuevoEventoModal(true)}
-                  sx={{
-                    backgroundColor: 'var(--gold)',
-                    fontFamily: '"Montserrat Alternates", cursive',
-                    fontWeight: 800,
-                    '&:hover': {
-                      backgroundColor: 'var(--dark-gold)'
-                    }
-                  }}
-                >
-                  Agregar Nuevo Evento
-                </Button>
-              </Box>
-
-              <TableContainer component={Paper} sx={{ mt: 2 }}>
-                <Table>
-                  <TableHead>
-                    <TableRow>
-                      <TableCell sx={{ fontFamily: '"Montserrat Alternates", cursive', fontWeight: 600 }}>ID</TableCell>
-                      <TableCell sx={{ fontFamily: '"Montserrat Alternates", cursive', fontWeight: 600 }}>Nombre</TableCell>
-                      <TableCell sx={{ fontFamily: '"Montserrat Alternates", cursive', fontWeight: 600 }}>Fecha</TableCell>
-                      <TableCell sx={{ fontFamily: '"Montserrat Alternates", cursive', fontWeight: 600 }}>Lugar</TableCell>
-                      <TableCell sx={{ fontFamily: '"Montserrat Alternates", cursive', fontWeight: 600 }}>Acciones</TableCell>
-                    </TableRow>
-                  </TableHead>
-                  <TableBody>
-                    {eventos.map((evento: any) => (
-                      <TableRow key={evento.id_evento}>
-                        <TableCell>{evento.id_evento}</TableCell>
-                        <TableCell>{evento.nombre_evento}</TableCell>
-                        <TableCell>{new Date(evento.fecha_evento).toLocaleDateString()}</TableCell>
-                        <TableCell>{evento.lugar_evento}</TableCell>
-                        <TableCell>
-                          <Button
-                            variant="contained"
-                            size="small"
-                            onClick={() => {
-                              setSelectedEventoId(evento.id_evento.toString());
-                              setShowEventoModal(false);
-                              setShowAlquilerModal(true);
-                            }}
-                            sx={{
-                              backgroundColor: 'var(--gold)',
-                              fontFamily: '"Montserrat Alternates", cursive',
-                              fontWeight: 600,
-                              '&:hover': {
-                                backgroundColor: 'var(--dark-gold)'
-                              }
-                            }}
-                          >
-                            Seleccionar
-                          </Button>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </TableContainer>
-
-              {/* Resumen de elementos seleccionados */}
-              <Box sx={{ mt: 4 }}>
-                <Typography 
-                  variant="h6" 
-                  sx={{ 
-                    fontFamily: '"Montserrat Alternates", cursive',
-                    fontWeight: 800,
-                    color: 'var(--gold)',
-                    mb: 2
-                  }}
-                >
-                  Resumen de Elementos Seleccionados
-                </Typography>
-                <TableContainer component={Paper}>
-                  <Table>
-                    <TableHead>
-                      <TableRow>
-                        <TableCell sx={{ fontFamily: '"Montserrat Alternates", cursive', fontWeight: 600 }}>Elemento</TableCell>
-                        <TableCell sx={{ fontFamily: '"Montserrat Alternates", cursive', fontWeight: 600 }}>Cantidad</TableCell>
-                        <TableCell sx={{ fontFamily: '"Montserrat Alternates", cursive', fontWeight: 600 }}>Precio Unitario</TableCell>
-                        <TableCell sx={{ fontFamily: '"Montserrat Alternates", cursive', fontWeight: 600 }}>Subtotal</TableCell>
-                      </TableRow>
-                    </TableHead>
-                    <TableBody>
-                      {carrito.map((item) => (
-                        <TableRow key={item.id_elemento}>
-                          <TableCell>{item.nombre_elemento}</TableCell>
-                          <TableCell>{item.cantidad}</TableCell>
-                          <TableCell>${item.precio_elemento}</TableCell>
-                          <TableCell>${(item.precio_elemento * item.cantidad).toFixed(2)}</TableCell>
-                        </TableRow>
-                      ))}
-                      <TableRow>
-                        <TableCell colSpan={3} align="right" sx={{ fontWeight: 'bold' }}>Total:</TableCell>
-                        <TableCell sx={{ fontWeight: 'bold' }}>${calcularTotal().toFixed(2)}</TableCell>
-                      </TableRow>
-                    </TableBody>
-                  </Table>
-                </TableContainer>
-              </Box>
-
-              <Box sx={{ mt: 3, display: 'flex', justifyContent: 'flex-end', gap: 2 }}>
-                <Button
-                  onClick={() => setShowEventoModal(false)}
-                  sx={{
-                    color: 'var(--error)',
-                    fontFamily: '"Montserrat Alternates", cursive',
-                    fontWeight: 600
-                  }}
-                >
-                  Cancelar
-                </Button>
-                <Button
-                  variant="contained"
-                  onClick={() => {
-                    if (selectedEventoId) {
-                      setShowEventoModal(false);
-                      setShowAlquilerModal(true);
-                    } else {
-                      setNotificacion({
-                        abierta: true,
-                        mensaje: 'Por favor, seleccione o ingrese un ID de evento',
-                        tipo: 'error'
-                      });
-                    }
-                  }}
-                  sx={{
-                    backgroundColor: 'var(--gold)',
-                    fontFamily: '"Montserrat Alternates", cursive',
-                    fontWeight: 800,
-                    '&:hover': {
-                      backgroundColor: 'var(--dark-gold)'
-                    }
-                  }}
-                >
-                  Continuar con Alquiler
-                </Button>
-              </Box>
-            </DialogContent>
-          </Dialog>
-
-          <Dialog
-            open={showNuevoEventoModal}
-            onClose={() => setShowNuevoEventoModal(false)}
             maxWidth="sm"
             fullWidth
             PaperProps={{
               sx: {
-                backgroundColor: 'var(--color-background)',
-                color: 'var(--color-text)',
-                borderRadius: 2,
-                p: { xs: 2, sm: 3 }
+                borderRadius: '1rem',
+                background: 'var(--color-background)',
+                color: 'var(--color-text)'
               }
             }}
           >
@@ -1739,196 +1407,86 @@ const Catalog: React.FC<CatalogProps> = ({ onAddToCart = true, onComprarCarrito 
               fontFamily: '"Montserrat Alternates", cursive',
               fontWeight: 800,
               color: 'var(--gold)',
-              fontSize: { xs: '1.2rem', sm: '1.5rem' }
+              textAlign: 'center',
+              borderBottom: '2px solid var(--gold)',
+              pb: 2
             }}>
-              Nuevo Evento
+              Seleccionar Evento
             </DialogTitle>
             <DialogContent>
-              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 2 }}>
-                <TextField
-                  label="Nombre del Evento"
-                  value={nuevoEvento.nombre_evento}
-                  onChange={(e) => setNuevoEvento(prev => ({ ...prev, nombre_evento: e.target.value }))}
+              <Box sx={{ mt: 2 }}>
+                <Button 
+                  variant="outlined" 
                   fullWidth
-                  sx={{
-                    '& .MuiOutlinedInput-root': {
-                      '& fieldset': {
-                        borderColor: 'var(--color-input-border)',
-                      },
-                      '&:hover fieldset': {
-                        borderColor: 'var(--gold)',
-                      },
-                      '&.Mui-focused fieldset': {
-                        borderColor: 'var(--gold)',
-                      },
-                    },
-                    '& .MuiInputLabel-root': {
-                      color: 'var(--color-text)',
-                      '&.Mui-focused': {
-                        color: 'var(--gold)',
-                      },
-                    },
+                  onClick={() => {
+                    setShowEventoModal(false);
+                    navigate('/Menu-Servicios/Bienvenida');
                   }}
-                />
-                <TextField
-                  label="Fecha del Evento"
-                  type="date"
-                  value={nuevoEvento.fecha_evento}
-                  onChange={(e) => setNuevoEvento(prev => ({ ...prev, fecha_evento: e.target.value }))}
-                  fullWidth
-                  InputLabelProps={{ shrink: true }}
-                  sx={{
-                    '& .MuiOutlinedInput-root': {
-                      '& fieldset': {
-                        borderColor: 'var(--color-input-border)',
-                      },
-                      '&:hover fieldset': {
-                        borderColor: 'var(--gold)',
-                      },
-                      '&.Mui-focused fieldset': {
-                        borderColor: 'var(--gold)',
-                      },
-                    },
-                    '& .MuiInputLabel-root': {
-                      color: 'var(--color-text)',
-                      '&.Mui-focused': {
-                        color: 'var(--gold)',
-                      },
-                    },
+                  sx={{ 
+                    mb: 2,
+                    borderColor: 'var(--gold)',
+                    color: 'var(--gold)',
+                    '&:hover': {
+                      borderColor: 'var(--dark-gold)',
+                      backgroundColor: 'var(--gold-light)'
+                    }
                   }}
-                />
-                <TextField
-                  label="Hora de Inicio"
-                  type="time"
-                  value={nuevoEvento.hora_inicio}
-                  onChange={(e) => setNuevoEvento(prev => ({ ...prev, hora_inicio: e.target.value }))}
-                  fullWidth
-                  InputLabelProps={{ shrink: true }}
-                  sx={{
-                    '& .MuiOutlinedInput-root': {
-                      '& fieldset': {
-                        borderColor: 'var(--color-input-border)',
-                      },
-                      '&:hover fieldset': {
-                        borderColor: 'var(--gold)',
-                      },
-                      '&.Mui-focused fieldset': {
-                        borderColor: 'var(--gold)',
-                      },
-                    },
-                    '& .MuiInputLabel-root': {
-                      color: 'var(--color-text)',
-                      '&.Mui-focused': {
-                        color: 'var(--gold)',
-                      },
-                    },
-                  }}
-                />
-                <TextField
-                  label="Hora de Fin"
-                  type="time"
-                  value={nuevoEvento.hora_fin}
-                  onChange={(e) => setNuevoEvento(prev => ({ ...prev, hora_fin: e.target.value }))}
-                  fullWidth
-                  InputLabelProps={{ shrink: true }}
-                  sx={{
-                    '& .MuiOutlinedInput-root': {
-                      '& fieldset': {
-                        borderColor: 'var(--color-input-border)',
-                      },
-                      '&:hover fieldset': {
-                        borderColor: 'var(--gold)',
-                      },
-                      '&.Mui-focused fieldset': {
-                        borderColor: 'var(--gold)',
-                      },
-                    },
-                    '& .MuiInputLabel-root': {
-                      color: 'var(--color-text)',
-                      '&.Mui-focused': {
-                        color: 'var(--gold)',
-                      },
-                    },
-                  }}
-                />
-                <TextField
-                  label="Lugar del Evento"
-                  value={nuevoEvento.lugar_evento}
-                  onChange={(e) => setNuevoEvento(prev => ({ ...prev, lugar_evento: e.target.value }))}
-                  fullWidth
-                  sx={{
-                    '& .MuiOutlinedInput-root': {
-                      '& fieldset': {
-                        borderColor: 'var(--color-input-border)',
-                      },
-                      '&:hover fieldset': {
-                        borderColor: 'var(--gold)',
-                      },
-                      '&.Mui-focused fieldset': {
-                        borderColor: 'var(--gold)',
-                      },
-                    },
-                    '& .MuiInputLabel-root': {
-                      color: 'var(--color-text)',
-                      '&.Mui-focused': {
-                        color: 'var(--gold)',
-                      },
-                    },
-                  }}
-                />
-                <TextField
-                  label="Descripción"
-                  value={nuevoEvento.descripcion}
-                  onChange={(e) => setNuevoEvento(prev => ({ ...prev, descripcion: e.target.value }))}
-                  fullWidth
-                  multiline
-                  rows={4}
-                  sx={{
-                    '& .MuiOutlinedInput-root': {
-                      '& fieldset': {
-                        borderColor: 'var(--color-input-border)',
-                      },
-                      '&:hover fieldset': {
-                        borderColor: 'var(--gold)',
-                      },
-                      '&.Mui-focused fieldset': {
-                        borderColor: 'var(--gold)',
-                      },
-                    },
-                    '& .MuiInputLabel-root': {
-                      color: 'var(--color-text)',
-                      '&.Mui-focused': {
-                        color: 'var(--gold)',
-                      },
-                    },
-                  }}
-                />
+                >
+                  + Crear Nuevo Evento
+                </Button>
+
+                <FormControl fullWidth sx={{ mb: 2 }}>
+                  <InputLabel>Seleccionar Evento Existente</InputLabel>
+                  <Select
+                    value={selectedEventoId}
+                    onChange={(e) => setSelectedEventoId(e.target.value)}
+                    label="Seleccionar Evento Existente"
+                  >
+                    {eventos.map((evento: any) => (
+                      <MenuItem key={evento.id_evento} value={evento.id_evento}>
+                        {evento.tipo_evento} - {evento.fecha_evento}
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
               </Box>
             </DialogContent>
             <DialogActions sx={{ p: 3 }}>
-              <Button
-                onClick={() => setShowNuevoEventoModal(false)}
-                sx={{
-                  color: 'var(--error)',
-                  fontFamily: '"Montserrat Alternates", cursive',
-                  fontWeight: 600
-                }}
+              <Button 
+                onClick={() => setShowEventoModal(false)}
+                sx={{ color: 'var(--error)' }}
               >
                 Cancelar
               </Button>
-              <Button
-                onClick={handleNuevoEvento}
+              <Button 
+                onClick={() => {
+                  if (selectedEventoId) {
+                    onComprarCarrito?.(carrito);
+                    setShowEventoModal(false);
+                    setCarrito([]);
+                    setCarritoAbierto(false);
+                  } else {
+                    setNotificacion({
+                      abierta: true,
+                      mensaje: 'Por favor, seleccione o cree un evento',
+                      tipo: 'error'
+                    });
+                  }
+                }}
                 variant="contained"
+                disabled={!selectedEventoId}
                 sx={{
                   backgroundColor: 'var(--gold)',
-                  fontFamily: '"Montserrat Alternates", cursive',
-                  fontWeight: 800,
                   '&:hover': {
-                    backgroundColor: 'var(--dark-gold)'
+                    backgroundColor: 'var(--dark-gold)',
+                  },
+                  '&:disabled': {
+                    backgroundColor: 'var(--color-disabled)',
+                    color: 'var(--color-text-disabled)'
                   }
                 }}
               >
-                Crear Evento
+                Enviar Cotización
               </Button>
             </DialogActions>
           </Dialog>
@@ -1947,23 +1505,6 @@ const Catalog: React.FC<CatalogProps> = ({ onAddToCart = true, onComprarCarrito 
                 color: 'var(--white)',
                 '& .MuiAlert-icon': {
                   color: 'var(--white)'
-                },
-                fontFamily: '"Nunito Sans", sans-serif',
-                fontSize: { xs: '0.75rem', sm: '1rem' },
-                width: { xs: '98%', sm: 'auto' },
-                maxWidth: '600px',
-                boxShadow: '0 4px 12px rgba(0,0,0,0.4)',
-                '& .MuiAlert-message': {
-                  fontWeight: 600
-                },
-                '& .MuiAlert-action': {
-                  color: 'var(--white)'
-                },
-                '& .MuiAlert-standardSuccess': {
-                  backgroundColor: '#2e7d32'
-                },
-                '& .MuiAlert-standardError': {
-                  backgroundColor: '#d32f2f'
                 }
               }}
             >
