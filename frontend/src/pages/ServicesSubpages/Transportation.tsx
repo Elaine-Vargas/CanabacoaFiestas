@@ -351,7 +351,7 @@ export default function Transportation() {
         </div>
 
         <button className="new-form-btn" onClick={() => setShowModal(true)}>
-          + Agregar Servicio de Transporte
+          Agregar Servicio de Transporte
         </button>
 
         {showModal && (
@@ -478,7 +478,7 @@ export default function Transportation() {
       </div>
 
       <button className="new-form-btn" onClick={() => setShowModal(true)}>
-        + Agregar Servicio de Transporte
+        Agregar Servicio de Transporte
       </button>
     </div>
   );

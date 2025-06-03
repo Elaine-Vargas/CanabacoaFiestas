@@ -373,7 +373,7 @@ export default function Rent() {
                 }
               }}
             >
-              + Crear Nuevo Evento
+              Crear Nuevo Evento
             </Button>
 
             <TextField
@@ -826,7 +826,7 @@ export default function Rent() {
         {showTotalItemsModal && renderTotalItemsModal()}
 
         <button className="new-form-btn" onClick={() => setShowModal(true)}>
-          + Agregar Servicio de Alquiler
+          Agregar Servicio de Alquiler
         </button>
 
         {showModal && (
@@ -983,7 +983,7 @@ export default function Rent() {
       {showTotalItemsModal && renderTotalItemsModal()}
 
       <button className="new-form-btn" onClick={() => setShowModal(true)}>
-        + Agregar Servicio de Alquiler
+        Agregar Servicio de Alquiler
       </button>
 
       {showModal && (

@@ -441,7 +441,7 @@ export default function Decor() {
         {showCompletadosModal && renderCompletadosModal()}
 
         <button className="new-form-btn" onClick={() => setShowModal(true)}>
-          + Agregar Servicio de Decoración
+          Agregar Servicio de Decoración
         </button>
         {showModal && (
           <div className="modal-overlay">
@@ -582,7 +582,7 @@ export default function Decor() {
       </div>
 
       <button className="new-form-btn" onClick={() => setShowModal(true)}>
-        + Agregar Servicio de Decoración
+        Agregar Servicio de Decoración
       </button>
 
       {showEventosModal && (

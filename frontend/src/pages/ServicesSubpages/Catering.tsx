@@ -594,7 +594,7 @@ export default function Catering() {
         {showProveedoresModal && renderProveedoresModal()}
 
         <button className="new-form-btn" onClick={() => setShowModal(true)}>
-          + Agregar Servicio de Catering
+          Agregar Servicio de Catering
         </button>
 
         {showModal && (
@@ -855,7 +855,7 @@ export default function Catering() {
       )}
 
       <button className="new-form-btn" onClick={() => setShowModal(true)}>
-        + Agregar Servicio de Catering
+        Agregar Servicio de Catering
       </button>
     </div>
   );
