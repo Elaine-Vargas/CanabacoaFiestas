@@ -922,7 +922,7 @@ const WelcomeMenu: React.FC<WelcomeMenuProps> = () => {
           <button 
             className="new-form-btn"
             onClick={() => setShowEventModal(true)}>
-            + Nuevo evento
+            Nuevo evento
           </button>
         </center>
       </div>
@@ -1197,22 +1197,9 @@ const WelcomeMenu: React.FC<WelcomeMenuProps> = () => {
           <button 
             className="new-form-btn"
             onClick={() => setShowEventModal(true)}>
-            + Nuevo evento
+            Nuevo evento
           </button>
         </center>
-      </div>
-
-      <div className="admin-actions">
-        <br />
-        <h3>Acciones Administrativas</h3>
-        <div className="action-buttons">
-          <button onClick={() => navigate('/Menu-Servicios/Transporte')}>Gestionar Transporte</button>
-          <button onClick={() => navigate('/Menu-Servicios/Supervision')}>Gestionar Supervisión</button>
-          <button onClick={() => navigate('/Menu-Servicios/Montaje-Desmontaje')}>Gestionar Montaje</button>
-          <button onClick={() => navigate('/Menu-Servicios/Catering')}>Gestionar Catering</button>
-          <button onClick={() => navigate('/Menu-Servicios/Decoracion')}>Gestionar Decoración</button>
-          <button onClick={() => navigate('/Menu-Servicios/Alquiler')}>Gestionar Alquiler</button>
-        </div>
       </div>
     </div>
   );
@@ -1262,7 +1249,7 @@ const WelcomeMenu: React.FC<WelcomeMenuProps> = () => {
             <button 
               className="new-form-btn"
               onClick={() => setShowEventModal(true)}>
-              + Nuevo evento
+              Nuevo evento
             </button>
           </center>
         </div>
@@ -1323,7 +1310,7 @@ const WelcomeMenu: React.FC<WelcomeMenuProps> = () => {
             <button 
               className="new-form-btn"
               onClick={() => setShowNuevaCompraModal(true)}>
-              + Nueva Compra
+              Nueva Compra
             </button>
           </center>
         </div>
@@ -1565,7 +1552,7 @@ const WelcomeMenu: React.FC<WelcomeMenuProps> = () => {
                   detalles: [...prev.detalles, { elemento: '', cantidad: 0, precio_unitario: 0, precio_total: 0 }]
                 }))}
               >
-                + Agregar Elemento
+                Agregar Elemento
               </button>
 
               <div className="form-buttons">
@@ -1641,7 +1628,7 @@ const WelcomeMenu: React.FC<WelcomeMenuProps> = () => {
               className="add-user-btn"
               onClick={() => setShowAddSpaceModal(true)}
             >
-              + Agregar Espacio
+              Agregar Espacio
             </button>
           </div>
           <div className="table-container">
@@ -2292,7 +2279,7 @@ const WelcomeMenu: React.FC<WelcomeMenuProps> = () => {
                   className="add-user-btn"
                   onClick={() => setShowCreateUserModal(true)}
                 >
-                  + Crear Usuario
+                  Crear Usuario
                 </button>
               </div>
               

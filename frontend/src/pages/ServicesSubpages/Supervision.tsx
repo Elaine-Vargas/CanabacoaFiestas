@@ -259,7 +259,7 @@ export default function Supervision() {
         </div>
 
         <button className="new-form-btn" onClick={() => setShowModal(true)}>
-          + Agregar Servicio de Supervisión
+          Agregar Servicio de Supervisión
         </button>
 
         {showModal && (
@@ -387,7 +387,7 @@ export default function Supervision() {
       </div>
 
       <button className="new-form-btn" onClick={() => setShowModal(true)}>
-        + Agregar Servicio de Supervisión
+        Agregar Servicio de Supervisión
       </button>
     </div>
   );
