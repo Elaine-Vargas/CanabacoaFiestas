@@ -32,7 +32,7 @@ export const getDashboardStats = async (req: Request, res: Response) => {
 
     let stats = {};
 
-    // Estadísticas para el Administrador
+    // Mostrar estadísticas para el Administrador
     if (userRole === '1') {
       // Obtener eventos en proceso
       const eventosEnProceso = await Evento.count({
