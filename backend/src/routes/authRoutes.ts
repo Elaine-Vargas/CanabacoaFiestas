@@ -1,31 +1,73 @@
 import { Router } from 'express';
-import { Login, RegisterClient, RegisterUser, GetUserData, UpdateUserData, getCurrentUser } from '../controllers/authController';
+import { 
+  Login, RegisterClient, RegisterUser, GetUserData, UpdateUserData, getCurrentUser 
+} from '../controllers/authController';
+import { sendRecoveryEmail, resetPassword } from '../controllers/mailController';
 
 const router = Router();
 
-router.post('/login', (req, res, next) => {
-  Promise.resolve(Login(req, res)).catch(next);
+router.post('/login', async (req, res, next) => {
+  try {
+    await Login(req, res);
+  } catch (error) {
+    next(error);
+  }
 });
 
-router.post('/register-client', (req, res, next) => {
-  Promise.resolve(RegisterClient(req, res)).catch(next);
+router.post('/register-client', async (req, res, next) => {
+  try {
+    await RegisterClient(req, res);
+  } catch (error) {
+    next(error);
+  }
 });
 
-router.post('/register-user', (req, res, next) => {
-  Promise.resolve(RegisterUser(req, res)).catch(next);
+router.post('/register-user', async (req, res, next) => {
+  try {
+    await RegisterUser(req, res);
+  } catch (error) {
+    next(error);
+  }
 });
 
-router.get('/user-data', (req, res, next) => {
-  Promise.resolve(GetUserData(req, res)).catch(next);
+router.get('/user-data', async (req, res, next) => {
+  try {
+    await GetUserData(req, res);
+  } catch (error) {
+    next(error);
+  }
 });
 
-router.put('/update-user', (req, res, next) => {
-  Promise.resolve(UpdateUserData(req, res)).catch(next);
+router.put('/update-user', async (req, res, next) => {
+  try {
+    await UpdateUserData(req, res);
+  } catch (error) {
+    next(error);
+  }
 });
 
-// Nueva ruta para obtener el usuario actual
-router.get('/current', (req, res, next) => {
-  Promise.resolve(getCurrentUser(req, res)).catch(next);
+router.get('/current', async (req, res, next) => {
+  try {
+    await getCurrentUser(req, res);
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.post('/mail-recovery', async (req, res, next) => {
+  try {
+    await sendRecoveryEmail(req, res);
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.post('/reset-password', async (req, res, next) => {
+  try {
+    await resetPassword(req, res);
+  } catch (error) {
+    next(error);
+  }
 });
 
 export default router;

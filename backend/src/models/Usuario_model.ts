@@ -102,14 +102,16 @@ export default class Usuario extends Model {
   @BeforeUpdate
   static async hashPassword(usuario: Usuario) {
     if (usuario.changed('contrasena_login')) {
-      const passwordRegex = /^(?=.*[A-Z])(?=.*[0-9])(?=.*[!@#$%^&*.?_-])[a-zA-Z0-9!@#$%^&*.?_-]{8,25}$/;
+      const passwordRegex = /^(?=.*[A-Z])(?=.*\d)(?=.*[^\w\s])[A-Za-z\d\W]{8,25}$/;
+  
       if (!passwordRegex.test(usuario.contrasena_login)) {
         throw new Error('La contraseña debe tener entre 8-25 caracteres, al menos una mayúscula, un número y un carácter especial');
       }
-
+  
       usuario.contrasena_login = await bcrypt.hash(usuario.contrasena_login, 10);
     }
   }
+  
 
   async compararContrasena(contrasena: string): Promise<boolean> {
     return bcrypt.compare(contrasena, this.contrasena_login);
