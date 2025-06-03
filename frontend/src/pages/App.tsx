@@ -19,6 +19,9 @@ const Transportation = lazy(() => import('./ServicesSubpages/Transportation'));
 const AssemblyAndDisassembly = lazy(() => import('./ServicesSubpages/AssemblyAndDisassembly'));
 const Catalogo = lazy(() => import('./Catalog'));
 const Principal = lazy(() => import('./Principal')); // Ahora puede ser lazy-loaded
+const PasswordRecovery = lazy(() => import ('./PassRecovery'));
+const PasswordReset = lazy(() => import('./PasswordReset'));
+
 
 import ProtectedRoute from '../components/ProtectedRoute';
 import PublicRoute from '../components/PublicRoute';
@@ -49,8 +52,24 @@ function App() {
                 <UserLogin />
               </Suspense>
             </PublicRoute>
-          } />
-        
+          }>
+            <Route path="Recuperar-Contrasena" element={
+              <PublicRoute>
+                <Suspense fallback={<LoadingScreen />}>
+                  <PasswordRecovery />
+                </Suspense>
+              </PublicRoute>
+            } />
+            {/* Nueva ruta para reset con token */}
+            <Route path="Recuperar-Contrasena/Restablecer" element={
+              <PublicRoute>
+                <Suspense fallback={<LoadingScreen />}>
+                  <PasswordReset />
+                </Suspense>
+              </PublicRoute>
+            } />
+          </Route>
+
         <Route path="/Menu-Servicios/*" element={
             <ProtectedRoute>
               <Suspense fallback={<LoadingScreen />}>

@@ -7,6 +7,7 @@ import authRoutes from './routes/authRoutes';
 import elementoRoutes from './routes/elementoRoutes';
 import path from 'path';
 import comentarioRoutes from './routes/comentarioRoutes';
+import { sendRecoveryEmail } from './controllers/mailController';
 import dashboardRoutes from './routes/dashboardRoutes';
 
 dotenv.config();

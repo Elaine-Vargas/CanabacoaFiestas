@@ -8,6 +8,12 @@
   background-repeat: no-repeat;
   background-size: cover;
 }
+.recoveryPage {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+
+}
 
 section {
   position: relative;
@@ -842,5 +848,91 @@ section .container.active .signinBx .imgBx {
   section .container .user .formBx form input[type='submit'] {
     font-size: 18px;
     padding: 10px;
+  }
+}
+
+.recovery-instructions {
+  color: var(--color-text);
+  font-size: 14px;
+  text-align: center;
+  margin-bottom: 20px;
+  line-height: 1.5;
+}
+
+.toggle-method {
+  background: none;
+  border: none;
+  color: var(--gold);
+  font-size: 13px;
+  margin: 10px 0;
+  cursor: pointer;
+  text-decoration: underline;
+  font-family: "Nunito Sans", sans-serif;
+  
+  &:hover {
+    color: var(--dark-gold);
+  }
+}
+
+.button-group {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+  margin-top: 20px;
+  
+  input[type="submit"] {
+    width: 100%;
+    max-width: 200px;
+    margin-bottom: 15px;
+  }
+}
+
+.cancel-button {
+  color: var(--color-text);
+  font-size: 14px;
+  text-decoration: none;
+  font-family: "Nunito Sans", sans-serif;
+  
+  &:hover {
+    color: var(--gold);
+    text-decoration: underline;
+  }
+}
+
+.success-message {
+  text-align: center;
+  color: var(--color-text);
+  
+  h2 {
+    color: var(--gold);
+    margin-bottom: 20px;
+  }
+  
+  p {
+    margin-bottom: 15px;
+    line-height: 1.5;
+    font-size: 15px;
+  }
+  
+  strong {
+    color: var(--gold);
+  }
+}
+
+.back-to-login {
+  display: inline-block;
+  padding: 10px 20px;
+  background: var(--gold);
+  color: white;
+  text-decoration: none;
+  border-radius: 4px;
+  margin-top: 20px;
+  font-weight: 500;
+  transition: background-color 0.3s;
+  
+  &:hover {
+    background: var(--dark-gold);
+    color: white;
   }
 }

@@ -12,6 +12,7 @@ const UserConfig = lazy(() => import('./pages/ServicesSubpages/UserConfig'));
 const UserLogin = lazy(() => import('./pages/UserLogin'));
 const DashboardLayout = lazy(() => import('./components/DashboardLayout'));
 const WelcomeMenu = lazy(() => import('./pages/ServicesSubpages/WelcomeMenu'));
+const PassRecovery = lazy(() => import('./pages/PassRecovery'));
 const Rent = lazy(() => import('./pages/ServicesSubpages/Rent'));
 const Decor = lazy(() => import('./pages/ServicesSubpages/Decor'));
 const Catering = lazy(() => import('./pages/ServicesSubpages/Catering'));
@@ -19,10 +20,12 @@ const Supervision = lazy(() => import('./pages/ServicesSubpages/Supervision'));
 const Transportation = lazy(() => import('./pages/ServicesSubpages/Transportation'));
 const AssemblyAndDisassembly = lazy(() => import('./pages/ServicesSubpages/AssemblyAndDisassembly'));
 const Catalogo = lazy(() => import('./pages/Catalog'));
-const Eventos = lazy(() => import('./pages/ServicesSubpages/Eventos'));
+
 
 import ProtectedRoute from './components/ProtectedRoute';
 import PublicRoute from './components/PublicRoute';
+import { LoadingScreen } from './components/LoadingScreen';
+import PasswordRecovery from './pages/PassRecovery';
 
 function App() {
   return (
@@ -38,12 +41,23 @@ function App() {
             <Route path="/Nosotros" element={<AboutUs />} />
             <Route path="/Servicios" element={<Services />} />
             <Route path="/Catalogo" element={<Catalogo />} />
+         
             <Route path="/Login" element={
-              <PublicRoute>
-                <UserLogin />
-              </PublicRoute>
-            } />
+          <PublicRoute>
+            <Suspense fallback={<LoadingScreen />}>
+              <UserLogin />
+            </Suspense>
+          </PublicRoute>
+        } />
         
+        <Route path="/Login/Recuperar-Contrasena" element={
+          <PublicRoute>
+            <Suspense fallback={<LoadingScreen />}>
+              <PasswordRecovery />
+            </Suspense>
+          </PublicRoute>
+        } />
+         
             <Route path="/Menu-Servicios/*" element={
               <ProtectedRoute>
                 <DashboardLayout />
@@ -53,7 +67,6 @@ function App() {
               <Route path="Bienvenida" element={<WelcomeMenu eventsInProcess={38} averageRating={4.0} totalUsers={150} quotations={[]}/>} />
               <Route path="Ajustes-Usuario" element={<UserConfig />} />
               <Route path="Alquiler" element={<Rent />} />
-              <Route path="Eventos" element={<Eventos />} />
               <Route path="Decoracion" element={<Decor />} />
               <Route path="Catering" element={<Catering />} />
               <Route path="Supervision" element={<Supervision />} />
