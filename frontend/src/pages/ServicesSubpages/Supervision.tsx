@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import type { ChangeEvent } from 'react';
 import '../../styles/dashboard/ServicesSubpages.scss';
-import ServiceBase from '../../components/ServiceBase';
+import '../../components/ServiceBase';
 import { useUser } from '../../contexts/UserContext';
 
 interface Supervision {
@@ -62,7 +62,6 @@ export default function Supervision() {
   const [showEventosModal, setShowEventosModal] = useState(false);
   const [showEmpleadosModal, setShowEmpleadosModal] = useState(false);
   const [showCompletadasModal, setShowCompletadasModal] = useState(false);
-  const [supervisions, setSupervisions] = useState<Supervision[]>([]);
   const [eventos, setEventos] = useState<Evento[]>([]);
   const [eventosSupervisados, setEventosSupervisados] = useState<EventoSupervisado[]>([]);
   const [empleadosSupervision, setEmpleadosSupervision] = useState<EmpleadoSupervision[]>([]);
@@ -81,7 +80,6 @@ export default function Supervision() {
     notas: ''
   });
   const [editId, setEditId] = useState<number | null>(null);
-  const [filtroEvento, setFiltroEvento] = useState<string>('');
 
   useEffect(() => {
     const fetchData = async () => {
@@ -91,12 +89,11 @@ export default function Supervision() {
           fetch('/api/eventos')
         ]);
 
-        const [supervisionsData, eventosData] = await Promise.all([
+        const [eventosData] = await Promise.all([
           supervisionsRes.json(),
           eventosRes.json()
         ]);
 
-        setSupervisions(supervisionsData);
         setEventos(eventosData);
       } catch (error) {
         console.error('Error al cargar datos:', error);
@@ -206,8 +203,6 @@ export default function Supervision() {
         throw new Error('Error al guardar la supervisión');
       }
 
-      const data = await response.json();
-      setSupervisions(data);
       setShowModal(false);
       setFormData({
         id_evento: 0,
@@ -220,20 +215,6 @@ export default function Supervision() {
       setEditId(null);
     } catch (error) {
       console.error('Error:', error);
-    }
-  };
-
-  const handleEdit = (supervision: Supervision) => {
-    setFormData(supervision);
-    setShowModal(true);
-  };
-
-  const handleDelete = async (id: number) => {
-    try {
-      await fetch(`/api/supervision/${id}`, { method: 'DELETE' });
-      setSupervisions(prev => prev.filter(s => s.id_supervision !== id));
-    } catch (error) {
-      console.error('Error al eliminar:', error);
     }
   };
 
@@ -276,70 +257,8 @@ export default function Supervision() {
         </div>
 
         <button className="new-form-btn" onClick={() => setShowModal(true)}>
-          + Agregar Servicio
+          + Agregar Servicio de Supervisión
         </button>
-
-        <div className="table-section">
-          <p>Servicios de Supervisión Registrados</p>
-          <div className="search-container">
-            <select
-              className="escri"
-              value={filtroEvento}
-              onChange={(e) => setFiltroEvento(e.target.value)}
-            >
-              <option value="">Todos los eventos</option>
-              <option value="recientes">Eventos recientes</option>
-              <option value="pendientes">Eventos pendientes</option>
-              <option value="completados">Eventos completados</option>
-              <option value="cancelados">Eventos cancelados</option>
-            </select>
-          </div>
-          <table>
-            <thead>
-              <tr>
-                <th>ID</th>
-                <th>Evento</th>
-                <th>Tipo de Supervisión</th>
-                <th>Descripción</th>
-                <th>Estado</th>
-                <th>Acciones</th>
-              </tr>
-            </thead>
-            <tbody>
-              {supervisions
-                .filter(s => 
-                  eventos.find(e => e.id_evento === s.id_evento)?.tipo_evento
-                    .toLowerCase()
-                    .includes(filtroEvento.toLowerCase())
-                )
-                .map((supervision) => (
-                  <tr key={supervision.id_supervision}>
-                    <td>{supervision.id_supervision}</td>
-                    <td>
-                      {eventos.find(e => e.id_evento === supervision.id_evento)?.tipo_evento}
-                    </td>
-                    <td>{supervision.tipo_supervision}</td>
-                    <td>{supervision.descripcion}</td>
-                    <td>{supervision.estado}</td>
-                    <td>
-                      <button
-                        className="edit-btn"
-                        onClick={() => handleEdit(supervision)}
-                      >
-                        Editar
-                      </button>
-                      <button
-                        className="delete-btn"
-                        onClick={() => handleDelete(supervision.id_supervision!)}
-                      >
-                        Eliminar
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-            </tbody>
-          </table>
-        </div>
 
         {showModal && (
           <div className="modal-overlay">
@@ -451,70 +370,8 @@ export default function Supervision() {
       </div>
 
       <button className="new-form-btn" onClick={() => setShowModal(true)}>
-        + Agregar Servicio
+        + Agregar Servicio de Supervisión
       </button>
-
-      <div className="table-section">
-        <p>Servicios de Supervisión Registrados</p>
-        <div className="search-container">
-          <select
-            className="escri"
-            value={filtroEvento}
-            onChange={(e) => setFiltroEvento(e.target.value)}
-          >
-            <option value="">Todos los eventos</option>
-            <option value="recientes">Eventos recientes</option>
-            <option value="pendientes">Eventos pendientes</option>
-            <option value="completados">Eventos completados</option>
-            <option value="cancelados">Eventos cancelados</option>
-          </select>
-        </div>
-        <table>
-          <thead>
-            <tr>
-              <th>ID</th>
-              <th>Evento</th>
-              <th>Tipo de Supervisión</th>
-              <th>Descripción</th>
-              <th>Estado</th>
-              <th>Acciones</th>
-            </tr>
-          </thead>
-          <tbody>
-            {supervisions
-              .filter(s => 
-                eventos.find(e => e.id_evento === s.id_evento)?.tipo_evento
-                  .toLowerCase()
-                  .includes(filtroEvento.toLowerCase())
-              )
-              .map((supervision) => (
-                <tr key={supervision.id_supervision}>
-                  <td>{supervision.id_supervision}</td>
-                  <td>
-                    {eventos.find(e => e.id_evento === supervision.id_evento)?.tipo_evento}
-                  </td>
-                  <td>{supervision.tipo_supervision}</td>
-                  <td>{supervision.descripcion}</td>
-                  <td>{supervision.estado}</td>
-                  <td>
-                    <button
-                      className="edit-btn"
-                      onClick={() => handleEdit(supervision)}
-                    >
-                      Editar
-                    </button>
-                    <button
-                      className="delete-btn"
-                      onClick={() => handleDelete(supervision.id_supervision!)}
-                    >
-                      Eliminar
-                    </button>
-                  </td>
-                </tr>
-              ))}
-          </tbody>
-        </table>
-      </div>
     </div>
   );
 

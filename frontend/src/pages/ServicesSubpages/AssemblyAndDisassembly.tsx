@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import type { ChangeEvent } from 'react';
 import '../../styles/dashboard/ServicesSubpages.scss';
-import ServiceBase from '../../components/ServiceBase';
+import '../../components/ServiceBase';
 import { useUser } from "../../contexts/UserContext";
 
 interface Assembly {
@@ -328,7 +328,7 @@ export default function AssemblyAndDisassembly() {
       </div>
 
       <button className="new-form-btn" onClick={() => setShowModal(true)}>
-        + Agregar Servicio
+        + Agregar Servicio de Montaje y Desmontaje
       </button>
 
       <div className="table-section">
@@ -438,74 +438,8 @@ export default function AssemblyAndDisassembly() {
         </div>
 
         <button className="new-form-btn" onClick={() => setShowModal(true)}>
-          + Agregar Servicio
+          + Agregar Servicio de Montaje y Desmontaje
         </button>
-
-        <div className="table-section">
-          <p>Servicios de Montaje y Desmontaje Registrados</p>
-          <div className="search-container">
-            <select
-              className="escri"
-              value={filtroEvento}
-              onChange={(e) => setFiltroEvento(e.target.value)}
-            >
-              <option value="">Todos los eventos</option>
-              <option value="recientes">Eventos recientes</option>
-              <option value="pendientes">Eventos pendientes</option>
-              <option value="completados">Eventos completados</option>
-              <option value="cancelados">Eventos cancelados</option>
-            </select>
-          </div>
-          <table>
-            <thead>
-              <tr>
-                <th>ID</th>
-                <th>Evento</th>
-                <th>Tipo de Servicio</th>
-                <th>Descripción</th>
-                <th>Fecha Inicio</th>
-                <th>Fecha Fin</th>
-                <th>Estado</th>
-                <th>Acciones</th>
-              </tr>
-            </thead>
-            <tbody>
-              {assemblies
-                .filter(a => 
-                  eventos.find(e => e.id_evento === a.id_evento)?.tipo_evento
-                    .toLowerCase()
-                    .includes(filtroEvento.toLowerCase())
-                )
-                .map((assembly) => (
-                  <tr key={assembly.id_assembly}>
-                    <td>{assembly.id_assembly}</td>
-                    <td>
-                      {eventos.find(e => e.id_evento === assembly.id_evento)?.tipo_evento}
-                    </td>
-                    <td>{assembly.tipo_servicio}</td>
-                    <td>{assembly.descripcion}</td>
-                    <td>{assembly.fecha_inicio}</td>
-                    <td>{assembly.fecha_fin}</td>
-                    <td>{assembly.estado}</td>
-                    <td>
-                      <button
-                        className="edit-btn"
-                        onClick={() => handleEdit(assembly)}
-                      >
-                        Editar
-                      </button>
-                      <button
-                        className="delete-btn"
-                        onClick={() => handleDelete(assembly.id_assembly!)}
-                      >
-                        Eliminar
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-            </tbody>
-          </table>
-        </div>
 
         {showModal && (
           <div className="modal-overlay">

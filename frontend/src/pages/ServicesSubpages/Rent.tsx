@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import '../../styles/dashboard/ServicesSubpages.scss';
 import { useUser } from '../../contexts/UserContext';
-import ServiceBase from '../../components/ServiceBase';
+import '../../components/ServiceBase';
 import DashboardCatalog from '../../components/DashboardCatalog';
 import { Box, Typography, Button, Dialog, DialogTitle, DialogContent, DialogActions, TextField, MenuItem, Snackbar, Alert } from '@mui/material';
 import ViewModuleIcon from '@mui/icons-material/ViewModule';
@@ -70,7 +70,6 @@ export default function Rent() {
   });
   const [editId, setEditId] = useState<number | null>(null);
   const [filtroEvento, setFiltroEvento] = useState<string>('');
-  const [showCarrito, setShowCarrito] = useState(false);
   const [carritoItems, setCarritoItems] = useState<any[]>([]);
   const [notificacion, setNotificacion] = useState<{
     abierta: boolean;
@@ -220,21 +219,6 @@ export default function Rent() {
       }
     } catch (error) {
       console.error('Error al guardar:', error);
-    }
-  };
-
-  const handleEdit = (rent: Rent) => {
-    setFormData(rent);
-    setEditId(rent.id_rent!);
-    setShowModal(true);
-  };
-
-  const handleDelete = async (id: number) => {
-    try {
-      await fetch(`/api/rent/${id}`, { method: 'DELETE' });
-      setRents(prev => prev.filter(r => r.id_rent !== id));
-    } catch (error) {
-      console.error('Error al eliminar:', error);
     }
   };
 
@@ -842,72 +826,8 @@ export default function Rent() {
         {showTotalItemsModal && renderTotalItemsModal()}
 
         <button className="new-form-btn" onClick={() => setShowModal(true)}>
-          + Agregar Servicio
+          + Agregar Servicio de Alquiler
         </button>
-
-        <div className="table-section">
-          <p>Servicios de Alquiler Registrados</p>
-          <div className="search-container">
-            <select
-              className="escri"
-              value={filtroEvento}
-              onChange={(e) => setFiltroEvento(e.target.value)}
-            >
-              <option value="">Todos los eventos</option>
-              <option value="recientes">Eventos recientes</option>
-              <option value="pendientes">Eventos pendientes</option>
-              <option value="completados">Eventos completados</option>
-              <option value="cancelados">Eventos cancelados</option>
-            </select>
-          </div>
-          <table>
-            <thead>
-              <tr>
-                <th>ID</th>
-                <th>Evento</th>
-                <th>Tipo de Item</th>
-                <th>Cantidad</th>
-                <th>Precio</th>
-                <th>Estado</th>
-                <th>Acciones</th>
-              </tr>
-            </thead>
-            <tbody>
-              {rents
-                .filter(r => 
-                  eventos.find(e => e.id_evento === r.id_evento)?.tipo_evento
-                    .toLowerCase()
-                    .includes(filtroEvento.toLowerCase())
-                )
-                .map((rent) => (
-                  <tr key={rent.id_rent}>
-                    <td>{rent.id_rent}</td>
-                    <td>
-                      {eventos.find(e => e.id_evento === rent.id_evento)?.tipo_evento}
-                    </td>
-                    <td>{rent.tipo_elemento}</td>
-                    <td>{rent.cantidad}</td>
-                    <td>${rent.precio_unitario}</td>
-                    <td>{rent.estado}</td>
-                    <td>
-                      <button
-                        className="edit-btn"
-                        onClick={() => handleEdit(rent)}
-                      >
-                        Editar
-                      </button>
-                      <button
-                        className="delete-btn"
-                        onClick={() => handleDelete(rent.id_rent!)}
-                      >
-                        Eliminar
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-            </tbody>
-          </table>
-        </div>
 
         {showModal && (
           <div className="modal-overlay">
@@ -1063,72 +983,8 @@ export default function Rent() {
       {showTotalItemsModal && renderTotalItemsModal()}
 
       <button className="new-form-btn" onClick={() => setShowModal(true)}>
-        + Agregar Servicio
+        + Agregar Servicio de Alquiler
       </button>
-
-      <div className="table-section">
-        <p>Servicios de Alquiler Registrados</p>
-        <div className="search-container">
-          <select
-            className="escri"
-            value={filtroEvento}
-            onChange={(e) => setFiltroEvento(e.target.value)}
-          >
-            <option value="">Todos los eventos</option>
-            <option value="recientes">Eventos recientes</option>
-            <option value="pendientes">Eventos pendientes</option>
-            <option value="completados">Eventos completados</option>
-            <option value="cancelados">Eventos cancelados</option>
-          </select>
-        </div>
-        <table>
-          <thead>
-            <tr>
-              <th>ID</th>
-              <th>Evento</th>
-              <th>Tipo de Item</th>
-              <th>Cantidad</th>
-              <th>Precio</th>
-              <th>Estado</th>
-              <th>Acciones</th>
-            </tr>
-          </thead>
-          <tbody>
-            {rents
-              .filter(r => 
-                eventos.find(e => e.id_evento === r.id_evento)?.tipo_evento
-                  .toLowerCase()
-                  .includes(filtroEvento.toLowerCase())
-              )
-              .map((rent) => (
-                <tr key={rent.id_rent}>
-                  <td>{rent.id_rent}</td>
-                  <td>
-                    {eventos.find(e => e.id_evento === rent.id_evento)?.tipo_evento}
-                  </td>
-                  <td>{rent.tipo_elemento}</td>
-                  <td>{rent.cantidad}</td>
-                  <td>${rent.precio_unitario}</td>
-                  <td>{rent.estado}</td>
-                  <td>
-                    <button
-                      className="edit-btn"
-                      onClick={() => handleEdit(rent)}
-                    >
-                      Editar
-                    </button>
-                    <button
-                      className="delete-btn"
-                      onClick={() => handleDelete(rent.id_rent!)}
-                    >
-                      Eliminar
-                    </button>
-                  </td>
-                </tr>
-              ))}
-          </tbody>
-        </table>
-      </div>
 
       {showModal && (
         <div className="modal-overlay">

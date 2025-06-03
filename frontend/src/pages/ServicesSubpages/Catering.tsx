@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import type { FormEvent } from 'react';
 import '../../styles/dashboard/ServicesSubpages.scss';
-import ServiceBase from '../../components/ServiceBase';
+import '../../components/ServiceBase';
 import { useUser } from '../../contexts/UserContext';
 
 export type UserRole = 'admin' | 'client' | 'supervisor' | 'inventory';
@@ -71,7 +71,6 @@ export default function Catering() {
   const [platos, setPlatos] = useState<Plato[]>([]);
   const [selectedCategory, setSelectedCategory] = useState('todos');
   const [searchTerm, setSearchTerm] = useState('');
-  const [filtroEvento, setFiltroEvento] = useState('');
   const [stats, setStats] = useState<CateringStats>({
     menuDisponibles: 0,
     proveedorActivo: 0,
@@ -273,34 +272,6 @@ export default function Catering() {
       setEditId(null);
     } catch (error) {
       console.error('Error al guardar:', error);
-    }
-  };
-
-  const handleEdit = (catering: Catering) => {
-    setFormData({
-      id_evento: catering.id_evento,
-      personas: catering.personas,
-      precio_neto: catering.precio_neto,
-      itbis: catering.itbis,
-      total: catering.total,
-      estado: catering.estado,
-      menus: catering.menus,
-      rating: catering.rating,
-      comment: catering.comment
-    });
-    setShowModal(true);
-  };
-
-  const handleDelete = async (id: number) => {
-    if (window.confirm('¿Estás seguro de que deseas eliminar este servicio de catering?')) {
-      try {
-        await fetch(`/api/catering/${id}`, {
-          method: 'DELETE',
-        });
-        setCaterings(prev => prev.filter(c => c.id_catering !== id));
-      } catch (error) {
-        console.error('Error al eliminar el servicio:', error);
-      }
     }
   };
 
@@ -613,41 +584,8 @@ export default function Catering() {
         {showProveedoresModal && renderProveedoresModal()}
 
         <button className="new-form-btn" onClick={() => setShowModal(true)}>
-          + Agregar Servicio
+          + Agregar Servicio de Catering
         </button>
-
-        <div className="table-section">
-          <p>Servicios de Catering Registrados</p>
-          <div className="search-container">
-            <select
-              className="escri"
-              value={filtroEvento}
-              onChange={(e) => setFiltroEvento(e.target.value)}
-            >
-              <option value="">Todos los eventos</option>
-              <option value="recientes">Eventos recientes</option>
-              <option value="pendientes">Eventos pendientes</option>
-              <option value="completados">Eventos completados</option>
-              <option value="cancelados">Eventos cancelados</option>
-            </select>
-          </div>
-          <table>
-            <thead>
-              <tr>
-                <th>ID</th>
-                <th>Evento</th>
-                <th>Personas</th>
-                <th>Precio Neto</th>
-                <th>ITBIS</th>
-                <th>Total</th>
-                <th>Acciones</th>
-              </tr>
-            </thead>
-            <tbody>
-              {/* Aquí iría la tabla de servicios para administradores */}
-            </tbody>
-          </table>
-        </div>
 
         {showModal && (
           <div className="modal-overlay">
@@ -907,72 +845,8 @@ export default function Catering() {
       )}
 
       <button className="new-form-btn" onClick={() => setShowModal(true)}>
-        + Agregar Servicio
+        + Agregar Servicio de Catering
       </button>
-
-      <div className="table-section">
-        <p>Servicios de Catering Registrados</p>
-        <div className="search-container">
-          <select
-            className="escri"
-            value={filtroEvento}
-            onChange={(e) => setFiltroEvento(e.target.value)}
-          >
-            <option value="">Todos los eventos</option>
-            <option value="recientes">Eventos recientes</option>
-            <option value="pendientes">Eventos pendientes</option>
-            <option value="completados">Eventos completados</option>
-            <option value="cancelados">Eventos cancelados</option>
-          </select>
-        </div>
-        <table>
-          <thead>
-            <tr>
-              <th>ID</th>
-              <th>Evento</th>
-              <th>Personas</th>
-              <th>Precio Neto</th>
-              <th>ITBIS</th>
-              <th>Total</th>
-              <th>Acciones</th>
-            </tr>
-          </thead>
-          <tbody>
-            {caterings
-              .filter(c => 
-                eventos.find(e => e.id_evento === c.id_evento)?.tipo_evento
-                  .toLowerCase()
-                  .includes(filtroEvento.toLowerCase())
-              )
-              .map((catering) => (
-                <tr key={catering.id_catering}>
-                  <td>{catering.id_catering}</td>
-                  <td>
-                    {eventos.find(e => e.id_evento === catering.id_evento)?.tipo_evento}
-                  </td>
-                  <td>{catering.personas}</td>
-                  <td>${catering.precio_neto}</td>
-                  <td>${catering.itbis}</td>
-                  <td>${catering.total}</td>
-                  <td>
-                    <button
-                      className="edit-btn"
-                      onClick={() => handleEdit(catering)}
-                    >
-                      Editar
-                    </button>
-                    <button
-                      className="delete-btn"
-                      onClick={() => handleDelete(catering.id_catering!)}
-                    >
-                      Eliminar
-                    </button>
-                  </td>
-                </tr>
-              ))}
-          </tbody>
-        </table>
-      </div>
     </div>
   );
 

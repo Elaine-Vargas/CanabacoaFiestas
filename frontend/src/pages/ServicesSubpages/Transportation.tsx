@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import '../../styles/dashboard/ServicesSubpages.scss';
 import { useUser } from '../../contexts/UserContext';
-import ServiceBase from '../../components/ServiceBase';
+import '../../components/ServiceBase';
 
 export type UserRole = 'admin' | 'coordinator' | 'inventory' | 'client';
 
@@ -324,70 +324,6 @@ export default function Transportation() {
           + Agregar Servicio
         </button>
 
-        <div className="table-section">
-          <p>Servicios de Transporte Registrados</p>
-          <div className="search-container">
-            <select
-              className="escri"
-              value={filtroEvento}
-              onChange={(e) => setFiltroEvento(e.target.value)}
-            >
-              <option value="">Todos los eventos</option>
-              <option value="recientes">Eventos recientes</option>
-              <option value="pendientes">Eventos pendientes</option>
-              <option value="completados">Eventos completados</option>
-              <option value="cancelados">Eventos cancelados</option>
-            </select>
-          </div>
-          <table>
-            <thead>
-              <tr>
-                <th>ID</th>
-                <th>Evento</th>
-                <th>Tipo de Vehículo</th>
-                <th>Capacidad</th>
-                <th>Precio</th>
-                <th>Estado</th>
-                <th>Acciones</th>
-              </tr>
-            </thead>
-            <tbody>
-              {transportations
-                .filter(t => 
-                  eventos.find(e => e.id_evento === t.id_evento)?.tipo_evento
-                    .toLowerCase()
-                    .includes(filtroEvento.toLowerCase())
-                )
-                .map((transportation) => (
-                  <tr key={transportation.id_transportation}>
-                    <td>{transportation.id_transportation}</td>
-                    <td>
-                      {eventos.find(e => e.id_evento === transportation.id_evento)?.tipo_evento}
-                    </td>
-                    <td>{transportation.tipo_vehiculo}</td>
-                    <td>{transportation.capacidad}</td>
-                    <td>${transportation.precio}</td>
-                    <td>{transportation.estado}</td>
-                    <td>
-                      <button
-                        className="edit-btn"
-                        onClick={() => handleEdit(transportation)}
-                      >
-                        Editar
-                      </button>
-                      <button
-                        className="delete-btn"
-                        onClick={() => handleDelete(transportation.id_transportation!)}
-                      >
-                        Eliminar
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-            </tbody>
-          </table>
-        </div>
-
         {showModal && (
           <div className="modal-overlay">
             <div className="modal-container">
@@ -515,69 +451,7 @@ export default function Transportation() {
         + Agregar Servicio
       </button>
 
-      <div className="table-section">
-        <p>Servicios de Transporte Registrados</p>
-        <div className="search-container">
-          <select
-            className="escri"
-            value={filtroEvento}
-            onChange={(e) => setFiltroEvento(e.target.value)}
-          >
-            <option value="">Todos los eventos</option>
-            <option value="recientes">Eventos recientes</option>
-            <option value="pendientes">Eventos pendientes</option>
-            <option value="completados">Eventos completados</option>
-            <option value="cancelados">Eventos cancelados</option>
-          </select>
-        </div>
-        <table>
-          <thead>
-            <tr>
-              <th>ID</th>
-              <th>Evento</th>
-              <th>Tipo de Vehículo</th>
-              <th>Capacidad</th>
-              <th>Precio</th>
-              <th>Estado</th>
-              <th>Acciones</th>
-            </tr>
-          </thead>
-          <tbody>
-            {transportations
-              .filter(t => 
-                eventos.find(e => e.id_evento === t.id_evento)?.tipo_evento
-                  .toLowerCase()
-                  .includes(filtroEvento.toLowerCase())
-              )
-              .map((transportation) => (
-                <tr key={transportation.id_transportation}>
-                  <td>{transportation.id_transportation}</td>
-                  <td>
-                    {eventos.find(e => e.id_evento === transportation.id_evento)?.tipo_evento}
-                  </td>
-                  <td>{transportation.tipo_vehiculo}</td>
-                  <td>{transportation.capacidad}</td>
-                  <td>${transportation.precio}</td>
-                  <td>{transportation.estado}</td>
-                  <td>
-                    <button
-                      className="edit-btn"
-                      onClick={() => handleEdit(transportation)}
-                    >
-                      Editar
-                    </button>
-                    <button
-                      className="delete-btn"
-                      onClick={() => handleDelete(transportation.id_transportation!)}
-                    >
-                      Eliminar
-                    </button>
-                  </td>
-                </tr>
-              ))}
-          </tbody>
-        </table>
-      </div>
+
     </div>
   );
 

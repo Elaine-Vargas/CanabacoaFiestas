@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import type { FormEvent } from 'react';
 import '../../styles/dashboard/ServicesSubpages.scss';
-import ServiceBase from '../../components/ServiceBase';
+import '../../components/ServiceBase';
 import { useUser } from '../../contexts/UserContext';
 
 export type UserRole = 'admin' | 'client' | 'supervisor' | 'inventory';
@@ -194,21 +194,6 @@ export default function Decor() {
       setEditId(null);
     } catch (error) {
       console.error('Error al guardar:', error);
-    }
-  };
-
-  const handleEdit = (decor: Decor) => {
-    setFormData(decor);
-    setEditId(decor.id_decor!);
-    setShowModal(true);
-  };
-
-  const handleDelete = async (id: number) => {
-    try {
-      await fetch(`/api/decor/${id}`, { method: 'DELETE' });
-      setDecors(prev => prev.filter(d => d.id_decor !== id));
-    } catch (error) {
-      console.error('Error al eliminar:', error);
     }
   };
 
@@ -456,73 +441,8 @@ export default function Decor() {
         {showCompletadosModal && renderCompletadosModal()}
 
         <button className="new-form-btn" onClick={() => setShowModal(true)}>
-          + Agregar Servicio
+          + Agregar Servicio de Decoración
         </button>
-
-        <div className="table-section">
-          <p>Servicios de Decoración Registrados</p>
-          <div className="search-container">
-            <select
-              className="escri"
-              value={filtroEvento}
-              onChange={(e) => setFiltroEvento(e.target.value)}
-            >
-              <option value="">Todos los eventos</option>
-              <option value="recientes">Eventos recientes</option>
-              <option value="pendientes">Eventos pendientes</option>
-              <option value="completados">Eventos completados</option>
-              <option value="cancelados">Eventos cancelados</option>
-            </select>
-          </div>
-          <table>
-            <thead>
-              <tr>
-                <th>ID</th>
-                <th>Evento</th>
-                <th>Tipo de Decoración</th>
-                <th>Descripción</th>
-                <th>Precio</th>
-                <th>Estado</th>
-                <th>Acciones</th>
-              </tr>
-            </thead>
-            <tbody>
-              {decors
-                .filter(d => 
-                  eventos.find(e => e.id_evento === d.id_evento)?.tipo_evento
-                    .toLowerCase()
-                    .includes(filtroEvento.toLowerCase())
-                )
-                .map((decor) => (
-                  <tr key={decor.id_decor}>
-                    <td>{decor.id_decor}</td>
-                    <td>
-                      {eventos.find(e => e.id_evento === decor.id_evento)?.tipo_evento}
-                    </td>
-                    <td>{decor.tipo_decoracion}</td>
-                    <td>{decor.descripcion}</td>
-                    <td>${decor.precio}</td>
-                    <td>{decor.estado}</td>
-                    <td>
-                      <button
-                        className="edit-btn"
-                        onClick={() => handleEdit(decor)}
-                      >
-                        Editar
-                      </button>
-                      <button
-                        className="delete-btn"
-                        onClick={() => handleDelete(decor.id_decor!)}
-                      >
-                        Eliminar
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-            </tbody>
-          </table>
-        </div>
-
         {showModal && (
           <div className="modal-overlay">
             <div className="modal-container">
@@ -662,72 +582,8 @@ export default function Decor() {
       </div>
 
       <button className="new-form-btn" onClick={() => setShowModal(true)}>
-        + Agregar Servicio
+        + Agregar Servicio de Decoración
       </button>
-
-      <div className="table-section">
-        <p>Servicios de Decoración Registrados</p>
-        <div className="search-container">
-          <select
-            className="escri"
-            value={filtroEvento}
-            onChange={(e) => setFiltroEvento(e.target.value)}
-          >
-            <option value="">Todos los eventos</option>
-            <option value="recientes">Eventos recientes</option>
-            <option value="pendientes">Eventos pendientes</option>
-            <option value="completados">Eventos completados</option>
-            <option value="cancelados">Eventos cancelados</option>
-          </select>
-        </div>
-        <table>
-          <thead>
-            <tr>
-              <th>ID</th>
-              <th>Evento</th>
-              <th>Tipo de Decoración</th>
-              <th>Descripción</th>
-              <th>Precio</th>
-              <th>Estado</th>
-              <th>Acciones</th>
-            </tr>
-          </thead>
-          <tbody>
-            {decors
-              .filter(d => 
-                eventos.find(e => e.id_evento === d.id_evento)?.tipo_evento
-                  .toLowerCase()
-                  .includes(filtroEvento.toLowerCase())
-              )
-              .map((decor) => (
-                <tr key={decor.id_decor}>
-                  <td>{decor.id_decor}</td>
-                  <td>
-                    {eventos.find(e => e.id_evento === decor.id_evento)?.tipo_evento}
-                  </td>
-                  <td>{decor.tipo_decoracion}</td>
-                  <td>{decor.descripcion}</td>
-                  <td>${decor.precio}</td>
-                  <td>{decor.estado}</td>
-                  <td>
-                    <button
-                      className="edit-btn"
-                      onClick={() => handleEdit(decor)}
-                    >
-                      Editar
-                    </button>
-                    <button
-                      className="delete-btn"
-                      onClick={() => handleDelete(decor.id_decor!)}
-                    >
-                      Eliminar
-                    </button>
-                  </td>
-                </tr>
-              ))}
-          </tbody>
-        </table>
-      </div>
 
       {showEventosModal && (
         <div className="modal-overlay">
