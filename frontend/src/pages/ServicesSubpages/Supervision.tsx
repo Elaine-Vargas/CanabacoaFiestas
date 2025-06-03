@@ -33,26 +33,28 @@ interface EventoSupervisado {
   id_evento: number;
   nombre_evento: string;
   cliente: string;
+  fecha: string;
   lugar: string;
-  hora_inicio: string;
-  hora_fin: string;
+  hora: string;
 }
 
 interface EmpleadoSupervision {
   id_empleado: number;
   nombre: string;
+  apellido: string;
+  cedula: string;
   cantidad_eventos: number;
-  cantidad_clientes: number;
 }
 
 interface SupervisionCompletada {
   id_supervision: number;
   evento: string;
   cliente: string;
-  cantidad_empleados: number;
+  asesor: string;
+  lugar: string;
   fecha: string;
-  hora_inicio: string;
-  hora_fin: string;
+  hora: string;
+  servicios_adicionales: string;
 }
 
 export default function Supervision() {
@@ -351,21 +353,36 @@ export default function Supervision() {
     <div className="supervision-content">
       <div className="dashboard__stats">
         <div className="stat-card">
-          <span className="stat-card__label">Eventos Supervisados</span>
+          <span className="stat-card__label">Eventos Supervisados por Mí</span>
           <strong className="stat-card__number">{stats.eventosSupervisados}</strong>
-          <button className="stat-card__seeInfo">Ver eventos</button>
+          <button 
+            className="stat-card__seeInfo"
+            onClick={() => setShowEventosModal(true)}
+          >
+            Ver eventos
+          </button>
         </div>
 
         <div className="stat-card">
-          <span className="stat-card__label">Empleados a Cargo</span>
+          <span className="stat-card__label">Equipo de Trabajo</span>
           <strong className="stat-card__number">{stats.empleadosEncargados}</strong>
-          <button className="stat-card__seeInfo">Ver empleados</button>
+          <button 
+            className="stat-card__seeInfo"
+            onClick={() => setShowEmpleadosModal(true)}
+          >
+            Ver equipo
+          </button>
         </div>
 
         <div className="stat-card">
-          <span className="stat-card__label">Supervisiones Completadas</span>
+          <span className="stat-card__label">Todos los Eventos</span>
           <strong className="stat-card__number">{stats.supervisionesCompletadas}</strong>
-          <button className="stat-card__seeInfo">Ver completadas</button>
+          <button 
+            className="stat-card__seeInfo"
+            onClick={() => setShowCompletadasModal(true)}
+          >
+            Ver todos
+          </button>
         </div>
       </div>
 
@@ -380,16 +397,16 @@ export default function Supervision() {
       <div className="modal-container">
         <button className="close-btn" onClick={() => setShowEventosModal(false)}>×</button>
         <div className="modal-content">
-          <h3>Eventos Supervisados</h3>
+          <h3>Eventos Supervisados por Mí</h3>
           <div className="table-container">
             <table>
               <thead>
                 <tr>
                   <th>Evento</th>
                   <th>Cliente</th>
+                  <th>Fecha</th>
                   <th>Lugar</th>
-                  <th>Hora Inicio</th>
-                  <th>Hora Fin</th>
+                  <th>Hora</th>
                 </tr>
               </thead>
               <tbody>
@@ -397,9 +414,9 @@ export default function Supervision() {
                   <tr key={evento.id_evento}>
                     <td>{evento.nombre_evento}</td>
                     <td>{evento.cliente}</td>
+                    <td>{evento.fecha}</td>
                     <td>{evento.lugar}</td>
-                    <td>{evento.hora_inicio}</td>
-                    <td>{evento.hora_fin}</td>
+                    <td>{evento.hora}</td>
                   </tr>
                 ))}
               </tbody>
@@ -415,22 +432,24 @@ export default function Supervision() {
       <div className="modal-container">
         <button className="close-btn" onClick={() => setShowEmpleadosModal(false)}>×</button>
         <div className="modal-content">
-          <h3>Empleados Encargados</h3>
+          <h3>Equipo de Trabajo</h3>
           <div className="table-container">
             <table>
               <thead>
                 <tr>
-                  <th>Nombre del Empleado</th>
+                  <th>Nombre</th>
+                  <th>Apellido</th>
+                  <th>Cédula</th>
                   <th>Cantidad de Eventos</th>
-                  <th>Clientes Atendidos</th>
                 </tr>
               </thead>
               <tbody>
                 {empleadosSupervision.map((empleado) => (
                   <tr key={empleado.id_empleado}>
                     <td>{empleado.nombre}</td>
+                    <td>{empleado.apellido}</td>
+                    <td>{empleado.cedula}</td>
                     <td>{empleado.cantidad_eventos}</td>
-                    <td>{empleado.cantidad_clientes}</td>
                   </tr>
                 ))}
               </tbody>
@@ -446,17 +465,18 @@ export default function Supervision() {
       <div className="modal-container">
         <button className="close-btn" onClick={() => setShowCompletadasModal(false)}>×</button>
         <div className="modal-content">
-          <h3>Supervisiones Completadas</h3>
+          <h3>Todos los Eventos con Supervisión</h3>
           <div className="table-container">
             <table>
               <thead>
                 <tr>
                   <th>Evento</th>
                   <th>Cliente</th>
-                  <th>Cantidad Empleados</th>
+                  <th>Asesor</th>
+                  <th>Lugar</th>
                   <th>Fecha</th>
-                  <th>Hora Inicio</th>
-                  <th>Hora Fin</th>
+                  <th>Hora</th>
+                  <th>Servicios Adicionales</th>
                 </tr>
               </thead>
               <tbody>
@@ -464,10 +484,11 @@ export default function Supervision() {
                   <tr key={supervision.id_supervision}>
                     <td>{supervision.evento}</td>
                     <td>{supervision.cliente}</td>
-                    <td>{supervision.cantidad_empleados}</td>
+                    <td>{supervision.asesor}</td>
+                    <td>{supervision.lugar}</td>
                     <td>{supervision.fecha}</td>
-                    <td>{supervision.hora_inicio}</td>
-                    <td>{supervision.hora_fin}</td>
+                    <td>{supervision.hora}</td>
+                    <td>{supervision.servicios_adicionales}</td>
                   </tr>
                 ))}
               </tbody>

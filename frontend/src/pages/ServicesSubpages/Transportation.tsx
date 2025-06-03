@@ -33,12 +33,10 @@ interface TransportationStats {
 interface PedidoCompletado {
   id_pedido: number;
   evento: string;
-  lugar: string;
-  vehiculo: string;
-  chofer: string;
-  cantidad_transportada: number;
-  fecha_entrega: string;
-  hora: string;
+  direccion: string;
+  distancia: number;
+  precio_neto: number;
+  total: number;
 }
 
 interface PedidoPendiente {
@@ -321,7 +319,7 @@ export default function Transportation() {
         </div>
 
         <button className="new-form-btn" onClick={() => setShowModal(true)}>
-          + Agregar Servicio
+          + Agregar Servicio de Transporte
         </button>
 
         {showModal && (
@@ -448,7 +446,7 @@ export default function Transportation() {
       </div>
 
       <button className="new-form-btn" onClick={() => setShowModal(true)}>
-        + Agregar Servicio
+        + Agregar Servicio de Transporte
       </button>
 
 
@@ -460,30 +458,26 @@ export default function Transportation() {
       <div className="modal-container">
         <button className="close-btn" onClick={() => setShowPedidosCompletadosModal(false)}>×</button>
         <div className="modal-content">
-          <h3>Pedidos Completados</h3>
+          <h3>Transportes Realizados</h3>
           <div className="table-container">
             <table>
               <thead>
                 <tr>
                   <th>Evento</th>
-                  <th>Lugar</th>
-                  <th>Vehículo</th>
-                  <th>Chofer</th>
-                  <th>Cantidad Transportada</th>
-                  <th>Fecha de Entrega</th>
-                  <th>Hora</th>
+                  <th>Dirección</th>
+                  <th>Distancia (km)</th>
+                  <th>Precio Neto</th>
+                  <th>Total</th>
                 </tr>
               </thead>
               <tbody>
                 {pedidosCompletados.map((pedido) => (
                   <tr key={pedido.id_pedido}>
                     <td>{pedido.evento}</td>
-                    <td>{pedido.lugar}</td>
-                    <td>{pedido.vehiculo}</td>
-                    <td>{pedido.chofer}</td>
-                    <td>{pedido.cantidad_transportada}</td>
-                    <td>{pedido.fecha_entrega}</td>
-                    <td>{pedido.hora}</td>
+                    <td>{pedido.direccion}</td>
+                    <td>{pedido.distancia}</td>
+                    <td>${pedido.precio_neto}</td>
+                    <td>${pedido.total}</td>
                   </tr>
                 ))}
               </tbody>
@@ -630,6 +624,21 @@ export default function Transportation() {
             </select>
           </label>
 
+          <label>
+            Estado:
+            <select
+              name="estado"
+              value={nuevoVehiculo.estado}
+              onChange={handleVehiculoInputChange}
+              required
+            >
+              <option value="">Seleccionar estado</option>
+              <option value="Disponible">Disponible</option>
+              <option value="En uso">En uso</option>
+              <option value="Mantenimiento">Mantenimiento</option>
+            </select>
+          </label>
+
           <div className="form-buttons">
             <button type="submit" className="submit-btn">
               Guardar
@@ -647,6 +656,205 @@ export default function Transportation() {
     </div>
   );
 
+  const renderInventoryView = () => {
+    const rolId = Number(userData.rol);
+    if (rolId !== 4) return null;
+
+    return (
+      <div className="transportation-content">
+        <div className="dashboard__stats">
+          <div className="stat-card">
+            <span className="stat-card__label">Total de Vehículos</span>
+            <strong className="stat-card__number">{stats.vehiculos}</strong>
+            <button className="stat-card__seeInfo" onClick={() => setShowVehiculosModal(true)}>
+              Ver vehículos
+            </button>
+          </div>
+
+          <div className="stat-card">
+            <span className="stat-card__label">Transportes Realizados</span>
+            <strong className="stat-card__number">{stats.pedidosCompletados}</strong>
+            <button className="stat-card__seeInfo" onClick={() => setShowPedidosCompletadosModal(true)}>
+              Ver transportes
+            </button>
+          </div>
+        </div>
+
+        {showVehiculosModal && (
+          <div className="modal-overlay">
+            <div className="modal-container">
+              <button className="close-btn" onClick={() => setShowVehiculosModal(false)}>×</button>
+              <div className="modal-content">
+                <div className="modal-header">
+                  <h3>Vehículos Registrados</h3>
+                  <button className="add-user-btn" onClick={() => setShowAddVehiculoModal(true)}>
+                    Nuevo Vehículo
+                  </button>
+                </div>
+                <div className="table-container">
+                  <table>
+                    <thead>
+                      <tr>
+                        <th>Matrícula</th>
+                        <th>Marca</th>
+                        <th>Modelo</th>
+                        <th>Tipo de Vehículo</th>
+                        <th>Estado</th>
+                        <th>Acciones</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {vehiculos.map((vehiculo) => (
+                        <tr key={vehiculo.id_vehiculo}>
+                          <td>{vehiculo.matricula}</td>
+                          <td>{vehiculo.marca}</td>
+                          <td>{vehiculo.modelo}</td>
+                          <td>{vehiculo.tipo}</td>
+                          <td>{vehiculo.estado}</td>
+                          <td>
+                            <button className="edit-btn" onClick={() => handleEdit(vehiculo)}>
+                              Editar
+                            </button>
+                            <button className="delete-btn" onClick={() => handleDelete(vehiculo.id_vehiculo)}>
+                              Eliminar
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {showPedidosCompletadosModal && (
+          <div className="modal-overlay">
+            <div className="modal-container">
+              <button className="close-btn" onClick={() => setShowPedidosCompletadosModal(false)}>×</button>
+              <div className="modal-content">
+                <h3>Transportes Realizados</h3>
+                <div className="table-container">
+                  <table>
+                    <thead>
+                      <tr>
+                        <th>Evento</th>
+                        <th>Dirección</th>
+                        <th>Distancia (km)</th>
+                        <th>Precio Neto</th>
+                        <th>Total</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {pedidosCompletados.map((pedido) => (
+                        <tr key={pedido.id_pedido}>
+                          <td>{pedido.evento}</td>
+                          <td>{pedido.direccion}</td>
+                          <td>{pedido.distancia}</td>
+                          <td>${pedido.precio_neto}</td>
+                          <td>${pedido.total}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {showAddVehiculoModal && (
+          <div className="modal-overlay">
+            <div className="modal-container">
+              <button className="close-btn" onClick={() => setShowAddVehiculoModal(false)}>×</button>
+              <form className="modal-form" onSubmit={handleAddVehiculo}>
+                <h3>Nuevo Vehículo</h3>
+                
+                <label>
+                  Matrícula:
+                  <input
+                    type="text"
+                    name="matricula"
+                    value={nuevoVehiculo.matricula}
+                    onChange={handleVehiculoInputChange}
+                    required
+                  />
+                </label>
+
+                <label>
+                  Marca:
+                  <input
+                    type="text"
+                    name="marca"
+                    value={nuevoVehiculo.marca}
+                    onChange={handleVehiculoInputChange}
+                    required
+                  />
+                </label>
+
+                <label>
+                  Modelo:
+                  <input
+                    type="text"
+                    name="modelo"
+                    value={nuevoVehiculo.modelo}
+                    onChange={handleVehiculoInputChange}
+                    required
+                  />
+                </label>
+
+                <label>
+                  Tipo de Vehículo:
+                  <select
+                    name="tipo"
+                    value={nuevoVehiculo.tipo}
+                    onChange={handleVehiculoInputChange}
+                    required
+                  >
+                    <option value="">Seleccionar tipo</option>
+                    <option value="Automóvil">Automóvil</option>
+                    <option value="Remolque">Remolque</option>
+                    <option value="Máquinas pesadas">Máquinas pesadas</option>
+                    <option value="Montacargas">Montacargas</option>
+                  </select>
+                </label>
+
+                <label>
+                  Estado:
+                  <select
+                    name="estado"
+                    value={nuevoVehiculo.estado}
+                    onChange={handleVehiculoInputChange}
+                    required
+                  >
+                    <option value="">Seleccionar estado</option>
+                    <option value="Disponible">Disponible</option>
+                    <option value="En uso">En uso</option>
+                    <option value="Mantenimiento">Mantenimiento</option>
+                  </select>
+                </label>
+
+                <div className="form-buttons">
+                  <button type="submit" className="submit-btn">
+                    Guardar
+                  </button>
+                  <button
+                    type="button"
+                    className="reset-btn"
+                    onClick={() => setShowAddVehiculoModal(false)}
+                  >
+                    Cancelar
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  };
+
   return (
     <div className="transportation-page">
       <div className="welcome-header">
@@ -659,6 +867,7 @@ export default function Transportation() {
           const rolId = Number(userData.rol);
           const isAdmin = rolId === 1;
           const isOrganizer = rolId === 3;
+          const isInventory = rolId === 4;
 
           if (isAdmin) {
             return renderAdminView();
@@ -666,6 +875,10 @@ export default function Transportation() {
 
           if (isOrganizer) {
             return renderOrganizerView();
+          }
+
+          if (isInventory) {
+            return renderInventoryView();
           }
 
           return null;

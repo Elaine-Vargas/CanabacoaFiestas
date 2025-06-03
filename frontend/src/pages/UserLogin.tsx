@@ -325,13 +325,14 @@ const UserLogin: React.FC = () => {
                         const password = e.target.value;
                         const hasUpperCase = /[A-Z]/.test(password);
                         const hasNumber = /[0-9]/.test(password);
-                        const hasSpecial = /[!@#$%^&*]/.test(password);
+                        const hasSpecial = /^(?=.*[A-Z])(?=.*\d)(?=.*[!"#$%&'()*+,\-./:;<=>?@\[\\\]^`{|}~])[A-Za-z\d!"#$%&'()*+,\-./:;<=>?@\[\\\]^`{|}~]{8,25}$/.test(password);
                         const isValidLength = password.length >= 8 && password.length <= 25;
                         
                         let errorMsg = [];
                         if (!hasUpperCase) errorMsg.push("una mayúscula");
                         if (!hasNumber) errorMsg.push("un número"); 
-                        if (!hasSpecial) errorMsg.push("un carácter especial (!@#$%^&*.?_-)");
+                        if (!hasSpecial) errorMsg.push(  "Debe contener al menos un carácter especial (! \" # $ % & ' ( ) * + , - . / : ; < = > ? @ [ \\ ] ^ ` { | } ~)"
+                        )
                         if (!isValidLength) errorMsg.push("entre 8-25 caracteres");
                         
                         if (errorMsg.length > 0) {
@@ -386,7 +387,138 @@ const UserLogin: React.FC = () => {
       
       {/* Outlet para renderizar la subruta de recuperación de contraseña */}
       <Outlet />
-    </section>
+        <div className="user signupBx">
+          <div className="formBx">
+            <form onSubmit={handleSignup}>
+              <h2>Registrar</h2>
+              {error && <div className="error-message">{error}</div>}
+              <div className="form-row">
+                <input 
+                  type="text" 
+                  id="signup-name" 
+                  placeholder="Nombre" 
+                  required 
+                  value={signupData.nombre_usuario}
+                  onChange={handleInputChange}
+                />
+                <input 
+                  type="text" 
+                  id="signup-lastname" 
+                  placeholder="Apellido" 
+                  required 
+                  value={signupData.apellido_usuario}
+                  onChange={handleInputChange}
+                />
+              </div>
+              <input 
+                type="text" 
+                id="signup-username" 
+                placeholder="Nombre de usuario" 
+                required 
+                className="full-width"
+                value={signupData.usuario_login}
+                onChange={handleInputChange}
+              />
+              <input 
+                type="email" 
+                id="signup-email" 
+                placeholder="Email" 
+                required 
+                className="full-width"
+                value={signupData.correo_usuario}
+                onChange={handleInputChange}
+              />
+              <div className="form-row">
+              <input 
+                  type="tel" 
+                  id="signup-phone" 
+                  placeholder="000-000-0000" 
+                  required 
+                  value={signupData.tel_usuario}
+                  onChange={handleInputChange}
+                  maxLength={12} 
+                />
+                <input 
+                  type="text" 
+                  id="signup-id" 
+                  placeholder="000-0000000-0" 
+                  required 
+                  value={signupData.cedula_usuario}
+                  onChange={handleInputChange}
+                  maxLength={13} 
+                />
+              </div>
+              <div className="form-row">
+                <div className="password-input-container">
+                  <input 
+                    type={showSignupPassword ? "text" : "password"} 
+                    id="signup-password" 
+                    placeholder="Contraseña" 
+                    required 
+                    value={signupData.contrasena_login}
+                    onChange={(e) => {
+                      handleInputChange(e);
+                      const password = e.target.value;
+                      const hasUpperCase = /[A-Z]/.test(password);
+                      const hasNumber = /[0-9]/.test(password);
+                      const hasSpecial = /^(?=.*[A-Z])(?=.*[0-9])(?=.*[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?])[A-Za-z0-9!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]{8,25}$/.test(password);
+                      const isValidLength = password.length >= 8 && password.length <= 25;
+                      
+                      // eslint-disable-next-line prefer-const
+                      let errorMsg = [];
+                      if (!hasUpperCase) errorMsg.push("una mayúscula");
+                      if (!hasNumber) errorMsg.push("un número"); 
+                      if (!hasSpecial) errorMsg.push("un carácter especial (!@#$%^&*()_+-=[]{};':\"\\|,.<>/?])");
+                      if (!isValidLength) errorMsg.push("entre 8-25 caracteres");
+                      
+                      if (errorMsg.length > 0) {
+                        setError(`La contraseña debe tener ${errorMsg.join(", ")}`);
+                      } else if (signupData.confirmar_contrasena && password !== signupData.confirmar_contrasena) {
+                        setError("Las contraseñas no coinciden");
+                      } else {
+                        setError("");
+                      }
+                    }}
+                  />
+                  <span className="password-toggle" onClick={toggleSignupPasswordVisibility}>
+                    {showSignupPassword ? <VisibilityOffIcon /> : <VisibilityIcon />}
+                  </span>
+                </div>
+                <div className="password-input-container">
+                  <input 
+                    type={showSignupConfirmPassword ? "text" : "password"} 
+                    id="signup-password-confirm" 
+                    placeholder="Confirmar contraseña" 
+                    required 
+                    value={signupData.confirmar_contrasena}
+                    onChange={(e) => {
+                      handleInputChange(e);
+                      if (e.target.value && e.target.value !== signupData.contrasena_login) {
+                        setError("Las contraseñas no coinciden");
+                      } else {
+                        setError("");
+                      }
+                    }}
+                  />
+                  <span className="password-toggle" onClick={toggleSignupConfirmPasswordVisibility}>
+                    {showSignupConfirmPassword ? <VisibilityOffIcon /> : <VisibilityIcon />}
+                  </span>
+                </div>
+              </div>
+              <input type="submit" value="Registrar" />
+              <p className="signup">
+                ¿Ya tienes una cuenta?{" "}
+                <span onClick={toggleForm} className="link">
+                  <strong>Inicia sesión.</strong>
+                </span>
+              </p>
+            </form>
+          </div>
+          <div className="imgBx imgBx2 signupImg">
+            <img src={LogoDorado} alt="" />
+          </div>
+        </div>
+    </section>    
   );
 };
 

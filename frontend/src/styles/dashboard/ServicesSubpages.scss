@@ -325,24 +325,99 @@ $transition-standard: all 0.3s ease;
 }
 
 .modal-content {
-    background-color: var(--color-background2);
+  background-color: var(--color-background2);
+  padding: 2rem;
+  border-radius: 8px;
+  min-width: 300px;
+  text-align: center;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  position: relative;
+  z-index: 1000000;
+
+  .modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2rem;
+    padding: 0 1rem;
+
+    h3 {
+      color: var(--dark-gold);
+      font-size: 1.5rem;
+      margin: 0;
+      font-weight: normal;
+    }
+
+    .add-user-btn {
+      background-color: var(--gold);
+      color: white;
+      border: none;
+      padding: 0.8rem 1.5rem;
+      border-radius: 5px;
+      cursor: pointer;
+      font-size: 1rem;
+      transition: all 0.3s ease;
+
+      &:hover {
+        background-color: var(--dark-gold);
+        transform: translateY(-2px);
+      }
+    }
+  }
+
+  .table-section {
+    background-color: var(--color-background);
+    border-radius: 12px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
     padding: 2rem;
-    border-radius: 8px;
-    min-width: 300px;
-    text-align: center;
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-    position: relative;
-    z-index: 1000000 
+    margin-top: 1rem;
 
-  
+    .table-container {
+      overflow-x: auto;
+      margin-top: 1rem;
 
-  h3 {
-    color: var(--color-text);
-    font-size: 1.5rem;
-    margin-top: 0rem;
-    margin-bottom: 0rem;
-    text-align: center;
-    padding-top: 3rem;
+      table {
+        width: 100%;
+        border-collapse: separate;
+        border-spacing: 0 4px;
+        background-color: var(--color-background);
+        border-radius: 8px;
+        overflow: hidden;
+
+        th, td {
+          padding: 1rem;
+          text-align: left;
+          border-bottom: none;
+        }
+
+        th {
+          background-color: var(--color-background2);
+          color: var(--dark-gold);
+          font-weight: 600;
+          text-transform: uppercase;
+          font-size: 0.85rem;
+        }
+
+        td {
+          background-color: var(--color-background);
+          &:first-child {
+            border-top-left-radius: 4px;
+            border-bottom-left-radius: 4px;
+          }
+          &:last-child {
+            border-top-right-radius: 4px;
+            border-bottom-right-radius: 4px;
+          }
+        }
+
+        tr {
+          transition: background-color 0.3s ease;
+          &:hover {
+            background-color: var(--color-background2);
+          }
+        }
+      }
+    }
   }
 }
 
@@ -526,24 +601,30 @@ $transition-standard: all 0.3s ease;
   .form-grid {
     display: grid;
     grid-template-columns: repeat(2, 1fr);
-    gap: 0.75rem;
-    padding: 0.25rem;
-    max-width: 100%;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
 
     @media screen and (max-width: 768px) {
       grid-template-columns: 1fr;
+    }
+
+    label {
+      display: flex;
+      flex-direction: column;
       gap: 0.5rem;
-      padding: 0.25rem 0.5rem;
-    }
 
-    @media screen and (max-width: 480px) {
-      gap: 0.35rem;
-      padding: 0.25rem 0.35rem;
-    }
+      input, select {
+        padding: 0.5rem;
+        border: 1px solid var(--color-border);
+        border-radius: 4px;
+        background-color: var(--color-background2);
+        color: var(--text-color);
 
-    @media screen and (max-width: 320px) {
-      gap: 0.25rem;
-      padding: 0.15rem 0.25rem;
+        &:focus {
+          border-color: var(--gold);
+          outline: none;
+        }
+      }
     }
   }
 
@@ -1542,5 +1623,34 @@ tr.deshabilitado {
 
   td {
     color: #666;
+  }
+}
+
+.filter-buttons {
+  display: flex;
+  gap: 1rem;
+  margin: 1rem 0;
+  flex-wrap: wrap;
+  justify-content: center;
+
+  .filter-btn {
+    padding: 0.5rem 1rem;
+    border: 1px solid var(--gold);
+    border-radius: 4px;
+    background-color: var(--color-background);
+    color: var(--text-color);
+    cursor: pointer;
+    transition: all 0.3s ease;
+    min-width: 120px;
+
+    &:hover {
+      background-color: var(--gold);
+      color: var(--white);
+    }
+
+    &.active {
+      background-color: var(--gold);
+      color: var(--white);
+    }
   }
 }

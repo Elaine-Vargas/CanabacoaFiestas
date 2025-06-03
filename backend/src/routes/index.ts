@@ -1,3 +1,10 @@
+import { Router } from 'express';
 import alquilerServicioRoutes from './alquilerServicioRoutes';
+import dashboardRoutes from './dashboardRoutes';
 
-router.use('/alquiler-servicio', alquilerServicioRoutes); 
+const router = Router();
+
+router.use('/alquiler-servicio', alquilerServicioRoutes);
+router.use('/api/dashboard', dashboardRoutes);
+
+export default router; 
