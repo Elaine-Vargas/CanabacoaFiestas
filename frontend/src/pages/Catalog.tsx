@@ -12,10 +12,9 @@ const Catalog = () => {
   if (location.pathname === '/Principal/Catalogo') {
     content = (
 <>
-    <Container maxWidth="lg" sx={{ py: 4 }}>
+    <Container>
       <ViewerCatalog />
     </Container>
-    <Footer/>
     </>
     );
   } else if (location.pathname === '/Alquiler/Catalogo') {
