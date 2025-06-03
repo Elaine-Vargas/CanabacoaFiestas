@@ -1097,6 +1097,50 @@ export default function Rent() {
     </div>
   );
 
+  const renderInventoryView = () => (
+    <div className="rent-content">
+      <div className="table-section">
+        <h4>Alquileres Registrados</h4>
+        <div className="search-container">
+          <select
+            className="escri"
+            value={filtroEvento}
+            onChange={(e) => setFiltroEvento(e.target.value)}
+          >
+            <option value="">Todos los alquileres</option>
+            <option value="recientes">Alquileres recientes</option>
+            <option value="pendientes">Alquileres pendientes</option>
+            <option value="completados">Alquileres completados</option>
+          </select>
+        </div>
+        <table>
+          <thead>
+            <tr>
+              <th>ID Evento</th>
+              <th>ID Elemento</th>
+              <th>Precio Unitario</th>
+              <th>Cantidad Alquiler</th>
+              <th>Precio Neto</th>
+              <th>Total Alquiler</th>
+            </tr>
+          </thead>
+          <tbody>
+            {rents.map((rent) => (
+              <tr key={rent.id_rent}>
+                <td>{rent.id_evento}</td>
+                <td>{rent.tipo_elemento}</td>
+                <td>${rent.precio_unitario}</td>
+                <td>{rent.cantidad}</td>
+                <td>${rent.precio_unitario * rent.cantidad}</td>
+                <td>${(rent.precio_unitario * rent.cantidad * 1.18).toFixed(2)}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+
   return (
     <div className="rent-page">
       <div className="welcome-header">
@@ -1110,6 +1154,7 @@ export default function Rent() {
           const isAdmin = rolId === 1;
           const isOrganizer = rolId === 3;
           const isClient = rolId === 2;
+          const isInventory = rolId === 4;
 
           if (isAdmin) {
             return renderAdminView();
@@ -1121,6 +1166,10 @@ export default function Rent() {
 
           if (isClient) {
             return renderClientView();
+          }
+
+          if (isInventory) {
+            return renderInventoryView();
           }
 
           return null;

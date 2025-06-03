@@ -334,14 +334,14 @@ const UserLogin: React.FC = () => {
                       const password = e.target.value;
                       const hasUpperCase = /[A-Z]/.test(password);
                       const hasNumber = /[0-9]/.test(password);
-                      const hasSpecial = /[!@#$%^&*]/.test(password);
+                      const hasSpecial = /^(?=.*[A-Z])(?=.*[0-9])(?=.*[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?])[A-Za-z0-9!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]{8,25}$/.test(password);
                       const isValidLength = password.length >= 8 && password.length <= 25;
                       
                       // eslint-disable-next-line prefer-const
                       let errorMsg = [];
                       if (!hasUpperCase) errorMsg.push("una mayúscula");
                       if (!hasNumber) errorMsg.push("un número"); 
-                      if (!hasSpecial) errorMsg.push("un carácter especial (!@#$%^&*.?_-)");
+                      if (!hasSpecial) errorMsg.push("un carácter especial (!@#$%^&*()_+-=[]{};':\"\\|,.<>/?])");
                       if (!isValidLength) errorMsg.push("entre 8-25 caracteres");
                       
                       if (errorMsg.length > 0) {

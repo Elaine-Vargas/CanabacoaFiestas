@@ -30,8 +30,7 @@ interface AssemblyStats {
 interface EventoCompletado {
   id_evento: number;
   nombre_evento: string;
-  lugar: string;
-  cantidad_empleados: number;
+  cliente: string;
   fecha: string;
   hora: string;
 }
@@ -40,9 +39,28 @@ interface EventoPendiente {
   id_evento: number;
   nombre_evento: string;
   lugar: string;
-  cantidad_empleados: number;
+  fecha: string;
+  servicio: string;
+  asesor: string;
+  cliente: string;
+}
+
+interface EventoParticipacion {
+  id_evento: number;
+  nombre_evento: string;
+  cliente: string;
   fecha: string;
   hora: string;
+}
+
+interface EventoTerminado {
+  id_evento: number;
+  nombre_evento: string;
+  lugar: string;
+  fecha: string;
+  hora_montaje: string;
+  hora_desmontaje: string;
+  cantidad_empleados: number;
 }
 
 interface EmpleadoMontaje {
@@ -113,7 +131,17 @@ export default function AssemblyAndDisassembly() {
   useEffect(() => {
     const fetchStats = async () => {
       try {
-        const response = await fetch('/api/assembly/stats');
+        const token = localStorage.getItem('token');
+        const userData = JSON.parse(localStorage.getItem('userData') || '{}');
+        const response = await fetch('/api/assembly/stats', {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': token ? `Bearer ${token}` : '',
+            'user-role': userData.rol || '',
+            'user-cedula': userData.cedula || ''
+          }
+        });
         if (response.ok) {
           const data = await response.json();
           setStats(data);
@@ -305,99 +333,194 @@ export default function AssemblyAndDisassembly() {
     </div>
   );
 
-  const renderOrganizerView = () => (
-    <div className="assembly-content">
-      <div className="dashboard__stats">
-        <div className="stat-card">
-          <span className="stat-card__label">Eventos Completados</span>
-          <strong className="stat-card__number">{stats.eventosCompletados}</strong>
-          <button className="stat-card__seeInfo">Ver completados</button>
-        </div>
+  const renderOrganizerView = () => {
+    const [showPendientesModal, setShowPendientesModal] = useState(false);
+    const [showParticipacionModal, setShowParticipacionModal] = useState(false);
+    const [showTerminadosModal, setShowTerminadosModal] = useState(false);
+    const [eventosPendientes, setEventosPendientes] = useState<EventoPendiente[]>([]);
+    const [eventosParticipacion, setEventosParticipacion] = useState<EventoParticipacion[]>([]);
+    const [eventosTerminados, setEventosTerminados] = useState<EventoTerminado[]>([]);
 
-        <div className="stat-card">
-          <span className="stat-card__label">Personal Encargado</span>
-          <strong className="stat-card__number">{stats.personalEncargado}</strong>
-          <button className="stat-card__seeInfo">Ver personal</button>
-        </div>
+    useEffect(() => {
+      const fetchData = async () => {
+        try {
+          const [pendientesRes, participacionRes, terminadosRes] = await Promise.all([
+            fetch('/api/montaje/pendientes'),
+            fetch('/api/montaje/participacion'),
+            fetch('/api/montaje/terminados')
+          ]);
 
-        <div className="stat-card">
-          <span className="stat-card__label">Eventos Pendientes</span>
-          <strong className="stat-card__number">{stats.eventosPendientes}</strong>
-          <button className="stat-card__seeInfo">Ver pendientes</button>
+          const [pendientesData, participacionData, terminadosData] = await Promise.all([
+            pendientesRes.json(),
+            participacionRes.json(),
+            terminadosRes.json()
+          ]);
+
+          setEventosPendientes(pendientesData);
+          setEventosParticipacion(participacionData);
+          setEventosTerminados(terminadosData);
+        } catch (error) {
+          console.error('Error al cargar datos:', error);
+        }
+      };
+
+      fetchData();
+    }, []);
+
+    const renderPendientesModal = () => (
+      <div className="modal-overlay">
+        <div className="modal-container">
+          <button className="close-btn" onClick={() => setShowPendientesModal(false)}>×</button>
+          <div className="modal-content">
+            <h3>Eventos Pendientes</h3>
+            <div className="table-container">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Evento</th>
+                    <th>Lugar</th>
+                    <th>Fecha</th>
+                    <th>Servicio a Realizar</th>
+                    <th>Asesor del Evento</th>
+                    <th>Cliente</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {eventosPendientes.map((evento) => (
+                    <tr key={evento.id_evento}>
+                      <td>{evento.nombre_evento}</td>
+                      <td>{evento.lugar}</td>
+                      <td>{evento.fecha}</td>
+                      <td>{evento.servicio}</td>
+                      <td>{evento.asesor}</td>
+                      <td>{evento.cliente}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
         </div>
       </div>
+    );
 
-      <button className="new-form-btn" onClick={() => setShowModal(true)}>
-        + Agregar Servicio de Montaje y Desmontaje
-      </button>
-
-      <div className="table-section">
-        <p>Servicios de Montaje y Desmontaje</p>
-        <div className="search-container">
-          <select
-            className="escri"
-            value={filtroEvento}
-            onChange={(e) => setFiltroEvento(e.target.value)}
-          >
-            <option value="">Todos los eventos</option>
-            <option value="recientes">Eventos recientes</option>
-            <option value="pendientes">Eventos pendientes</option>
-            <option value="completados">Eventos completados</option>
-            <option value="cancelados">Eventos cancelados</option>
-          </select>
+    const renderParticipacionModal = () => (
+      <div className="modal-overlay">
+        <div className="modal-container">
+          <button className="close-btn" onClick={() => setShowParticipacionModal(false)}>×</button>
+          <div className="modal-content">
+            <h3>Eventos con Mi Participación</h3>
+            <div className="table-container">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Evento</th>
+                    <th>Cliente</th>
+                    <th>Fecha</th>
+                    <th>Hora</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {eventosParticipacion.map((evento) => (
+                    <tr key={evento.id_evento}>
+                      <td>{evento.nombre_evento}</td>
+                      <td>{evento.cliente}</td>
+                      <td>{evento.fecha}</td>
+                      <td>{evento.hora}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
         </div>
-        <table>
-          <thead>
-            <tr>
-              <th>ID</th>
-              <th>Evento</th>
-              <th>Tipo de Servicio</th>
-              <th>Descripción</th>
-              <th>Fecha Inicio</th>
-              <th>Fecha Fin</th>
-              <th>Estado</th>
-              <th>Acciones</th>
-            </tr>
-          </thead>
-          <tbody>
-            {assemblies
-              .filter(a => 
-                eventos.find(e => e.id_evento === a.id_evento)?.tipo_evento
-                  .toLowerCase()
-                  .includes(filtroEvento.toLowerCase())
-              )
-              .map((assembly) => (
-                <tr key={assembly.id_assembly}>
-                  <td>{assembly.id_assembly}</td>
-                  <td>
-                    {eventos.find(e => e.id_evento === assembly.id_evento)?.tipo_evento}
-                  </td>
-                  <td>{assembly.tipo_servicio}</td>
-                  <td>{assembly.descripcion}</td>
-                  <td>{assembly.fecha_inicio}</td>
-                  <td>{assembly.fecha_fin}</td>
-                  <td>{assembly.estado}</td>
-                  <td>
-                    <button
-                      className="edit-btn"
-                      onClick={() => handleEdit(assembly)}
-                    >
-                      Editar
-                    </button>
-                    <button
-                      className="delete-btn"
-                      onClick={() => handleDelete(assembly.id_assembly!)}
-                    >
-                      Eliminar
-                    </button>
-                  </td>
-                </tr>
-              ))}
-          </tbody>
-        </table>
       </div>
-    </div>
-  );
+    );
+
+    const renderTerminadosModal = () => (
+      <div className="modal-overlay">
+        <div className="modal-container">
+          <button className="close-btn" onClick={() => setShowTerminadosModal(false)}>×</button>
+          <div className="modal-content">
+            <h3>Eventos Terminados</h3>
+            <div className="table-container">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Evento</th>
+                    <th>Lugar</th>
+                    <th>Fecha</th>
+                    <th>Hora Montaje</th>
+                    <th>Hora Desmontaje</th>
+                    <th>Cantidad de Empleados</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {eventosTerminados.map((evento) => (
+                    <tr key={evento.id_evento}>
+                      <td>{evento.nombre_evento}</td>
+                      <td>{evento.lugar}</td>
+                      <td>{evento.fecha}</td>
+                      <td>{evento.hora_montaje}</td>
+                      <td>{evento.hora_desmontaje}</td>
+                      <td>{evento.cantidad_empleados}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+
+    return (
+      <div className="assembly-content">
+        <div className="dashboard__stats">
+          <div className="stat-card">
+            <span className="stat-card__label">Eventos Pendientes</span>
+            <strong className="stat-card__number">{eventosPendientes.length}</strong>
+            <button 
+              className="stat-card__seeInfo"
+              onClick={() => setShowPendientesModal(true)}
+            >
+              Ver pendientes
+            </button>
+          </div>
+
+          <div className="stat-card">
+            <span className="stat-card__label">Mi Participación</span>
+            <strong className="stat-card__number">{eventosParticipacion.length}</strong>
+            <button 
+              className="stat-card__seeInfo"
+              onClick={() => setShowParticipacionModal(true)}
+            >
+              Ver participación
+            </button>
+          </div>
+
+          <div className="stat-card">
+            <span className="stat-card__label">Eventos Terminados</span>
+            <strong className="stat-card__number">{eventosTerminados.length}</strong>
+            <button 
+              className="stat-card__seeInfo"
+              onClick={() => setShowTerminadosModal(true)}
+            >
+              Ver terminados
+            </button>
+          </div>
+        </div>
+
+        <button className="new-form-btn" onClick={() => setShowModal(true)}>
+          + Agregar Servicio de Montaje y Desmontaje
+        </button>
+
+        {showPendientesModal && renderPendientesModal()}
+        {showParticipacionModal && renderParticipacionModal()}
+        {showTerminadosModal && renderTerminadosModal()}
+      </div>
+    );
+  };
 
   const renderAdminView = () => {
     return (
@@ -554,14 +677,13 @@ export default function AssemblyAndDisassembly() {
       <div className="modal-container">
         <button className="close-btn" onClick={() => setShowEventosCompletadosModal(false)}>×</button>
         <div className="modal-content">
-          <h3>Eventos Completados</h3>
+          <h3>Eventos con Mi Participación</h3>
           <div className="table-container">
             <table>
               <thead>
                 <tr>
                   <th>Evento</th>
-                  <th>Lugar</th>
-                  <th>Cantidad de Empleados</th>
+                  <th>Cliente</th>
                   <th>Fecha</th>
                   <th>Hora</th>
                 </tr>
@@ -570,8 +692,7 @@ export default function AssemblyAndDisassembly() {
                 {eventosCompletados.map((evento) => (
                   <tr key={evento.id_evento}>
                     <td>{evento.nombre_evento}</td>
-                    <td>{evento.lugar}</td>
-                    <td>{evento.cantidad_empleados}</td>
+                    <td>{evento.cliente}</td>
                     <td>{evento.fecha}</td>
                     <td>{evento.hora}</td>
                   </tr>
@@ -596,9 +717,10 @@ export default function AssemblyAndDisassembly() {
                 <tr>
                   <th>Evento</th>
                   <th>Lugar</th>
-                  <th>Cantidad de Empleados</th>
                   <th>Fecha</th>
-                  <th>Hora</th>
+                  <th>Servicio a Realizar</th>
+                  <th>Asesor del Evento</th>
+                  <th>Cliente</th>
                 </tr>
               </thead>
               <tbody>
@@ -606,9 +728,10 @@ export default function AssemblyAndDisassembly() {
                   <tr key={evento.id_evento}>
                     <td>{evento.nombre_evento}</td>
                     <td>{evento.lugar}</td>
-                    <td>{evento.cantidad_empleados}</td>
                     <td>{evento.fecha}</td>
-                    <td>{evento.hora}</td>
+                    <td>{evento.servicio}</td>
+                    <td>{evento.asesor}</td>
+                    <td>{evento.cliente}</td>
                   </tr>
                 ))}
               </tbody>
@@ -624,22 +747,25 @@ export default function AssemblyAndDisassembly() {
       <div className="modal-container">
         <button className="close-btn" onClick={() => setShowPersonalModal(false)}>×</button>
         <div className="modal-content">
-          <h3>Personal Encargado de Montajes</h3>
+          <h3>Eventos Terminados</h3>
           <div className="table-container">
             <table>
               <thead>
                 <tr>
-                  <th>Nombre</th>
-                  <th>Cédula</th>
-                  <th>Cantidad de Eventos</th>
+                  <th>Evento</th>
+                  <th>Lugar</th>
+                  <th>Fecha</th>
+                  <th>Hora Montaje</th>
+                  <th>Hora Desmontaje</th>
+                  <th>Cantidad de Empleados</th>
                 </tr>
               </thead>
               <tbody>
-                {empleadosMontaje.map((empleado) => (
-                  <tr key={empleado.id_empleado}>
-                    <td>{empleado.nombre}</td>
-                    <td>{empleado.cedula}</td>
-                    <td>{empleado.cantidad_eventos}</td>
+                {empleadosMontaje.map((evento) => (
+                  <tr key={evento.id_empleado}>
+                    <td>{evento.nombre}</td>
+                    <td>{evento.cedula}</td>
+                    <td>{evento.cantidad_eventos}</td>
                   </tr>
                 ))}
               </tbody>

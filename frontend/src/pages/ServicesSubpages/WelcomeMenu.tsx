@@ -23,14 +23,24 @@ export type Quotation = {
 
 interface EventoEnProceso {
   id_evento: number;
-  cliente: string;
-  espacio: string;
-  servicios_adicionales: string[];
-  empleado_encargado: string;
-  contacto_asesor: string;
+  cedula_cliente: string;
+  cedula_asesor: string;
   fecha_evento: string;
   hora_evento: string;
-  estado_evento: string;
+  id_espacio: number;
+  estado_evento: 'Pendiente' | 'Confirmado' | 'Cancelado' | 'Completado';
+  id_tipo_evento: number;
+  desea_supervision: number;
+  nota_cliente: string;
+  creacion_evento: string;
+  estado_cotizacion: 'Pendiente' | 'Completada' | 'Aceptada' | 'Rechazada' | 'Cancelada' | 'Eliminada';
+  subtotal_evento: number;
+  itbis_evento: number;
+  total_evento: number;
+  nombre_cliente?: string;
+  nombre_asesor?: string;
+  nombre_espacio?: string;
+  nombre_tipo_evento?: string;
 }
 
 interface EventoRealizado {
@@ -46,9 +56,13 @@ interface EventoRealizado {
 interface Usuario {
   id_usuario: number;
   nombre: string;
+  apellido: string;
   cedula: string;
   usuario: string;
   rol: string;
+  estado: string;
+  telefono: string;
+  correo: string;
 }
 
 interface Cotizacion {
@@ -86,6 +100,9 @@ interface WelcomeStats {
   eventsInProcess: number;
   totalUsers: number;
   averageRating: number;
+  eventosActivos?: number;
+  eventosRealizados?: number;
+  comentariosEnviados?: number;
 }
 
 interface EventoFormData {
@@ -131,11 +148,49 @@ interface ClienteActivo {
   activo: boolean;
 }
 
+interface Elemento {
+  id_elemento: number;
+  nombre: string;
+  cantidad_disponible: number;
+  veces_utilizado: number;
+}
+
+interface Compra {
+  id_compra: number;
+  proveedor: string;
+  cantidad_elementos: number;
+  fecha_compra: string;
+  hora_compra: string;
+  costo_compra: number;
+}
+
+interface CompraProceso extends Compra {
+  estado: string;
+}
+
+interface DetalleCompra {
+  elemento: string;
+  cantidad: number;
+  precio_unitario: number;
+  precio_total: number;
+}
+
+interface NuevaCompra {
+  proveedor: string;
+  fecha_compra: string;
+  hora_compra: string;
+  costo_compra: number;
+  detalles: DetalleCompra[];
+}
+
 const WelcomeMenu: React.FC<WelcomeMenuProps> = () => {
   const navigate = useNavigate();
   const { userRole } = useUser();
   const userData = JSON.parse(localStorage.getItem('userData') || '{}');
-  console.log('Rol actual:', userRole);
+  
+  // Corregir la detección del rol
+  const currentRole = Number(userData.rol);
+  console.log('Rol actual:', currentRole);
   const [showCommentModal, setShowCommentModal] = useState(false);
   const [showEventModal, setShowEventModal] = useState(false);
   const [showServicesModal, setShowServicesModal] = useState(false);
@@ -152,7 +207,10 @@ const WelcomeMenu: React.FC<WelcomeMenuProps> = () => {
     spaces: [],
     eventsInProcess: 0,
     totalUsers: 0,
-    averageRating: 0
+    averageRating: 0,
+    eventosActivos: 0,
+    eventosRealizados: 0,
+    comentariosEnviados: 0
   });
   const [espacios, setEspacios] = useState<Espacio[]>([]);
   const [formData, setFormData] = useState<Partial<EventoFormData>>({
@@ -190,7 +248,8 @@ const WelcomeMenu: React.FC<WelcomeMenuProps> = () => {
     usuario: '',
     contrasena: '',
     telefono: '',
-    correo: ''
+    correo: '',
+    estado: 'Activo'
   });
   const [showEventosAsignadosModal, setShowEventosAsignadosModal] = useState(false);
   const [showClientesActivosModal, setShowClientesActivosModal] = useState(false);
@@ -198,15 +257,51 @@ const WelcomeMenu: React.FC<WelcomeMenuProps> = () => {
   const [clientesActivos, setClientesActivos] = useState<ClienteActivo[]>([]);
   const [eventoEditando, setEventoEditando] = useState<EventoAsignado | null>(null);
   const [clienteEditando, setClienteEditando] = useState<ClienteActivo | null>(null);
+  const [showInventarioModal, setShowInventarioModal] = useState(false);
+  const [showComprasModal, setShowComprasModal] = useState(false);
+  const [showComprasProcesoModal, setShowComprasProcesoModal] = useState(false);
+  const [showNuevaCompraModal, setShowNuevaCompraModal] = useState(false);
+  const [elementos, setElementos] = useState<Elemento[]>([]);
+  const [compras, setCompras] = useState<Compra[]>([]);
+  const [comprasProceso, setComprasProceso] = useState<CompraProceso[]>([]);
+  const [nuevaCompra, setNuevaCompra] = useState<NuevaCompra>({
+    proveedor: '',
+    fecha_compra: '',
+    hora_compra: '',
+    costo_compra: 0,
+    detalles: [{ elemento: '', cantidad: 0, precio_unitario: 0, precio_total: 0 }]
+  });
+  const [showAllEvents, setShowAllEvents] = useState(false);
+  const [filteredRole, setFilteredRole] = useState<string | null>(null);
+  const [showCreateUserModal, setShowCreateUserModal] = useState(false);
+  const [newUser, setNewUser] = useState({
+    cedula: '',
+    nombre: '',
+    apellido: '',
+    rol: '',
+    usuario: '',
+    contrasena: '',
+    telefono: '',
+    correo: '',
+    estado: 'Activo'
+  });
 
   useEffect(() => {
     const fetchEspacios = async () => {
       try {
         console.log('Intentando cargar espacios...');
-        const response = await fetch('/api/espacios');
+        const token = localStorage.getItem('token');
+        const response = await fetch('http://localhost:3000/api/espacios', {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        });
+        
         if (!response.ok) {
           throw new Error(`Error HTTP: ${response.status}`);
         }
+        
         const data = await response.json();
         console.log('Espacios cargados:', data);
         setEspacios(data);
@@ -242,14 +337,21 @@ const WelcomeMenu: React.FC<WelcomeMenuProps> = () => {
       try {
         console.log('Iniciando fetch de estadísticas...');
         const token = localStorage.getItem('token');
+        const userData = JSON.parse(localStorage.getItem('userData') || '{}');
+        console.log('Datos del usuario:', userData);
         console.log('Token disponible:', !!token);
+
+        const headers = {
+          'Content-Type': 'application/json',
+          'Authorization': token ? `Bearer ${token}` : '',
+          'user-role': userData.rol || '',
+          'user-cedula': userData.cedula || ''
+        };
+        console.log('Headers enviados:', headers);
 
         const response = await fetch('/api/dashboard/stats', {
           method: 'GET',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': token ? `Bearer ${token}` : ''
-          }
+          headers
         });
         
         console.log('Respuesta recibida:', {
@@ -279,7 +381,10 @@ const WelcomeMenu: React.FC<WelcomeMenuProps> = () => {
             totalUsers: Number(data.totalUsers) || 0,
             spaces: Array.isArray(data.spaces) ? data.spaces : [],
             quotations: Number(data.quotations) || 0,
-            averageRating: Number(data.averageRating) || 0
+            averageRating: Number(data.averageRating) || 0,
+            eventosActivos: Number(data.eventosActivos) || 0,
+            eventosRealizados: Number(data.eventosRealizados) || 0,
+            comentariosEnviados: Number(data.comentariosEnviados) || 0
           };
           
           console.log('Datos procesados para actualizar estado:', statsData);
@@ -309,7 +414,10 @@ const WelcomeMenu: React.FC<WelcomeMenuProps> = () => {
           spaces: [],
           eventsInProcess: 0,
           totalUsers: 0,
-          averageRating: 0
+          averageRating: 0,
+          eventosActivos: 0,
+          eventosRealizados: 0,
+          comentariosEnviados: 0
         });
       }
     };
@@ -320,17 +428,42 @@ const WelcomeMenu: React.FC<WelcomeMenuProps> = () => {
   useEffect(() => {
     const fetchEventosEnProceso = async () => {
       try {
-        const response = await fetch('/api/eventos/en-proceso');
+        const token = localStorage.getItem('token');
+        const response = await fetch('http://localhost:3000/api/eventos/en-proceso', {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        });
+
+        if (!response.ok) {
+          throw new Error(`Error HTTP: ${response.status}`);
+        }
+
         const data = await response.json();
+        console.log('Eventos en proceso cargados:', data);
         setEventosEnProceso(data);
       } catch (error) {
         console.error('Error al cargar eventos en proceso:', error);
+        alert('Error al cargar los eventos en proceso. Por favor, intente nuevamente.');
       }
     };
 
+    if (showEventsInProcessModal) {
+      fetchEventosEnProceso();
+    }
+  }, [showEventsInProcessModal]);
+
+  useEffect(() => {
     const fetchUsuarios = async () => {
       try {
-        const response = await fetch('/api/usuarios');
+        const token = localStorage.getItem('token');
+        const response = await fetch('http://localhost:3000/api/usuarios', {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        });
         const data = await response.json();
         setUsuarios(data);
       } catch (error) {
@@ -338,33 +471,32 @@ const WelcomeMenu: React.FC<WelcomeMenuProps> = () => {
       }
     };
 
-    const fetchCotizaciones = async () => {
-      try {
-        const response = await fetch('/api/cotizaciones/pendientes');
-        const data = await response.json();
-        // Transformar los datos para incluir los campos adicionales
-        const cotizacionesTransformadas = data.map((cotizacion: any) => ({
-          ...cotizacion,
-          contacto_asesor: cotizacion.contacto_asesor || 'No disponible',
-          fecha_evento: cotizacion.fecha_evento || 'No disponible',
-          hora_evento: cotizacion.hora_evento || 'No disponible'
-        }));
-        setCotizaciones(cotizacionesTransformadas);
-      } catch (error) {
-        console.error('Error al cargar cotizaciones:', error);
-      }
-    };
-
-    if (showEventsInProcessModal) {
-      fetchEventosEnProceso();
-    }
     if (showUsersModal) {
       fetchUsuarios();
     }
+  }, [showUsersModal]);
+
+  useEffect(() => {
+    const fetchEventosRealizados = async () => {
+      try {
+        const token = localStorage.getItem('token');
+        const response = await fetch('http://localhost:3000/api/eventos/realizados', {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        });
+        const data = await response.json();
+        setCotizaciones(data);
+      } catch (error) {
+        console.error('Error al cargar eventos realizados:', error);
+      }
+    };
+
     if (showQuotationsModal) {
-      fetchCotizaciones();
+      fetchEventosRealizados();
     }
-  }, [showEventsInProcessModal, showUsersModal, showQuotationsModal]);
+  }, [showQuotationsModal]);
 
   useEffect(() => {
     const fetchSpaces = async () => {
@@ -413,6 +545,48 @@ const WelcomeMenu: React.FC<WelcomeMenuProps> = () => {
       fetchClientesActivos();
     }
   }, [showEventosAsignadosModal, showClientesActivosModal]);
+
+  useEffect(() => {
+    const fetchInventario = async () => {
+      try {
+        const response = await fetch('/api/inventario');
+        const data = await response.json();
+        setElementos(data);
+      } catch (error) {
+        console.error('Error al cargar inventario:', error);
+      }
+    };
+
+    const fetchCompras = async () => {
+      try {
+        const response = await fetch('/api/compras');
+        const data = await response.json();
+        setCompras(data);
+      } catch (error) {
+        console.error('Error al cargar compras:', error);
+      }
+    };
+
+    const fetchComprasProceso = async () => {
+      try {
+        const response = await fetch('/api/compras/proceso');
+        const data = await response.json();
+        setComprasProceso(data);
+      } catch (error) {
+        console.error('Error al cargar compras en proceso:', error);
+      }
+    };
+
+    if (showInventarioModal) {
+      fetchInventario();
+    }
+    if (showComprasModal) {
+      fetchCompras();
+    }
+    if (showComprasProcesoModal) {
+      fetchComprasProceso();
+    }
+  }, [showInventarioModal, showComprasModal, showComprasProcesoModal]);
 
   const handleCommentSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -711,7 +885,7 @@ const WelcomeMenu: React.FC<WelcomeMenuProps> = () => {
       <div className="dashboard__stats">
         <div className="stat-card">
           <span className="stat-card__label">Mis Eventos Activos</span>
-          <strong className="stat-card__number">{stats.eventsInProcess}</strong>
+          <strong className="stat-card__number">{stats.eventosActivos}</strong>
           <button 
             className="stat-card__seeInfo"
             onClick={() => setShowEventsInProcessModal(true)}
@@ -722,7 +896,7 @@ const WelcomeMenu: React.FC<WelcomeMenuProps> = () => {
 
         <div className="stat-card">
           <span className="stat-card__label">Total de Eventos Realizados</span>
-          <strong className="stat-card__number">{stats.totalUsers}</strong>
+          <strong className="stat-card__number">{stats.eventosRealizados}</strong>
           <button 
             className="stat-card__seeInfo"
             onClick={() => setShowQuotationsModal(true)}
@@ -733,7 +907,7 @@ const WelcomeMenu: React.FC<WelcomeMenuProps> = () => {
 
         <div className="stat-card">
           <span className="stat-card__label">Comentarios Enviados</span>
-          <strong className="stat-card__number">{stats.quotations}</strong>
+          <strong className="stat-card__number">{stats.comentariosEnviados}</strong>
           <button 
             className="stat-card__seeInfo2"
             onClick={() => setShowCommentModal(true)}
@@ -758,35 +932,67 @@ const WelcomeMenu: React.FC<WelcomeMenuProps> = () => {
           <div className="modal-container">
             <button className="close-btn" onClick={() => setShowEventsInProcessModal(false)}>×</button>
             <div className="modal-content">
-              <h3>Mis Eventos Activos</h3>
-              <div className="table-container">
-                <table>
-                  <thead>
-                    <tr>
-                      <th>Asesor</th>
-                      <th>Contacto</th>
-                      <th>Fecha</th>
-                      <th>Hora</th>
-                      <th>Espacio</th>
-                      <th>Acciones</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {eventosEnProceso.map((evento) => (
-                      <tr key={evento.id_evento}>
-                        <td>{evento.empleado_encargado}</td>
-                        <td>{evento.contacto_asesor}</td>
-                        <td>{evento.fecha_evento}</td>
-                        <td>{evento.hora_evento}</td>
-                        <td>{evento.espacio}</td>
-                        <td>
-                          <button className="edit-btn">Editar</button>
-                          <button className="delete-btn">Cancelar</button>
-                        </td>
+              <div className="modal-header">
+                <h3>Eventos en Proceso</h3>
+                <button 
+                  className="add-user-btn"
+                  onClick={() => setShowAllEvents(!showAllEvents)}
+                >
+                  {showAllEvents ? 'Ver eventos en proceso' : 'Ver todos los eventos'}
+                </button>
+              </div>
+              <div className="table-section">
+                <div className="table-container">
+                  <table>
+                    <thead>
+                      <tr>
+                        <th>ID</th>
+                        <th>Cliente</th>
+                        <th>Asesor</th>
+                        <th>Fecha</th>
+                        <th>Hora</th>
+                        <th>Espacio</th>
+                        <th>Tipo Evento</th>
+                        <th>Supervisión</th>
+                        <th>Estado</th>
+                        <th>Cotización</th>
+                        <th>Total</th>
+                        <th>Acciones</th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
+                    </thead>
+                    <tbody>
+                      {eventosEnProceso.map((evento) => (
+                        <tr key={evento.id_evento}>
+                          <td>{evento.id_evento}</td>
+                          <td>{evento.nombre_cliente || evento.cedula_cliente}</td>
+                          <td>{evento.nombre_asesor || evento.cedula_asesor}</td>
+                          <td>{evento.fecha_evento}</td>
+                          <td>{evento.hora_evento}</td>
+                          <td>{evento.nombre_espacio || evento.id_espacio}</td>
+                          <td>{evento.nombre_tipo_evento || evento.id_tipo_evento}</td>
+                          <td>{evento.desea_supervision ? 'Sí' : 'No'}</td>
+                          <td>
+                            <span className={`estado-badge ${evento.estado_evento.toLowerCase()}`}>
+                              {evento.estado_evento}
+                            </span>
+                          </td>
+                          <td>
+                            <span className={`estado-badge ${evento.estado_cotizacion.toLowerCase()}`}>
+                              {evento.estado_cotizacion}
+                            </span>
+                          </td>
+                          <td>${evento.total_evento.toFixed(2)}</td>
+                          <td>
+                            <div className="acciones-buttons">
+                              <button className="edit-btn">Editar</button>
+                              <button className="delete-btn">Cancelar</button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
               </div>
             </div>
           </div>
@@ -812,14 +1018,14 @@ const WelcomeMenu: React.FC<WelcomeMenuProps> = () => {
                     </tr>
                   </thead>
                   <tbody>
-                    {cotizaciones.map((cotizacion) => (
-                      <tr key={cotizacion.id_cotizacion}>
-                        <td>{cotizacion.empleado_encargado}</td>
-                        <td>{cotizacion.contacto_asesor}</td>
-                        <td>{cotizacion.fecha_evento}</td>
-                        <td>{cotizacion.hora_evento}</td>
-                        <td>{cotizacion.espacio}</td>
-                        <td>{cotizacion.servicios_adicionales.join(', ')}</td>
+                    {cotizaciones.map((evento) => (
+                      <tr key={evento.id_cotizacion}>
+                        <td>{evento.empleado_encargado}</td>
+                        <td>{evento.contacto_asesor}</td>
+                        <td>{evento.fecha_evento}</td>
+                        <td>{evento.hora_evento}</td>
+                        <td>{evento.espacio}</td>
+                        <td>{evento.servicios_adicionales.join(', ')}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -1072,31 +1278,312 @@ const WelcomeMenu: React.FC<WelcomeMenuProps> = () => {
       <div className="coordinator-dashboard">
         <div className="welcome-header">
           <center>
-          <h1>Bienvenido al Panel de Inventario</h1>
+            <h1>Bienvenido al Panel de Inventario</h1>
           </center>
-          <p>Gestiona todos los servicios y eventos desde aquí</p>
+          <p>Gestiona el inventario y las compras de elementos</p>
         </div>
 
         <div className="dashboard__stats">
           <div className="stat-card">
             <span className="stat-card__label">Elementos Disponibles</span>
             <strong className="stat-card__number">{stats.eventsInProcess}</strong>
-            <button className="stat-card__seeInfo">Ver inventario</button>
+            <button 
+              className="stat-card__seeInfo"
+              onClick={() => setShowInventarioModal(true)}
+            >
+              Ver inventario
+            </button>
           </div>
 
           <div className="stat-card">
-            <span className="stat-card__label">Elementos en Uso</span>
+            <span className="stat-card__label">Todas las Compras</span>
             <strong className="stat-card__number">{stats.totalUsers}</strong>
-            <button className="stat-card__seeInfo">Ver en uso</button>
+            <button 
+              className="stat-card__seeInfo"
+              onClick={() => setShowComprasModal(true)}
+            >
+              Ver compras
+            </button>
           </div>
 
           <div className="stat-card">
-            <span className="stat-card__label">Compras Pendientes</span>
+            <span className="stat-card__label">Compras en Proceso</span>
             <strong className="stat-card__number">{stats.quotations}</strong>
-            <button className="stat-card__seeInfo">Ver compras</button>
+            <button 
+              className="stat-card__seeInfo"
+              onClick={() => setShowComprasProcesoModal(true)}
+            >
+              Ver en proceso
+            </button>
           </div>
         </div>
+
+        <div className="section-header">
+          <center>
+            <button 
+              className="new-form-btn"
+              onClick={() => setShowNuevaCompraModal(true)}>
+              + Nueva Compra
+            </button>
+          </center>
+        </div>
       </div>
+
+      {showInventarioModal && (
+        <div className="modal-overlay">
+          <div className="modal-container">
+            <button className="close-btn" onClick={() => setShowInventarioModal(false)}>×</button>
+            <div className="modal-content">
+              <h3>Elementos Disponibles</h3>
+              <div className="table-container">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Elemento</th>
+                      <th>Cantidad Disponible</th>
+                      <th>Veces Utilizado</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {elementos.map((elemento) => (
+                      <tr key={elemento.id_elemento}>
+                        <td>{elemento.nombre}</td>
+                        <td>{elemento.cantidad_disponible}</td>
+                        <td>{elemento.veces_utilizado}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showComprasModal && (
+        <div className="modal-overlay">
+          <div className="modal-container">
+            <button className="close-btn" onClick={() => setShowComprasModal(false)}>×</button>
+            <div className="modal-content">
+              <h3>Todas las Compras</h3>
+              <div className="table-container">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>ID Compra</th>
+                      <th>Proveedor</th>
+                      <th>Cantidad de Elementos</th>
+                      <th>Fecha de la Compra</th>
+                      <th>Hora de la Compra</th>
+                      <th>Costo de la Compra</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {compras.map((compra) => (
+                      <tr key={compra.id_compra}>
+                        <td>{compra.id_compra}</td>
+                        <td>{compra.proveedor}</td>
+                        <td>{compra.cantidad_elementos}</td>
+                        <td>{compra.fecha_compra}</td>
+                        <td>{compra.hora_compra}</td>
+                        <td>${compra.costo_compra}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showComprasProcesoModal && (
+        <div className="modal-overlay">
+          <div className="modal-container">
+            <button className="close-btn" onClick={() => setShowComprasProcesoModal(false)}>×</button>
+            <div className="modal-content">
+              <h3>Compras en Proceso</h3>
+              <div className="table-container">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Proveedor</th>
+                      <th>Cantidad de Elementos</th>
+                      <th>Fecha de Compra</th>
+                      <th>Hora de Compra</th>
+                      <th>Costo</th>
+                      <th>Estado</th>
+                      <th>Acciones</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {comprasProceso.map((compra) => (
+                      <tr key={compra.id_compra}>
+                        <td>{compra.proveedor}</td>
+                        <td>{compra.cantidad_elementos}</td>
+                        <td>{compra.fecha_compra}</td>
+                        <td>{compra.hora_compra}</td>
+                        <td>${compra.costo_compra}</td>
+                        <td>{compra.estado}</td>
+                        <td>
+                          <button 
+                            className="edit-btn"
+                            onClick={() => {/* Implementar edición */}}
+                          >
+                            Editar
+                          </button>
+                          <button 
+                            className="delete-btn"
+                            onClick={() => handleCancelarCompra(compra.id_compra)}
+                          >
+                            Cancelar
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showNuevaCompraModal && (
+        <div className="modal-overlay">
+          <div className="modal-container">
+            <button className="close-btn" onClick={() => setShowNuevaCompraModal(false)}>×</button>
+            <form className="modal-form" onSubmit={handleNuevaCompraSubmit}>
+              <h2>Nueva Compra</h2>
+              
+              <div className="form-grid">
+                <label>
+                  Proveedor:
+                  <input
+                    type="text"
+                    value={nuevaCompra.proveedor}
+                    onChange={(e) => setNuevaCompra(prev => ({ ...prev, proveedor: e.target.value }))}
+                    required
+                  />
+                </label>
+
+                <label>
+                  Fecha de Compra:
+                  <input
+                    type="date"
+                    value={nuevaCompra.fecha_compra}
+                    onChange={(e) => setNuevaCompra(prev => ({ ...prev, fecha_compra: e.target.value }))}
+                    required
+                  />
+                </label>
+
+                <label>
+                  Hora de Compra:
+                  <input
+                    type="time"
+                    value={nuevaCompra.hora_compra}
+                    onChange={(e) => setNuevaCompra(prev => ({ ...prev, hora_compra: e.target.value }))}
+                    required
+                  />
+                </label>
+
+                <label>
+                  Costo de la Compra:
+                  <input
+                    type="number"
+                    value={nuevaCompra.costo_compra}
+                    onChange={(e) => setNuevaCompra(prev => ({ ...prev, costo_compra: Number(e.target.value) }))}
+                    required
+                  />
+                </label>
+              </div>
+
+              <h2>Detalles de la Compra</h2>
+              <div className="table-container">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Elemento</th>
+                      <th>Cantidad</th>
+                      <th>Precio Unitario</th>
+                      <th>Precio Total</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {nuevaCompra.detalles.map((detalle, index) => (
+                      <tr key={index}>
+                        <td>
+                          <input
+                            type="text"
+                            value={detalle.elemento}
+                            onChange={(e) => {
+                              const nuevosDetalles = [...nuevaCompra.detalles];
+                              nuevosDetalles[index].elemento = e.target.value;
+                              setNuevaCompra(prev => ({ ...prev, detalles: nuevosDetalles }));
+                            }}
+                            required
+                          />
+                        </td>
+                        <td>
+                          <input
+                            type="number"
+                            value={detalle.cantidad}
+                            onChange={(e) => {
+                              const nuevosDetalles = [...nuevaCompra.detalles];
+                              nuevosDetalles[index].cantidad = Number(e.target.value);
+                              nuevosDetalles[index].precio_total = nuevosDetalles[index].cantidad * nuevosDetalles[index].precio_unitario;
+                              setNuevaCompra(prev => ({ ...prev, detalles: nuevosDetalles }));
+                            }}
+                            required
+                          />
+                        </td>
+                        <td>
+                          <input
+                            type="number"
+                            value={detalle.precio_unitario}
+                            onChange={(e) => {
+                              const nuevosDetalles = [...nuevaCompra.detalles];
+                              nuevosDetalles[index].precio_unitario = Number(e.target.value);
+                              nuevosDetalles[index].precio_total = nuevosDetalles[index].cantidad * nuevosDetalles[index].precio_unitario;
+                              setNuevaCompra(prev => ({ ...prev, detalles: nuevosDetalles }));
+                            }}
+                            required
+                          />
+                        </td>
+                        <td>${detalle.precio_total}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+
+              <button 
+                type="button"
+                className="submit-btn"
+                onClick={() => setNuevaCompra(prev => ({
+                  ...prev,
+                  detalles: [...prev.detalles, { elemento: '', cantidad: 0, precio_unitario: 0, precio_total: 0 }]
+                }))}
+              >
+                + Agregar Elemento
+              </button>
+
+              <div className="form-buttons">
+                <button type="submit" className="submit-btn">
+                  Guardar Compra
+                </button>
+                <button
+                  type="button"
+                  className="reset-btn"
+                  onClick={() => setShowNuevaCompraModal(false)}
+                >
+                  Cancelar
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </>
   );
 
@@ -1129,7 +1616,8 @@ const WelcomeMenu: React.FC<WelcomeMenuProps> = () => {
           usuario: '',
           contrasena: '',
           telefono: '',
-          correo: ''
+          correo: '',
+          estado: 'Activo'
         });
         // Actualizar la lista de usuarios
         const updatedResponse = await fetch('/api/usuarios');
@@ -1454,12 +1942,237 @@ const WelcomeMenu: React.FC<WelcomeMenuProps> = () => {
     </div>
   );
 
+  const handleNuevaCompraSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      const response = await fetch('/api/compras', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(nuevaCompra),
+      });
+
+      if (response.ok) {
+        setShowNuevaCompraModal(false);
+        setNuevaCompra({
+          proveedor: '',
+          fecha_compra: '',
+          hora_compra: '',
+          costo_compra: 0,
+          detalles: [{ elemento: '', cantidad: 0, precio_unitario: 0, precio_total: 0 }]
+        });
+        // Actualizar la lista de compras
+        const updatedResponse = await fetch('/api/compras');
+        const data = await updatedResponse.json();
+        setCompras(data);
+      }
+    } catch (error) {
+      console.error('Error al crear compra:', error);
+      alert('Hubo un error al crear la compra. Por favor, intente nuevamente.');
+    }
+  };
+
+  const handleCancelarCompra = async (id: number) => {
+    if (window.confirm('¿Estás seguro de que deseas cancelar esta compra?')) {
+      try {
+        const response = await fetch(`/api/compras/${id}/cancelar`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+          }
+        });
+
+        if (response.ok) {
+          setComprasProceso(prev => 
+            prev.filter(compra => compra.id_compra !== id)
+          );
+        }
+      } catch (error) {
+        console.error('Error al cancelar compra:', error);
+      }
+    }
+  };
+
+  const handleCreateUser = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch('http://localhost:3000/api/usuarios', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(newUser)
+      });
+
+      if (!response.ok) {
+        throw new Error('Error al crear usuario');
+      }
+
+      setShowCreateUserModal(false);
+      setNewUser({
+        cedula: '',
+        nombre: '',
+        apellido: '',
+        rol: '',
+        usuario: '',
+        contrasena: '',
+        telefono: '',
+        correo: '',
+        estado: 'Activo'
+      });
+      
+      // Recargar la lista de usuarios
+      const updatedResponse = await fetch('http://localhost:3000/api/usuarios', {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      const data = await updatedResponse.json();
+      setUsuarios(data);
+    } catch (error) {
+      console.error('Error al crear usuario:', error);
+      alert('Error al crear el usuario. Por favor, intente nuevamente.');
+    }
+  };
+
+  const styles = `
+    .modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background-color: rgba(0, 0, 0, 0.5);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      z-index: 1000;
+    }
+
+    .modal-container {
+      background: white;
+      padding: 20px;
+      border-radius: 8px;
+      width: 90%;
+      max-width: 1200px;
+      max-height: 90vh;
+      overflow-y: auto;
+      position: relative;
+    }
+
+    .modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+
+    .modal-header h3 {
+      margin: 0;
+      color: #333;
+    }
+
+    .close-btn {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      background: none;
+      border: none;
+      font-size: 24px;
+      cursor: pointer;
+      color: #666;
+    }
+
+    .table-container {
+      overflow-x: auto;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 10px;
+    }
+
+    th, td {
+      padding: 12px;
+      text-align: left;
+      border-bottom: 1px solid #ddd;
+    }
+
+    th {
+      background-color: #f5f5f5;
+      font-weight: 600;
+    }
+
+    .estado-badge {
+      padding: 4px 8px;
+      border-radius: 4px;
+      font-size: 12px;
+      font-weight: 500;
+    }
+
+    .estado-badge.pendiente {
+      background-color: #fff3cd;
+      color: #856404;
+    }
+
+    .estado-badge.en_proceso {
+      background-color: #cce5ff;
+      color: #004085;
+    }
+
+    .estado-badge.completado {
+      background-color: #d4edda;
+      color: #155724;
+    }
+
+    .estado-badge.cancelado {
+      background-color: #f8d7da;
+      color: #721c24;
+    }
+
+    .edit-btn, .delete-btn {
+      padding: 6px 12px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      margin-right: 8px;
+    }
+
+    .edit-btn {
+      background-color: #007bff;
+      color: white;
+    }
+
+    .delete-btn {
+      background-color: #dc3545;
+      color: white;
+    }
+
+    .add-user-btn {
+      padding: 8px 16px;
+      background-color: #28a745;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+
+    .add-user-btn:hover {
+      background-color: #218838;
+    }
+  `;
+
   return (
     <div className="welcome-menu">
-      {Number(userData.rol) === 1 && renderAdminDashboard()}
-      {Number(userData.rol) === 2 && renderClientDashboard()}
-      {Number(userData.rol) === 3 && renderCoordinatorDashboard()}
-      {Number(userData.rol) === 4 && renderInventoryDashboard()}
+      {currentRole === 1 && renderAdminDashboard()}
+      {currentRole === 2 && renderClientDashboard()}
+      {currentRole === 3 && renderCoordinatorDashboard()}
+      {currentRole === 4 && renderInventoryDashboard()}
 
       {showCommentModal && (
         <div className="modal-overlay">
@@ -1567,6 +2280,219 @@ const WelcomeMenu: React.FC<WelcomeMenuProps> = () => {
 
       {showSpacesModal && renderSpacesModal()}
       {showAddSpaceModal && renderAddSpaceModal()}
+
+      {showUsersModal && (
+        <div className="modal-overlay">
+          <div className="modal-container">
+            <button className="close-btn" onClick={() => setShowUsersModal(false)}>×</button>
+            <div className="modal-content">
+              <div className="modal-header">
+                <h3>Usuarios Registrados</h3>
+                <button 
+                  className="add-user-btn"
+                  onClick={() => setShowCreateUserModal(true)}
+                >
+                  + Crear Usuario
+                </button>
+              </div>
+              
+              <div className="filter-buttons">
+                <button 
+                  className={`filter-btn ${filteredRole === null ? 'active' : ''}`}
+                  onClick={() => setFilteredRole(null)}
+                >
+                  Todos
+                </button>
+                <button 
+                  className={`filter-btn ${filteredRole === 'cliente' ? 'active' : ''}`}
+                  onClick={() => setFilteredRole('cliente')}
+                >
+                  Clientes
+                </button>
+                <button 
+                  className={`filter-btn ${filteredRole === 'admin' ? 'active' : ''}`}
+                  onClick={() => setFilteredRole('admin')}
+                >
+                  Administradores
+                </button>
+                <button 
+                  className={`filter-btn ${filteredRole === 'organizador' ? 'active' : ''}`}
+                  onClick={() => setFilteredRole('organizador')}
+                >
+                  Organizadores
+                </button>
+                <button 
+                  className={`filter-btn ${filteredRole === 'inventario' ? 'active' : ''}`}
+                  onClick={() => setFilteredRole('inventario')}
+                >
+                  Inventario
+                </button>
+              </div>
+
+              <div className="table-section">
+                <div className="table-container">
+                  <table>
+                    <thead>
+                      <tr>
+                        <th>Nombre</th>
+                        <th>Apellido</th>
+                        <th>Cédula</th>
+                        <th>Rol</th>
+                        <th>Contacto</th>
+                        <th>Correo</th>
+                        <th>Usuario</th>
+                        <th>Estado</th>
+                        <th>Acciones</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {usuarios
+                        .filter(usuario => !filteredRole || usuario.rol === filteredRole)
+                        .map((usuario) => (
+                          <tr key={usuario.id_usuario}>
+                            <td>{usuario.nombre}</td>
+                            <td>{usuario.apellido}</td>
+                            <td>{usuario.cedula}</td>
+                            <td>{usuario.rol}</td>
+                            <td>{usuario.telefono}</td>
+                            <td>{usuario.correo}</td>
+                            <td>{usuario.usuario}</td>
+                            <td>
+                              <span className={`estado-badge ${usuario.estado.toLowerCase()}`}>
+                                {usuario.estado}
+                              </span>
+                            </td>
+                            <td>
+                              <div className="acciones-buttons">
+                                <button className="edit-btn">Editar</button>
+                                <button className="delete-btn">Deshabilitar</button>
+                              </div>
+                            </td>
+                          </tr>
+                        ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showCreateUserModal && (
+        <div className="modal-overlay">
+          <div className="modal-container">
+            <button className="close-btn" onClick={() => setShowCreateUserModal(false)}>×</button>
+            <form className="modal-form" onSubmit={handleCreateUser}>
+              <h2>Crear Nuevo Usuario</h2>
+              
+              <div className="form-grid">
+                <label>
+                  Cédula:
+                  <input
+                    type="text"
+                    value={newUser.cedula}
+                    onChange={(e) => setNewUser(prev => ({ ...prev, cedula: e.target.value }))}
+                    required
+                    maxLength={13}
+                    pattern="[0-9]{11,13}"
+                    title="La cédula debe tener entre 11 y 13 dígitos"
+                  />
+                </label>
+
+                <label>
+                  Nombre:
+                  <input
+                    type="text"
+                    value={newUser.nombre}
+                    onChange={(e) => setNewUser(prev => ({ ...prev, nombre: e.target.value }))}
+                    required
+                  />
+                </label>
+
+                <label>
+                  Apellido:
+                  <input
+                    type="text"
+                    value={newUser.apellido}
+                    onChange={(e) => setNewUser(prev => ({ ...prev, apellido: e.target.value }))}
+                    required
+                  />
+                </label>
+
+                <label>
+                  Rol:
+                  <select
+                    value={newUser.rol}
+                    onChange={(e) => setNewUser(prev => ({ ...prev, rol: e.target.value }))}
+                    required
+                  >
+                    <option value="">Seleccionar rol</option>
+                    <option value="admin">Administrador</option>
+                    <option value="cliente">Cliente</option>
+                    <option value="organizador">Organizador</option>
+                    <option value="inventario">Encargado de Inventario</option>
+                  </select>
+                </label>
+
+                <label>
+                  Usuario:
+                  <input
+                    type="text"
+                    value={newUser.usuario}
+                    onChange={(e) => setNewUser(prev => ({ ...prev, usuario: e.target.value }))}
+                    required
+                  />
+                </label>
+
+                <label>
+                  Contraseña:
+                  <input
+                    type="password"
+                    value={newUser.contrasena}
+                    onChange={(e) => setNewUser(prev => ({ ...prev, contrasena: e.target.value }))}
+                    required
+                    minLength={8}
+                  />
+                </label>
+
+                <label>
+                  Teléfono:
+                  <input
+                    type="tel"
+                    value={newUser.telefono}
+                    onChange={(e) => setNewUser(prev => ({ ...prev, telefono: e.target.value }))}
+                    required
+                  />
+                </label>
+
+                <label>
+                  Correo:
+                  <input
+                    type="email"
+                    value={newUser.correo}
+                    onChange={(e) => setNewUser(prev => ({ ...prev, correo: e.target.value }))}
+                    required
+                  />
+                </label>
+              </div>
+
+              <div className="form-buttons">
+                <button type="submit" className="submit-btn">
+                  Crear Usuario
+                </button>
+                <button
+                  type="button"
+                  className="reset-btn"
+                  onClick={() => setShowCreateUserModal(false)}
+                >
+                  Cancelar
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

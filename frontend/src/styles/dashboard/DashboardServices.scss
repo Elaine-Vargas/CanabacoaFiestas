@@ -31,6 +31,9 @@ $transition-standard: all 0.3s ease;
   transition: width 0.3s ease;
   z-index: 100;
   overflow: hidden;
+  position: fixed;
+  left: 0;
+  top: 0;
 
   @media (max-width: 450px) {
     display: none;
@@ -160,9 +163,11 @@ $transition-standard: all 0.3s ease;
   padding: 2rem;
   overflow-y: auto;
   position: relative;
+  margin-left: 95px; /* Ancho del sidebar */
 
   @media (max-width: 450px) {
     padding: 1rem;
+    margin-left: 0;
   }
 
   /* Scroll custom */

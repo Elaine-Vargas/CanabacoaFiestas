@@ -131,7 +131,17 @@ export default function Catering() {
   useEffect(() => {
     const fetchStats = async () => {
       try {
-        const response = await fetch('/api/catering/stats');
+        const token = localStorage.getItem('token');
+        const userData = JSON.parse(localStorage.getItem('userData') || '{}');
+        const response = await fetch('/api/catering/stats', {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': token ? `Bearer ${token}` : '',
+            'user-role': userData.rol || '',
+            'user-cedula': userData.cedula || ''
+          }
+        });
         if (response.ok) {
           const data = await response.json();
           setStats(data);
