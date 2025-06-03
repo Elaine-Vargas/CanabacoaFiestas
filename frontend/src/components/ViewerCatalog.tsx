@@ -4,8 +4,6 @@ import { Link } from "react-router-dom";
 import axios from 'axios';
 import {Card, CardContent, Typography, Grid, Container, TextField, Select, MenuItem, FormControl, InputLabel, Box, CircularProgress, IconButton, Drawer, List, ListItem, ListItemText, Button, Skeleton } from '@mui/material';
 
-import CloseIcon from '@mui/icons-material/Close';
-
 // Lazy-loaded components
 
 interface CategoriaElemento {

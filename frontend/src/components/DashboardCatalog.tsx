@@ -178,11 +178,14 @@ const Catalog: React.FC<CatalogProps> = ({ onAddToCart = true, onComprarCarrito 
         setLoading(true);
         console.log('Iniciando carga de datos...');
         
+        const token = localStorage.getItem('token');
+        const headers = token ? { Authorization: `Bearer ${token}` } : {};
+        
         const [elementosRes, categoriasRes, coloresRes, materialesRes] = await Promise.all([
-          axios.get('http://localhost:3000/api/elementos/filtrados'),
-          axios.get('http://localhost:3000/api/elementos/categorias/list'),
-          axios.get('http://localhost:3000/api/elementos/colores/list'),
-          axios.get('http://localhost:3000/api/elementos/materiales/list')
+          axios.get('http://localhost:3000/api/elementos/filtrados', { headers }),
+          axios.get('http://localhost:3000/api/elementos/categorias/list', { headers }),
+          axios.get('http://localhost:3000/api/elementos/colores/list', { headers }),
+          axios.get('http://localhost:3000/api/elementos/materiales/list', { headers })
         ]);
 
         console.log('Datos recibidos:', {
@@ -192,17 +195,45 @@ const Catalog: React.FC<CatalogProps> = ({ onAddToCart = true, onComprarCarrito 
           materiales: materialesRes.data
         });
 
-        setElementos(elementosRes.data);
-        setCategorias(categoriasRes.data);
-        setColores(coloresRes.data);
-        setMateriales(materialesRes.data);
+        if (elementosRes.data && Array.isArray(elementosRes.data)) {
+          setElementos(elementosRes.data);
+        } else {
+          console.error('Los elementos recibidos no son un array:', elementosRes.data);
+          setElementos([]);
+        }
+
+        if (categoriasRes.data && Array.isArray(categoriasRes.data)) {
+          setCategorias(categoriasRes.data);
+        } else {
+          console.error('Las categorías recibidas no son un array:', categoriasRes.data);
+          setCategorias([]);
+        }
+
+        if (coloresRes.data && Array.isArray(coloresRes.data)) {
+          setColores(coloresRes.data);
+        } else {
+          console.error('Los colores recibidos no son un array:', coloresRes.data);
+          setColores([]);
+        }
+
+        if (materialesRes.data && Array.isArray(materialesRes.data)) {
+          setMateriales(materialesRes.data);
+        } else {
+          console.error('Los materiales recibidos no son un array:', materialesRes.data);
+          setMateriales([]);
+        }
       } catch (error) {
-        console.error('Error al cargar los datos:', error);
+        console.error('Error detallado al cargar los datos:', error);
         setNotificacion({
           abierta: true,
           mensaje: 'Error al cargar el catálogo. Por favor, intente nuevamente.',
           tipo: 'error'
         });
+        // Inicializar los estados con arrays vacíos en caso de error
+        setElementos([]);
+        setCategorias([]);
+        setColores([]);
+        setMateriales([]);
       } finally {
         setLoading(false);
       }
@@ -246,7 +277,19 @@ const Catalog: React.FC<CatalogProps> = ({ onAddToCart = true, onComprarCarrito 
 
   const handleCantidadChange = (id: number, cantidad: number) => {
     const elemento = elementos.find(e => e.id_elemento === id);
-    if (!elemento || cantidad > elemento.cantidad_disponible) {
+    if (!elemento) return;
+
+    // Asegurarse de que la cantidad no sea negativa
+    if (cantidad < 1) {
+      setCantidadesSeleccionadas(prev => ({
+        ...prev,
+        [id]: 1
+      }));
+      return;
+    }
+
+    // Verificar si la cantidad excede el stock disponible
+    if (cantidad > elemento.cantidad_disponible) {
       setNotificacion({
         abierta: true,
         mensaje: 'No hay suficiente stock disponible',
@@ -254,11 +297,21 @@ const Catalog: React.FC<CatalogProps> = ({ onAddToCart = true, onComprarCarrito 
       });
       return;
     }
-    if (cantidad < 1) return;
+
+    // Actualizar la cantidad seleccionada
     setCantidadesSeleccionadas(prev => ({
       ...prev,
       [id]: cantidad
     }));
+
+    // Si el elemento está en el carrito, actualizar también su cantidad
+    setCarrito(prev => 
+      prev.map(item => 
+        item.id_elemento === id 
+          ? { ...item, cantidad: cantidad }
+          : item
+      )
+    );
   };
 
   const handleCantidadInputChange = (id: number, value: string) => {

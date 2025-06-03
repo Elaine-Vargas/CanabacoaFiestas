@@ -92,7 +92,6 @@ export default function Services() {
           </div>
         </main>
       </Container>
-      <Footer/>
     </>
   );
 }

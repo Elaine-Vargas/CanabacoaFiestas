@@ -18,7 +18,6 @@ export const LoadingScreen = () => {
   return (
     <>
     <div className="loading-spinner-container">
-          <Navbar />
 <div className="spinner"></div>
       <p className="loading-text">Cargando...</p>
     </div>
