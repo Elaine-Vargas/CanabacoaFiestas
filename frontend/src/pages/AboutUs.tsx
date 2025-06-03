@@ -87,7 +87,6 @@ const Nosotros: React.FC = () => {
           </div>
         </main>
       </Container>
-      <Footer/>
     </>
   );
 };

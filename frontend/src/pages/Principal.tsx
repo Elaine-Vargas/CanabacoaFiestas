@@ -1,4 +1,3 @@
-import Footer from "../components/Footer.tsx";
 import PrincipalCard from '../components/principal/PrincipalCard';
 import PrincipalInfo from '../components/principal/PrincipalInfo';
 import PrincipalMenu from '../components/principal/PrincipalMenu'
@@ -11,7 +10,6 @@ export default function Principal() {
         <PrincipalMenu/>
         <PrincipalCard/>
         <PrincipalInfo/>
-        <Footer/>
     </div>
 
 

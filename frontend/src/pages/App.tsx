@@ -78,7 +78,7 @@ function App() {
             </ProtectedRoute>
           }>
               <Route index element={<Navigate to="Bienvenida" replace />} />
-              <Route path="Bienvenida" element={<WelcomeMenu eventsInProcess={38} averageRating={4.0} totalUsers={150} quotations={[]}/>} />
+              <Route path="Bienvenida" element={<WelcomeMenu eventsInProcess={38} averageRating={4.0} totalUsers={150} />} />
               <Route path="Ajustes-Usuario" element={<UserConfig />} />
               <Route path="Alquiler" element={<Rent />} />
               <Route path="Decoracion" element={<Decor />} />
