@@ -8,6 +8,7 @@ import elementoRoutes from './routes/elementoRoutes';
 import path from 'path';
 import comentarioRoutes from './routes/comentarioRoutes';
 import { sendRecoveryEmail } from './controllers/mailController';
+import dashboardRoutes from './routes/dashboardRoutes';
 
 dotenv.config();
 
@@ -33,6 +34,7 @@ app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 app.use('/api/auth', authRoutes);
 app.use('/api/elementos', elementoRoutes);
 app.use('/api/comentarios', comentarioRoutes);
+app.use('/api/dashboard', dashboardRoutes);
 
 // Ruta de prueba
 app.get('/', (req, res) => {
@@ -47,6 +49,7 @@ app.listen(PORT, async () => {
   console.log('- GET /api/elementos/categorias/list');
   console.log('- GET /api/elementos/colores/list');
   console.log('- GET /api/elementos/materiales/list');
+  console.log('- GET /api/dashboard/stats');
   
   try {
     await testDbConnection();

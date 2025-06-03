@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import type { FormEvent } from 'react';
 import '../../styles/dashboard/ServicesSubpages.scss';
-import ServiceBase from '../../components/ServiceBase';
+import '../../components/ServiceBase';
 import { useUser } from '../../contexts/UserContext';
 
 export type UserRole = 'admin' | 'client' | 'supervisor' | 'inventory';
@@ -33,7 +33,7 @@ interface Evento {
   tipo_evento: string;
   nombre_evento?: string;
   nombre_cliente?: string;
-  empleado_responsable?: string;
+  lugar?: string;
   decoracion_solicitada?: string;
 }
 
@@ -72,6 +72,7 @@ export default function Decor() {
   const [showCompletadosModal, setShowCompletadosModal] = useState(false);
   const [empleados, setEmpleados] = useState<any[]>([]);
   const [completados, setCompletados] = useState<any[]>([]);
+  const [showPendientesModal, setShowPendientesModal] = useState(false);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -196,21 +197,6 @@ export default function Decor() {
     }
   };
 
-  const handleEdit = (decor: Decor) => {
-    setFormData(decor);
-    setEditId(decor.id_decor!);
-    setShowModal(true);
-  };
-
-  const handleDelete = async (id: number) => {
-    try {
-      await fetch(`/api/decor/${id}`, { method: 'DELETE' });
-      setDecors(prev => prev.filter(d => d.id_decor !== id));
-    } catch (error) {
-      console.error('Error al eliminar:', error);
-    }
-  };
-
   const renderClientView = () => (
     <div className="decor-content">
       <div className="table-section">
@@ -302,26 +288,29 @@ export default function Decor() {
       <div className="modal-container">
         <button className="close-btn" onClick={() => setShowEventosModal(false)}>×</button>
         <div className="modal-content">
-          <h3>Eventos con Decoraciones</h3>
+          <h3>Eventos con Decoración</h3>
           <div className="table-container">
             <table>
               <thead>
                 <tr>
                   <th>Evento</th>
                   <th>Cliente</th>
-                  <th>Empleado Responsable</th>
-                  <th>Decoración Solicitada</th>
+                  <th>Espacio</th>
+                  <th>Decoración</th>
                 </tr>
               </thead>
               <tbody>
-                {eventos.map((evento) => (
-                  <tr key={evento.id_evento}>
-                    <td>{evento.nombre_evento || evento.tipo_evento}</td>
-                    <td>{evento.nombre_cliente || 'No especificado'}</td>
-                    <td>{evento.empleado_responsable || 'No asignado'}</td>
-                    <td>{evento.decoracion_solicitada || 'No especificada'}</td>
-                  </tr>
-                ))}
+                {decors.map((decor) => {
+                  const evento = eventos.find(e => e.id_evento === decor.id_evento);
+                  return (
+                    <tr key={decor.id_decor}>
+                      <td>{evento?.tipo_evento}</td>
+                      <td>{evento?.nombre_cliente}</td>
+                      <td>{evento?.lugar || 'No especificado'}</td>
+                      <td>{decor.tipo_decoracion}</td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
@@ -357,6 +346,50 @@ export default function Decor() {
                     <td>{completado.nombre_cliente}</td>
                   </tr>
                 ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+
+  const renderPendientesModal = () => (
+    <div className="modal-overlay">
+      <div className="modal-container">
+        <button className="close-btn" onClick={() => setShowPendientesModal(false)}>×</button>
+        <div className="modal-content">
+          <h3>Decoraciones Pendientes</h3>
+          <div className="table-container">
+            <table>
+              <thead>
+                <tr>
+                  <th>Evento</th>
+                  <th>Cliente</th>
+                  <th>Espacio</th>
+                  <th>Tipo de Decoración</th>
+                  <th>Estado</th>
+                </tr>
+              </thead>
+              <tbody>
+                {decors
+                  .filter(decor => decor.estado === 'Pendiente')
+                  .map((decor) => {
+                    const evento = eventos.find(e => e.id_evento === decor.id_evento);
+                    return (
+                      <tr key={decor.id_decor}>
+                        <td>{evento?.tipo_evento}</td>
+                        <td>{evento?.nombre_cliente}</td>
+                        <td>{evento?.lugar || 'No especificado'}</td>
+                        <td>{decor.tipo_decoracion}</td>
+                        <td>
+                          <span className={`estado-badge ${decor.estado.toLowerCase()}`}>
+                            {decor.estado}
+                          </span>
+                        </td>
+                      </tr>
+                    );
+                  })}
               </tbody>
             </table>
           </div>
@@ -408,73 +441,8 @@ export default function Decor() {
         {showCompletadosModal && renderCompletadosModal()}
 
         <button className="new-form-btn" onClick={() => setShowModal(true)}>
-          + Agregar Servicio
+          + Agregar Servicio de Decoración
         </button>
-
-        <div className="table-section">
-          <p>Servicios de Decoración Registrados</p>
-          <div className="search-container">
-            <select
-              className="escri"
-              value={filtroEvento}
-              onChange={(e) => setFiltroEvento(e.target.value)}
-            >
-              <option value="">Todos los eventos</option>
-              <option value="recientes">Eventos recientes</option>
-              <option value="pendientes">Eventos pendientes</option>
-              <option value="completados">Eventos completados</option>
-              <option value="cancelados">Eventos cancelados</option>
-            </select>
-          </div>
-          <table>
-            <thead>
-              <tr>
-                <th>ID</th>
-                <th>Evento</th>
-                <th>Tipo de Decoración</th>
-                <th>Descripción</th>
-                <th>Precio</th>
-                <th>Estado</th>
-                <th>Acciones</th>
-              </tr>
-            </thead>
-            <tbody>
-              {decors
-                .filter(d => 
-                  eventos.find(e => e.id_evento === d.id_evento)?.tipo_evento
-                    .toLowerCase()
-                    .includes(filtroEvento.toLowerCase())
-                )
-                .map((decor) => (
-                  <tr key={decor.id_decor}>
-                    <td>{decor.id_decor}</td>
-                    <td>
-                      {eventos.find(e => e.id_evento === decor.id_evento)?.tipo_evento}
-                    </td>
-                    <td>{decor.tipo_decoracion}</td>
-                    <td>{decor.descripcion}</td>
-                    <td>${decor.precio}</td>
-                    <td>{decor.estado}</td>
-                    <td>
-                      <button
-                        className="edit-btn"
-                        onClick={() => handleEdit(decor)}
-                      >
-                        Editar
-                      </button>
-                      <button
-                        className="delete-btn"
-                        onClick={() => handleDelete(decor.id_decor!)}
-                      >
-                        Eliminar
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-            </tbody>
-          </table>
-        </div>
-
         {showModal && (
           <div className="modal-overlay">
             <div className="modal-container">
@@ -580,115 +548,287 @@ export default function Decor() {
     <div className="decor-content">
       <div className="dashboard__stats">
         <div className="stat-card">
-          <span className="stat-card__label">Empleados Encargados</span>
-          <strong className="stat-card__number">{stats.empleadosEncargados}</strong>
-          <button className="stat-card__seeInfo">Ver empleados</button>
-        </div>
-
-        <div className="stat-card">
-          <span className="stat-card__label">Eventos con Decoración</span>
+          <span className="stat-card__label">Eventos en los que participé</span>
           <strong className="stat-card__number">{stats.eventosConDecoracion}</strong>
-          <button className="stat-card__seeInfo">Ver eventos</button>
+          <button 
+            className="stat-card__seeInfo"
+            onClick={() => setShowEventosModal(true)}
+          >
+            Ver eventos
+          </button>
         </div>
 
         <div className="stat-card">
-          <span className="stat-card__label">Decoraciones Completadas</span>
-          <strong className="stat-card__number">{stats.decoracionesCompletadas}</strong>
-          <button className="stat-card__seeInfo">Ver completadas</button>
+          <span className="stat-card__label">Decoraciones Pendientes</span>
+          <strong className="stat-card__number">{stats.decoracionesPendintes}</strong>
+          <button 
+            className="stat-card__seeInfo"
+            onClick={() => setShowPendientesModal(true)}
+          >
+            Ver pendientes
+          </button>
+        </div>
+
+        <div className="stat-card">
+          <span className="stat-card__label">Personal Encargado</span>
+          <strong className="stat-card__number">{stats.empleadosEncargados}</strong>
+          <button 
+            className="stat-card__seeInfo"
+            onClick={() => setShowEmpleadosModal(true)}
+          >
+            Ver personal
+          </button>
         </div>
       </div>
 
-      <div className="table-section">
-        <p>Servicios de Decoración Registrados</p>
-        <div className="search-container">
-          <select
-            className="escri"
-            value={filtroEvento}
-            onChange={(e) => setFiltroEvento(e.target.value)}
-          >
-            <option value="">Todos los eventos</option>
-            <option value="recientes">Eventos recientes</option>
-            <option value="pendientes">Eventos pendientes</option>
-            <option value="completados">Eventos completados</option>
-            <option value="cancelados">Eventos cancelados</option>
-          </select>
+      <button className="new-form-btn" onClick={() => setShowModal(true)}>
+        + Agregar Servicio de Decoración
+      </button>
+
+      {showEventosModal && (
+        <div className="modal-overlay">
+          <div className="modal-container">
+            <button className="close-btn" onClick={() => setShowEventosModal(false)}>×</button>
+            <div className="modal-content">
+              <h3>Eventos con Decoración</h3>
+              <div className="table-container">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Evento</th>
+                      <th>Cliente</th>
+                      <th>Espacio</th>
+                      <th>Decoración</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {decors.map((decor) => {
+                      const evento = eventos.find(e => e.id_evento === decor.id_evento);
+                      return (
+                        <tr key={decor.id_decor}>
+                          <td>{evento?.tipo_evento}</td>
+                          <td>{evento?.nombre_cliente}</td>
+                          <td>{evento?.lugar || 'No especificado'}</td>
+                          <td>{decor.tipo_decoracion}</td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
         </div>
-        <table>
-          <thead>
-            <tr>
-              <th>ID</th>
-              <th>Evento</th>
-              <th>Tipo de Decoración</th>
-              <th>Descripción</th>
-              <th>Precio</th>
-              <th>Estado</th>
-              <th>Acciones</th>
-            </tr>
-          </thead>
-          <tbody>
-            {decors
-              .filter(d => 
-                eventos.find(e => e.id_evento === d.id_evento)?.tipo_evento
-                  .toLowerCase()
-                  .includes(filtroEvento.toLowerCase())
-              )
-              .map((decor) => (
-                <tr key={decor.id_decor}>
-                  <td>{decor.id_decor}</td>
-                  <td>
-                    {eventos.find(e => e.id_evento === decor.id_evento)?.tipo_evento}
-                  </td>
-                  <td>{decor.tipo_decoracion}</td>
-                  <td>{decor.descripcion}</td>
-                  <td>${decor.precio}</td>
-                  <td>{decor.estado}</td>
-                  <td>
-                    <button
-                      className="edit-btn"
-                      onClick={() => handleEdit(decor)}
-                    >
-                      Editar
-                    </button>
-                    <button
-                      className="delete-btn"
-                      onClick={() => handleDelete(decor.id_decor!)}
-                    >
-                      Eliminar
-                    </button>
-                  </td>
-                </tr>
-              ))}
-          </tbody>
-        </table>
-      </div>
+      )}
+
+      {showPendientesModal && (
+        <div className="modal-overlay">
+          <div className="modal-container">
+            <button className="close-btn" onClick={() => setShowPendientesModal(false)}>×</button>
+            <div className="modal-content">
+              <h3>Decoraciones Pendientes</h3>
+              <div className="table-container">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Evento</th>
+                      <th>Cliente</th>
+                      <th>Espacio</th>
+                      <th>Tipo de Decoración</th>
+                      <th>Estado</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {decors
+                      .filter(decor => decor.estado === 'Pendiente')
+                      .map((decor) => {
+                        const evento = eventos.find(e => e.id_evento === decor.id_evento);
+                        return (
+                          <tr key={decor.id_decor}>
+                            <td>{evento?.tipo_evento}</td>
+                            <td>{evento?.nombre_cliente}</td>
+                            <td>{evento?.lugar || 'No especificado'}</td>
+                            <td>{decor.tipo_decoracion}</td>
+                            <td>
+                              <span className={`estado-badge ${decor.estado.toLowerCase()}`}>
+                                {decor.estado}
+                              </span>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showEmpleadosModal && (
+        <div className="modal-overlay">
+          <div className="modal-container">
+            <button className="close-btn" onClick={() => setShowEmpleadosModal(false)}>×</button>
+            <div className="modal-content">
+              <h3>Personal Encargado</h3>
+              <div className="table-container">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Nombre</th>
+                      <th>Apellido</th>
+                      <th>Cédula</th>
+                      <th>Contacto</th>
+                      <th>Total de Eventos</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {empleados.map((empleado) => (
+                      <tr key={empleado.id_empleado}>
+                        <td>{empleado.nombre}</td>
+                        <td>{empleado.apellido}</td>
+                        <td>{empleado.cedula}</td>
+                        <td>{empleado.contacto}</td>
+                        <td>{empleado.total_eventos}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 
   return (
-    <ServiceBase 
-      title="Decoración" 
-      stats={stats}
-    >
-      {(() => {
-        const rolId = Number(userData.rol);
-        const isAdmin = rolId === 1;
-        const isOrganizer = rolId === 3;
-        const isClient = rolId === 2;
+    <div className="decor-page">
+      <div className="welcome-header">
+        <h1>Gestión de Decoración</h1>
+        <p>Gestiona los servicios de decoración para eventos</p>
+      </div>
 
-        if (isAdmin) {
-          return renderAdminView();
-        }
+      <div className="service-content">
+        {(() => {
+          const rolId = Number(userData.rol);
+          const isAdmin = rolId === 1;
+          const isOrganizer = rolId === 3;
+          const isClient = rolId === 2;
 
-        if (isOrganizer) {
-          return renderOrganizerView();
-        }
+          if (isAdmin) {
+            return renderAdminView();
+          }
 
-        if (isClient) {
-          return renderClientView();
-        }
+          if (isOrganizer) {
+            return renderOrganizerView();
+          }
 
-        return null;
-      })()}
-    </ServiceBase>
+          if (isClient) {
+            return renderClientView();
+          }
+
+          return null;
+        })()}
+      </div>
+
+      {showModal && (
+        <div className="modal-overlay">
+          <div className="modal-container">
+            <button className="close-btn" onClick={() => setShowModal(false)}>×</button>
+            <form className="modal-form" onSubmit={handleSubmit}>
+              <h2>{editId ? 'Editar Servicio' : 'Nuevo Servicio'}</h2>
+              
+              <label>
+                Evento:
+                <select
+                  name="id_evento"
+                  value={formData.id_evento || ''}
+                  onChange={handleSelectChange}
+                  required
+                >
+                  <option value="">Seleccionar evento</option>
+                  {eventos.map((evento) => (
+                    <option key={evento.id_evento} value={evento.id_evento}>
+                      {evento.fecha_evento} - {evento.tipo_evento}
+                    </option>
+                  ))}
+                </select>
+              </label>
+
+              <label>
+                Tipo de Decoración:
+                <select
+                  name="tipo_decoracion"
+                  value={formData.tipo_decoracion || ''}
+                  onChange={handleSelectChange}
+                  required
+                >
+                  <option value="">Seleccionar tipo</option>
+                  <option value="Flores">Flores</option>
+                  <option value="Centros de Mesa">Centros de Mesa</option>
+                  <option value="Arcos">Arcos</option>
+                  <option value="Iluminación">Iluminación</option>
+                  <option value="Otros">Otros</option>
+                </select>
+              </label>
+
+              <label>
+                Descripción:
+                <textarea
+                  name="descripcion"
+                  value={formData.descripcion || ''}
+                  onChange={handleInputChange}
+                  required
+                  rows={4}
+                />
+              </label>
+
+              <label>
+                Precio:
+                <input
+                  type="number"
+                  name="precio"
+                  value={formData.precio || ''}
+                  onChange={handleInputChange}
+                  required
+                  min="0"
+                  step="0.01"
+                />
+              </label>
+
+              <label>
+                Estado:
+                <select
+                  name="estado"
+                  value={formData.estado || ''}
+                  onChange={handleSelectChange}
+                  required
+                >
+                  <option value="">Seleccionar estado</option>
+                  <option value="Pendiente">Pendiente</option>
+                  <option value="En Progreso">En Progreso</option>
+                  <option value="Completado">Completado</option>
+                  <option value="Cancelado">Cancelado</option>
+                </select>
+              </label>
+
+              <div className="form-buttons">
+                <button type="submit" className="submit-btn">
+                  {editId ? 'Actualizar' : 'Guardar'}
+                </button>
+                <button
+                  type="button"
+                  className="reset-btn"
+                  onClick={() => setShowModal(false)}
+                >
+                  Cancelar
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+    </div>
   );
 }

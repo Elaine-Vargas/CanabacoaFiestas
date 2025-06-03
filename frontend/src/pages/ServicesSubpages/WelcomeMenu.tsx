@@ -68,7 +68,7 @@ type WelcomeMenuProps = {
   eventsInProcess?: number;
   averageRating?: number;
   totalUsers?: number;
-  quotations?: Quotation[];
+  quotations?: number;
 };
 
 interface Espacio {
@@ -81,7 +81,7 @@ interface Espacio {
 }
 
 interface WelcomeStats {
-  quotations: any[];
+  quotations: number;
   spaces: Espacio[];
   eventsInProcess: number;
   totalUsers: number;
@@ -110,6 +110,27 @@ interface Evento {
   tipo_evento: string;
 }
 
+interface EventoAsignado {
+  id_evento: number;
+  tipo_evento: string;
+  cliente: string;
+  contacto_cliente: string;
+  fecha_evento: string;
+  servicios_realizados: string[];
+  estado_evento: string;
+  activo: boolean;
+}
+
+interface ClienteActivo {
+  id_usuario: number;
+  nombre: string;
+  apellido: string;
+  cedula: string;
+  contacto: string;
+  eventos_realizados: number;
+  activo: boolean;
+}
+
 const WelcomeMenu: React.FC<WelcomeMenuProps> = () => {
   const navigate = useNavigate();
   const { userRole } = useUser();
@@ -127,7 +148,7 @@ const WelcomeMenu: React.FC<WelcomeMenuProps> = () => {
   const [comment, setComment] = useState('');
   const [rating, setRating] = useState(0);
   const [stats, setStats] = useState<WelcomeStats>({
-    quotations: [],
+    quotations: 0,
     spaces: [],
     eventsInProcess: 0,
     totalUsers: 0,
@@ -171,6 +192,12 @@ const WelcomeMenu: React.FC<WelcomeMenuProps> = () => {
     telefono: '',
     correo: ''
   });
+  const [showEventosAsignadosModal, setShowEventosAsignadosModal] = useState(false);
+  const [showClientesActivosModal, setShowClientesActivosModal] = useState(false);
+  const [eventosAsignados, setEventosAsignados] = useState<EventoAsignado[]>([]);
+  const [clientesActivos, setClientesActivos] = useState<ClienteActivo[]>([]);
+  const [eventoEditando, setEventoEditando] = useState<EventoAsignado | null>(null);
+  const [clienteEditando, setClienteEditando] = useState<ClienteActivo | null>(null);
 
   useEffect(() => {
     const fetchEspacios = async () => {
@@ -209,6 +236,86 @@ const WelcomeMenu: React.FC<WelcomeMenuProps> = () => {
   useEffect(() => {
     console.log('Espacios actuales:', espacios);
   }, [espacios]);
+
+  useEffect(() => {
+    const fetchStats = async () => {
+      try {
+        console.log('Iniciando fetch de estadísticas...');
+        const token = localStorage.getItem('token');
+        console.log('Token disponible:', !!token);
+
+        const response = await fetch('/api/dashboard/stats', {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': token ? `Bearer ${token}` : ''
+          }
+        });
+        
+        console.log('Respuesta recibida:', {
+          status: response.status,
+          statusText: response.statusText,
+          headers: Object.fromEntries(response.headers.entries())
+        });
+
+        let data;
+        try {
+          data = await response.json();
+          console.log('Datos recibidos del backend:', data);
+        } catch (jsonError) {
+          console.error('Error al parsear JSON:', jsonError);
+          throw new Error('Error al procesar la respuesta del servidor');
+        }
+        
+        if (!response.ok) {
+          console.error('Error en la respuesta:', data);
+          throw new Error(data.details || `Error HTTP: ${response.status}`);
+        }
+        
+        // Verificar que los datos tengan la estructura correcta
+        if (data && typeof data === 'object') {
+          const statsData: WelcomeStats = {
+            eventsInProcess: Number(data.eventsInProcess) || 0,
+            totalUsers: Number(data.totalUsers) || 0,
+            spaces: Array.isArray(data.spaces) ? data.spaces : [],
+            quotations: Number(data.quotations) || 0,
+            averageRating: Number(data.averageRating) || 0
+          };
+          
+          console.log('Datos procesados para actualizar estado:', statsData);
+          
+          // Verificar que los datos sean válidos antes de actualizar el estado
+          if (isNaN(statsData.eventsInProcess) || 
+              isNaN(statsData.totalUsers) || 
+              isNaN(statsData.quotations) || 
+              isNaN(statsData.averageRating)) {
+            console.error('Datos inválidos detectados:', statsData);
+            throw new Error('Datos inválidos recibidos del servidor');
+          }
+          
+          setStats(statsData);
+        } else {
+          console.error('Datos recibidos no tienen la estructura esperada:', data);
+          throw new Error('Estructura de datos inválida');
+        }
+      } catch (error) {
+        console.error('Error detallado al cargar estadísticas:', error);
+        // Mostrar mensaje de error más específico al usuario
+        const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
+        alert(`Error al cargar las estadísticas: ${errorMessage}. Por favor, intente nuevamente.`);
+        // Establecer valores por defecto
+        setStats({
+          quotations: 0,
+          spaces: [],
+          eventsInProcess: 0,
+          totalUsers: 0,
+          averageRating: 0
+        });
+      }
+    };
+
+    fetchStats();
+  }, []);
 
   useEffect(() => {
     const fetchEventosEnProceso = async () => {
@@ -277,6 +384,35 @@ const WelcomeMenu: React.FC<WelcomeMenuProps> = () => {
       fetchSpaces();
     }
   }, [showSpacesModal]);
+
+  useEffect(() => {
+    const fetchEventosAsignados = async () => {
+      try {
+        const response = await fetch('/api/eventos/asignados');
+        const data = await response.json();
+        setEventosAsignados(data);
+      } catch (error) {
+        console.error('Error al cargar eventos asignados:', error);
+      }
+    };
+
+    const fetchClientesActivos = async () => {
+      try {
+        const response = await fetch('/api/clientes/activos');
+        const data = await response.json();
+        setClientesActivos(data);
+      } catch (error) {
+        console.error('Error al cargar clientes activos:', error);
+      }
+    };
+
+    if (showEventosAsignadosModal) {
+      fetchEventosAsignados();
+    }
+    if (showClientesActivosModal) {
+      fetchClientesActivos();
+    }
+  }, [showEventosAsignadosModal, showClientesActivosModal]);
 
   const handleCommentSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -597,7 +733,7 @@ const WelcomeMenu: React.FC<WelcomeMenuProps> = () => {
 
         <div className="stat-card">
           <span className="stat-card__label">Comentarios Enviados</span>
-          <strong className="stat-card__number">{stats.quotations.length}</strong>
+          <strong className="stat-card__number">{stats.quotations}</strong>
           <button 
             className="stat-card__seeInfo2"
             onClick={() => setShowCommentModal(true)}
@@ -877,78 +1013,89 @@ const WelcomeMenu: React.FC<WelcomeMenuProps> = () => {
 
   const renderCoordinatorDashboard = () => (
     <>
-    <div className="coordinator-dashboard">
-      <div className="welcome-header">
-        <center>
-        <h1>Bienvenido al Panel de Coordinador</h1>
-        </center>
-        <p>Gestiona todos los servicios y eventos desde aquí</p>
-      </div>
-
-      <div className="dashboard__stats">
-        <div className="stat-card">
-          <span className="stat-card__label">Eventos Asignados</span>
-          <strong className="stat-card__number">{stats.eventsInProcess}</strong>
-          <button className="stat-card__seeInfo">Ver eventos</button>
+      <div className="coordinator-dashboard">
+        <div className="welcome-header">
+          <center>
+            <h1>Bienvenido al Panel de Coordinador</h1>
+          </center>
+          <p>Gestiona todos los servicios y eventos desde aquí</p>
         </div>
 
-        <div className="stat-card">
-          <span className="stat-card__label">Calificación Promedio</span>
-          <strong className="stat-card__number">{stats.averageRating.toFixed(1)}</strong>
-          <div className="stat-card__stars">{renderStars(stats.averageRating)}</div>
+        <div className="dashboard__stats">
+          <div className="stat-card">
+            <span className="stat-card__label">Eventos Asignados</span>
+            <strong className="stat-card__number">{stats.eventsInProcess}</strong>
+            <button 
+              className="stat-card__seeInfo"
+              onClick={() => setShowEventosAsignadosModal(true)}
+            >
+              Ver eventos
+            </button>
+          </div>
+
+          <div className="stat-card">
+            <span className="stat-card__label">Calificación Promedio</span>
+            <strong className="stat-card__number">{stats.averageRating.toFixed(1)}</strong>
+            <div className="stat-card__stars">{renderStars(stats.averageRating)}</div>
+          </div>
+
+          <div className="stat-card">
+            <span className="stat-card__label">Clientes activos</span>
+            <strong className="stat-card__number">{stats.totalUsers}</strong>
+            <button 
+              className="stat-card__seeInfo"
+              onClick={() => setShowClientesActivosModal(true)}
+            >
+              Ver clientes
+            </button>
+          </div>
         </div>
 
-        <div className="stat-card">
-          <span className="stat-card__label">Clientes activos</span>
-          <strong className="stat-card__number">{stats.totalUsers}</strong>
-          <button className="stat-card__seeInfo">Ver clientes</button>
+        <div className="section-header">
+          <center>
+            <button 
+              className="new-form-btn"
+              onClick={() => setShowEventModal(true)}>
+              + Nuevo evento
+            </button>
+          </center>
         </div>
       </div>
 
-      <div className="section-header">
-        <center>
-          <button 
-            className="new-form-btn"
-            onClick={() => setShowEventModal(true)}>
-            + Nuevo evento
-          </button>
-        </center>
-      </div>
-
-      </div>
+      {showEventosAsignadosModal && renderEventosAsignadosModal()}
+      {showClientesActivosModal && renderClientesActivosModal()}
     </>
   );
 
   const renderInventoryDashboard = () => (
     <>
-    
-    <div className="coordinator-dashboard">
-      <div className="welcome-header">
-        <center>
-        <h1>Bienvenido al Panel de Inventario</h1>
-        </center>
-        <p>Gestiona todos los servicios y eventos desde aquí</p>
-      </div>
-
-      <div className="dashboard__stats">
-        <div className="stat-card">
-          <span className="stat-card__label">Elementos Disponibles</span>
-          <strong className="stat-card__number">{stats.eventsInProcess}</strong>
-          <button className="stat-card__seeInfo">Ver inventario</button>
+      <div className="coordinator-dashboard">
+        <div className="welcome-header">
+          <center>
+          <h1>Bienvenido al Panel de Inventario</h1>
+          </center>
+          <p>Gestiona todos los servicios y eventos desde aquí</p>
         </div>
 
-        <div className="stat-card">
-          <span className="stat-card__label">Elementos en Uso</span>
-          <strong className="stat-card__number">{stats.totalUsers}</strong>
-          <button className="stat-card__seeInfo">Ver en uso</button>
-        </div>
+        <div className="dashboard__stats">
+          <div className="stat-card">
+            <span className="stat-card__label">Elementos Disponibles</span>
+            <strong className="stat-card__number">{stats.eventsInProcess}</strong>
+            <button className="stat-card__seeInfo">Ver inventario</button>
+          </div>
 
-        <div className="stat-card">
-          <span className="stat-card__label">Compras Pendientes</span>
-          <strong className="stat-card__number">{stats.quotations.length}</strong>
-          <button className="stat-card__seeInfo">Ver compras</button>
+          <div className="stat-card">
+            <span className="stat-card__label">Elementos en Uso</span>
+            <strong className="stat-card__number">{stats.totalUsers}</strong>
+            <button className="stat-card__seeInfo">Ver en uso</button>
+          </div>
+
+          <div className="stat-card">
+            <span className="stat-card__label">Compras Pendientes</span>
+            <strong className="stat-card__number">{stats.quotations}</strong>
+            <button className="stat-card__seeInfo">Ver compras</button>
+          </div>
         </div>
-      </div>
       </div>
     </>
   );
@@ -1131,6 +1278,178 @@ const WelcomeMenu: React.FC<WelcomeMenuProps> = () => {
             </button>
           </div>
         </form>
+      </div>
+    </div>
+  );
+
+  const handleEditarEvento = (evento: EventoAsignado) => {
+    setEventoEditando(evento);
+    // Aquí puedes abrir un modal de edición o navegar a una página de edición
+  };
+
+  const handleDeshabilitarEvento = async (id: number) => {
+    if (window.confirm('¿Estás seguro de que deseas deshabilitar este evento?')) {
+      try {
+        const response = await fetch(`/api/eventos/${id}/deshabilitar`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+          }
+        });
+
+        if (response.ok) {
+          setEventosAsignados(prev => 
+            prev.map(evento => 
+              evento.id_evento === id 
+                ? { ...evento, activo: false }
+                : evento
+            )
+          );
+        }
+      } catch (error) {
+        console.error('Error al deshabilitar evento:', error);
+      }
+    }
+  };
+
+  const handleEditarCliente = (cliente: ClienteActivo) => {
+    setClienteEditando(cliente);
+    // Aquí puedes abrir un modal de edición o navegar a una página de edición
+  };
+
+  const handleDeshabilitarCliente = async (id: number) => {
+    if (window.confirm('¿Estás seguro de que deseas deshabilitar este cliente?')) {
+      try {
+        const response = await fetch(`/api/clientes/${id}/deshabilitar`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+          }
+        });
+
+        if (response.ok) {
+          setClientesActivos(prev => 
+            prev.map(cliente => 
+              cliente.id_usuario === id 
+                ? { ...cliente, activo: false }
+                : cliente
+            )
+          );
+        }
+      } catch (error) {
+        console.error('Error al deshabilitar cliente:', error);
+      }
+    }
+  };
+
+  const renderEventosAsignadosModal = () => (
+    <div className="modal-overlay">
+      <div className="modal-container">
+        <button className="close-btn" onClick={() => setShowEventosAsignadosModal(false)}>×</button>
+        <div className="modal-content">
+          <h3>Eventos Asignados</h3>
+          <div className="table-container">
+            <table>
+              <thead>
+                <tr>
+                  <th>Evento</th>
+                  <th>Cliente</th>
+                  <th>Contacto</th>
+                  <th>Fecha</th>
+                  <th>Servicios</th>
+                  <th>Estado</th>
+                  <th>Acciones</th>
+                </tr>
+              </thead>
+              <tbody>
+                {eventosAsignados.map((evento) => (
+                  <tr key={evento.id_evento} className={!evento.activo ? 'deshabilitado' : ''}>
+                    <td>{evento.tipo_evento}</td>
+                    <td>{evento.cliente}</td>
+                    <td>{evento.contacto_cliente}</td>
+                    <td>{evento.fecha_evento}</td>
+                    <td>{evento.servicios_realizados.join(', ')}</td>
+                    <td>
+                      <span className={`estado-badge ${evento.estado_evento.toLowerCase()}`}>
+                        {evento.estado_evento}
+                      </span>
+                    </td>
+                    <td>
+                      <div className="acciones-buttons">
+                        <button 
+                          className="edit-btn"
+                          onClick={() => handleEditarEvento(evento)}
+                          disabled={!evento.activo}
+                        >
+                          Editar
+                        </button>
+                        <button 
+                          className={`${evento.activo ? 'delete-btn' : 'enable-btn'}`}
+                          onClick={() => handleDeshabilitarEvento(evento.id_evento)}
+                        >
+                          {evento.activo ? 'Deshabilitar' : 'Habilitar'}
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+
+  const renderClientesActivosModal = () => (
+    <div className="modal-overlay">
+      <div className="modal-container">
+        <button className="close-btn" onClick={() => setShowClientesActivosModal(false)}>×</button>
+        <div className="modal-content">
+          <h3>Clientes Activos</h3>
+          <div className="table-container">
+            <table>
+              <thead>
+                <tr>
+                  <th>Nombre</th>
+                  <th>Apellido</th>
+                  <th>Cédula</th>
+                  <th>Contacto</th>
+                  <th>Eventos Realizados</th>
+                  <th>Acciones</th>
+                </tr>
+              </thead>
+              <tbody>
+                {clientesActivos.map((cliente) => (
+                  <tr key={cliente.id_usuario} className={!cliente.activo ? 'deshabilitado' : ''}>
+                    <td>{cliente.nombre}</td>
+                    <td>{cliente.apellido}</td>
+                    <td>{cliente.cedula}</td>
+                    <td>{cliente.contacto}</td>
+                    <td>{cliente.eventos_realizados}</td>
+                    <td>
+                      <div className="acciones-buttons">
+                        <button 
+                          className="edit-btn"
+                          onClick={() => handleEditarCliente(cliente)}
+                          disabled={!cliente.activo}
+                        >
+                          Editar
+                        </button>
+                        <button 
+                          className={`${cliente.activo ? 'delete-btn' : 'enable-btn'}`}
+                          onClick={() => handleDeshabilitarCliente(cliente.id_usuario)}
+                        >
+                          {cliente.activo ? 'Deshabilitar' : 'Habilitar'}
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
       </div>
     </div>
   );

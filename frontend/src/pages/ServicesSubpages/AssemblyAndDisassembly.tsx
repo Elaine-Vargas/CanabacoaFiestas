@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import type { ChangeEvent } from 'react';
 import '../../styles/dashboard/ServicesSubpages.scss';
-import ServiceBase from '../../components/ServiceBase';
+import '../../components/ServiceBase';
 import { useUser } from "../../contexts/UserContext";
 
 interface Assembly {
@@ -327,15 +327,25 @@ export default function AssemblyAndDisassembly() {
         </div>
       </div>
 
+      <button className="new-form-btn" onClick={() => setShowModal(true)}>
+        + Agregar Servicio de Montaje y Desmontaje
+      </button>
+
       <div className="table-section">
         <p>Servicios de Montaje y Desmontaje</p>
-        <input
-          type="text"
-          className="escri"
-          placeholder="Filtrar por evento..."
-          value={filtroEvento}
-          onChange={(e) => setFiltroEvento(e.target.value)}
-        />
+        <div className="search-container">
+          <select
+            className="escri"
+            value={filtroEvento}
+            onChange={(e) => setFiltroEvento(e.target.value)}
+          >
+            <option value="">Todos los eventos</option>
+            <option value="recientes">Eventos recientes</option>
+            <option value="pendientes">Eventos pendientes</option>
+            <option value="completados">Eventos completados</option>
+            <option value="cancelados">Eventos cancelados</option>
+          </select>
+        </div>
         <table>
           <thead>
             <tr>
@@ -428,81 +438,15 @@ export default function AssemblyAndDisassembly() {
         </div>
 
         <button className="new-form-btn" onClick={() => setShowModal(true)}>
-          + Agregar Servicio
+          + Agregar Servicio de Montaje y Desmontaje
         </button>
-
-        <div className="table-section">
-          <p>Servicios de Montaje y Desmontaje Registrados</p>
-          <div className="search-container">
-            <select
-              className="escri"
-              value={filtroEvento}
-              onChange={(e) => setFiltroEvento(e.target.value)}
-            >
-              <option value="">Todos los eventos</option>
-              <option value="recientes">Eventos recientes</option>
-              <option value="pendientes">Eventos pendientes</option>
-              <option value="completados">Eventos completados</option>
-              <option value="cancelados">Eventos cancelados</option>
-            </select>
-          </div>
-          <table>
-            <thead>
-              <tr>
-                <th>ID</th>
-                <th>Evento</th>
-                <th>Tipo de Servicio</th>
-                <th>Descripción</th>
-                <th>Fecha Inicio</th>
-                <th>Fecha Fin</th>
-                <th>Estado</th>
-                <th>Acciones</th>
-              </tr>
-            </thead>
-            <tbody>
-              {assemblies
-                .filter(a => 
-                  eventos.find(e => e.id_evento === a.id_evento)?.tipo_evento
-                    .toLowerCase()
-                    .includes(filtroEvento.toLowerCase())
-                )
-                .map((assembly) => (
-                  <tr key={assembly.id_assembly}>
-                    <td>{assembly.id_assembly}</td>
-                    <td>
-                      {eventos.find(e => e.id_evento === assembly.id_evento)?.tipo_evento}
-                    </td>
-                    <td>{assembly.tipo_servicio}</td>
-                    <td>{assembly.descripcion}</td>
-                    <td>{assembly.fecha_inicio}</td>
-                    <td>{assembly.fecha_fin}</td>
-                    <td>{assembly.estado}</td>
-                    <td>
-                      <button
-                        className="edit-btn"
-                        onClick={() => handleEdit(assembly)}
-                      >
-                        Editar
-                      </button>
-                      <button
-                        className="delete-btn"
-                        onClick={() => handleDelete(assembly.id_assembly!)}
-                      >
-                        Eliminar
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-            </tbody>
-          </table>
-        </div>
 
         {showModal && (
           <div className="modal-overlay">
             <div className="modal-container">
               <button className="close-btn" onClick={() => setShowModal(false)}>×</button>
               <form className="modal-form" onSubmit={handleSubmit}>
-                <h2>{editId ? 'Editar Servicio' : 'Nuevo Servicio'}</h2>
+                <h2>{editId ? 'Editar Servicio de Montaje' : 'Nuevo Servicio de Montaje'}</h2>
                 
                 <label>
                   Evento:
@@ -515,9 +459,24 @@ export default function AssemblyAndDisassembly() {
                     <option value="">Seleccionar evento</option>
                     {eventos.map((evento) => (
                       <option key={evento.id_evento} value={evento.id_evento}>
-                        {evento.fecha_evento} - {evento.tipo_evento}
+                        {evento.tipo_evento} - {evento.fecha_evento}
                       </option>
                     ))}
+                  </select>
+                </label>
+
+                <label>
+                  Tipo de Servicio:
+                  <select
+                    name="tipo_servicio"
+                    value={formData.tipo_servicio || ''}
+                    onChange={handleSelectChange}
+                    required
+                  >
+                    <option value="">Seleccionar tipo</option>
+                    <option value="Montaje">Montaje</option>
+                    <option value="Desmontaje">Desmontaje</option>
+                    <option value="Montaje y Desmontaje">Montaje y Desmontaje</option>
                   </select>
                 </label>
 
@@ -529,6 +488,28 @@ export default function AssemblyAndDisassembly() {
                     onChange={handleInputChange}
                     required
                     rows={4}
+                  />
+                </label>
+
+                <label>
+                  Fecha de Inicio:
+                  <input
+                    type="datetime-local"
+                    name="fecha_inicio"
+                    value={formData.fecha_inicio || ''}
+                    onChange={handleInputChange}
+                    required
+                  />
+                </label>
+
+                <label>
+                  Fecha de Fin:
+                  <input
+                    type="datetime-local"
+                    name="fecha_fin"
+                    value={formData.fecha_fin || ''}
+                    onChange={handleInputChange}
+                    required
                   />
                 </label>
 
@@ -546,16 +527,6 @@ export default function AssemblyAndDisassembly() {
                     <option value="Completado">Completado</option>
                     <option value="Cancelado">Cancelado</option>
                   </select>
-                </label>
-
-                <label>
-                  Notas:
-                  <textarea
-                    name="notas"
-                    value={formData.notas || ''}
-                    onChange={handleInputChange}
-                    rows={4}
-                  />
                 </label>
 
                 <div className="form-buttons">
@@ -680,37 +651,41 @@ export default function AssemblyAndDisassembly() {
   );
 
   return (
-    <ServiceBase 
-      title="Montaje y Desmontaje" 
-      stats={stats}
-    >
-      {(() => {
-        const rolId = Number(userData.rol);
-        const isAdmin = rolId === 1;
-        const isOrganizer = rolId === 3;
-        const isInventory = rolId === 4;
+    <div className="assembly-page">
+      <div className="welcome-header">
+        <h1>Gestión de Montaje y Desmontaje</h1>
+        <p>Gestiona los servicios de montaje y desmontaje para eventos</p>
+      </div>
 
-        if (isAdmin) {
-          return (
-            <>
-              {renderAdminView()}
-              {showEventosCompletadosModal && renderEventosCompletadosModal()}
-              {showEventosPendientesModal && renderEventosPendientesModal()}
-              {showPersonalModal && renderPersonalModal()}
-            </>
-          );
-        }
+      <div className="service-content">
+        {(() => {
+          const rolId = Number(userData.rol);
+          const isAdmin = rolId === 1;
+          const isOrganizer = rolId === 3;
+          const isInventory = rolId === 4;
 
-        if (isInventory) {
-          return renderInventoryView();
-        }
+          if (isAdmin) {
+            return (
+              <>
+                {renderAdminView()}
+                {showEventosCompletadosModal && renderEventosCompletadosModal()}
+                {showEventosPendientesModal && renderEventosPendientesModal()}
+                {showPersonalModal && renderPersonalModal()}
+              </>
+            );
+          }
 
-        if (isOrganizer) {
-          return renderOrganizerView();
-        }
+          if (isInventory) {
+            return renderInventoryView();
+          }
 
-        return null;
-      })()}
-    </ServiceBase>
+          if (isOrganizer) {
+            return renderOrganizerView();
+          }
+
+          return null;
+        })()}
+      </div>
+    </div>
   );
 }

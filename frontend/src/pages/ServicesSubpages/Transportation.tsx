@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import '../../styles/dashboard/ServicesSubpages.scss';
 import { useUser } from '../../contexts/UserContext';
-import ServiceBase from '../../components/ServiceBase';
+import '../../components/ServiceBase';
 
 export type UserRole = 'admin' | 'coordinator' | 'inventory' | 'client';
 
@@ -324,76 +324,12 @@ export default function Transportation() {
           + Agregar Servicio
         </button>
 
-        <div className="table-section">
-          <p>Servicios de Transporte Registrados</p>
-          <div className="search-container">
-            <select
-              className="escri"
-              value={filtroEvento}
-              onChange={(e) => setFiltroEvento(e.target.value)}
-            >
-              <option value="">Todos los eventos</option>
-              <option value="recientes">Eventos recientes</option>
-              <option value="pendientes">Eventos pendientes</option>
-              <option value="completados">Eventos completados</option>
-              <option value="cancelados">Eventos cancelados</option>
-            </select>
-          </div>
-          <table>
-            <thead>
-              <tr>
-                <th>ID</th>
-                <th>Evento</th>
-                <th>Tipo de Vehículo</th>
-                <th>Capacidad</th>
-                <th>Precio</th>
-                <th>Estado</th>
-                <th>Acciones</th>
-              </tr>
-            </thead>
-            <tbody>
-              {transportations
-                .filter(t => 
-                  eventos.find(e => e.id_evento === t.id_evento)?.tipo_evento
-                    .toLowerCase()
-                    .includes(filtroEvento.toLowerCase())
-                )
-                .map((transportation) => (
-                  <tr key={transportation.id_transportation}>
-                    <td>{transportation.id_transportation}</td>
-                    <td>
-                      {eventos.find(e => e.id_evento === transportation.id_evento)?.tipo_evento}
-                    </td>
-                    <td>{transportation.tipo_vehiculo}</td>
-                    <td>{transportation.capacidad}</td>
-                    <td>${transportation.precio}</td>
-                    <td>{transportation.estado}</td>
-                    <td>
-                      <button
-                        className="edit-btn"
-                        onClick={() => handleEdit(transportation)}
-                      >
-                        Editar
-                      </button>
-                      <button
-                        className="delete-btn"
-                        onClick={() => handleDelete(transportation.id_transportation!)}
-                      >
-                        Eliminar
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-            </tbody>
-          </table>
-        </div>
-
         {showModal && (
           <div className="modal-overlay">
             <div className="modal-container">
               <button className="close-btn" onClick={() => setShowModal(false)}>×</button>
               <form className="modal-form" onSubmit={handleSubmit}>
-                <h2>{editId ? 'Editar Servicio' : 'Nuevo Servicio'}</h2>
+                <h2>{editId ? 'Editar Servicio de Transporte' : 'Nuevo Servicio de Transporte'}</h2>
                 
                 <label>
                   Evento:
@@ -406,7 +342,7 @@ export default function Transportation() {
                     <option value="">Seleccionar evento</option>
                     {eventos.map((evento) => (
                       <option key={evento.id_evento} value={evento.id_evento}>
-                        {evento.fecha_evento} - {evento.tipo_evento}
+                        {evento.tipo_evento} - {evento.fecha_evento}
                       </option>
                     ))}
                   </select>
@@ -424,7 +360,7 @@ export default function Transportation() {
                     <option value="Bus">Bus</option>
                     <option value="Van">Van</option>
                     <option value="Carro">Carro</option>
-                    <option value="Otros">Otros</option>
+                    <option value="Camioneta">Camioneta</option>
                   </select>
                 </label>
 
@@ -511,69 +447,11 @@ export default function Transportation() {
         </div>
       </div>
 
-      <div className="table-section">
-        <p>Servicios de Transporte Registrados</p>
-        <div className="search-container">
-          <select
-            className="escri"
-            value={filtroEvento}
-            onChange={(e) => setFiltroEvento(e.target.value)}
-          >
-            <option value="">Todos los eventos</option>
-            <option value="recientes">Eventos recientes</option>
-            <option value="pendientes">Eventos pendientes</option>
-            <option value="completados">Eventos completados</option>
-            <option value="cancelados">Eventos cancelados</option>
-          </select>
-        </div>
-        <table>
-          <thead>
-            <tr>
-              <th>ID</th>
-              <th>Evento</th>
-              <th>Tipo de Vehículo</th>
-              <th>Capacidad</th>
-              <th>Precio</th>
-              <th>Estado</th>
-              <th>Acciones</th>
-            </tr>
-          </thead>
-          <tbody>
-            {transportations
-              .filter(t => 
-                eventos.find(e => e.id_evento === t.id_evento)?.tipo_evento
-                  .toLowerCase()
-                  .includes(filtroEvento.toLowerCase())
-              )
-              .map((transportation) => (
-                <tr key={transportation.id_transportation}>
-                  <td>{transportation.id_transportation}</td>
-                  <td>
-                    {eventos.find(e => e.id_evento === transportation.id_evento)?.tipo_evento}
-                  </td>
-                  <td>{transportation.tipo_vehiculo}</td>
-                  <td>{transportation.capacidad}</td>
-                  <td>${transportation.precio}</td>
-                  <td>{transportation.estado}</td>
-                  <td>
-                    <button
-                      className="edit-btn"
-                      onClick={() => handleEdit(transportation)}
-                    >
-                      Editar
-                    </button>
-                    <button
-                      className="delete-btn"
-                      onClick={() => handleDelete(transportation.id_transportation!)}
-                    >
-                      Eliminar
-                    </button>
-                  </td>
-                </tr>
-              ))}
-          </tbody>
-        </table>
-      </div>
+      <button className="new-form-btn" onClick={() => setShowModal(true)}>
+        + Agregar Servicio
+      </button>
+
+
     </div>
   );
 
@@ -770,29 +648,34 @@ export default function Transportation() {
   );
 
   return (
-    <ServiceBase 
-      title="Transporte" 
-      stats={stats}
-    >
-      {(() => {
-        const rolId = Number(userData.rol);
-        const isAdmin = rolId === 1;
-        const isOrganizer = rolId === 3;
+    <div className="transportation-page">
+      <div className="welcome-header">
+        <h1>Gestión de Transporte</h1>
+        <p>Gestiona los servicios de transporte para eventos</p>
+      </div>
 
-        if (isAdmin) {
-          return renderAdminView();
-        }
+      <div className="service-content">
+        {(() => {
+          const rolId = Number(userData.rol);
+          const isAdmin = rolId === 1;
+          const isOrganizer = rolId === 3;
 
-        if (isOrganizer) {
-          return renderOrganizerView();
-        }
+          if (isAdmin) {
+            return renderAdminView();
+          }
 
-        return null;
-      })()}
+          if (isOrganizer) {
+            return renderOrganizerView();
+          }
+
+          return null;
+        })()}
+      </div>
+
       {showPedidosCompletadosModal && renderPedidosCompletadosModal()}
       {showPedidosPendientesModal && renderPedidosPendientesModal()}
       {showVehiculosModal && renderVehiculosModal()}
       {showAddVehiculoModal && renderAddVehiculoModal()}
-    </ServiceBase>
+    </div>
   );
 }
