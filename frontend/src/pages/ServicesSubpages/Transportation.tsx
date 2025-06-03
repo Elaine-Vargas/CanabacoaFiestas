@@ -99,6 +99,38 @@ export default function Transportation() {
     estado: 'Disponible'
   });
 
+  // Estados y funciones para edición de vehículo
+  const [editVehiculo, setEditVehiculo] = useState<Partial<Vehiculo> | null>(null);
+  const [showEditVehiculoModal, setShowEditVehiculoModal] = useState(false);
+
+  const handleEditVehiculo = (vehiculo: Vehiculo) => {
+    setEditVehiculo(vehiculo);
+    setShowEditVehiculoModal(true);
+  };
+
+  const handleEditVehiculoInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+    const { name, value } = e.target;
+    setEditVehiculo(prev => prev ? { ...prev, [name]: value } : prev);
+  };
+
+  const handleUpdateVehiculo = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editVehiculo || !editVehiculo.id_vehiculo) return;
+    try {
+      await fetch(`/api/transportacion/vehiculos/${editVehiculo.id_vehiculo}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(editVehiculo),
+      });
+      const updatedVehiculos = await fetch('/api/transportacion/vehiculos').then(res => res.json());
+      setVehiculos(updatedVehiculos);
+      setShowEditVehiculoModal(false);
+      setEditVehiculo(null);
+    } catch (error) {
+      console.error('Error al actualizar vehículo:', error);
+    }
+  };
+
   useEffect(() => {
     const rolId = Number(userData.rol);
     if (![1, 3, 4].includes(rolId)) {
@@ -448,8 +480,6 @@ export default function Transportation() {
       <button className="new-form-btn" onClick={() => setShowModal(true)}>
         + Agregar Servicio de Transporte
       </button>
-
-
     </div>
   );
 
@@ -656,6 +686,79 @@ export default function Transportation() {
     </div>
   );
 
+  // Modal para editar vehículo
+  const renderEditVehiculoModal = () => (
+    <div className="modal-overlay">
+      <div className="modal-container">
+        <button className="close-btn" onClick={() => setShowEditVehiculoModal(false)}>×</button>
+        <form className="modal-form" onSubmit={handleUpdateVehiculo}>
+          <h3>Editar Vehículo</h3>
+          <label>
+            Matrícula:
+            <input
+              type="text"
+              name="matricula"
+              value={editVehiculo?.matricula || ''}
+              onChange={handleEditVehiculoInputChange}
+              required
+            />
+          </label>
+          <label>
+            Marca:
+            <input
+              type="text"
+              name="marca"
+              value={editVehiculo?.marca || ''}
+              onChange={handleEditVehiculoInputChange}
+              required
+            />
+          </label>
+          <label>
+            Modelo:
+            <input
+              type="text"
+              name="modelo"
+              value={editVehiculo?.modelo || ''}
+              onChange={handleEditVehiculoInputChange}
+              required
+            />
+          </label>
+          <label>
+            Tipo:
+            <select
+              name="tipo"
+              value={editVehiculo?.tipo || ''}
+              onChange={handleEditVehiculoInputChange}
+              required
+            >
+              <option value="Automóvil">Automóvil</option>
+              <option value="Remolque">Remolque</option>
+              <option value="Máquinas pesadas">Máquinas pesadas</option>
+              <option value="Montacargas">Montacargas</option>
+            </select>
+          </label>
+          <label>
+            Estado:
+            <select
+              name="estado"
+              value={editVehiculo?.estado || ''}
+              onChange={handleEditVehiculoInputChange}
+              required
+            >
+              <option value="Disponible">Disponible</option>
+              <option value="En uso">En uso</option>
+              <option value="Mantenimiento">Mantenimiento</option>
+            </select>
+          </label>
+          <div className="form-buttons">
+            <button type="submit" className="submit-btn">Guardar</button>
+            <button type="button" className="reset-btn" onClick={() => setShowEditVehiculoModal(false)}>Cancelar</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+
   const renderInventoryView = () => {
     const rolId = Number(userData.rol);
     if (rolId !== 4) return null;
@@ -712,12 +815,13 @@ export default function Transportation() {
                           <td>{vehiculo.tipo}</td>
                           <td>{vehiculo.estado}</td>
                           <td>
-                            <button className="edit-btn" onClick={() => handleEdit(vehiculo)}>
+                            <button className="edit-btn" onClick={() => handleEditVehiculo(vehiculo)}>
                               Editar
                             </button>
-                            <button className="delete-btn" onClick={() => handleDelete(vehiculo.id_vehiculo)}>
+                            {/* Si tienes una ruta para eliminar vehículos, reemplaza handleDelete por la función correcta */}
+                            {/* <button className="delete-btn" onClick={() => handleDeleteVehiculo(vehiculo.id_vehiculo)}>
                               Eliminar
-                            </button>
+                            </button> */}
                           </td>
                         </tr>
                       ))}
@@ -764,93 +868,8 @@ export default function Transportation() {
           </div>
         )}
 
-        {showAddVehiculoModal && (
-          <div className="modal-overlay">
-            <div className="modal-container">
-              <button className="close-btn" onClick={() => setShowAddVehiculoModal(false)}>×</button>
-              <form className="modal-form" onSubmit={handleAddVehiculo}>
-                <h3>Nuevo Vehículo</h3>
-                
-                <label>
-                  Matrícula:
-                  <input
-                    type="text"
-                    name="matricula"
-                    value={nuevoVehiculo.matricula}
-                    onChange={handleVehiculoInputChange}
-                    required
-                  />
-                </label>
-
-                <label>
-                  Marca:
-                  <input
-                    type="text"
-                    name="marca"
-                    value={nuevoVehiculo.marca}
-                    onChange={handleVehiculoInputChange}
-                    required
-                  />
-                </label>
-
-                <label>
-                  Modelo:
-                  <input
-                    type="text"
-                    name="modelo"
-                    value={nuevoVehiculo.modelo}
-                    onChange={handleVehiculoInputChange}
-                    required
-                  />
-                </label>
-
-                <label>
-                  Tipo de Vehículo:
-                  <select
-                    name="tipo"
-                    value={nuevoVehiculo.tipo}
-                    onChange={handleVehiculoInputChange}
-                    required
-                  >
-                    <option value="">Seleccionar tipo</option>
-                    <option value="Automóvil">Automóvil</option>
-                    <option value="Remolque">Remolque</option>
-                    <option value="Máquinas pesadas">Máquinas pesadas</option>
-                    <option value="Montacargas">Montacargas</option>
-                  </select>
-                </label>
-
-                <label>
-                  Estado:
-                  <select
-                    name="estado"
-                    value={nuevoVehiculo.estado}
-                    onChange={handleVehiculoInputChange}
-                    required
-                  >
-                    <option value="">Seleccionar estado</option>
-                    <option value="Disponible">Disponible</option>
-                    <option value="En uso">En uso</option>
-                    <option value="Mantenimiento">Mantenimiento</option>
-                  </select>
-                </label>
-
-                <div className="form-buttons">
-                  <button type="submit" className="submit-btn">
-                    Guardar
-                  </button>
-                  <button
-                    type="button"
-                    className="reset-btn"
-                    onClick={() => setShowAddVehiculoModal(false)}
-                  >
-                    Cancelar
-                  </button>
-                </div>
-              </form>
-            </div>
-          </div>
-        )}
+        {showAddVehiculoModal && renderAddVehiculoModal()}
+        {showEditVehiculoModal && renderEditVehiculoModal()}
       </div>
     );
   };
@@ -889,6 +908,7 @@ export default function Transportation() {
       {showPedidosPendientesModal && renderPedidosPendientesModal()}
       {showVehiculosModal && renderVehiculosModal()}
       {showAddVehiculoModal && renderAddVehiculoModal()}
+      {showEditVehiculoModal && renderEditVehiculoModal()}
     </div>
   );
 }
