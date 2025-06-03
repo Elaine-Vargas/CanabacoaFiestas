@@ -7,7 +7,8 @@ import {
   BelongsTo,
   HasMany,
   BeforeCreate,
-  BeforeUpdate
+  BeforeUpdate,
+  Index
 } from 'sequelize-typescript';
 import * as bcrypt from 'bcryptjs';
 import Rol from './Rol_model';
@@ -19,13 +20,19 @@ import DetalleSupervision from './DetalleSupervision_model';
 @Table({
   tableName: 'usuario',
   timestamps: false,
-  validate: {
-    validarFormatoLogin(this: Usuario) {
-      if (!/^[a-zA-Z][a-zA-Z0-9_.]*$/.test(this.usuario_login)) {
-        throw new Error('Formato de usuario inválido');
-      }
-    }
-  }
+  indexes: [
+    {
+      unique: true,
+      fields: ['usuario_login'],
+      name: 'usuario_login'
+    },
+    {
+      unique: true,
+      fields: ['correo_usuario'],
+      name: 'correo_usuario'
+    },
+    // No necesitas índice único para cedula_usuario porque es PK
+  ]
 })
 export default class Usuario extends Model {
   @Column({
@@ -46,8 +53,13 @@ export default class Usuario extends Model {
     allowNull: false,
     field: 'nombre_usuario',
     validate: {
-      notEmpty: true,
-      is: /^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/i
+      notEmpty: {
+        msg: 'El nombre no puede estar vacío'
+      },
+      is: {
+        args: /^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/i,
+        msg: 'El nombre solo puede contener letras y espacios'
+      }
     }
   })
   nombre_usuario!: string;
@@ -57,8 +69,13 @@ export default class Usuario extends Model {
     allowNull: false,
     field: 'apellido_usuario',
     validate: {
-      notEmpty: true,
-      is: /^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/i
+      notEmpty: {
+        msg: 'El apellido no puede estar vacío'
+      },
+      is: {
+        args: /^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/i,
+        msg: 'El apellido solo puede contener letras y espacios'
+      }
     }
   })
   apellido_usuario!: string;
@@ -69,7 +86,10 @@ export default class Usuario extends Model {
     allowNull: false,
     field: 'id_rol',
     validate: {
-      min: 1
+      min: {
+        args: [1],
+        msg: 'El ID de rol debe ser mayor que 0'
+      }
     }
   })
   id_rol!: number;
@@ -77,12 +97,18 @@ export default class Usuario extends Model {
   @BelongsTo(() => Rol)
   rol!: Rol;
 
+  @Index({
+    name: 'usuario_login_idx',
+    unique: true
+  })
   @Column({
     type: DataType.STRING(25),
     allowNull: false,
-    unique: true,
     field: 'usuario_login',
     validate: {
+      notEmpty: {
+        msg: 'El nombre de usuario no puede estar vacío'
+      },
       is: {
         args: /^(?=.{5,25}$)^[a-zA-Z]([a-zA-Z0-9_.]*[a-zA-Z0-9])?$/,
         msg: 'Formato de usuario inválido: debe comenzar con una letra y tener entre 5-25 caracteres'
@@ -94,7 +120,16 @@ export default class Usuario extends Model {
   @Column({
     type: DataType.STRING(60),
     allowNull: false,
-    field: 'contrasena_login'
+    field: 'contrasena_login',
+    validate: {
+      notEmpty: {
+        msg: 'La contraseña no puede estar vacía'
+      },
+      len: {
+        args: [8, 25],
+        msg: 'La contraseña debe tener entre 8-25 caracteres'
+      }
+    }
   })
   contrasena_login!: string;
 
@@ -105,13 +140,12 @@ export default class Usuario extends Model {
       const passwordRegex = /^(?=.*[A-Z])(?=.*\d)(?=.*[^\w\s])[A-Za-z\d\W]{8,25}$/;
   
       if (!passwordRegex.test(usuario.contrasena_login)) {
-        throw new Error('La contraseña debe tener entre 8-25 caracteres, al menos una mayúscula, un número y un carácter especial');
+        throw new Error('La contraseña debe tener al menos una mayúscula, un número y un carácter especial');
       }
   
       usuario.contrasena_login = await bcrypt.hash(usuario.contrasena_login, 10);
     }
   }
-  
 
   async compararContrasena(contrasena: string): Promise<boolean> {
     return bcrypt.compare(contrasena, this.contrasena_login);
@@ -130,13 +164,21 @@ export default class Usuario extends Model {
   })
   tel_usuario!: string;
 
+  @Index({
+    name: 'correo_usuario_idx',
+    unique: true
+  })
   @Column({
     type: DataType.STRING(100),
     allowNull: false,
     field: 'correo_usuario',
     validate: {
-      isEmail: true,
-      notEmpty: true,
+      isEmail: {
+        msg: 'Debe proporcionar un correo electrónico válido'
+      },
+      notEmpty: {
+        msg: 'El correo electrónico no puede estar vacío'
+      },
       isLowercase: true
     }
   })
@@ -158,7 +200,6 @@ export default class Usuario extends Model {
   })
   creacion_usuario!: Date;
 
-  /** Relaciones con Evento **/
   @HasMany(() => Evento, {
     foreignKey: 'cedula_cliente',
     sourceKey: 'cedula_usuario',
@@ -173,7 +214,6 @@ export default class Usuario extends Model {
   })
   eventosAsesor!: Evento[];
 
-  /** Relación con DetalleTransporte **/
   @HasMany(() => DetalleTransporte, {
     foreignKey: 'id_usuarioconductor',
     sourceKey: 'cedula_usuario',
@@ -181,7 +221,6 @@ export default class Usuario extends Model {
   })
   transportesConducidos!: DetalleTransporte[];
 
-  /** Relación con DetalleMontajedesmontaje **/
   @HasMany(() => DetalleMontajedesmontaje, {
     foreignKey: 'cedula_usuariopersonal',
     sourceKey: 'cedula_usuario',
@@ -189,7 +228,6 @@ export default class Usuario extends Model {
   })
   montajesRealizados!: DetalleMontajedesmontaje[];
 
-  /** Relación con DetalleSupervision **/
   @HasMany(() => DetalleSupervision, {
     foreignKey: 'cedula_usuariopersonal',
     sourceKey: 'cedula_usuario',
