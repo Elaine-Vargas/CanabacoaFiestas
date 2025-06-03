@@ -977,30 +977,36 @@ export default function Catering() {
   );
 
   return (
-    <ServiceBase 
-      title="Catering" 
-      stats={stats}
-    >
-      {(() => {
-        const rolId = Number(userData.rol);
-        const isAdmin = rolId === 1;
-        const isOrganizer = rolId === 3;
-        const isClient = rolId === 2;
+    <div className="catering-page">
+      <div className="welcome-header">
+        <h1>Gestión de Catering</h1>
+        <p>Gestiona los servicios de catering para eventos</p>
+      </div>
 
-        if (isAdmin) {
-          return renderAdminView();
-        }
+      <div className="service-content">
+        {(() => {
+          const rolId = Number(userData.rol);
+          const isAdmin = rolId === 1;
+          const isOrganizer = rolId === 3;
+          const isClient = rolId === 2;
 
-        if (isOrganizer) {
-          return renderOrganizerView();
-        }
+          if (isAdmin) {
+            return renderAdminView();
+          }
 
-        if (isClient) {
-          return renderClientView();
-        }
+          if (isOrganizer) {
+            return renderOrganizerView();
+          }
 
-        return null;
-      })()}
-    </ServiceBase>
+          if (isClient) {
+            return renderClientView();
+          }
+
+          return null;
+        })()}
+      </div>
+
+      {/* Modales necesarios */}
+    </div>
   );
 }

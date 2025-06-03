@@ -237,7 +237,6 @@ export default function Supervision() {
     }
   };
 
-
   const renderAdminView = () => {
     return (
       <div className="supervision-content">
@@ -623,25 +622,30 @@ export default function Supervision() {
   );
 
   return (
-    <ServiceBase 
-      title="Supervisión" 
-      stats={stats}
-    >
-      {(() => {
-        const rolId = Number(userData.rol);
-        const isAdmin = rolId === 1;
-        const isOrganizer = rolId === 3;
+    <div className="supervision-page">
+      <div className="welcome-header">
+        <h1>Gestión de Supervisión</h1>
+        <p>Gestiona los servicios de supervisión para eventos</p>
+      </div>
 
-        if (isAdmin) {
-          return renderAdminView();
-        }
+      <div className="service-content">
+        {(() => {
+          const rolId = Number(userData.rol);
+          const isAdmin = rolId === 1;
+          const isOrganizer = rolId === 3;
 
-        if (isOrganizer) {
-          return renderOrganizerView();
-        }
+          if (isAdmin) {
+            return renderAdminView();
+          }
 
-        return null;
-      })()}
+          if (isOrganizer) {
+            return renderOrganizerView();
+          }
+
+          return null;
+        })()}
+      </div>
+
       {showModal && (
         <div className="modal-overlay">
           <div className="modal-container">
@@ -728,6 +732,6 @@ export default function Supervision() {
       {showEventosModal && renderEventosModal()}
       {showEmpleadosModal && renderEmpleadosModal()}
       {showCompletadasModal && renderCompletadasModal()}
-    </ServiceBase>
+    </div>
   );
 }

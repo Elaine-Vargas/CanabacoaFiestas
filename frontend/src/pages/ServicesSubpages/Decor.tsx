@@ -847,30 +847,132 @@ export default function Decor() {
   );
 
   return (
-    <ServiceBase 
-      title="Decoración" 
-      stats={stats}
-    >
-      {(() => {
-        const rolId = Number(userData.rol);
-        const isAdmin = rolId === 1;
-        const isOrganizer = rolId === 3;
-        const isClient = rolId === 2;
+    <div className="decor-page">
+      <div className="welcome-header">
+        <h1>Gestión de Decoración</h1>
+        <p>Gestiona los servicios de decoración para eventos</p>
+      </div>
 
-        if (isAdmin) {
-          return renderAdminView();
-        }
+      <div className="service-content">
+        {(() => {
+          const rolId = Number(userData.rol);
+          const isAdmin = rolId === 1;
+          const isOrganizer = rolId === 3;
+          const isClient = rolId === 2;
 
-        if (isOrganizer) {
-          return renderOrganizerView();
-        }
+          if (isAdmin) {
+            return renderAdminView();
+          }
 
-        if (isClient) {
-          return renderClientView();
-        }
+          if (isOrganizer) {
+            return renderOrganizerView();
+          }
 
-        return null;
-      })()}
-    </ServiceBase>
+          if (isClient) {
+            return renderClientView();
+          }
+
+          return null;
+        })()}
+      </div>
+
+      {showModal && (
+        <div className="modal-overlay">
+          <div className="modal-container">
+            <button className="close-btn" onClick={() => setShowModal(false)}>×</button>
+            <form className="modal-form" onSubmit={handleSubmit}>
+              <h2>{editId ? 'Editar Servicio' : 'Nuevo Servicio'}</h2>
+              
+              <label>
+                Evento:
+                <select
+                  name="id_evento"
+                  value={formData.id_evento || ''}
+                  onChange={handleSelectChange}
+                  required
+                >
+                  <option value="">Seleccionar evento</option>
+                  {eventos.map((evento) => (
+                    <option key={evento.id_evento} value={evento.id_evento}>
+                      {evento.fecha_evento} - {evento.tipo_evento}
+                    </option>
+                  ))}
+                </select>
+              </label>
+
+              <label>
+                Tipo de Decoración:
+                <select
+                  name="tipo_decoracion"
+                  value={formData.tipo_decoracion || ''}
+                  onChange={handleSelectChange}
+                  required
+                >
+                  <option value="">Seleccionar tipo</option>
+                  <option value="Flores">Flores</option>
+                  <option value="Centros de Mesa">Centros de Mesa</option>
+                  <option value="Arcos">Arcos</option>
+                  <option value="Iluminación">Iluminación</option>
+                  <option value="Otros">Otros</option>
+                </select>
+              </label>
+
+              <label>
+                Descripción:
+                <textarea
+                  name="descripcion"
+                  value={formData.descripcion || ''}
+                  onChange={handleInputChange}
+                  required
+                  rows={4}
+                />
+              </label>
+
+              <label>
+                Precio:
+                <input
+                  type="number"
+                  name="precio"
+                  value={formData.precio || ''}
+                  onChange={handleInputChange}
+                  required
+                  min="0"
+                  step="0.01"
+                />
+              </label>
+
+              <label>
+                Estado:
+                <select
+                  name="estado"
+                  value={formData.estado || ''}
+                  onChange={handleSelectChange}
+                  required
+                >
+                  <option value="">Seleccionar estado</option>
+                  <option value="Pendiente">Pendiente</option>
+                  <option value="En Progreso">En Progreso</option>
+                  <option value="Completado">Completado</option>
+                  <option value="Cancelado">Cancelado</option>
+                </select>
+              </label>
+
+              <div className="form-buttons">
+                <button type="submit" className="submit-btn">
+                  {editId ? 'Actualizar' : 'Guardar'}
+                </button>
+                <button
+                  type="button"
+                  className="reset-btn"
+                  onClick={() => setShowModal(false)}
+                >
+                  Cancelar
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+    </div>
   );
 }

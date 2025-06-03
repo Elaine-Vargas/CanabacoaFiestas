@@ -717,37 +717,41 @@ export default function AssemblyAndDisassembly() {
   );
 
   return (
-    <ServiceBase 
-      title="Montaje y Desmontaje" 
-      stats={stats}
-    >
-      {(() => {
-        const rolId = Number(userData.rol);
-        const isAdmin = rolId === 1;
-        const isOrganizer = rolId === 3;
-        const isInventory = rolId === 4;
+    <div className="assembly-page">
+      <div className="welcome-header">
+        <h1>Gestión de Montaje y Desmontaje</h1>
+        <p>Gestiona los servicios de montaje y desmontaje para eventos</p>
+      </div>
 
-        if (isAdmin) {
-          return (
-            <>
-              {renderAdminView()}
-              {showEventosCompletadosModal && renderEventosCompletadosModal()}
-              {showEventosPendientesModal && renderEventosPendientesModal()}
-              {showPersonalModal && renderPersonalModal()}
-            </>
-          );
-        }
+      <div className="service-content">
+        {(() => {
+          const rolId = Number(userData.rol);
+          const isAdmin = rolId === 1;
+          const isOrganizer = rolId === 3;
+          const isInventory = rolId === 4;
 
-        if (isInventory) {
-          return renderInventoryView();
-        }
+          if (isAdmin) {
+            return (
+              <>
+                {renderAdminView()}
+                {showEventosCompletadosModal && renderEventosCompletadosModal()}
+                {showEventosPendientesModal && renderEventosPendientesModal()}
+                {showPersonalModal && renderPersonalModal()}
+              </>
+            );
+          }
 
-        if (isOrganizer) {
-          return renderOrganizerView();
-        }
+          if (isInventory) {
+            return renderInventoryView();
+          }
 
-        return null;
-      })()}
-    </ServiceBase>
+          if (isOrganizer) {
+            return renderOrganizerView();
+          }
+
+          return null;
+        })()}
+      </div>
+    </div>
   );
 }

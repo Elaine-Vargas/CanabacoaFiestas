@@ -1242,30 +1242,34 @@ export default function Rent() {
   );
 
   return (
-    <ServiceBase 
-      title="Alquiler" 
-      stats={stats}
-    >
-      {(() => {
-        const rolId = Number(userData.rol);
-        const isAdmin = rolId === 1;
-        const isOrganizer = rolId === 3;
-        const isClient = rolId === 2;
+    <div className="rent-page">
+      <div className="welcome-header">
+        <h1>Gestión de Alquiler</h1>
+        <p>Gestiona los servicios de alquiler para eventos</p>
+      </div>
 
-        if (isAdmin) {
-          return renderAdminView();
-        }
+      <div className="service-content">
+        {(() => {
+          const rolId = Number(userData.rol);
+          const isAdmin = rolId === 1;
+          const isOrganizer = rolId === 3;
+          const isClient = rolId === 2;
 
-        if (isOrganizer) {
-          return renderOrganizerView();
-        }
+          if (isAdmin) {
+            return renderAdminView();
+          }
 
-        if (isClient) {
-          return renderClientView();
-        }
+          if (isOrganizer) {
+            return renderOrganizerView();
+          }
 
-        return null;
-      })()}
+          if (isClient) {
+            return renderClientView();
+          }
+
+          return null;
+        })()}
+      </div>
 
       <Snackbar
         open={notificacion.abierta}
@@ -1298,6 +1302,6 @@ export default function Rent() {
           {notificacion.mensaje}
         </Alert>
       </Snackbar>
-    </ServiceBase>
+    </div>
   );
 }

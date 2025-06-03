@@ -774,29 +774,34 @@ export default function Transportation() {
   );
 
   return (
-    <ServiceBase 
-      title="Transporte" 
-      stats={stats}
-    >
-      {(() => {
-        const rolId = Number(userData.rol);
-        const isAdmin = rolId === 1;
-        const isOrganizer = rolId === 3;
+    <div className="transportation-page">
+      <div className="welcome-header">
+        <h1>Gestión de Transporte</h1>
+        <p>Gestiona los servicios de transporte para eventos</p>
+      </div>
 
-        if (isAdmin) {
-          return renderAdminView();
-        }
+      <div className="service-content">
+        {(() => {
+          const rolId = Number(userData.rol);
+          const isAdmin = rolId === 1;
+          const isOrganizer = rolId === 3;
 
-        if (isOrganizer) {
-          return renderOrganizerView();
-        }
+          if (isAdmin) {
+            return renderAdminView();
+          }
 
-        return null;
-      })()}
+          if (isOrganizer) {
+            return renderOrganizerView();
+          }
+
+          return null;
+        })()}
+      </div>
+
       {showPedidosCompletadosModal && renderPedidosCompletadosModal()}
       {showPedidosPendientesModal && renderPedidosPendientesModal()}
       {showVehiculosModal && renderVehiculosModal()}
       {showAddVehiculoModal && renderAddVehiculoModal()}
-    </ServiceBase>
+    </div>
   );
 }

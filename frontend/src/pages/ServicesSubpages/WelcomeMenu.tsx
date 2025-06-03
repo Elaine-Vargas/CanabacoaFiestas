@@ -68,7 +68,7 @@ type WelcomeMenuProps = {
   eventsInProcess?: number;
   averageRating?: number;
   totalUsers?: number;
-  quotations?: Quotation[];
+  quotations?: number;
 };
 
 interface Espacio {
@@ -81,7 +81,7 @@ interface Espacio {
 }
 
 interface WelcomeStats {
-  quotations: any[];
+  quotations: number;
   spaces: Espacio[];
   eventsInProcess: number;
   totalUsers: number;
@@ -148,7 +148,7 @@ const WelcomeMenu: React.FC<WelcomeMenuProps> = () => {
   const [comment, setComment] = useState('');
   const [rating, setRating] = useState(0);
   const [stats, setStats] = useState<WelcomeStats>({
-    quotations: [],
+    quotations: 0,
     spaces: [],
     eventsInProcess: 0,
     totalUsers: 0,
@@ -236,6 +236,86 @@ const WelcomeMenu: React.FC<WelcomeMenuProps> = () => {
   useEffect(() => {
     console.log('Espacios actuales:', espacios);
   }, [espacios]);
+
+  useEffect(() => {
+    const fetchStats = async () => {
+      try {
+        console.log('Iniciando fetch de estadísticas...');
+        const token = localStorage.getItem('token');
+        console.log('Token disponible:', !!token);
+
+        const response = await fetch('/api/dashboard/stats', {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': token ? `Bearer ${token}` : ''
+          }
+        });
+        
+        console.log('Respuesta recibida:', {
+          status: response.status,
+          statusText: response.statusText,
+          headers: Object.fromEntries(response.headers.entries())
+        });
+
+        let data;
+        try {
+          data = await response.json();
+          console.log('Datos recibidos del backend:', data);
+        } catch (jsonError) {
+          console.error('Error al parsear JSON:', jsonError);
+          throw new Error('Error al procesar la respuesta del servidor');
+        }
+        
+        if (!response.ok) {
+          console.error('Error en la respuesta:', data);
+          throw new Error(data.details || `Error HTTP: ${response.status}`);
+        }
+        
+        // Verificar que los datos tengan la estructura correcta
+        if (data && typeof data === 'object') {
+          const statsData: WelcomeStats = {
+            eventsInProcess: Number(data.eventsInProcess) || 0,
+            totalUsers: Number(data.totalUsers) || 0,
+            spaces: Array.isArray(data.spaces) ? data.spaces : [],
+            quotations: Number(data.quotations) || 0,
+            averageRating: Number(data.averageRating) || 0
+          };
+          
+          console.log('Datos procesados para actualizar estado:', statsData);
+          
+          // Verificar que los datos sean válidos antes de actualizar el estado
+          if (isNaN(statsData.eventsInProcess) || 
+              isNaN(statsData.totalUsers) || 
+              isNaN(statsData.quotations) || 
+              isNaN(statsData.averageRating)) {
+            console.error('Datos inválidos detectados:', statsData);
+            throw new Error('Datos inválidos recibidos del servidor');
+          }
+          
+          setStats(statsData);
+        } else {
+          console.error('Datos recibidos no tienen la estructura esperada:', data);
+          throw new Error('Estructura de datos inválida');
+        }
+      } catch (error) {
+        console.error('Error detallado al cargar estadísticas:', error);
+        // Mostrar mensaje de error más específico al usuario
+        const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
+        alert(`Error al cargar las estadísticas: ${errorMessage}. Por favor, intente nuevamente.`);
+        // Establecer valores por defecto
+        setStats({
+          quotations: 0,
+          spaces: [],
+          eventsInProcess: 0,
+          totalUsers: 0,
+          averageRating: 0
+        });
+      }
+    };
+
+    fetchStats();
+  }, []);
 
   useEffect(() => {
     const fetchEventosEnProceso = async () => {
@@ -653,7 +733,7 @@ const WelcomeMenu: React.FC<WelcomeMenuProps> = () => {
 
         <div className="stat-card">
           <span className="stat-card__label">Comentarios Enviados</span>
-          <strong className="stat-card__number">{stats.quotations.length}</strong>
+          <strong className="stat-card__number">{stats.quotations}</strong>
           <button 
             className="stat-card__seeInfo2"
             onClick={() => setShowCommentModal(true)}
@@ -989,34 +1069,33 @@ const WelcomeMenu: React.FC<WelcomeMenuProps> = () => {
 
   const renderInventoryDashboard = () => (
     <>
-    
-    <div className="coordinator-dashboard">
-      <div className="welcome-header">
-        <center>
-        <h1>Bienvenido al Panel de Inventario</h1>
-        </center>
-        <p>Gestiona todos los servicios y eventos desde aquí</p>
-      </div>
-
-      <div className="dashboard__stats">
-        <div className="stat-card">
-          <span className="stat-card__label">Elementos Disponibles</span>
-          <strong className="stat-card__number">{stats.eventsInProcess}</strong>
-          <button className="stat-card__seeInfo">Ver inventario</button>
+      <div className="coordinator-dashboard">
+        <div className="welcome-header">
+          <center>
+          <h1>Bienvenido al Panel de Inventario</h1>
+          </center>
+          <p>Gestiona todos los servicios y eventos desde aquí</p>
         </div>
 
-        <div className="stat-card">
-          <span className="stat-card__label">Elementos en Uso</span>
-          <strong className="stat-card__number">{stats.totalUsers}</strong>
-          <button className="stat-card__seeInfo">Ver en uso</button>
-        </div>
+        <div className="dashboard__stats">
+          <div className="stat-card">
+            <span className="stat-card__label">Elementos Disponibles</span>
+            <strong className="stat-card__number">{stats.eventsInProcess}</strong>
+            <button className="stat-card__seeInfo">Ver inventario</button>
+          </div>
 
-        <div className="stat-card">
-          <span className="stat-card__label">Compras Pendientes</span>
-          <strong className="stat-card__number">{stats.quotations.length}</strong>
-          <button className="stat-card__seeInfo">Ver compras</button>
+          <div className="stat-card">
+            <span className="stat-card__label">Elementos en Uso</span>
+            <strong className="stat-card__number">{stats.totalUsers}</strong>
+            <button className="stat-card__seeInfo">Ver en uso</button>
+          </div>
+
+          <div className="stat-card">
+            <span className="stat-card__label">Compras Pendientes</span>
+            <strong className="stat-card__number">{stats.quotations}</strong>
+            <button className="stat-card__seeInfo">Ver compras</button>
+          </div>
         </div>
-      </div>
       </div>
     </>
   );
