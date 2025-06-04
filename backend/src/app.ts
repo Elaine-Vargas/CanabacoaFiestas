@@ -7,10 +7,10 @@ import authRoutes from './routes/authRoutes';
 import elementoRoutes from './routes/elementoRoutes';
 import path from 'path';
 import comentarioRoutes from './routes/comentarioRoutes';
-import { sendRecoveryEmail } from './controllers/mailController';
 import dashboardRoutes from './routes/dashboardRoutes';
 import usersRoutes from './routes/usersRoutes';
 import eventoRoutes from './routes/eventoRoutes';
+import alquilerRoutes from './routes/alquilerRoutes';
 
 dotenv.config();
 
@@ -39,6 +39,8 @@ app.use('/api/comentarios', comentarioRoutes);
 app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/usuarios', usersRoutes);
 app.use('/api/evento', eventoRoutes);
+app.use('/api/alquiler', alquilerRoutes);
+
 // Ruta de prueba
 app.get('/', (req, res) => {
   res.send('Servidor funcionando correctamente');

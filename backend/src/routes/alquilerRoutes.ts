@@ -1,0 +1,76 @@
+import { Router, Request, Response, NextFunction, RequestHandler } from 'express';
+import {
+    createAlquilerServicio,
+    getAllAlquileres,
+    getAlquileresByEvento,
+    getAlquileresByElemento,
+    editAlquilerServicio,
+    deleteAlquilerServicio
+} from '../controllers/alquilerServicioController';
+import { verificarToken } from '../middlewares/authMiddleware';
+
+const router = Router();
+
+// Middleware de autenticación para todas las rutas
+const authMiddleware = (req: Request, res: Response, next: NextFunction) => {
+    verificarToken(req, res, next);
+};
+
+// Aplicar autenticación a todas las rutas
+router.use(authMiddleware);
+
+// Crear un nuevo alquiler
+router.post('/', async (req: Request, res: Response, next: NextFunction) => {
+    try {
+        await createAlquilerServicio(req, res);
+    } catch (error) {
+        next(error);
+    }
+});
+
+// Obtener todos los alquileres
+router.get('/', async (req: Request, res: Response, next: NextFunction) => {
+    try {
+        await getAllAlquileres(req, res);
+    } catch (error) {
+        next(error);
+    }
+});
+
+// Obtener alquileres por evento
+router.get('/evento/:id_evento', async (req: Request, res: Response, next: NextFunction) => {
+    try {
+        await getAlquileresByEvento(req, res);
+    } catch (error) {
+        next(error);
+    }
+});
+
+// Obtener alquileres por elemento
+router.get('/elemento/:id_elemento', async (req: Request, res: Response, next: NextFunction) => {
+    try {
+        await getAlquileresByElemento(req, res);
+    } catch (error) {
+        next(error);
+    }
+});
+
+// Editar un alquiler
+router.put('/:id_alquiler', async (req: Request, res: Response, next: NextFunction) => {
+    try {
+        await editAlquilerServicio(req, res);
+    } catch (error) {
+        next(error);
+    }
+});
+
+// Eliminar un alquiler (borrado lógico)
+router.delete('/:id_alquiler', async (req: Request, res: Response, next: NextFunction) => {
+    try {
+        await deleteAlquilerServicio(req, res);
+    } catch (error) {
+        next(error);
+    }
+});
+
+export default router;
