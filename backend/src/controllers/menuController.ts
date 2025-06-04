@@ -11,6 +11,7 @@ export const createMenu = async (req: Request, res: Response) => {
     try {
         const {
             desc_menu,
+            precio_menu,
             id_proveedor,
             platos // Array de IDs de platos
         } = req.body;
@@ -24,6 +25,7 @@ export const createMenu = async (req: Request, res: Response) => {
         // Crear el menú
         const menu = await Menu.create({
             desc_menu,
+            precio_menu,
             id_proveedor
         });
 
@@ -108,6 +110,7 @@ export const editMenu = async (req: Request, res: Response) => {
         const { id_menu } = req.params;
         const {
             desc_menu,
+            precio_menu,
             id_proveedor,
             platos // Array de IDs de platos
         } = req.body;
@@ -128,6 +131,7 @@ export const editMenu = async (req: Request, res: Response) => {
         // Actualizar el menú
         await menu.update({
             desc_menu: desc_menu || menu.desc_menu,
+            precio_menu: precio_menu || menu.precio_menu,
             id_proveedor: id_proveedor || menu.id_proveedor
         });
 
