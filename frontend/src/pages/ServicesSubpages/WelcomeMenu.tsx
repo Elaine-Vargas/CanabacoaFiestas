@@ -227,6 +227,16 @@ interface TipoEvento {
   nombre_tipo_evento: string;
 }
 
+interface EditFormData {
+  nombre_usuario: string;
+  apellido_usuario: string;
+  cedula_usuario: string;
+  correo_usuario: string;
+  tel_usuario: string;
+  usuario_login: string;
+  estado_usuario: 'Activo' | 'Inactivo';
+}
+
 const WelcomeMenu: React.FC<WelcomeMenuProps> = () => {
 
   const apiUrl = import.meta.env.VITE_API_BASE_URL;
@@ -367,16 +377,19 @@ const WelcomeMenu: React.FC<WelcomeMenuProps> = () => {
   const [tableError, setTableError] = useState<string | null>(null);
   const [showEditModal, setShowEditModal] = useState(false);
   const [editingUser, setEditingUser] = useState<Usuario | null>(null);
-  const [editFormData, setEditFormData] = useState({
+  const [editFormData, setEditFormData] = useState<EditFormData>({
     nombre_usuario: "",
     apellido_usuario: "",
     cedula_usuario: "",
     correo_usuario: "",
     tel_usuario: "",
-    usuario_login: ""
+    usuario_login: "",
+    estado_usuario: "Activo"
   });
   const [editError, setEditError] = useState("");
   const [editSuccess, setEditSuccess] = useState("");
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [userToDelete, setUserToDelete] = useState<string | null>(null);
 
 
 
@@ -2597,7 +2610,8 @@ const WelcomeMenu: React.FC<WelcomeMenuProps> = () => {
       cedula_usuario: usuario.cedula_usuario,
       correo_usuario: usuario.correo_usuario,
       tel_usuario: usuario.tel_usuario,
-      usuario_login: usuario.usuario_login
+      usuario_login: usuario.usuario_login,
+      estado_usuario: usuario.estado_usuario as 'Activo' | 'Inactivo'
     });
     setShowEditModal(true);
   };
@@ -2610,7 +2624,8 @@ const WelcomeMenu: React.FC<WelcomeMenuProps> = () => {
       'edit-cedula': 'cedula_usuario',
       'edit-username': 'usuario_login',
       'edit-email': 'correo_usuario',
-      'edit-phone': 'tel_usuario'
+      'edit-phone': 'tel_usuario',
+      'edit-state': 'estado_usuario'
     };
     
     const fieldName = fieldMap[id];
@@ -2667,7 +2682,8 @@ const WelcomeMenu: React.FC<WelcomeMenuProps> = () => {
           cedula_usuario: editFormData.cedula_usuario,
           correo_usuario: editFormData.correo_usuario,
           tel_usuario: editFormData.tel_usuario,
-          usuario_login: editFormData.usuario_login
+          usuario_login: editFormData.usuario_login,
+          estado_usuario: editFormData.estado_usuario
         }),
       });
 
@@ -2700,10 +2716,107 @@ const WelcomeMenu: React.FC<WelcomeMenuProps> = () => {
       setTimeout(() => {
         setShowEditModal(false);
         setEditingUser(null);
+        setEditFormData({
+          nombre_usuario: "",
+          apellido_usuario: "",
+          cedula_usuario: "",
+          correo_usuario: "",
+          tel_usuario: "",
+          usuario_login: "",
+          estado_usuario: "Activo"
+        });
       }, 2000);
 
     } catch (error) {
       setEditError(error instanceof Error ? error.message : 'Error al actualizar usuario');
+    }
+  };
+
+  const handleDeleteUser = async (cedula: string) => {
+    if (window.confirm('¿Está seguro de eliminar este usuario?')) {
+      try {
+        const token = localStorage.getItem('token');
+        if (!token) {
+          throw new Error('No hay sesión activa');
+        }
+
+        const response = await fetch(`${apiUrl}/usuario/${cedula}`, {
+          method: 'DELETE',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        });
+
+        if (!response.ok) {
+          throw new Error('Error al eliminar usuario');
+        }
+
+        // Actualizar la lista de usuarios
+        const updatedResponse = await fetch(`${apiUrl}/usuario`, {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        });
+        if (!updatedResponse.ok) {
+          throw new Error('Error al actualizar la lista de usuarios');
+        }
+        const data = await updatedResponse.json();
+        setUsuarios(data.usuarios);
+
+      } catch (error) {
+        console.error('Error al eliminar usuario:', error);
+        alert(error instanceof Error ? error.message : 'Error al eliminar usuario');
+      }
+    }
+  };
+
+  const handleDeleteClick = (cedula: string) => {
+    setUserToDelete(cedula);
+    setShowDeleteModal(true);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!userToDelete) return;
+
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        throw new Error('No hay sesión activa');
+      }
+
+      const response = await fetch(`${apiUrl}/usuario/${userToDelete}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error('Error al eliminar usuario');
+      }
+
+      // Actualizar la lista de usuarios
+      const updatedResponse = await fetch(`${apiUrl}/usuario`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      if (!updatedResponse.ok) {
+        throw new Error('Error al actualizar la lista de usuarios');
+      }
+      const data = await updatedResponse.json();
+      setUsuarios(data.usuarios);
+
+      setShowDeleteModal(false);
+      setUserToDelete(null);
+
+    } catch (error) {
+      console.error('Error al eliminar usuario:', error);
+      alert(error instanceof Error ? error.message : 'Error al eliminar usuario');
     }
   };
 
@@ -2901,7 +3014,12 @@ const WelcomeMenu: React.FC<WelcomeMenuProps> = () => {
                                   onClick={() => handleEditClick(usuario)}                                >
                                   Editar
                                 </button>
-                                <button className="delete-btn">Eliminar</button>
+                                <button 
+                                  className="delete-btn"
+                                  onClick={() => handleDeleteClick(usuario.cedula_usuario)}
+                                >
+                                  Eliminar
+                                </button>
                               </td>
                             </tr>
                           ))
@@ -3115,6 +3233,22 @@ const WelcomeMenu: React.FC<WelcomeMenuProps> = () => {
                     required
                   />
                 </label>
+
+                <label>
+                  <span>Estado</span>
+                  <select
+                    id="edit-state"
+                    value={editFormData.estado_usuario}
+                    onChange={(e) => setEditFormData(prev => ({
+                      ...prev,
+                      estado_usuario: e.target.value as 'Activo' | 'Inactivo'
+                    }))}
+                    required
+                  >
+                    <option value="Activo">Activo</option>
+                    <option value="Inactivo">Inactivo</option>
+                  </select>
+                </label>
               </div>
 
               <div className="form-buttons">
@@ -3136,7 +3270,8 @@ const WelcomeMenu: React.FC<WelcomeMenuProps> = () => {
                       cedula_usuario: "",
                       correo_usuario: "",
                       tel_usuario: "",
-                      usuario_login: ""
+                      usuario_login: "",
+                      estado_usuario: "Activo"
                     });
                   }}
                 >
@@ -3144,6 +3279,21 @@ const WelcomeMenu: React.FC<WelcomeMenuProps> = () => {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {showDeleteModal && (
+        <div className="modal-overlay">
+          <div className="modal-content logout-modal">
+            <h4>¿Está seguro que desea eliminar este usuario?</h4>
+            <div className="modal-buttons">
+              <button onClick={handleDeleteConfirm}>Sí</button>
+              <button onClick={() => {
+                setShowDeleteModal(false);
+                setUserToDelete(null);
+              }}>No</button>
+            </div>
           </div>
         </div>
       )}
