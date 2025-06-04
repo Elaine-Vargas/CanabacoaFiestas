@@ -75,11 +75,21 @@ type WelcomeMenuProps = {
 
 interface Espacio {
   id_espacio: number;
-  nombre: string;
-  telefono: string;
-  espacio: string;
-  direccion: string;
-  estado: string;
+  nombre_espacio: string;
+  tel_espacio: string;
+  id_direccion: number;
+  estado_espacio: 'Activo' | 'Inactivo' | 'Eliminado';
+  direccion?: {
+    id_direccion: number;
+    id_provincia: number;
+    sector: string;
+    calle: string;
+    detalles?: string;
+    provincia?: {
+      id_provincia: number;
+      nombre_provincia: string;
+    };
+  };
 }
 
 interface WelcomeStats {
@@ -271,11 +281,16 @@ const WelcomeMenu: React.FC<WelcomeMenuProps> = () => {
     total_evento: 0.00
   });
   const [spaceFormData, setSpaceFormData] = useState<Partial<Espacio>>({
-    nombre: '',
-    telefono: '',
-    espacio: '',
-    direccion: '',
-    estado: 'Disponible'
+    nombre_espacio: '',
+    tel_espacio: '',
+    estado_espacio: 'Activo',
+    direccion: {
+      id_direccion: 0,
+      id_provincia: 0,
+      sector: '',
+      calle: '',
+      detalles: ''
+    }
   });
   const [eventos, setEventos] = useState<Evento[]>([]);
   const [selectedEventId, setSelectedEventId] = useState<number | null>(null);
@@ -342,6 +357,7 @@ const WelcomeMenu: React.FC<WelcomeMenuProps> = () => {
     detalles: '',
     estado_proveedor: 'Activo'
   });
+  const [showProveedorForm, setShowProveedorForm] = useState(false);
 
   useEffect(() => {
     const fetchEspacios = async () => {
@@ -532,31 +548,61 @@ const WelcomeMenu: React.FC<WelcomeMenuProps> = () => {
 
   const fetchProveedores = async () => {
     try {
-      const response = await fetch('/api/proveedores');
+      const token = localStorage.getItem('token');
+      const response = await fetch('http://localhost:3000/api/proveedores', {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      if (!response.ok) {
+        throw new Error('Error al cargar proveedores');
+      }
       const data = await response.json();
       setProveedores(data);
     } catch (error) {
       console.error('Error al cargar proveedores:', error);
+      setProveedores([]);
     }
   };
 
   const fetchTiposProveedor = async () => {
     try {
-      const response = await fetch('/api/tipos-proveedor');
+      const token = localStorage.getItem('token');
+      const response = await fetch('http://localhost:3000/api/tipos-proveedor', {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      if (!response.ok) {
+        throw new Error('Error al cargar tipos de proveedor');
+      }
       const data = await response.json();
       setTiposProveedor(data);
     } catch (error) {
       console.error('Error al cargar tipos de proveedor:', error);
+      setTiposProveedor([]);
     }
   };
 
   const fetchProvincias = async () => {
     try {
-      const response = await fetch('/api/provincias');
+      const token = localStorage.getItem('token');
+      const response = await fetch('http://localhost:3000/api/provincias', {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      if (!response.ok) {
+        throw new Error('Error al cargar provincias');
+      }
       const data = await response.json();
       setProvincias(data);
     } catch (error) {
       console.error('Error al cargar provincias:', error);
+      setProvincias([]);
     }
   };
 
@@ -604,12 +650,26 @@ const WelcomeMenu: React.FC<WelcomeMenuProps> = () => {
     }));
   };
 
-  const handleSpaceInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleSpaceInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
-    setSpaceFormData(prev => ({
-      ...prev,
-      [name]: value
-    }));
+    if (name.includes('.')) {
+      const [parent, child] = name.split('.');
+      setSpaceFormData(prev => {
+        const parentValue = prev[parent as keyof typeof prev] as { [key: string]: any };
+        return {
+          ...prev,
+          [parent]: {
+            ...parentValue,
+            [child]: value
+          }
+        };
+      });
+    } else {
+      setSpaceFormData(prev => ({
+        ...prev,
+        [name]: value
+      }));
+    }
   };
 
   const handleEspacioChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
@@ -782,7 +842,7 @@ const WelcomeMenu: React.FC<WelcomeMenuProps> = () => {
                     key={espacio.id_espacio} 
                     value={espacio.id_espacio}
                   >
-                    {espacio.nombre}
+                    {espacio.nombre_espacio}
                   </option>
                 ))
               ) : (
@@ -1170,7 +1230,6 @@ const WelcomeMenu: React.FC<WelcomeMenuProps> = () => {
           </button>
         </div>
 
-
         <div className="stat-card">
           <span className="stat-card__label">Proveedores</span>
           <button 
@@ -1191,6 +1250,78 @@ const WelcomeMenu: React.FC<WelcomeMenuProps> = () => {
           </button>
         </center>
       </div>
+
+      {showEventsInProcessModal && (
+        <div className="modal-overlay">
+          <div className="modal-container">
+            <button className="close-btn" onClick={() => setShowEventsInProcessModal(false)}>×</button>
+            <div className="modal-content">
+              <div className="modal-header">
+                <h3>Eventos en Proceso</h3>
+                <button 
+                  className="add-user-btn"
+                  onClick={() => setShowAllEvents(!showAllEvents)}
+                >
+                  {showAllEvents ? 'Ver eventos en proceso' : 'Ver todos los eventos'}
+                </button>
+              </div>
+              <div className="table-section">
+                <div className="table-container">
+                  <table>
+                    <thead>
+                      <tr>
+                        <th>ID</th>
+                        <th>Cliente</th>
+                        <th>Asesor</th>
+                        <th>Fecha</th>
+                        <th>Hora</th>
+                        <th>Espacio</th>
+                        <th>Tipo Evento</th>
+                        <th>Supervisión</th>
+                        <th>Estado</th>
+                        <th>Cotización</th>
+                        <th>Total</th>
+                        <th>Acciones</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {eventosEnProceso.map((evento) => (
+                        <tr key={evento.id_evento}>
+                          <td>{evento.id_evento}</td>
+                          <td>{evento.nombre_cliente || evento.cedula_cliente}</td>
+                          <td>{evento.nombre_asesor || evento.cedula_asesor}</td>
+                          <td>{evento.fecha_evento}</td>
+                          <td>{evento.hora_evento}</td>
+                          <td>{evento.nombre_espacio || evento.id_espacio}</td>
+                          <td>{evento.nombre_tipo_evento || evento.id_tipo_evento}</td>
+                          <td>{evento.desea_supervision ? 'Sí' : 'No'}</td>
+                          <td>
+                            <span className={`estado-badge ${evento.estado_evento.toLowerCase()}`}>
+                              {evento.estado_evento}
+                            </span>
+                          </td>
+                          <td>
+                            <span className={`estado-badge ${evento.estado_cotizacion.toLowerCase()}`}>
+                              {evento.estado_cotizacion}
+                            </span>
+                          </td>
+                          <td>${evento.total_evento.toFixed(2)}</td>
+                          <td>
+                            <div className="acciones-buttons">
+                              <button className="edit-btn">Editar</button>
+                              <button className="delete-btn">Cancelar</button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 
@@ -1635,10 +1766,14 @@ const WelcomeMenu: React.FC<WelcomeMenuProps> = () => {
               <tbody>
                 {stats.spaces.map((espacio) => (
                   <tr key={espacio.id_espacio}>
-                    <td>{espacio.nombre}</td>
-                    <td>{espacio.telefono}</td>
-                    <td>{espacio.direccion}</td>
-                    <td>{espacio.estado}</td>
+                    <td>{espacio.nombre_espacio}</td>
+                    <td>{espacio.tel_espacio}</td>
+                    <td>
+                      {espacio.direccion?.calle}, {espacio.direccion?.sector}
+                      {espacio.direccion?.provincia?.nombre_provincia && 
+                        `, ${espacio.direccion.provincia.nombre_provincia}`}
+                    </td>
+                    <td>{espacio.estado_espacio}</td>
                   </tr>
                 ))}
               </tbody>
@@ -1668,11 +1803,16 @@ const WelcomeMenu: React.FC<WelcomeMenuProps> = () => {
         }));
         setShowAddSpaceModal(false);
         setSpaceFormData({
-          nombre: '',
-          telefono: '',
-          espacio: '',
-          direccion: '',
-          estado: 'Disponible'
+          nombre_espacio: '',
+          tel_espacio: '',
+          estado_espacio: 'Activo',
+          direccion: {
+            id_direccion: 0,
+            id_provincia: 0,
+            sector: '',
+            calle: '',
+            detalles: ''
+          }
         });
       }
     } catch (error) {
@@ -1687,49 +1827,98 @@ const WelcomeMenu: React.FC<WelcomeMenuProps> = () => {
         <form className="modal-form" onSubmit={handleSubmit}>
           <h2>Agregar Nuevo Espacio</h2>
           
-          <label>
-            Nombre:
-            <input
-              type="text"
-              name="nombre"
-              value={spaceFormData.nombre}
-              onChange={handleSpaceInputChange}
-              required
-            />
-          </label>
+          <div className="form-grid">
+            <label>
+              <span>Nombre del Espacio:</span>
+              <input
+                type="text"
+                name="nombre_espacio"
+                value={spaceFormData.nombre_espacio}
+                onChange={handleSpaceInputChange}
+                required
+                maxLength={50}
+              />
+            </label>
 
-          <label>
-            Teléfono:
-            <input
-              type="tel"
-              name="telefono"
-              value={spaceFormData.telefono}
-              onChange={handleSpaceInputChange}
-              required
-            />
-          </label>
+            <label>
+              <span>Teléfono:</span>
+              <input
+                type="tel"
+                name="tel_espacio"
+                value={spaceFormData.tel_espacio}
+                onChange={handleSpaceInputChange}
+                required
+                pattern="[0-9]{12}"
+                maxLength={12}
+                placeholder="809123456789"
+              />
+            </label>
 
-          <label>
-            Espacio:
-            <input
-              type="text"
-              name="espacio"
-              value={spaceFormData.espacio}
-              onChange={handleSpaceInputChange}
-              required
-            />
-          </label>
+            <label>
+              <span>Provincia:</span>
+              <select
+                name="direccion.id_provincia"
+                value={spaceFormData.direccion?.id_provincia || ''}
+                onChange={handleSpaceInputChange}
+                required
+              >
+                <option value="">Seleccionar provincia</option>
+                {provincias && provincias.map((provincia) => (
+                  <option key={provincia.id_provincia} value={provincia.id_provincia}>
+                    {provincia.nombre_provincia}
+                  </option>
+                ))}
+              </select>
+            </label>
 
-          <label>
-            Dirección:
-            <input
-              type="text"
-              name="direccion"
-              value={spaceFormData.direccion}
-              onChange={handleSpaceInputChange}
-              required
-            />
-          </label>
+            <label>
+              <span>Sector:</span>
+              <input
+                type="text"
+                name="direccion.sector"
+                value={spaceFormData.direccion?.sector || ''}
+                onChange={handleSpaceInputChange}
+                required
+                maxLength={50}
+              />
+            </label>
+
+            <label>
+              <span>Calle:</span>
+              <input
+                type="text"
+                name="direccion.calle"
+                value={spaceFormData.direccion?.calle || ''}
+                onChange={handleSpaceInputChange}
+                required
+                maxLength={50}
+              />
+            </label>
+
+            <label className="full-width">
+              <span>Detalles Adicionales:</span>
+              <textarea
+                name="direccion.detalles"
+                value={spaceFormData.direccion?.detalles || ''}
+                onChange={handleSpaceInputChange}
+                rows={3}
+              />
+            </label>
+
+            <label>
+              <span>Estado:</span>
+              <select
+                name="estado_espacio"
+                value={spaceFormData.estado_espacio}
+                onChange={handleSpaceInputChange}
+                required
+              >
+                <option value="Activo">Activo</option>
+                <option value="Inactivo">Inactivo</option>
+                <option value="Eliminado">Eliminado</option>
+              </select>
+            </label>
+          </div>
 
           <div className="form-buttons">
             <button type="submit" className="submit-btn">
@@ -2100,6 +2289,7 @@ const WelcomeMenu: React.FC<WelcomeMenuProps> = () => {
           
           <button className="new-form-btn" onClick={() => {
             setEditId(null);
+            setShowProveedorForm(true);
             setProveedorFormData({
               id_tipo_proveedor: '',
               nombre_proveedor: '',
@@ -2130,7 +2320,7 @@ const WelcomeMenu: React.FC<WelcomeMenuProps> = () => {
                 </tr>
               </thead>
               <tbody>
-                {proveedores.map((proveedor) => (
+                {proveedores && proveedores.map((proveedor) => (
                   <tr key={proveedor.id_proveedor}>
                     <td>{proveedor.id_proveedor}</td>
                     <td>{proveedor.nombre_proveedor}</td>
@@ -2146,7 +2336,10 @@ const WelcomeMenu: React.FC<WelcomeMenuProps> = () => {
                     <td>
                       <button 
                         className="edit-btn"
-                        onClick={() => handleEdit(proveedor)}
+                        onClick={() => {
+                          handleEdit(proveedor);
+                          setShowProveedorForm(true);
+                        }}
                       >
                         Editar
                       </button>
@@ -2163,7 +2356,7 @@ const WelcomeMenu: React.FC<WelcomeMenuProps> = () => {
             </table>
           </div>
 
-          {(editId !== null || proveedorFormData.nombre_proveedor) && (
+          {showProveedorForm && (
             <div className="modal-form">
               <h4>{editId ? 'Editar Proveedor' : 'Nuevo Proveedor'}</h4>
               <form onSubmit={handleProveedorSubmit}>
@@ -2177,7 +2370,7 @@ const WelcomeMenu: React.FC<WelcomeMenuProps> = () => {
                       required
                     >
                       <option value="">Seleccionar tipo</option>
-                      {tiposProveedor.map((tipo) => (
+                      {tiposProveedor && tiposProveedor.map((tipo) => (
                         <option key={tipo.id_tipo_proveedor} value={tipo.id_tipo_proveedor}>
                           {tipo.nombre_tipo}
                         </option>
@@ -2193,6 +2386,7 @@ const WelcomeMenu: React.FC<WelcomeMenuProps> = () => {
                       value={proveedorFormData.nombre_proveedor}
                       onChange={handleProveedorInputChange}
                       required
+                      maxLength={50}
                     />
                   </label>
 
@@ -2204,7 +2398,9 @@ const WelcomeMenu: React.FC<WelcomeMenuProps> = () => {
                       value={proveedorFormData.tel_proveedor}
                       onChange={handleProveedorInputChange}
                       required
-                      pattern="[0-9]{10}"
+                      pattern="[0-9]{12}"
+                      maxLength={12}
+                      placeholder="809123456789"
                     />
                   </label>
 
@@ -2216,6 +2412,7 @@ const WelcomeMenu: React.FC<WelcomeMenuProps> = () => {
                       value={proveedorFormData.correo_proveedor}
                       onChange={handleProveedorInputChange}
                       required
+                      maxLength={100}
                     />
                   </label>
 
@@ -2228,7 +2425,7 @@ const WelcomeMenu: React.FC<WelcomeMenuProps> = () => {
                       required
                     >
                       <option value="">Seleccionar provincia</option>
-                      {provincias.map((provincia) => (
+                      {provincias && provincias.map((provincia) => (
                         <option key={provincia.id_provincia} value={provincia.id_provincia}>
                           {provincia.nombre_provincia}
                         </option>
@@ -2244,6 +2441,7 @@ const WelcomeMenu: React.FC<WelcomeMenuProps> = () => {
                       value={proveedorFormData.sector}
                       onChange={handleProveedorInputChange}
                       required
+                      maxLength={50}
                     />
                   </label>
 
@@ -2255,6 +2453,7 @@ const WelcomeMenu: React.FC<WelcomeMenuProps> = () => {
                       value={proveedorFormData.calle}
                       onChange={handleProveedorInputChange}
                       required
+                      maxLength={50}
                     />
                   </label>
 
@@ -2292,6 +2491,7 @@ const WelcomeMenu: React.FC<WelcomeMenuProps> = () => {
                     className="reset-btn"
                     onClick={() => {
                       setEditId(null);
+                      setShowProveedorForm(false);
                       setProveedorFormData({
                         id_tipo_proveedor: '',
                         nombre_proveedor: '',
