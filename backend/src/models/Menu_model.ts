@@ -1,4 +1,4 @@
-import { Table, Model, Column, PrimaryKey, ForeignKey, AutoIncrement, DataType, HasMany } from 'sequelize-typescript';
+import { Table, Model, Column, PrimaryKey, ForeignKey, AutoIncrement, DataType, HasMany, BelongsTo } from 'sequelize-typescript';
 import PlatoMenu from './PlatoMenu_model';
 import Proveedor from './Proveedor_model';
 
@@ -15,7 +15,10 @@ export default class Menu extends Model {
   @ForeignKey(() => Proveedor)
   @Column({ type: DataType.INTEGER })
   id_proveedor!: number;
+
+  @BelongsTo(() => Proveedor)
+  proveedor!: Proveedor;
   
-  @HasMany (() => PlatoMenu)
+  @HasMany(() => PlatoMenu)
   platos_menu!: PlatoMenu[];
 }

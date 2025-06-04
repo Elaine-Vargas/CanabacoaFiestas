@@ -49,7 +49,7 @@ export const Login = async (req: Request, res: Response) => {
     );
 
     // Mostrar token en consola
-    //console.log('Token generado:', token);
+    console.log('Token generado:', token);
 
     // Respuesta exitosa
     res.json({
