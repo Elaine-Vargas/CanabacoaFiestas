@@ -44,7 +44,12 @@ export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
           } else {
             // Obtener permisos basados en el rol distinto a admin
             try {
-              const permissionsResponse = await fetch(`/api/permissions/${userData.rol}`);
+              const token = localStorage.getItem('token');
+              const permissionsResponse = await fetch(`/api/permissions/${userData.rol}`, {
+                headers: {
+                  'Authorization': `Bearer ${token}`
+                }
+              });
               if (permissionsResponse.ok) {
                 const permissionsData = await permissionsResponse.json();
                 setUserPermissions(permissionsData);
@@ -86,7 +91,12 @@ export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
                   ]);
                 } else {
                   try {
-                    const permissionsResponse = await fetch(`/api/permissions/${data.id_rol}`);
+                    const token = localStorage.getItem('token');
+                    const permissionsResponse = await fetch(`/api/permissions/${data.id_rol}`, {
+                      headers: {
+                        'Authorization': `Bearer ${token}`
+                      }
+                    });
                     if (permissionsResponse.ok) {
                       const permissionsData = await permissionsResponse.json();
                       setUserPermissions(permissionsData);

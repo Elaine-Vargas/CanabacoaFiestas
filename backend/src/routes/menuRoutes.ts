@@ -9,7 +9,8 @@ import {
     // Controladores de MenuCatering
     addMenuToCatering,
     removeMenuFromCatering,
-    getMenusByCatering
+    getMenusByCatering,
+    getMenuCatalog
 } from '../controllers/menuController';
 import { verificarToken } from '../middlewares/authMiddleware';
 
@@ -96,5 +97,8 @@ router.get('/catering/:id_catering', async (req: Request, res: Response, next: N
         next(error);
     }
 });
+
+// Obtener catálogo de menús
+router.get('/catalogo', getMenuCatalog);
 
 export default router;

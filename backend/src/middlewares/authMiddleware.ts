@@ -12,12 +12,13 @@ declare global {
 }
 
 // Middleware de autenticación
-export const verificarToken = async (req: Request, res: Response, next: NextFunction) => {
+export const verificarToken = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
     const token = req.headers.authorization?.split(' ')[1];
     
     if (!token) {
-      return res.status(401).json({ error: 'No se proporcionó token de autenticación' });
+      res.status(401).json({ error: 'No se proporcionó token de autenticación' });
+      return;
     }
 
     const decoded = jwt.verify(token, process.env.JWT_SECRET || 'w3r9Gv!72JkpX%lQs@8bZ&hMfT0^nAy') as any;
@@ -26,24 +27,26 @@ export const verificarToken = async (req: Request, res: Response, next: NextFunc
     });
 
     if (!usuario) {
-      return res.status(401).json({ error: 'Usuario no encontrado' });
+      res.status(401).json({ error: 'Usuario no encontrado' });
+      return;
     }
 
     req.usuario = usuario;
     next();
   } catch (error) {
-    return res.status(401).json({ error: 'Token inválido' });
+    res.status(401).json({ error: 'Token inválido' });
   }
 };
 
 // Middleware de autorización
 export const verificarPermiso = (permisoRequerido: string) => {
-  return async (req: Request, res: Response, next: NextFunction) => {
+  return async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
       const usuario = req.usuario;
       
       if (!usuario) {
-        return res.status(401).json({ error: 'Usuario no autenticado' });
+        res.status(401).json({ error: 'Usuario no autenticado' });
+        return;
       }
 
       // Aquí deberías verificar si el usuario tiene el permiso requerido
@@ -51,12 +54,13 @@ export const verificarPermiso = (permisoRequerido: string) => {
       const tienePermiso = await verificarPermisoUsuario(usuario.id_rol, permisoRequerido);
 
       if (!tienePermiso) {
-        return res.status(403).json({ error: 'No tiene permiso para realizar esta acción' });
+        res.status(403).json({ error: 'No tiene permiso para realizar esta acción' });
+        return;
       }
 
       next();
     } catch (error) {
-      return res.status(500).json({ error: 'Error al verificar permisos' });
+      res.status(500).json({ error: 'Error al verificar permisos' });
     }
   };
 };

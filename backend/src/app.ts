@@ -27,6 +27,8 @@ import espacioRoutes from './routes/espacioRoutes';
 import montajeDesmontajeRoutes from './routes/montajeDesmontajeRoutes';
 import pagoRoutes from './routes/pagoRoutes';
 import proveedorRoutes from './routes/proveedorRoutes';
+import permissionRoutes from './routes/permissionRoutes';
+import platoRoutes from './routes/platoRoutes';
 
 dotenv.config();
 
@@ -50,13 +52,15 @@ app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 
 // Rutas
 app.use('/api/auth', authRoutes);
+app.use('/api/permissions', permissionRoutes);
 app.use('/api/elemento', elementoRoutes);
 app.use('/api/comentarios', comentarioRoutes);
 app.use('/api/usuarios', usersRoutes);
 app.use('/api/evento', eventoRoutes);
 app.use('/api/alquiler', alquilerRoutes);
 app.use('/api/decoracion', decoracionRoutes);
-app.use('/api/menu', menuRoutes)
+app.use('/api/menu', menuRoutes);
+app.use('/api/platos', platoRoutes);
 app.use('/api/direccion', direccionRoutes);
 app.use('/api/provincias', provinciaRoutes);
 app.use('/api/tarjeta', tarjetaRoutes);

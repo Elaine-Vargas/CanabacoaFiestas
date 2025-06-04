@@ -62,6 +62,15 @@ interface CateringStats {
   totalPersonas: number;
 }
 
+// Nueva interfaz para el catálogo
+interface MenuCatalogo {
+  id_menu: number;
+  desc_menu: string;
+  proveedor: string;
+  precio_total: number | null;
+  platos: { nombre: string }[];
+}
+
 export default function Catering() {
   const { userRole } = useUser();
   const userData = JSON.parse(localStorage.getItem('userData') || '{}');
@@ -98,30 +107,60 @@ export default function Catering() {
   const [proveedores, setProveedores] = useState<any[]>([]);
   const [showMenusModal, setShowMenusModal] = useState(false);
   const [showEventosModal, setShowEventosModal] = useState(false);
+  const [menusCatalogo, setMenusCatalogo] = useState<MenuCatalogo[]>([]);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [cateringsRes, menusRes, platosRes, eventosRes] = await Promise.all([
-          fetch('/api/catering'),
-          fetch('/api/menus'),
-          fetch('/api/platos'),
-          fetch('/api/eventos')
+        const token = localStorage.getItem('token');
+        if (!token) {
+          throw new Error('No hay token de autenticación');
+        }
+
+        const headers = {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        };
+
+        // Use proxy configuration
+        const [cateringRes, menusRes, platosRes, eventosRes] = await Promise.all([
+          fetch('/api/catering', { headers }),
+          fetch('/api/menu/catalogo', { headers }),
+          fetch('/api/platos', { headers }),
+          fetch('/api/evento', { headers })
         ]);
 
-        const [cateringsData, menusData, platosData, eventosData] = await Promise.all([
-          cateringsRes.json(),
+        if (!cateringRes.ok || !menusRes.ok || !platosRes.ok || !eventosRes.ok) {
+          const errorData = await Promise.all([
+            cateringRes.ok ? null : cateringRes.json().catch(() => ({ error: 'Error al cargar catering' })),
+            menusRes.ok ? null : menusRes.json().catch(() => ({ error: 'Error al cargar menús' })),
+            platosRes.ok ? null : platosRes.json().catch(() => ({ error: 'Error al cargar platos' })),
+            eventosRes.ok ? null : eventosRes.json().catch(() => ({ error: 'Error al cargar eventos' }))
+          ]);
+          
+          console.error('Error responses:', errorData);
+          const errorMessages = errorData
+            .filter(Boolean)
+            .map(err => err?.error || err?.message || 'Error desconocido')
+            .join(', ');
+          throw new Error(`Error en la respuesta del servidor: ${errorMessages}`);
+        }
+
+        const [cateringData, menusData, platosData, eventosData] = await Promise.all([
+          cateringRes.json(),
           menusRes.json(),
           platosRes.json(),
           eventosRes.json()
         ]);
 
-        setCaterings(cateringsData);
+        setCaterings(cateringData);
         setMenus(menusData);
         setPlatos(platosData);
         setEventos(eventosData);
       } catch (error) {
         console.error('Error al cargar datos:', error);
+        setError(error instanceof Error ? error.message : 'Error al cargar los datos. Por favor, intente nuevamente.');
       }
     };
 
@@ -132,22 +171,31 @@ export default function Catering() {
     const fetchStats = async () => {
       try {
         const token = localStorage.getItem('token');
+        if (!token) {
+          throw new Error('No hay token de autenticación');
+        }
+
         const userData = JSON.parse(localStorage.getItem('userData') || '{}');
         const response = await fetch('/api/catering/stats', {
           method: 'GET',
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': token ? `Bearer ${token}` : '',
+            'Authorization': `Bearer ${token}`,
             'user-role': userData.rol || '',
             'user-cedula': userData.cedula || ''
           }
         });
-        if (response.ok) {
-          const data = await response.json();
-          setStats(data);
+
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => null);
+          throw new Error(errorData?.message || `Error HTTP: ${response.status}`);
         }
+
+        const data = await response.json();
+        setStats(data);
       } catch (error) {
         console.error('Error al cargar estadísticas:', error);
+        setError(error instanceof Error ? error.message : 'Error al cargar estadísticas. Por favor, intente nuevamente.');
       }
     };
 
@@ -159,31 +207,82 @@ export default function Catering() {
   useEffect(() => {
     const fetchPedidos = async () => {
       try {
-        const response = await fetch('/api/catering/pedidos');
+        const token = localStorage.getItem('token');
+        if (!token) {
+          throw new Error('No hay token de autenticación');
+        }
+
+        const response = await fetch('/api/catering/pedidos', {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => null);
+          throw new Error(errorData?.message || `Error HTTP: ${response.status}`);
+        }
+
         const data = await response.json();
         setPedidos(data);
       } catch (error) {
         console.error('Error al cargar pedidos:', error);
+        setError(error instanceof Error ? error.message : 'Error al cargar pedidos. Por favor, intente nuevamente.');
       }
     };
 
     const fetchPedidosPendientes = async () => {
       try {
-        const response = await fetch('/api/catering/pendientes');
+        const token = localStorage.getItem('token');
+        if (!token) {
+          throw new Error('No hay token de autenticación');
+        }
+
+        const response = await fetch('/api/catering/pendientes', {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => null);
+          throw new Error(errorData?.message || `Error HTTP: ${response.status}`);
+        }
+
         const data = await response.json();
         setPedidosPendientes(data);
       } catch (error) {
         console.error('Error al cargar pedidos pendientes:', error);
+        setError(error instanceof Error ? error.message : 'Error al cargar pedidos pendientes. Por favor, intente nuevamente.');
       }
     };
 
     const fetchProveedores = async () => {
       try {
-        const response = await fetch('/api/catering/proveedores');
+        const token = localStorage.getItem('token');
+        if (!token) {
+          throw new Error('No hay token de autenticación');
+        }
+
+        const response = await fetch('/api/catering/proveedores', {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => null);
+          throw new Error(errorData?.message || `Error HTTP: ${response.status}`);
+        }
+
         const data = await response.json();
         setProveedores(data);
       } catch (error) {
         console.error('Error al cargar proveedores:', error);
+        setError(error instanceof Error ? error.message : 'Error al cargar proveedores. Por favor, intente nuevamente.');
       }
     };
 
@@ -197,6 +296,41 @@ export default function Catering() {
       fetchProveedores();
     }
   }, [showPedidosModal, showPendientesModal, showProveedoresModal]);
+
+  useEffect(() => {
+    if (userRole === 'client') {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        console.error('No hay token de autenticación');
+        return;
+      }
+
+      fetch('/api/menu/catalogo', {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      })
+        .then(res => {
+          if (!res.ok) {
+            throw new Error(`Error HTTP: ${res.status}`);
+          }
+          return res.json();
+        })
+        .then(data => {
+          if (Array.isArray(data)) {
+            setMenusCatalogo(data);
+          } else {
+            console.error('Los datos recibidos no son un array:', data);
+            setMenusCatalogo([]);
+          }
+        })
+        .catch(err => {
+          console.error('Error al cargar catálogo de menús:', err);
+          setMenusCatalogo([]);
+        });
+    }
+  }, [userRole]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
@@ -403,184 +537,26 @@ export default function Catering() {
             onChange={(e) => setSearchTerm(e.target.value)}
           />
         </div>
-        <div className="category-select">
-          <select
-            value={selectedCategory}
-            onChange={(e) => setSelectedCategory(e.target.value)}
-          >
-            <option value="todos">Todos los menús</option>
-            <option value="populares">Más populares</option>
-            <option value="recientes">Recientes</option>
-          </select>
-        </div>
-        <button 
-          className="create-menu-btn"
-          onClick={() => setShowCreateMenuModal(true)}
-        >
-          Crear menú personalizado
-        </button>
       </div>
-
       <div className="menus-grid">
-        {menus
-          .filter(menu => 
-            menu.desc_menu.toLowerCase().includes(searchTerm.toLowerCase())
-          )
+        {menusCatalogo
+          .filter(menu => menu.desc_menu.toLowerCase().includes(searchTerm.toLowerCase()))
           .map(menu => (
             <div key={menu.id_menu} className="menu-card">
               <h3>{menu.desc_menu}</h3>
               <div className="menu-platos">
-                {menu.platos.map(plato => (
-                  <p key={plato.id_plato}>{plato.desc_plato}</p>
+                {menu.platos && menu.platos.map((plato, idx) => (
+                  <p key={idx}>{typeof plato === 'string' ? plato : plato.nombre}</p>
                 ))}
               </div>
-              <button 
-                className="select-menu-btn"
-                onClick={() => handleMenuSelect(menu)}
-              >
-                Seleccionar menú
-              </button>
+              <div className="menu-proveedor">Proveedor: {menu.proveedor}</div>
+              <div className="menu-precio">
+                Precio promedio: {menu.precio_total ? `$${menu.precio_total.toFixed(2)}` : 'No disponible'}
+              </div>
+              <button className="select-menu-btn">Reservar menú</button>
             </div>
           ))}
       </div>
-
-      {showCreateMenuModal && (
-        <div className="modal-overlay">
-          <div className="modal-container">
-            <button className="close-btn" onClick={() => setShowCreateMenuModal(false)}>×</button>
-            <form className="modal-form" onSubmit={handleCreateMenu}>
-              <h2>Crear Menú Personalizado</h2>
-              
-              <label>
-                Descripción del menú:
-                <textarea
-                  value={newMenuData.desc_menu}
-                  onChange={(e) => setNewMenuData(prev => ({
-                    ...prev,
-                    desc_menu: e.target.value
-                  }))}
-                  required
-                  rows={4}
-                />
-              </label>
-
-              <div className="platos-grid">
-                {platos.map(plato => (
-                  <div
-                    key={plato.id_plato}
-                    className={`plato-card ${
-                      newMenuData.selectedPlatos.some(p => p.id_plato === plato.id_plato) 
-                        ? 'selected' 
-                        : ''
-                    }`}
-                    onClick={() => handlePlatoSelect(plato)}
-                  >
-                    <p>{plato.desc_plato}</p>
-                  </div>
-                ))}
-              </div>
-
-              <div className="form-buttons">
-                <button type="submit" className="submit-btn">
-                  Crear Menú
-                </button>
-                <button
-                  type="button"
-                  className="reset-btn"
-                  onClick={() => setShowCreateMenuModal(false)}
-                >
-                  Cancelar
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {showModal && (
-        <div className="modal-overlay">
-          <div className="modal-container">
-            <button className="close-btn" onClick={() => setShowModal(false)}>×</button>
-            <form className="modal-form" onSubmit={handleSubmit}>
-              <h2>{editId ? 'Editar Servicio de Catering' : 'Nuevo Servicio de Catering'}</h2>
-              
-              <div className="form-grid">
-                <label>
-                  <span>Evento:</span>
-                  <select
-                    name="id_evento"
-                    value={formData.id_evento || ''}
-                    onChange={handleInputChange}
-                    required
-                  >
-                    <option value="">Seleccionar evento</option>
-                    {eventos.map((evento) => (
-                      <option key={evento.id_evento} value={evento.id_evento}>
-                        {evento.tipo_evento} - {evento.fecha_evento}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-
-                <label>
-                  <span>Número de Personas:</span>
-                  <input
-                    type="number"
-                    name="personas"
-                    value={formData.personas || ''}
-                    onChange={handleInputChange}
-                    required
-                    min="1"
-                  />
-                </label>
-
-                <label>
-                  <span>Precio Neto:</span>
-                  <input
-                    type="number"
-                    name="precio_neto"
-                    value={formData.precio_neto || ''}
-                    onChange={handleInputChange}
-                    required
-                    min="0"
-                    step="0.01"
-                  />
-                </label>
-
-                <label>
-                  <span>Estado:</span>
-                  <select
-                    name="estado"
-                    value={formData.estado || ''}
-                    onChange={handleInputChange}
-                    required
-                  >
-                    <option value="">Seleccionar estado</option>
-                    <option value="Pendiente">Pendiente</option>
-                    <option value="En Progreso">En Progreso</option>
-                    <option value="Completado">Completado</option>
-                    <option value="Cancelado">Cancelado</option>
-                  </select>
-                </label>
-
-              </div>
-
-              <div className="form-buttons">
-                <button type="submit" className="submit-btn">
-                  {editId ? 'Actualizar' : 'Guardar'}
-                </button>
-                <button
-                  type="button"
-                  className="reset-btn"
-                  onClick={() => setShowModal(false)}
-                >
-                  Cancelar
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
     </div>
   );
 
