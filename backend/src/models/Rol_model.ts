@@ -21,6 +21,14 @@ export default class Rol extends Model {
   })
   nombre_rol!: string;
 
+  @Column({
+    type: DataType.JSON,
+    allowNull: false,
+    defaultValue: [],
+    field: 'permisos'
+  })
+  permisos!: string[];
+
   // Relación con usuario 1:N
   @HasMany(() => Usuario, { foreignKey: 'id_rol' })
   usuario!: Usuario[];

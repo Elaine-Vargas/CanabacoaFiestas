@@ -6,9 +6,9 @@ import CateringServicio from './CateringServicio_model';
 export default class MenuCatering extends Model {
   @ForeignKey(() => Menu)
   @Column({ type: DataType.INTEGER })
-  id_plato!: number;
+  id_menu!: number;
 
   @ForeignKey(() => CateringServicio)
   @Column({ type: DataType.INTEGER })
-  id_menu!: number;
+  id_catering!: number;
 }

@@ -5,6 +5,8 @@ import Proveedor from '../models/Proveedor_model';
 import PlatoMenu from '../models/PlatoMenu_model';
 import Plato from '../models/Plato_model';
 import { Op } from 'sequelize';
+import CateringServicio from '../models/CateringServicio_model';
+import { BelongsTo } from 'sequelize-typescript';
 
 // Controladores para Menu
 export const createMenu = async (req: Request, res: Response) => {
@@ -301,5 +303,93 @@ export const getMenuByCatering = async (req: Request, res: Response) => {
     } catch (error) {
         console.error('Error al obtener menús del catering:', error);
         res.status(500).json({ error: 'Error al obtener menús del catering' });
+    }
+};
+
+export const getMenusWithDetails = async (req: Request, res: Response) => {
+    try {
+        const menus = await Menu.findAll({
+            include: [
+                {
+                    model: PlatoMenu,
+                    as: 'platos_menu',
+                    include: [
+                        {
+                            model: Plato,
+                            as: 'plato'
+                        }
+                    ]
+                },
+                {
+                    model: Proveedor,
+                    as: 'proveedor'
+                }
+            ]
+        });
+
+        const menusWithDetails = menus.map(menu => {
+            const platos = menu.platos_menu.map(pm => ({
+                nombre: pm.plato ? pm.plato.desc_plato : 'Sin nombre'
+            }));
+            return {
+                id_menu: menu.id_menu,
+                desc_menu: menu.desc_menu,
+                proveedor: menu.proveedor ? {
+                    nombre: menu.proveedor.nombre_proveedor,
+                    numero: menu.proveedor.tel_proveedor
+                } : { nombre: 'No asignado', numero: '' },
+                platos
+            };
+        });
+
+        res.json(menusWithDetails);
+    } catch (error) {
+        console.error('Error al obtener menús con detalles:', error);
+        res.status(500).json({ error: 'Error al obtener menús con detalles' });
+    }
+};
+
+export const getMenuCatalog = async (req: Request, res: Response) => {
+    try {
+        const menus = await Menu.findAll({
+            include: [
+                {
+                    model: PlatoMenu,
+                    as: 'platos_menu',
+                    include: [
+                        {
+                            model: Plato,
+                            as: 'plato',
+                            attributes: ['id_plato', 'desc_plato']
+                        }
+                    ]
+                },
+                {
+                    model: Proveedor,
+                    as: 'proveedor',
+                    attributes: ['id_proveedor', 'nombre_proveedor']
+                }
+            ]
+        });
+
+        const menuCatalog = menus.map(menu => ({
+            id_menu: menu.id_menu,
+            desc_menu: menu.desc_menu,
+            proveedor: menu.proveedor?.nombre_proveedor || 'Sin proveedor',
+            platos: menu.platos_menu?.map(pm => ({
+                id: pm.plato?.id_plato,
+                nombre: pm.plato?.desc_plato,
+                precio: 0 // Default price since Plato model doesn't have precio
+            })) || [],
+            precio_total: 0 // Default total price
+        }));
+
+        res.json(menuCatalog);
+    } catch (error) {
+        console.error('Error al obtener catálogo de menús:', error);
+        res.status(500).json({ 
+            error: 'Error al obtener catálogo de menús',
+            details: error instanceof Error ? error.message : 'Error desconocido'
+        });
     }
 };

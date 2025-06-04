@@ -3,6 +3,7 @@ import type { FormEvent } from 'react';
 import '../../styles/dashboard/ServicesSubpages.scss';
 import '../../components/ServiceBase';
 import { useUser } from '../../contexts/UserContext';
+import './MenuCatalogoCards.scss';
 
 export type UserRole = 'admin' | 'client' | 'supervisor' | 'inventory';
 
@@ -62,6 +63,15 @@ interface CateringStats {
   totalPersonas: number;
 }
 
+// Nueva interfaz para el catálogo
+interface MenuCatalogo {
+  id_menu: number;
+  desc_menu: string;
+  proveedor: string;
+  precio_total: number | null;
+  platos: { nombre: string }[];
+}
+
 export default function Catering() {
   const { userRole } = useUser();
   const userData = JSON.parse(localStorage.getItem('userData') || '{}');
@@ -98,30 +108,34 @@ export default function Catering() {
   const [proveedores, setProveedores] = useState<any[]>([]);
   const [showMenusModal, setShowMenusModal] = useState(false);
   const [showEventosModal, setShowEventosModal] = useState(false);
+  const [menusCatalogo, setMenusCatalogo] = useState<MenuCatalogo[]>([]);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [cateringsRes, menusRes, platosRes, eventosRes] = await Promise.all([
-          fetch('/api/catering'),
-          fetch('/api/menus'),
-          fetch('/api/platos'),
-          fetch('/api/eventos')
-        ]);
+        const token = localStorage.getItem('token');
+        if (!token) {
+          throw new Error('No hay token de autenticación');
+        }
 
-        const [cateringsData, menusData, platosData, eventosData] = await Promise.all([
-          cateringsRes.json(),
-          menusRes.json(),
-          platosRes.json(),
-          eventosRes.json()
-        ]);
+        const headers = {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        };
 
-        setCaterings(cateringsData);
-        setMenus(menusData);
-        setPlatos(platosData);
-        setEventos(eventosData);
+        const menusRes = await fetch('/api/menu/catalogo', { headers });
+        
+        if (!menusRes.ok) {
+          throw new Error('Error al cargar el catálogo de menús');
+        }
+
+        const menusData = await menusRes.json();
+        console.log('Menus data:', menusData); // Debug log
+        setMenusCatalogo(menusData);
       } catch (error) {
-        console.error('Error al cargar datos:', error);
+        console.error('Error al cargar el catálogo:', error);
+        setError(error instanceof Error ? error.message : 'Error al cargar el catálogo');
       }
     };
 
@@ -132,26 +146,31 @@ export default function Catering() {
     const fetchStats = async () => {
       try {
         const token = localStorage.getItem('token');
-        const userData = JSON.parse(localStorage.getItem('userData') || '{}');
-        const response = await fetch('/api/catering/stats', {
-          method: 'GET',
+        if (!token) {
+          throw new Error('No hay token de autenticación');
+        }
+
+        const response = await fetch('/api/dashboard/stats', {
           headers: {
-            'Content-Type': 'application/json',
-            'Authorization': token ? `Bearer ${token}` : '',
-            'user-role': userData.rol || '',
-            'user-cedula': userData.cedula || ''
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
           }
         });
-        if (response.ok) {
-          const data = await response.json();
-          setStats(data);
+
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({ error: 'Error al cargar estadísticas' }));
+          throw new Error(errorData.error || `Error HTTP: ${response.status}`);
         }
+
+        const data = await response.json();
+        setStats(data);
       } catch (error) {
         console.error('Error al cargar estadísticas:', error);
+        setError(error instanceof Error ? error.message : 'Error al cargar estadísticas');
       }
     };
 
-    if (userRole !== 'client') {
+    if (userRole === 'admin') {
       fetchStats();
     }
   }, [userRole]);
@@ -159,31 +178,82 @@ export default function Catering() {
   useEffect(() => {
     const fetchPedidos = async () => {
       try {
-        const response = await fetch('/api/catering/pedidos');
+        const token = localStorage.getItem('token');
+        if (!token) {
+          throw new Error('No hay token de autenticación');
+        }
+
+        const response = await fetch('/api/catering/pedidos', {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => null);
+          throw new Error(errorData?.message || `Error HTTP: ${response.status}`);
+        }
+
         const data = await response.json();
         setPedidos(data);
       } catch (error) {
         console.error('Error al cargar pedidos:', error);
+        setError(error instanceof Error ? error.message : 'Error al cargar pedidos. Por favor, intente nuevamente.');
       }
     };
 
     const fetchPedidosPendientes = async () => {
       try {
-        const response = await fetch('/api/catering/pendientes');
+        const token = localStorage.getItem('token');
+        if (!token) {
+          throw new Error('No hay token de autenticación');
+        }
+
+        const response = await fetch('/api/catering/pendientes', {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => null);
+          throw new Error(errorData?.message || `Error HTTP: ${response.status}`);
+        }
+
         const data = await response.json();
         setPedidosPendientes(data);
       } catch (error) {
         console.error('Error al cargar pedidos pendientes:', error);
+        setError(error instanceof Error ? error.message : 'Error al cargar pedidos pendientes. Por favor, intente nuevamente.');
       }
     };
 
     const fetchProveedores = async () => {
       try {
-        const response = await fetch('/api/catering/proveedores');
+        const token = localStorage.getItem('token');
+        if (!token) {
+          throw new Error('No hay token de autenticación');
+        }
+
+        const response = await fetch('/api/catering/proveedores', {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => null);
+          throw new Error(errorData?.message || `Error HTTP: ${response.status}`);
+        }
+
         const data = await response.json();
         setProveedores(data);
       } catch (error) {
         console.error('Error al cargar proveedores:', error);
+        setError(error instanceof Error ? error.message : 'Error al cargar proveedores. Por favor, intente nuevamente.');
       }
     };
 
@@ -197,6 +267,41 @@ export default function Catering() {
       fetchProveedores();
     }
   }, [showPedidosModal, showPendientesModal, showProveedoresModal]);
+
+  useEffect(() => {
+    if (userRole === 'client') {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        console.error('No hay token de autenticación');
+        return;
+      }
+
+      fetch('/api/menu/catalogo', {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      })
+        .then(res => {
+          if (!res.ok) {
+            throw new Error(`Error HTTP: ${res.status}`);
+          }
+          return res.json();
+        })
+        .then(data => {
+          if (Array.isArray(data)) {
+            setMenusCatalogo(data);
+          } else {
+            console.error('Los datos recibidos no son un array:', data);
+            setMenusCatalogo([]);
+          }
+        })
+        .catch(err => {
+          console.error('Error al cargar catálogo de menús:', err);
+          setMenusCatalogo([]);
+        });
+    }
+  }, [userRole]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
@@ -283,6 +388,14 @@ export default function Catering() {
     } catch (error) {
       console.error('Error al guardar:', error);
     }
+  };
+
+  const handleSolicitarMenu = (menuId: number) => {
+    setShowModal(true);
+    setFormData(prev => ({
+      ...prev,
+      menus: [{ id_menu: menuId }]
+    }));
   };
 
   const renderPedidosModal = () => (
@@ -392,197 +505,81 @@ export default function Catering() {
     </div>
   );
 
-  const renderClientView = () => (
-    <div className="catering-content">
-      <div className="menu-filters">
-        <div className="search-container">
-          <input
-            type="text"
-            placeholder="Buscar menús..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-          />
-        </div>
-        <div className="category-select">
+  const renderClientView = () => {
+    const filteredMenus = menusCatalogo?.filter(menu => 
+      menu.desc_menu.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      menu.proveedor.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      menu.platos.some(plato => plato.nombre.toLowerCase().includes(searchTerm.toLowerCase()))
+    ) || [];
+
+    return (
+      <div className="menu-catalogo-container">
+        
+        <div className="menu-catalogo-filters">
+          <div className="search-container">
+            <svg className="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <circle cx="11" cy="11" r="8"/>
+              <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+            </svg>
+            <input
+              type="text"
+              placeholder="Buscar por menú, proveedor o plato..."
+              className="search-input"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+          </div>
           <select
+            className="filter-select"
             value={selectedCategory}
             onChange={(e) => setSelectedCategory(e.target.value)}
           >
             <option value="todos">Todos los menús</option>
-            <option value="populares">Más populares</option>
-            <option value="recientes">Recientes</option>
+            <option value="economico">Económicos</option>
+            <option value="premium">Premium</option>
           </select>
         </div>
-        <button 
-          className="create-menu-btn"
-          onClick={() => setShowCreateMenuModal(true)}
-        >
-          Crear menú personalizado
-        </button>
-      </div>
 
-      <div className="menus-grid">
-        {menus
-          .filter(menu => 
-            menu.desc_menu.toLowerCase().includes(searchTerm.toLowerCase())
-          )
-          .map(menu => (
-            <div key={menu.id_menu} className="menu-card">
-              <h3>{menu.desc_menu}</h3>
-              <div className="menu-platos">
-                {menu.platos.map(plato => (
-                  <p key={plato.id_plato}>{plato.desc_plato}</p>
-                ))}
-              </div>
-              <button 
-                className="select-menu-btn"
-                onClick={() => handleMenuSelect(menu)}
-              >
-                Seleccionar menú
-              </button>
-            </div>
-          ))}
-      </div>
-
-      {showCreateMenuModal && (
-        <div className="modal-overlay">
-          <div className="modal-container">
-            <button className="close-btn" onClick={() => setShowCreateMenuModal(false)}>×</button>
-            <form className="modal-form" onSubmit={handleCreateMenu}>
-              <h2>Crear Menú Personalizado</h2>
-              
-              <label>
-                Descripción del menú:
-                <textarea
-                  value={newMenuData.desc_menu}
-                  onChange={(e) => setNewMenuData(prev => ({
-                    ...prev,
-                    desc_menu: e.target.value
-                  }))}
-                  required
-                  rows={4}
-                />
-              </label>
-
-              <div className="platos-grid">
-                {platos.map(plato => (
-                  <div
-                    key={plato.id_plato}
-                    className={`plato-card ${
-                      newMenuData.selectedPlatos.some(p => p.id_plato === plato.id_plato) 
-                        ? 'selected' 
-                        : ''
-                    }`}
-                    onClick={() => handlePlatoSelect(plato)}
-                  >
-                    <p>{plato.desc_plato}</p>
+        <div className="menu-catalogo-grid">
+          {filteredMenus.length > 0 ? (
+            filteredMenus.map((menu) => (
+              <div key={menu.id_menu} className="menu-catalogo-card">
+                <span className="menu-catalogo-proveedor">{menu.proveedor}</span>
+                <div className="menu-catalogo-card-content">
+                  <h3 className="menu-catalogo-card-title">{menu.desc_menu}</h3>
+                  <div className="menu-catalogo-platos-list">
+                    <h4>Platos incluidos:</h4>
+                    <ul>
+                      {menu.platos.map((plato, index) => (
+                        <li key={index}>
+                          <svg viewBox="0 0 20 20" fill="currentColor"><path d="M10 2a8 8 0 100 16 8 8 0 000-16zm1 11H9v-2h2v2zm0-4H9V5h2v4z" /></svg>
+                          <span>{plato.nombre}</span>
+                        </li>
+                      ))}
+                    </ul>
                   </div>
-                ))}
-              </div>
-
-              <div className="form-buttons">
-                <button type="submit" className="submit-btn">
-                  Crear Menú
-                </button>
-                <button
-                  type="button"
-                  className="reset-btn"
-                  onClick={() => setShowCreateMenuModal(false)}
-                >
-                  Cancelar
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {showModal && (
-        <div className="modal-overlay">
-          <div className="modal-container">
-            <button className="close-btn" onClick={() => setShowModal(false)}>×</button>
-            <form className="modal-form" onSubmit={handleSubmit}>
-              <h2>{editId ? 'Editar Servicio de Catering' : 'Nuevo Servicio de Catering'}</h2>
-              
-              <div className="form-grid">
-                <label>
-                  <span>Evento:</span>
-                  <select
-                    name="id_evento"
-                    value={formData.id_evento || ''}
-                    onChange={handleInputChange}
-                    required
+                  <div className="menu-catalogo-precio">
+                    <span>Precio total:</span>
+                    <span className="precio-total">${menu.precio_total?.toFixed(2) || '0.00'}</span>
+                  </div>
+                  <button
+                    onClick={() => handleSolicitarMenu(menu.id_menu)}
+                    className="menu-catalogo-btn"
                   >
-                    <option value="">Seleccionar evento</option>
-                    {eventos.map((evento) => (
-                      <option key={evento.id_evento} value={evento.id_evento}>
-                        {evento.tipo_evento} - {evento.fecha_evento}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-
-                <label>
-                  <span>Número de Personas:</span>
-                  <input
-                    type="number"
-                    name="personas"
-                    value={formData.personas || ''}
-                    onChange={handleInputChange}
-                    required
-                    min="1"
-                  />
-                </label>
-
-                <label>
-                  <span>Precio Neto:</span>
-                  <input
-                    type="number"
-                    name="precio_neto"
-                    value={formData.precio_neto || ''}
-                    onChange={handleInputChange}
-                    required
-                    min="0"
-                    step="0.01"
-                  />
-                </label>
-
-                <label>
-                  <span>Estado:</span>
-                  <select
-                    name="estado"
-                    value={formData.estado || ''}
-                    onChange={handleInputChange}
-                    required
-                  >
-                    <option value="">Seleccionar estado</option>
-                    <option value="Pendiente">Pendiente</option>
-                    <option value="En Progreso">En Progreso</option>
-                    <option value="Completado">Completado</option>
-                    <option value="Cancelado">Cancelado</option>
-                  </select>
-                </label>
-
+                    Solicitar este menú
+                  </button>
+                </div>
               </div>
-
-              <div className="form-buttons">
-                <button type="submit" className="submit-btn">
-                  {editId ? 'Actualizar' : 'Guardar'}
-                </button>
-                <button
-                  type="button"
-                  className="reset-btn"
-                  onClick={() => setShowModal(false)}
-                >
-                  Cancelar
-                </button>
-              </div>
-            </form>
-          </div>
+            ))
+          ) : (
+            <div className="text-center py-12">
+              <p className="text-gray-500 text-lg">No se encontraron menús disponibles</p>
+            </div>
+          )}
         </div>
-      )}
-    </div>
-  );
+      </div>
+    );
+  };
 
   const renderAdminView = () => {
     return (
@@ -872,7 +869,7 @@ export default function Catering() {
     <div className="catering-page">
       <div className="welcome-header">
         <h1>Gestión de Catering</h1>
-        <p>Gestiona los servicios de catering para eventos</p>
+        <p>selecciona un menú y solicítalo para tu evento</p>
       </div>
 
       <div className="service-content">

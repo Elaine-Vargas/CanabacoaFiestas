@@ -180,7 +180,7 @@ const Catalog: React.FC<CatalogProps> = ({ onAddToCart = true, onComprarCarrito 
       try {
         setLoading(true);
         const [elementosRes, categoriasRes, coloresRes, materialesRes] = await Promise.all([
-          axios.get(`${apiUrl}/elementos/filtrado`),
+          axios.get(`${apiUrl}/elementos/filtrados`),
           axios.get(`${apiUrl}/elementos/categorias/list`),
           axios.get(`${apiUrl}/elementos/colores/list`),
           axios.get(`${apiUrl}/elementos/materiales/list`)

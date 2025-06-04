@@ -174,29 +174,45 @@ const Catalog: React.FC<CatalogProps> = ({ onAddToCart = true, onComprarCarrito 
   });
 
   useEffect(() => {
+    const checkAuth = () => {
+      const token = localStorage.getItem('token');
+      const role = localStorage.getItem('userRole');
+      console.log('Token:', token ? 'Presente' : 'No presente');
+      console.log('Rol:', role);
+      setIsAuthenticated(!!token);
+      setUserRole(role);
+    };
+
+    checkAuth();
+    window.addEventListener('storage', checkAuth);
+    return () => window.removeEventListener('storage', checkAuth);
+  }, []);
+
+  useEffect(() => {
     const fetchData = async () => {
       try {
         setLoading(true);
         console.log('Iniciando carga de datos...');
+        console.log('URL de la API:', apiUrl);
         
         const token = localStorage.getItem('token');
         const headers = token ? { Authorization: `Bearer ${token}` } : {};
+        console.log('Headers:', headers);
         
         const [elementosRes, categoriasRes, coloresRes, materialesRes] = await Promise.all([
-          axios.get(`${apiUrl}/elementos/filtrados`, { headers }),
-          axios.get(`${apiUrl}/elementos/categorias/list`, { headers }),
-          axios.get(`${apiUrl}elementos/colores/list`, { headers }),
-          axios.get(`${apiUrl}/elementos/materiales/list`, { headers })
+          axios.get(`${apiUrl}/elemento`, { headers }),
+          axios.get(`${apiUrl}/elemento/categorias/list`, { headers }),
+          axios.get(`${apiUrl}/elemento/colores/list`, { headers }),
+          axios.get(`${apiUrl}/elemento/materiales/list`, { headers })
         ]);
 
-        console.log('Datos recibidos:', {
-          elementos: elementosRes.data,
-          categorias: categoriasRes.data,
-          colores: coloresRes.data,
-          materiales: materialesRes.data
-        });
+        console.log('Respuesta completa de elementos:', elementosRes);
+        console.log('Datos de elementos:', elementosRes.data);
+        console.log('Tipo de datos de elementos:', typeof elementosRes.data);
+        console.log('¿Es array?', Array.isArray(elementosRes.data));
 
         if (elementosRes.data && Array.isArray(elementosRes.data)) {
+          console.log('Número de elementos recibidos:', elementosRes.data.length);
           setElementos(elementosRes.data);
         } else {
           console.error('Los elementos recibidos no son un array:', elementosRes.data);
@@ -241,19 +257,6 @@ const Catalog: React.FC<CatalogProps> = ({ onAddToCart = true, onComprarCarrito 
     };
 
     fetchData();
-  }, []);
-
-  useEffect(() => {
-    const checkAuth = () => {
-      const token = localStorage.getItem('token');
-      const role = localStorage.getItem('userRole');
-      setIsAuthenticated(!!token);
-      setUserRole(role);
-    };
-
-    checkAuth();
-    window.addEventListener('storage', checkAuth);
-    return () => window.removeEventListener('storage', checkAuth);
   }, []);
 
   useEffect(() => {
@@ -454,7 +457,10 @@ const Catalog: React.FC<CatalogProps> = ({ onAddToCart = true, onComprarCarrito 
 
   // Filtrar y paginar los elementos
   const filteredElementos = useMemo(() => {
-    return elementos.filter(elemento => {
+    console.log('Filtrando elementos. Total elementos:', elementos.length);
+    console.log('Filtros actuales:', filtros);
+    
+    const filtered = elementos.filter(elemento => {
       const matchesCategoria = !filtros.categoria || elemento.subcategoria.categoria.id_categoria === Number(filtros.categoria);
       const matchesSubcategoria = !filtros.subcategoria || elemento.subcategoria.id_subcategoria === Number(filtros.subcategoria);
       const matchesColor = !filtros.color || elemento.color.id_color === Number(filtros.color);
@@ -464,11 +470,16 @@ const Catalog: React.FC<CatalogProps> = ({ onAddToCart = true, onComprarCarrito 
 
       return matchesCategoria && matchesSubcategoria && matchesColor && matchesMaterial && matchesBusqueda;
     });
+
+    console.log('Elementos filtrados:', filtered.length);
+    return filtered;
   }, [elementos, filtros]);
 
   const paginatedElementos = useMemo(() => {
     const startIndex = (currentPage - 1) * itemsPerPage;
-    return filteredElementos.slice(startIndex, startIndex + itemsPerPage);
+    const paginated = filteredElementos.slice(startIndex, startIndex + itemsPerPage);
+    console.log('Elementos paginados:', paginated.length);
+    return paginated;
   }, [filteredElementos, currentPage, itemsPerPage]);
 
   return (
