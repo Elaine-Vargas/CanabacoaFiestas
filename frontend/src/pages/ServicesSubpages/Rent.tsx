@@ -22,6 +22,7 @@ export type RolePermissions = {
 interface Rent {
   id_rent?: number;
   id_evento: number;
+  id_elemento: number;
   tipo_elemento: string;
   cantidad: number;
   precio_unitario: number;
@@ -62,6 +63,7 @@ export default function Rent() {
   });
   const [formData, setFormData] = useState<Partial<Rent>>({
     id_evento: 0,
+    id_elemento: 0,
     tipo_elemento: '',
     cantidad: 0,
     precio_unitario: 0,
@@ -834,92 +836,94 @@ export default function Rent() {
             <div className="modal-container">
               <button className="close-btn" onClick={() => setShowModal(false)}>×</button>
               <form className="modal-form" onSubmit={handleSubmit}>
-                <h2>{editId ? 'Editar Servicio' : 'Nuevo Servicio'}</h2>
+                <h2>{editId ? 'Editar Alquiler' : 'Nuevo Alquiler'}</h2>
                 
-                <label>
-                  Evento:
-                  <select
-                    name="id_evento"
-                    value={formData.id_evento || ''}
-                    onChange={handleSelectChange}
-                    required
-                  >
-                    <option value="">Seleccionar evento</option>
-                    {eventos.map((evento) => (
-                      <option key={evento.id_evento} value={evento.id_evento}>
-                        {evento.fecha_evento} - {evento.tipo_evento}
-                      </option>
-                    ))}
-                  </select>
-                </label>
+                <div className="form-grid">
+                  <label>
+                    <span>Evento:</span>
+                    <select
+                      name="id_evento"
+                      value={formData.id_evento || ''}
+                      onChange={handleSelectChange}
+                      required
+                    >
+                      <option value="">Seleccionar evento</option>
+                      {eventos.map((evento) => (
+                        <option key={evento.id_evento} value={evento.id_evento}>
+                          {evento.tipo_evento} - {evento.fecha_evento}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
 
-                <label>
-                  Tipo de Item:
-                  <select
-                    name="tipo_elemento"
-                    value={formData.tipo_elemento || ''}
-                    onChange={handleSelectChange}
-                    required
-                  >
-                    <option value="">Seleccionar tipo</option>
-                    <option value="Mesa">Mesa</option>
-                    <option value="Silla">Silla</option>
-                    <option value="Mantel">Mantel</option>
-                    <option value="Cubiertos">Cubiertos</option>
-                    <option value="Otros">Otros</option>
-                  </select>
-                </label>
+                  <label>
+                    <span>Elemento:</span>
+                    <select
+                      name="id_elemento"
+                      value={formData.id_elemento || ''}
+                      onChange={handleSelectChange}
+                      required
+                    >
+                      <option value="">Seleccionar elemento</option>
+                      {items.map((elemento) => (
+                        <option key={elemento.id_elemento} value={elemento.id_elemento}>
+                          {elemento.nombre_elemento}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
 
-                <label>
-                  Cantidad:
-                  <input
-                    type="number"
-                    name="cantidad"
-                    value={formData.cantidad || ''}
-                    onChange={handleInputChange}
-                    required
-                    min="1"
-                  />
-                </label>
+                  <label>
+                    <span>Cantidad:</span>
+                    <input
+                      type="number"
+                      name="cantidad"
+                      value={formData.cantidad || ''}
+                      onChange={handleInputChange}
+                      required
+                      min="1"
+                    />
+                  </label>
 
-                <label>
-                  Precio:
-                  <input
-                    type="number"
-                    name="precio_unitario"
-                    value={formData.precio_unitario || ''}
-                    onChange={handleInputChange}
-                    required
-                    min="0"
-                    step="0.01"
-                  />
-                </label>
+                  <label>
+                    <span>Precio:</span>
+                    <input
+                      type="number"
+                      name="precio_unitario"
+                      value={formData.precio_unitario || ''}
+                      onChange={handleInputChange}
+                      required
+                      min="0"
+                      step="0.01"
+                    />
+                  </label>
 
-                <label>
-                  Estado:
-                  <select
-                    name="estado"
-                    value={formData.estado || ''}
-                    onChange={handleSelectChange}
-                    required
-                  >
-                    <option value="">Seleccionar estado</option>
-                    <option value="Pendiente">Pendiente</option>
-                    <option value="En Progreso">En Progreso</option>
-                    <option value="Completado">Completado</option>
-                    <option value="Cancelado">Cancelado</option>
-                  </select>
-                </label>
+                  <label>
+                    <span>Estado:</span>
+                    <select
+                      name="estado"
+                      value={formData.estado || ''}
+                      onChange={handleSelectChange}
+                      required
+                    >
+                      <option value="">Seleccionar estado</option>
+                      <option value="Pendiente">Pendiente</option>
+                      <option value="En Progreso">En Progreso</option>
+                      <option value="Completado">Completado</option>
+                      <option value="Cancelado">Cancelado</option>
+                    </select>
+                  </label>
 
-                <label>
-                  Notas:
-                  <textarea
-                    name="notas"
-                    value={formData.notas || ''}
-                    onChange={handleInputChange}
-                    rows={4}
-                  />
-                </label>
+                  <label>
+                    <span>Notas:</span>
+                    <textarea
+                      name="notas"
+                      value={formData.notas || ''}
+                      onChange={handleInputChange}
+                      rows={4}
+                    />
+                  </label>
+                </div>
 
                 <div className="form-buttons">
                   <button type="submit" className="submit-btn">
@@ -991,92 +995,94 @@ export default function Rent() {
           <div className="modal-container">
             <button className="close-btn" onClick={() => setShowModal(false)}>×</button>
             <form className="modal-form" onSubmit={handleSubmit}>
-              <h2>{editId ? 'Editar Servicio' : 'Nuevo Servicio'}</h2>
+              <h2>{editId ? 'Editar Alquiler' : 'Nuevo Alquiler'}</h2>
               
-              <label>
-                Evento:
-                <select
-                  name="id_evento"
-                  value={formData.id_evento || ''}
-                  onChange={handleSelectChange}
-                  required
-                >
-                  <option value="">Seleccionar evento</option>
-                  {eventos.map((evento) => (
-                    <option key={evento.id_evento} value={evento.id_evento}>
-                      {evento.fecha_evento} - {evento.tipo_evento}
-                    </option>
-                  ))}
-                </select>
-              </label>
+              <div className="form-grid">
+                <label>
+                  <span>Evento:</span>
+                  <select
+                    name="id_evento"
+                    value={formData.id_evento || ''}
+                    onChange={handleSelectChange}
+                    required
+                  >
+                    <option value="">Seleccionar evento</option>
+                    {eventos.map((evento) => (
+                      <option key={evento.id_evento} value={evento.id_evento}>
+                        {evento.tipo_evento} - {evento.fecha_evento}
+                      </option>
+                    ))}
+                  </select>
+                </label>
 
-              <label>
-                Tipo de Item:
-                <select
-                  name="tipo_elemento"
-                  value={formData.tipo_elemento || ''}
-                  onChange={handleSelectChange}
-                  required
-                >
-                  <option value="">Seleccionar tipo</option>
-                  <option value="Mesa">Mesa</option>
-                  <option value="Silla">Silla</option>
-                  <option value="Mantel">Mantel</option>
-                  <option value="Cubiertos">Cubiertos</option>
-                  <option value="Otros">Otros</option>
-                </select>
-              </label>
+                <label>
+                  <span>Elemento:</span>
+                  <select
+                    name="id_elemento"
+                    value={formData.id_elemento || ''}
+                    onChange={handleSelectChange}
+                    required
+                  >
+                    <option value="">Seleccionar elemento</option>
+                    {items.map((elemento) => (
+                      <option key={elemento.id_elemento} value={elemento.id_elemento}>
+                        {elemento.nombre_elemento}
+                      </option>
+                    ))}
+                  </select>
+                </label>
 
-              <label>
-                Cantidad:
-                <input
-                  type="number"
-                  name="cantidad"
-                  value={formData.cantidad || ''}
-                  onChange={handleInputChange}
-                  required
-                  min="1"
-                />
-              </label>
+                <label>
+                  <span>Cantidad:</span>
+                  <input
+                    type="number"
+                    name="cantidad"
+                    value={formData.cantidad || ''}
+                    onChange={handleInputChange}
+                    required
+                    min="1"
+                  />
+                </label>
 
-              <label>
-                Precio:
-                <input
-                  type="number"
-                  name="precio_unitario"
-                  value={formData.precio_unitario || ''}
-                  onChange={handleInputChange}
-                  required
-                  min="0"
-                  step="0.01"
-                />
-              </label>
+                <label>
+                  <span>Precio:</span>
+                  <input
+                    type="number"
+                    name="precio_unitario"
+                    value={formData.precio_unitario || ''}
+                    onChange={handleInputChange}
+                    required
+                    min="0"
+                    step="0.01"
+                  />
+                </label>
 
-              <label>
-                Estado:
-                <select
-                  name="estado"
-                  value={formData.estado || ''}
-                  onChange={handleSelectChange}
-                  required
-                >
-                  <option value="">Seleccionar estado</option>
-                  <option value="Pendiente">Pendiente</option>
-                  <option value="En Progreso">En Progreso</option>
-                  <option value="Completado">Completado</option>
-                  <option value="Cancelado">Cancelado</option>
-                </select>
-              </label>
+                <label>
+                  <span>Estado:</span>
+                  <select
+                    name="estado"
+                    value={formData.estado || ''}
+                    onChange={handleSelectChange}
+                    required
+                  >
+                    <option value="">Seleccionar estado</option>
+                    <option value="Pendiente">Pendiente</option>
+                    <option value="En Progreso">En Progreso</option>
+                    <option value="Completado">Completado</option>
+                    <option value="Cancelado">Cancelado</option>
+                  </select>
+                </label>
 
-              <label>
-                Notas:
-                <textarea
-                  name="notas"
-                  value={formData.notas || ''}
-                  onChange={handleInputChange}
-                  rows={4}
-                />
-              </label>
+                <label>
+                  <span>Notas:</span>
+                  <textarea
+                    name="notas"
+                    value={formData.notas || ''}
+                    onChange={handleInputChange}
+                    rows={4}
+                  />
+                </label>
+              </div>
 
               <div className="form-buttons">
                 <button type="submit" className="submit-btn">

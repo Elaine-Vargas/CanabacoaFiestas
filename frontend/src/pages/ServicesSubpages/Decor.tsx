@@ -448,81 +448,93 @@ export default function Decor() {
             <div className="modal-container">
               <button className="close-btn" onClick={() => setShowModal(false)}>×</button>
               <form className="modal-form" onSubmit={handleSubmit}>
-                <h2>{editId ? 'Editar Servicio' : 'Nuevo Servicio'}</h2>
+                <h2>{editId ? 'Editar Decoración' : 'Nueva Decoración'}</h2>
                 
-                <label>
-                  Evento:
-                  <select
-                    name="id_evento"
-                    value={formData.id_evento || ''}
-                    onChange={handleSelectChange}
-                    required
-                  >
-                    <option value="">Seleccionar evento</option>
-                    {eventos.map((evento) => (
-                      <option key={evento.id_evento} value={evento.id_evento}>
-                        {evento.fecha_evento} - {evento.tipo_evento}
-                      </option>
-                    ))}
-                  </select>
-                </label>
+                <div className="form-grid">
+                  <label>
+                    <span>Evento:</span>
+                    <select
+                      name="id_evento"
+                      value={formData.id_evento || ''}
+                      onChange={handleSelectChange}
+                      required
+                    >
+                      <option value="">Seleccionar evento</option>
+                      {eventos.map((evento) => (
+                        <option key={evento.id_evento} value={evento.id_evento}>
+                          {evento.tipo_evento} - {evento.fecha_evento}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
 
-                <label>
-                  Tipo de Decoración:
-                  <select
-                    name="tipo_decoracion"
-                    value={formData.tipo_decoracion || ''}
-                    onChange={handleSelectChange}
-                    required
-                  >
-                    <option value="">Seleccionar tipo</option>
-                    <option value="Flores">Flores</option>
-                    <option value="Centros de Mesa">Centros de Mesa</option>
-                    <option value="Arcos">Arcos</option>
-                    <option value="Iluminación">Iluminación</option>
-                    <option value="Otros">Otros</option>
-                  </select>
-                </label>
+                  <label>
+                    <span>Tipo de Decoración:</span>
+                    <select
+                      name="tipo_decoracion"
+                      value={formData.tipo_decoracion || ''}
+                      onChange={handleSelectChange}
+                      required
+                    >
+                      <option value="">Seleccionar tipo</option>
+                      <option value="Bodas">Bodas</option>
+                      <option value="Quinceañeras">Quinceañeras</option>
+                      <option value="Corporativo">Corporativo</option>
+                      <option value="Otros">Otros</option>
+                    </select>
+                  </label>
 
-                <label>
-                  Descripción:
-                  <textarea
-                    name="descripcion"
-                    value={formData.descripcion || ''}
-                    onChange={handleInputChange}
-                    required
-                    rows={4}
-                  />
-                </label>
+                  <label>
+                    <span>Área a Decorar (m²):</span>
+                    <input
+                      type="number"
+                      name="area_decoracion"
+                      value={formData.area_decoracion || ''}
+                      onChange={handleInputChange}
+                      required
+                      min="1"
+                    />
+                  </label>
 
-                <label>
-                  Precio:
-                  <input
-                    type="number"
-                    name="precio"
-                    value={formData.precio || ''}
-                    onChange={handleInputChange}
-                    required
-                    min="0"
-                    step="0.01"
-                  />
-                </label>
+                  <label>
+                    <span>Precio por m²:</span>
+                    <input
+                      type="number"
+                      name="precio_m2"
+                      value={formData.precio_m2 || ''}
+                      onChange={handleInputChange}
+                      required
+                      min="0"
+                      step="0.01"
+                    />
+                  </label>
 
-                <label>
-                  Estado:
-                  <select
-                    name="estado"
-                    value={formData.estado || ''}
-                    onChange={handleSelectChange}
-                    required
-                  >
-                    <option value="">Seleccionar estado</option>
-                    <option value="Pendiente">Pendiente</option>
-                    <option value="En Progreso">En Progreso</option>
-                    <option value="Completado">Completado</option>
-                    <option value="Cancelado">Cancelado</option>
-                  </select>
-                </label>
+                  <label>
+                    <span>Estado:</span>
+                    <select
+                      name="estado"
+                      value={formData.estado || ''}
+                      onChange={handleSelectChange}
+                      required
+                    >
+                      <option value="">Seleccionar estado</option>
+                      <option value="Pendiente">Pendiente</option>
+                      <option value="En Progreso">En Progreso</option>
+                      <option value="Completado">Completado</option>
+                      <option value="Cancelado">Cancelado</option>
+                    </select>
+                  </label>
+
+                  <label>
+                    <span>Notas:</span>
+                    <textarea
+                      name="notas"
+                      value={formData.notas || ''}
+                      onChange={handleInputChange}
+                      rows={4}
+                    />
+                  </label>
+                </div>
 
                 <div className="form-buttons">
                   <button type="submit" className="submit-btn">
@@ -737,81 +749,93 @@ export default function Decor() {
           <div className="modal-container">
             <button className="close-btn" onClick={() => setShowModal(false)}>×</button>
             <form className="modal-form" onSubmit={handleSubmit}>
-              <h2>{editId ? 'Editar Servicio' : 'Nuevo Servicio'}</h2>
+              <h2>{editId ? 'Editar Decoración' : 'Nueva Decoración'}</h2>
               
-              <label>
-                Evento:
-                <select
-                  name="id_evento"
-                  value={formData.id_evento || ''}
-                  onChange={handleSelectChange}
-                  required
-                >
-                  <option value="">Seleccionar evento</option>
-                  {eventos.map((evento) => (
-                    <option key={evento.id_evento} value={evento.id_evento}>
-                      {evento.fecha_evento} - {evento.tipo_evento}
-                    </option>
-                  ))}
-                </select>
-              </label>
+              <div className="form-grid">
+                <label>
+                  <span>Evento:</span>
+                  <select
+                    name="id_evento"
+                    value={formData.id_evento || ''}
+                    onChange={handleSelectChange}
+                    required
+                  >
+                    <option value="">Seleccionar evento</option>
+                    {eventos.map((evento) => (
+                      <option key={evento.id_evento} value={evento.id_evento}>
+                        {evento.tipo_evento} - {evento.fecha_evento}
+                      </option>
+                    ))}
+                  </select>
+                </label>
 
-              <label>
-                Tipo de Decoración:
-                <select
-                  name="tipo_decoracion"
-                  value={formData.tipo_decoracion || ''}
-                  onChange={handleSelectChange}
-                  required
-                >
-                  <option value="">Seleccionar tipo</option>
-                  <option value="Flores">Flores</option>
-                  <option value="Centros de Mesa">Centros de Mesa</option>
-                  <option value="Arcos">Arcos</option>
-                  <option value="Iluminación">Iluminación</option>
-                  <option value="Otros">Otros</option>
-                </select>
-              </label>
+                <label>
+                  <span>Tipo de Decoración:</span>
+                  <select
+                    name="tipo_decoracion"
+                    value={formData.tipo_decoracion || ''}
+                    onChange={handleSelectChange}
+                    required
+                  >
+                    <option value="">Seleccionar tipo</option>
+                    <option value="Bodas">Bodas</option>
+                    <option value="Quinceañeras">Quinceañeras</option>
+                    <option value="Corporativo">Corporativo</option>
+                    <option value="Otros">Otros</option>
+                  </select>
+                </label>
 
-              <label>
-                Descripción:
-                <textarea
-                  name="descripcion"
-                  value={formData.descripcion || ''}
-                  onChange={handleInputChange}
-                  required
-                  rows={4}
-                />
-              </label>
+                <label>
+                  <span>Área a Decorar (m²):</span>
+                  <input
+                    type="number"
+                    name="area_decoracion"
+                    value={formData.area_decoracion || ''}
+                    onChange={handleInputChange}
+                    required
+                    min="1"
+                  />
+                </label>
 
-              <label>
-                Precio:
-                <input
-                  type="number"
-                  name="precio"
-                  value={formData.precio || ''}
-                  onChange={handleInputChange}
-                  required
-                  min="0"
-                  step="0.01"
-                />
-              </label>
+                <label>
+                  <span>Precio por m²:</span>
+                  <input
+                    type="number"
+                    name="precio_m2"
+                    value={formData.precio_m2 || ''}
+                    onChange={handleInputChange}
+                    required
+                    min="0"
+                    step="0.01"
+                  />
+                </label>
 
-              <label>
-                Estado:
-                <select
-                  name="estado"
-                  value={formData.estado || ''}
-                  onChange={handleSelectChange}
-                  required
-                >
-                  <option value="">Seleccionar estado</option>
-                  <option value="Pendiente">Pendiente</option>
-                  <option value="En Progreso">En Progreso</option>
-                  <option value="Completado">Completado</option>
-                  <option value="Cancelado">Cancelado</option>
-                </select>
-              </label>
+                <label>
+                  <span>Estado:</span>
+                  <select
+                    name="estado"
+                    value={formData.estado || ''}
+                    onChange={handleSelectChange}
+                    required
+                  >
+                    <option value="">Seleccionar estado</option>
+                    <option value="Pendiente">Pendiente</option>
+                    <option value="En Progreso">En Progreso</option>
+                    <option value="Completado">Completado</option>
+                    <option value="Cancelado">Cancelado</option>
+                  </select>
+                </label>
+
+                <label>
+                  <span>Notas:</span>
+                  <textarea
+                    name="notas"
+                    value={formData.notas || ''}
+                    onChange={handleInputChange}
+                    rows={4}
+                  />
+                </label>
+              </div>
 
               <div className="form-buttons">
                 <button type="submit" className="submit-btn">

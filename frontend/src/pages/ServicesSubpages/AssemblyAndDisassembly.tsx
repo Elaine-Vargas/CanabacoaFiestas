@@ -569,88 +569,92 @@ export default function AssemblyAndDisassembly() {
             <div className="modal-container">
               <button className="close-btn" onClick={() => setShowModal(false)}>×</button>
               <form className="modal-form" onSubmit={handleSubmit}>
-                <h2>{editId ? 'Editar Servicio de Montaje' : 'Nuevo Servicio de Montaje'}</h2>
+                <h2>{editId ? 'Editar Montaje/Desmontaje' : 'Nuevo Montaje/Desmontaje'}</h2>
                 
-                <label>
-                  Evento:
-                  <select
-                    name="id_evento"
-                    value={formData.id_evento || ''}
-                    onChange={handleSelectChange}
-                    required
-                  >
-                    <option value="">Seleccionar evento</option>
-                    {eventos.map((evento) => (
-                      <option key={evento.id_evento} value={evento.id_evento}>
-                        {evento.tipo_evento} - {evento.fecha_evento}
-                      </option>
-                    ))}
-                  </select>
-                </label>
+                <div className="form-grid">
+                  <label>
+                    <span>Evento:</span>
+                    <select
+                      name="id_evento"
+                      value={formData.id_evento || ''}
+                      onChange={handleSelectChange}
+                      required
+                    >
+                      <option value="">Seleccionar evento</option>
+                      {eventos.map((evento) => (
+                        <option key={evento.id_evento} value={evento.id_evento}>
+                          {evento.tipo_evento} - {evento.fecha_evento}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
 
-                <label>
-                  Tipo de Servicio:
-                  <select
-                    name="tipo_servicio"
-                    value={formData.tipo_servicio || ''}
-                    onChange={handleSelectChange}
-                    required
-                  >
-                    <option value="">Seleccionar tipo</option>
-                    <option value="Montaje">Montaje</option>
-                    <option value="Desmontaje">Desmontaje</option>
-                    <option value="Montaje y Desmontaje">Montaje y Desmontaje</option>
-                  </select>
-                </label>
+                  <label>
+                    <span>Tipo de Servicio:</span>
+                    <select
+                      name="tipo_servicio"
+                      value={formData.tipo_servicio || ''}
+                      onChange={handleSelectChange}
+                      required
+                    >
+                      <option value="">Seleccionar tipo</option>
+                      <option value="Montaje">Montaje</option>
+                      <option value="Desmontaje">Desmontaje</option>
+                      <option value="Ambos">Ambos</option>
+                    </select>
+                  </label>
 
-                <label>
-                  Descripción:
-                  <textarea
-                    name="descripcion"
-                    value={formData.descripcion || ''}
-                    onChange={handleInputChange}
-                    required
-                    rows={4}
-                  />
-                </label>
+                  <label>
+                    <span>Número de Personas:</span>
+                    <input
+                      type="number"
+                      name="numero_personas"
+                      value={formData.numero_personas || ''}
+                      onChange={handleInputChange}
+                      required
+                      min="1"
+                    />
+                  </label>
 
-                <label>
-                  Fecha de Inicio:
-                  <input
-                    type="datetime-local"
-                    name="fecha_inicio"
-                    value={formData.fecha_inicio || ''}
-                    onChange={handleInputChange}
-                    required
-                  />
-                </label>
+                  <label>
+                    <span>Precio por Persona:</span>
+                    <input
+                      type="number"
+                      name="precio_persona"
+                      value={formData.precio_persona || ''}
+                      onChange={handleInputChange}
+                      required
+                      min="0"
+                      step="0.01"
+                    />
+                  </label>
 
-                <label>
-                  Fecha de Fin:
-                  <input
-                    type="datetime-local"
-                    name="fecha_fin"
-                    value={formData.fecha_fin || ''}
-                    onChange={handleInputChange}
-                    required
-                  />
-                </label>
+                  <label>
+                    <span>Estado:</span>
+                    <select
+                      name="estado"
+                      value={formData.estado || ''}
+                      onChange={handleSelectChange}
+                      required
+                    >
+                      <option value="">Seleccionar estado</option>
+                      <option value="Pendiente">Pendiente</option>
+                      <option value="En Progreso">En Progreso</option>
+                      <option value="Completado">Completado</option>
+                      <option value="Cancelado">Cancelado</option>
+                    </select>
+                  </label>
 
-                <label>
-                  Estado:
-                  <select
-                    name="estado"
-                    value={formData.estado || ''}
-                    onChange={handleSelectChange}
-                    required
-                  >
-                    <option value="">Seleccionar estado</option>
-                    <option value="Pendiente">Pendiente</option>
-                    <option value="En Progreso">En Progreso</option>
-                    <option value="Completado">Completado</option>
-                    <option value="Cancelado">Cancelado</option>
-                  </select>
-                </label>
+                  <label>
+                    <span>Notas:</span>
+                    <textarea
+                      name="notas"
+                      value={formData.notas || ''}
+                      onChange={handleInputChange}
+                      rows={4}
+                    />
+                  </label>
+                </div>
 
                 <div className="form-buttons">
                   <button type="submit" className="submit-btn">

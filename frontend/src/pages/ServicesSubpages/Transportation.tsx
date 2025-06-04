@@ -359,81 +359,93 @@ export default function Transportation() {
             <div className="modal-container">
               <button className="close-btn" onClick={() => setShowModal(false)}>×</button>
               <form className="modal-form" onSubmit={handleSubmit}>
-                <h2>{editId ? 'Editar Servicio de Transporte' : 'Nuevo Servicio de Transporte'}</h2>
+                <h2>{editId ? 'Editar Transportación' : 'Nueva Transportación'}</h2>
                 
-                <label>
-                  Evento:
-                  <select
-                    name="id_evento"
-                    value={formData.id_evento || ''}
-                    onChange={handleSelectChange}
-                    required
-                  >
-                    <option value="">Seleccionar evento</option>
-                    {eventos.map((evento) => (
-                      <option key={evento.id_evento} value={evento.id_evento}>
-                        {evento.tipo_evento} - {evento.fecha_evento}
-                      </option>
-                    ))}
-                  </select>
-                </label>
+                <div className="form-grid">
+                  <label>
+                    <span>Evento:</span>
+                    <select
+                      name="id_evento"
+                      value={formData.id_evento || ''}
+                      onChange={handleSelectChange}
+                      required
+                    >
+                      <option value="">Seleccionar evento</option>
+                      {eventos.map((evento) => (
+                        <option key={evento.id_evento} value={evento.id_evento}>
+                          {evento.tipo_evento} - {evento.fecha_evento}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
 
-                <label>
-                  Tipo de Vehículo:
-                  <select
-                    name="tipo_vehiculo"
-                    value={formData.tipo_vehiculo || ''}
-                    onChange={handleSelectChange}
-                    required
-                  >
-                    <option value="">Seleccionar tipo</option>
-                    <option value="Bus">Bus</option>
-                    <option value="Van">Van</option>
-                    <option value="Carro">Carro</option>
-                    <option value="Camioneta">Camioneta</option>
-                  </select>
-                </label>
+                  <label>
+                    <span>Tipo de Vehículo:</span>
+                    <select
+                      name="tipo_vehiculo"
+                      value={formData.tipo_vehiculo || ''}
+                      onChange={handleSelectChange}
+                      required
+                    >
+                      <option value="">Seleccionar tipo</option>
+                      <option value="Bus">Bus</option>
+                      <option value="Van">Van</option>
+                      <option value="Carro">Carro</option>
+                      <option value="Limousina">Limousina</option>
+                    </select>
+                  </label>
 
-                <label>
-                  Capacidad:
-                  <input
-                    type="number"
-                    name="capacidad"
-                    value={formData.capacidad || ''}
-                    onChange={handleInputChange}
-                    required
-                    min="1"
-                  />
-                </label>
+                  <label>
+                    <span>Número de Pasajeros:</span>
+                    <input
+                      type="number"
+                      name="numero_pasajeros"
+                      value={formData.numero_pasajeros || ''}
+                      onChange={handleInputChange}
+                      required
+                      min="1"
+                    />
+                  </label>
 
-                <label>
-                  Precio:
-                  <input
-                    type="number"
-                    name="precio"
-                    value={formData.precio || ''}
-                    onChange={handleInputChange}
-                    required
-                    min="0"
-                    step="0.01"
-                  />
-                </label>
+                  <label>
+                    <span>Precio por Kilómetro:</span>
+                    <input
+                      type="number"
+                      name="precio_km"
+                      value={formData.precio_km || ''}
+                      onChange={handleInputChange}
+                      required
+                      min="0"
+                      step="0.01"
+                    />
+                  </label>
 
-                <label>
-                  Estado:
-                  <select
-                    name="estado"
-                    value={formData.estado || ''}
-                    onChange={handleSelectChange}
-                    required
-                  >
-                    <option value="">Seleccionar estado</option>
-                    <option value="Pendiente">Pendiente</option>
-                    <option value="En Progreso">En Progreso</option>
-                    <option value="Completado">Completado</option>
-                    <option value="Cancelado">Cancelado</option>
-                  </select>
-                </label>
+                  <label>
+                    <span>Estado:</span>
+                    <select
+                      name="estado"
+                      value={formData.estado || ''}
+                      onChange={handleSelectChange}
+                      required
+                    >
+                      <option value="">Seleccionar estado</option>
+                      <option value="Pendiente">Pendiente</option>
+                      <option value="En Progreso">En Progreso</option>
+                      <option value="Completado">Completado</option>
+                      <option value="Cancelado">Cancelado</option>
+                    </select>
+                  </label>
+
+                  <label>
+                    <span>Notas:</span>
+                    <textarea
+                      name="notas"
+                      value={formData.notas || ''}
+                      onChange={handleInputChange}
+                      rows={4}
+                    />
+                  </label>
+                </div>
 
                 <div className="form-buttons">
                   <button type="submit" className="submit-btn">

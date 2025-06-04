@@ -18,15 +18,15 @@ export const getDashboardStats = async (req: Request, res: Response) => {
 
     // Obtener el rol del usuario del token
     const userRole = req.headers['user-role'];
-    const userCedula = req.headers['user-cedula'];
+    const userIdentifier = req.headers['user-identifier']; // Puede ser cédula o usuario_login
     console.log('Rol del usuario:', userRole);
-    console.log('Cédula del usuario:', userCedula);
+    console.log('Identificador del usuario:', userIdentifier);
 
-    if (!userRole || !userCedula) {
-      console.error('Faltan headers necesarios:', { userRole, userCedula });
+    if (!userRole || !userIdentifier) {
+      console.error('Faltan headers necesarios:', { userRole, userIdentifier });
       return res.status(400).json({ 
         error: 'Faltan headers necesarios',
-        details: 'Se requieren los headers user-role y user-cedula'
+        details: 'Se requieren los headers user-role y user-identifier'
       });
     }
 
@@ -108,7 +108,10 @@ export const getDashboardStats = async (req: Request, res: Response) => {
       // Obtener eventos activos del cliente
       const eventosActivos = await Evento.count({
         where: {
-          cedula_cliente: userCedula,
+          [Op.or]: [
+            { cedula_cliente: userIdentifier },
+            { usuario_cliente: userIdentifier }
+          ],
           estado_evento: {
             [Op.in]: ['Pendiente', 'Confirmado']
           }
@@ -121,7 +124,10 @@ export const getDashboardStats = async (req: Request, res: Response) => {
       // Obtener total de eventos realizados del cliente
       const eventosRealizados = await Evento.count({
         where: {
-          cedula_cliente: userCedula,
+          [Op.or]: [
+            { cedula_cliente: userIdentifier },
+            { usuario_cliente: userIdentifier }
+          ],
           estado_evento: 'Completado'
         }
       }).catch(error => {
@@ -134,7 +140,10 @@ export const getDashboardStats = async (req: Request, res: Response) => {
         include: [{
           model: Evento,
           where: {
-            cedula_cliente: userCedula
+            [Op.or]: [
+              { cedula_cliente: userIdentifier },
+              { usuario_cliente: userIdentifier }
+            ]
           },
           required: true
         }],
@@ -157,7 +166,7 @@ export const getDashboardStats = async (req: Request, res: Response) => {
       // Obtener eventos asignados
       const eventosAsignados = await Evento.count({
         where: {
-          cedula_asesor: userCedula
+          cedula_asesor: userIdentifier
         }
       }).catch(error => {
         console.error('Error al obtener eventos asignados:', error);
@@ -251,18 +260,21 @@ export const getDashboardStats = async (req: Request, res: Response) => {
 
 export const getEventosRealizados = async (req: Request, res: Response) => {
   try {
-    const userCedula = req.headers['user-cedula'];
+    const userIdentifier = req.headers['user-identifier'];
     
-    if (!userCedula) {
+    if (!userIdentifier) {
       return res.status(400).json({ 
         error: 'Falta header necesario',
-        details: 'Se requiere el header user-cedula'
+        details: 'Se requiere el header user-identifier'
       });
     }
 
     const eventos = await Evento.findAll({
       where: {
-        cedula_cliente: userCedula,
+        [Op.or]: [
+          { cedula_cliente: userIdentifier },
+          { usuario_cliente: userIdentifier }
+        ],
         estado_evento: 'Completado'
       },
       include: [

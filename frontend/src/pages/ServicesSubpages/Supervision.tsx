@@ -269,65 +269,67 @@ export default function Supervision() {
               <form className="modal-form" onSubmit={handleSubmit}>
                 <h2>{editId ? 'Editar Supervisión' : 'Nueva Supervisión'}</h2>
                 
-                <label>
-                  Evento:
-                  <select
-                    name="id_evento"
-                    value={formData.id_evento || ''}
-                    onChange={handleSelectChange}
-                    required
-                  >
-                    <option value="">Seleccionar evento</option>
-                    {eventos.map((evento) => (
-                      <option key={evento.id_evento} value={evento.id_evento}>
-                        {evento.tipo_evento} - {evento.fecha_evento}
-                      </option>
-                    ))}
-                  </select>
-                </label>
+                <div className="form-grid">
+                  <label>
+                    <span>Evento:</span>
+                    <select
+                      name="id_evento"
+                      value={formData.id_evento || ''}
+                      onChange={handleSelectChange}
+                      required
+                    >
+                      <option value="">Seleccionar evento</option>
+                      {eventos.map((evento) => (
+                        <option key={evento.id_evento} value={evento.id_evento}>
+                          {evento.tipo_evento} - {evento.fecha_evento}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
 
-                <label>
-                  Tipo de Supervisión:
-                  <select
-                    name="tipo_supervision"
-                    value={formData.tipo_supervision || ''}
-                    onChange={handleSelectChange}
-                    required
-                  >
-                    <option value="">Seleccionar tipo</option>
-                    <option value="General">General</option>
-                    <option value="Seguridad">Seguridad</option>
-                    <option value="Logística">Logística</option>
-                    <option value="Calidad">Calidad</option>
-                  </select>
-                </label>
+                  <label>
+                    <span>Tipo de Supervisión:</span>
+                    <select
+                      name="tipo_supervision"
+                      value={formData.tipo_supervision || ''}
+                      onChange={handleSelectChange}
+                      required
+                    >
+                      <option value="">Seleccionar tipo</option>
+                      <option value="General">General</option>
+                      <option value="Seguridad">Seguridad</option>
+                      <option value="Logística">Logística</option>
+                      <option value="Calidad">Calidad</option>
+                    </select>
+                  </label>
 
-                <label>
-                  Descripción:
-                  <textarea
-                    name="descripcion"
-                    value={formData.descripcion || ''}
-                    onChange={handleInputChange}
-                    required
-                    rows={4}
-                  />
-                </label>
+                  <label>
+                    <span>Descripción:</span>
+                    <textarea
+                      name="descripcion"
+                      value={formData.descripcion || ''}
+                      onChange={handleInputChange}
+                      required
+                      rows={4}
+                    />
+                  </label>
 
-                <label>
-                  Estado:
-                  <select
-                    name="estado"
-                    value={formData.estado || ''}
-                    onChange={handleSelectChange}
-                    required
-                  >
-                    <option value="">Seleccionar estado</option>
-                    <option value="Pendiente">Pendiente</option>
-                    <option value="En Progreso">En Progreso</option>
-                    <option value="Completado">Completado</option>
-                    <option value="Cancelado">Cancelado</option>
-                  </select>
-                </label>
+                  <label>
+                    <span>Estado:</span>
+                    <select
+                      name="estado"
+                      value={formData.estado || ''}
+                      onChange={handleSelectChange}
+                      required
+                    >
+                      <option value="">Seleccionar estado</option>
+                      <option value="Pendiente">Pendiente</option>
+                      <option value="En Progreso">En Progreso</option>
+                      <option value="Completado">Completado</option>
+                      <option value="Cancelado">Cancelado</option>
+                    </select>
+                  </label>
+                </div>
 
                 <div className="form-buttons">
                   <button type="submit" className="submit-btn">
@@ -531,65 +533,67 @@ export default function Supervision() {
             <form className="modal-form" onSubmit={handleSubmit}>
               <h2>{editId ? 'Editar Supervisión' : 'Nueva Supervisión'}</h2>
               
-              <label>
-                Evento:
-                <select
-                  name="id_evento"
-                  value={formData.id_evento || ''}
-                  onChange={handleSelectChange}
-                  required
-                >
-                  <option value="">Seleccionar evento</option>
-                  {eventos.map((evento) => (
-                    <option key={evento.id_evento} value={evento.id_evento}>
-                      {evento.tipo_evento} - {evento.fecha_evento}
-                    </option>
-                  ))}
-                </select>
-              </label>
+              <div className="form-grid">
+                <label>
+                  <span>Evento:</span>
+                  <select
+                    name="id_evento"
+                    value={formData.id_evento || ''}
+                    onChange={handleSelectChange}
+                    required
+                  >
+                    <option value="">Seleccionar evento</option>
+                    {eventos.map((evento) => (
+                      <option key={evento.id_evento} value={evento.id_evento}>
+                        {evento.tipo_evento} - {evento.fecha_evento}
+                      </option>
+                    ))}
+                  </select>
+                </label>
 
-              <label>
-                Tipo de Supervisión:
-                <select
-                  name="tipo_supervision"
-                  value={formData.tipo_supervision || ''}
-                  onChange={handleSelectChange}
-                  required
-                >
-                  <option value="">Seleccionar tipo</option>
-                  <option value="General">General</option>
-                  <option value="Seguridad">Seguridad</option>
-                  <option value="Logística">Logística</option>
-                  <option value="Calidad">Calidad</option>
-                </select>
-              </label>
+                <label>
+                  <span>Tipo de Supervisión:</span>
+                  <select
+                    name="tipo_supervision"
+                    value={formData.tipo_supervision || ''}
+                    onChange={handleSelectChange}
+                    required
+                  >
+                    <option value="">Seleccionar tipo</option>
+                    <option value="General">General</option>
+                    <option value="Seguridad">Seguridad</option>
+                    <option value="Logística">Logística</option>
+                    <option value="Calidad">Calidad</option>
+                  </select>
+                </label>
 
-              <label>
-                Descripción:
-                <textarea
-                  name="descripcion"
-                  value={formData.descripcion || ''}
-                  onChange={handleInputChange}
-                  required
-                  rows={4}
-                />
-              </label>
+                <label>
+                  <span>Descripción:</span>
+                  <textarea
+                    name="descripcion"
+                    value={formData.descripcion || ''}
+                    onChange={handleInputChange}
+                    required
+                    rows={4}
+                  />
+                </label>
 
-              <label>
-                Estado:
-                <select
-                  name="estado"
-                  value={formData.estado || ''}
-                  onChange={handleSelectChange}
-                  required
-                >
-                  <option value="">Seleccionar estado</option>
-                  <option value="Pendiente">Pendiente</option>
-                  <option value="En Progreso">En Progreso</option>
-                  <option value="Completado">Completado</option>
-                  <option value="Cancelado">Cancelado</option>
-                </select>
-              </label>
+                <label>
+                  <span>Estado:</span>
+                  <select
+                    name="estado"
+                    value={formData.estado || ''}
+                    onChange={handleSelectChange}
+                    required
+                  >
+                    <option value="">Seleccionar estado</option>
+                    <option value="Pendiente">Pendiente</option>
+                    <option value="En Progreso">En Progreso</option>
+                    <option value="Completado">Completado</option>
+                    <option value="Cancelado">Cancelado</option>
+                  </select>
+                </label>
+              </div>
 
               <div className="form-buttons">
                 <button type="submit" className="submit-btn">
