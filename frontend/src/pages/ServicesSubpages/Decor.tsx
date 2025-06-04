@@ -17,14 +17,12 @@ export type RolePermissions = {
 };
 
 interface Decor {
-  id_decor?: number;
+  id_decoracion?: number;
   id_evento: number;
-  tipo_decoracion: string;
-  descripcion: string;
-  precio: number;
-  fecha: string;
-  estado: string;
-  notas: string;
+  tema_decoracion: string;
+  precioneto_decoracion: number;
+  itbis_decoracion: number;
+  total_decoracion: number;
 }
 
 interface Evento {
@@ -50,99 +48,22 @@ export default function Decor() {
   const [showModal, setShowModal] = useState(false);
   const [decors, setDecors] = useState<Decor[]>([]);
   const [eventos, setEventos] = useState<Evento[]>([]);
-  const [stats, setStats] = useState<DecorStats>({
-    empleadosEncargados: 0,
-    eventosConDecoracion: 0,
-    decoracionesPendintes: 0,
-    decoracionesCompletadas: 0
-  });
   const [formData, setFormData] = useState<Partial<Decor>>({
     id_evento: 0,
-    tipo_decoracion: '',
-    descripcion: '',
-    precio: 0,
-    fecha: '',
-    estado: 'Pendiente',
-    notas: ''
+    tema_decoracion: '',
+    precioneto_decoracion: 0,
+    itbis_decoracion: 0,
+    total_decoracion: 0
   });
   const [editId, setEditId] = useState<number | null>(null);
   const [filtroEvento, setFiltroEvento] = useState<string>('');
   const [showEmpleadosModal, setShowEmpleadosModal] = useState(false);
   const [showEventosModal, setShowEventosModal] = useState(false);
   const [showCompletadosModal, setShowCompletadosModal] = useState(false);
-  const [empleados, setEmpleados] = useState<any[]>([]);
-  const [completados, setCompletados] = useState<any[]>([]);
+  const [empleados] = useState<any[]>([]);
+  const [completados] = useState<any[]>([]);
   const [showPendientesModal, setShowPendientesModal] = useState(false);
 
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const [decorsRes, eventosRes] = await Promise.all([
-          fetch('/api/decor'),
-          fetch('/api/eventos')
-        ]);
-
-        const [decorsData, eventosData] = await Promise.all([
-          decorsRes.json(),
-          eventosRes.json()
-        ]);
-
-        setDecors(decorsData);
-        setEventos(eventosData);
-      } catch (error) {
-        console.error('Error al cargar datos:', error);
-      }
-    };
-
-    fetchData();
-  }, []);
-
-  useEffect(() => {
-    const fetchStats = async () => {
-      try {
-        const response = await fetch('/api/decor/stats');
-        if (response.ok) {
-          const data = await response.json();
-          setStats(data);
-        }
-      } catch (error) {
-        console.error('Error al cargar estadísticas:', error);
-      }
-    };
-
-    if (userRole !== 'client') {
-      fetchStats();
-    }
-  }, [userRole]);
-
-  useEffect(() => {
-    const fetchEmpleados = async () => {
-      try {
-        const response = await fetch('/api/decoracion/empleados');
-        const data = await response.json();
-        setEmpleados(data);
-      } catch (error) {
-        console.error('Error al cargar empleados:', error);
-      }
-    };
-
-    const fetchCompletados = async () => {
-      try {
-        const response = await fetch('/api/decoracion/completados');
-        const data = await response.json();
-        setCompletados(data);
-      } catch (error) {
-        console.error('Error al cargar decoraciones completadas:', error);
-      }
-    };
-
-    if (showEmpleadosModal) {
-      fetchEmpleados();
-    }
-    if (showCompletadosModal) {
-      fetchCompletados();
-    }
-  }, [showEmpleadosModal, showCompletadosModal]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
@@ -182,14 +103,12 @@ export default function Decor() {
       setDecors(data);
       setShowModal(false);
       setFormData({
-        id_decor: 0,
+        id_decoracion: 0,
         id_evento: 0,
-        tipo_decoracion: '',
-        descripcion: '',
-        precio: 0,
-        fecha: '',
-        estado: 'Pendiente',
-        notas: ''
+        tema_decoracion: '',
+        precioneto_decoracion: 0,
+        itbis_decoracion: 0,
+        total_decoracion: 0
       });
       setEditId(null);
     } catch (error) {
@@ -235,16 +154,16 @@ export default function Decor() {
                   .includes(filtroEvento.toLowerCase())
               )
               .map((decor) => (
-                <tr key={decor.id_decor}>
-                  <td>{decor.id_decor}</td>
+                <tr key={decor.id_decoracion}>
+                  <td>{decor.id_decoracion}</td>
                   <td>
                     {eventos.find(e => e.id_evento === decor.id_evento)?.tipo_evento}
                   </td>
-                  <td>{decor.tipo_decoracion}</td>
-                  <td>{decor.descripcion}</td>
-                  <td>${decor.precio}</td>
-                  <td>{decor.fecha}</td>
-                  <td>{decor.estado}</td>
+                  <td>{decor.tema_decoracion}</td>
+                  <td>{decor.tema_decoracion}</td>
+                  <td>${decor.precioneto_decoracion}</td>
+                  <td>{decor.precioneto_decoracion}</td>
+                  <td>{decor.precioneto_decoracion}</td>
                 </tr>
               ))}
           </tbody>
@@ -294,21 +213,24 @@ export default function Decor() {
             <table>
               <thead>
                 <tr>
-                  <th>Evento</th>
-                  <th>Cliente</th>
-                  <th>Espacio</th>
-                  <th>Decoración</th>
+                <th>Evento</th>
+                <th>Cliente</th>
+                <th>Asesor</th>
+                <th>Espacio</th>
+                <th>Descripción Decoración</th>
+                <th>Estado</th>
+                <th>Acciones</th>
                 </tr>
               </thead>
               <tbody>
                 {decors.map((decor) => {
                   const evento = eventos.find(e => e.id_evento === decor.id_evento);
                   return (
-                    <tr key={decor.id_decor}>
+                    <tr key={decor.id_decoracion}>
                       <td>{evento?.tipo_evento}</td>
                       <td>{evento?.nombre_cliente}</td>
                       <td>{evento?.lugar || 'No especificado'}</td>
-                      <td>{decor.tipo_decoracion}</td>
+                      <td>{decor.tema_decoracion}</td>
                     </tr>
                   );
                 })}
@@ -365,27 +287,29 @@ export default function Decor() {
             <table>
               <thead>
                 <tr>
-                  <th>Evento</th>
-                  <th>Cliente</th>
-                  <th>Espacio</th>
-                  <th>Tipo de Decoración</th>
-                  <th>Estado</th>
+                <th>Evento</th>
+                      <th>Cliente</th>
+                      <th>Asesor</th>
+                      <th>Espacio</th>
+                      <th>Descripción Decoración</th>
+                      <th>Estado</th>
+                      <th>Acciones</th>
                 </tr>
               </thead>
               <tbody>
                 {decors
-                  .filter(decor => decor.estado === 'Pendiente')
+                  .filter(decor => decor.precioneto_decoracion === 0)
                   .map((decor) => {
                     const evento = eventos.find(e => e.id_evento === decor.id_evento);
                     return (
-                      <tr key={decor.id_decor}>
+                      <tr key={decor.id_decoracion}>
                         <td>{evento?.tipo_evento}</td>
                         <td>{evento?.nombre_cliente}</td>
                         <td>{evento?.lugar || 'No especificado'}</td>
-                        <td>{decor.tipo_decoracion}</td>
+                        <td>{decor.tema_decoracion}</td>
                         <td>
-                          <span className={`estado-badge ${decor.estado.toLowerCase()}`}>
-                            {decor.estado}
+                          <span className={`estado-badge ${decor.precioneto_decoracion === 0 ? 'pendiente' : 'completado'}`}>
+                            {decor.precioneto_decoracion === 0 ? 'Pendiente' : 'Completado'}
                           </span>
                         </td>
                       </tr>
@@ -403,15 +327,6 @@ export default function Decor() {
     return (
       <div className="decor-content">
         <div className="dashboard__stats">
-          <div className="stat-card">
-            <span className="stat-card__label">Empleados Encargados</span>
-            <button 
-              className="stat-card__seeInfo"
-              onClick={() => setShowEmpleadosModal(true)}
-            >
-              Ver empleados
-            </button>
-          </div>
 
           <div className="stat-card">
             <span className="stat-card__label">Eventos con Decoración</span>
@@ -424,19 +339,18 @@ export default function Decor() {
           </div>
 
           <div className="stat-card">
-            <span className="stat-card__label">Decoraciones Completadas</span>
+            <span className="stat-card__label">Decoraciones Pendientes</span>
             <button 
               className="stat-card__seeInfo"
-              onClick={() => setShowCompletadosModal(true)}
+              onClick={() => setShowPendientesModal(true)}
             >
-              Ver completadas
+              Ver pendientes
             </button>
           </div>
         </div>
 
-        {showEmpleadosModal && renderEmpleadosModal()}
         {showEventosModal && renderEventosModal()}
-        {showCompletadosModal && renderCompletadosModal()}
+        {showPendientesModal && renderPendientesModal()}
 
         <center>
         <button className="new-form-btn" onClick={() => setShowModal(true)}>
@@ -469,45 +383,57 @@ export default function Decor() {
                     </select>
                   </label>
 
-                  <label>
-                    <span>Tipo de Decoración:</span>
-                    <select
-                      name="tipo_decoracion"
-                      value={formData.tipo_decoracion || ''}
-                      onChange={handleSelectChange}
-                      required
-                    >
-                      <option value="">Seleccionar tipo</option>
-                      <option value="Bodas">Bodas</option>
-                      <option value="Quinceañeras">Quinceañeras</option>
-                      <option value="Corporativo">Corporativo</option>
-                      <option value="Otros">Otros</option>
-                    </select>
-                  </label>
-
-                  <label>
-                    <span>Estado:</span>
-                    <select
-                      name="estado"
-                      value={formData.estado || ''}
-                      onChange={handleSelectChange}
-                      required
-                    >
-                      <option value="">Seleccionar estado</option>
-                      <option value="Pendiente">Pendiente</option>
-                      <option value="En Progreso">En Progreso</option>
-                      <option value="Completado">Completado</option>
-                      <option value="Cancelado">Cancelado</option>
-                    </select>
-                  </label>
-
-                  <label>
-                    <span>Notas:</span>
+                  <label className="full-width">
+                    <span>Tema de Decoración:</span>
                     <textarea
-                      name="notas"
-                      value={formData.notas || ''}
+                      name="tema_decoracion"
+                      value={formData.tema_decoracion || ''}
                       onChange={handleInputChange}
+                      required
                       rows={4}
+                      placeholder="Describe el tema y detalles de la decoración..."
+                    />
+                  </label>
+
+                  <label>
+                    <span>Precio Neto:</span>
+                    <input
+                      type="number"
+                      name="precioneto_decoracion"
+                      value={formData.precioneto_decoracion || ''}
+                      onChange={handleInputChange}
+                      required
+                      min="0"
+                      step="0.01"
+                      placeholder="0.00"
+                    />
+                  </label>
+
+                  <label>
+                    <span>ITBIS:</span>
+                    <input
+                      type="number"
+                      name="itbis_decoracion"
+                      value={formData.itbis_decoracion || ''}
+                      onChange={handleInputChange}
+                      required
+                      min="0"
+                      step="0.01"
+                      placeholder="0.00"
+                    />
+                  </label>
+
+                  <label>
+                    <span>Total:</span>
+                    <input
+                      type="number"
+                      name="total_decoracion"
+                      value={formData.total_decoracion || ''}
+                      onChange={handleInputChange}
+                      required
+                      min="0"
+                      step="0.01"
+                      placeholder="0.00"
                     />
                   </label>
                 </div>
@@ -584,66 +510,25 @@ export default function Decor() {
                     <tr>
                       <th>Evento</th>
                       <th>Cliente</th>
+                      <th>Asesor</th>
                       <th>Espacio</th>
-                      <th>Decoración</th>
+                      <th>Descripción Decoración</th>
+                      <th>Estado</th>
+                      <th>Acciones</th>
                     </tr>
                   </thead>
                   <tbody>
                     {decors.map((decor) => {
                       const evento = eventos.find(e => e.id_evento === decor.id_evento);
                       return (
-                        <tr key={decor.id_decor}>
+                        <tr key={decor.id_decoracion}>
                           <td>{evento?.tipo_evento}</td>
                           <td>{evento?.nombre_cliente}</td>
                           <td>{evento?.lugar || 'No especificado'}</td>
-                          <td>{decor.tipo_decoracion}</td>
+                          <td>{decor.tema_decoracion}</td>
                         </tr>
                       );
                     })}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {showPendientesModal && (
-        <div className="modal-overlay">
-          <div className="modal-container">
-            <button className="close-btn" onClick={() => setShowPendientesModal(false)}>×</button>
-            <div className="modal-content">
-              <h3>Decoraciones Pendientes</h3>
-              <div className="table-container">
-                <table>
-                  <thead>
-                    <tr>
-                      <th>Evento</th>
-                      <th>Cliente</th>
-                      <th>Espacio</th>
-                      <th>Tipo de Decoración</th>
-                      <th>Estado</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {decors
-                      .filter(decor => decor.estado === 'Pendiente')
-                      .map((decor) => {
-                        const evento = eventos.find(e => e.id_evento === decor.id_evento);
-                        return (
-                          <tr key={decor.id_decor}>
-                            <td>{evento?.tipo_evento}</td>
-                            <td>{evento?.nombre_cliente}</td>
-                            <td>{evento?.lugar || 'No especificado'}</td>
-                            <td>{decor.tipo_decoracion}</td>
-                            <td>
-                              <span className={`estado-badge ${decor.estado.toLowerCase()}`}>
-                                {decor.estado}
-                              </span>
-                            </td>
-                          </tr>
-                        );
-                      })}
                   </tbody>
                 </table>
               </div>
@@ -744,45 +629,57 @@ export default function Decor() {
                   </select>
                 </label>
 
-                <label>
-                  <span>Tipo de Decoración:</span>
-                  <select
-                    name="tipo_decoracion"
-                    value={formData.tipo_decoracion || ''}
-                    onChange={handleSelectChange}
-                    required
-                  >
-                    <option value="">Seleccionar tipo</option>
-                    <option value="Bodas">Bodas</option>
-                    <option value="Quinceañeras">Quinceañeras</option>
-                    <option value="Corporativo">Corporativo</option>
-                    <option value="Otros">Otros</option>
-                  </select>
-                </label>
-
-                <label>
-                  <span>Estado:</span>
-                  <select
-                    name="estado"
-                    value={formData.estado || ''}
-                    onChange={handleSelectChange}
-                    required
-                  >
-                    <option value="">Seleccionar estado</option>
-                    <option value="Pendiente">Pendiente</option>
-                    <option value="En Progreso">En Progreso</option>
-                    <option value="Completado">Completado</option>
-                    <option value="Cancelado">Cancelado</option>
-                  </select>
-                </label>
-
-                <label>
-                  <span>Notas:</span>
+                <label className="full-width">
+                  <span>Tema de Decoración:</span>
                   <textarea
-                    name="notas"
-                    value={formData.notas || ''}
+                    name="tema_decoracion"
+                    value={formData.tema_decoracion || ''}
                     onChange={handleInputChange}
+                    required
                     rows={4}
+                    placeholder="Describe el tema y detalles de la decoración..."
+                  />
+                </label>
+
+                <label>
+                  <span>Precio Neto:</span>
+                  <input
+                    type="number"
+                    name="precioneto_decoracion"
+                    value={formData.precioneto_decoracion || ''}
+                    onChange={handleInputChange}
+                    required
+                    min="0"
+                    step="0.01"
+                    placeholder="0.00"
+                  />
+                </label>
+
+                <label>
+                  <span>ITBIS:</span>
+                  <input
+                    type="number"
+                    name="itbis_decoracion"
+                    value={formData.itbis_decoracion || ''}
+                    onChange={handleInputChange}
+                    required
+                    min="0"
+                    step="0.01"
+                    placeholder="0.00"
+                  />
+                </label>
+
+                <label>
+                  <span>Total:</span>
+                  <input
+                    type="number"
+                    name="total_decoracion"
+                    value={formData.total_decoracion || ''}
+                    onChange={handleInputChange}
+                    required
+                    min="0"
+                    step="0.01"
+                    placeholder="0.00"
                   />
                 </label>
               </div>

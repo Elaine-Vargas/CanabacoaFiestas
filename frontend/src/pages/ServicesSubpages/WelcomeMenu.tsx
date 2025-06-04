@@ -2,8 +2,6 @@ import React, { useState, useEffect } from 'react';
 import '../../styles/dashboard/ServicesSubpages.scss';
 import { useUser } from '../../contexts/UserContext';
 import { useNavigate } from 'react-router-dom';
-import UserConfig from './UserConfig';
-
 export type UserRole = 'admin' | 'client' | 'supervisor' | 'inventory';
 
 export type Permission = {
