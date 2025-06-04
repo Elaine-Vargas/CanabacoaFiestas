@@ -147,10 +147,10 @@ const ViewerCatalog: React.FC<CatalogProps> = () => {
         setLoading(true);
         
         const [elementosRes, categoriasRes, coloresRes, materialesRes] = await Promise.all([
-          axios.get(`${apiUrl}/elementos/filtrados`),
-          axios.get(`${apiUrl}/elementos/categorias/list`),
-          axios.get(`${apiUrl}/elementos/colores/list`),
-          axios.get(`${apiUrl}/elementos/materiales/list`)
+          axios.get(`${apiUrl}/elemento/`),
+          axios.get(`${apiUrl}/elemento/categorias/list`),
+          axios.get(`${apiUrl}/elemento/colores/list`),
+          axios.get(`${apiUrl}/elemento/materiales/list`)
         ]);
 
         // Establecer los datos

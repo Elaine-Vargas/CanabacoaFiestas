@@ -14,9 +14,7 @@ import { verificarToken } from '../middlewares/authMiddleware';
 
 const router = Router();
 
-// Middleware de autenticación para todas las rutas
-router.use(verificarToken as RequestHandler);
-
+// Rutas públicas (GET)
 // Obtener todas las categorías
 router.get('/categorias/list', getCategorias as RequestHandler);
 
@@ -32,6 +30,16 @@ router.get('/search', searchElementos as RequestHandler);
 // Obtener un elemento por ID
 router.get('/:id_elemento', getElementoById as RequestHandler);
 
+// Obtener todos los elementos
+router.get('/', getElementos as RequestHandler);
+
+// Obtener elementos filtrados
+router.get('/filtrados', getElementos as RequestHandler);
+
+// Middleware de autenticación para rutas protegidas
+router.use(verificarToken as RequestHandler);
+
+// Rutas protegidas (POST, PUT, DELETE)
 // Crear un nuevo elemento
 router.post('/', createElemento as RequestHandler);
 
@@ -40,11 +48,5 @@ router.put('/:id_elemento', editElemento as RequestHandler);
 
 // Eliminar un elemento
 router.delete('/:id_elemento', deleteElemento as RequestHandler);
-
-// Obtener todos los elementos
-router.get('/', getElementos as RequestHandler);
-
-// Obtener elementos filtrados
-router.get('/filtrados', getElementos as RequestHandler);
 
 export default router; 

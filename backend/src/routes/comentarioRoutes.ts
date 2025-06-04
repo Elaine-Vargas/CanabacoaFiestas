@@ -11,27 +11,27 @@ import { verificarToken } from '../middlewares/authMiddleware';
 
 const router = Router();
 
-// Middleware de autenticación para todas las rutas
+// Middleware de autenticación para rutas protegidas
 const authMiddleware = (req: Request, res: Response, next: NextFunction) => {
   verificarToken(req, res, next);
 };
 
-// Aplicar autenticación a todas las rutas
+// Obtener todos los comentarios (sin autenticación)
+router.get('/', async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    await getComentarios(req, res);
+  } catch (error) {
+    next(error);
+  }
+});
+
+// Aplicar autenticación al resto de las rutas
 router.use(authMiddleware);
 
 // Crear un nuevo comentario
 router.post('/', async (req: Request, res: Response, next: NextFunction) => {
   try {
     await createComentario(req, res);
-  } catch (error) {
-    next(error);
-  }
-});
-
-// Obtener todos los comentarios
-router.get('/', async (req: Request, res: Response, next: NextFunction) => {
-  try {
-    await getComentarios(req, res);
   } catch (error) {
     next(error);
   }
