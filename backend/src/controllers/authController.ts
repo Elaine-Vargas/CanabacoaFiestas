@@ -48,6 +48,9 @@ export const Login = async (req: Request, res: Response) => {
       { expiresIn: '1h' }
     );
 
+    // Mostrar token en consola
+    //console.log('Token generado:', token);
+
     // Respuesta exitosa
     res.json({
       mensaje: `Inicio de sesión exitoso, ¡Bienvenido/a ${usuario.nombre_usuario} ${usuario.apellido_usuario}!`,
