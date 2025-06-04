@@ -63,6 +63,7 @@ interface MaterialElemento {
 
 // Lazy-loaded OptimizedImage component
 const OptimizedImage = lazy(() => {
+
   return new Promise<{ default: React.ComponentType<{ src: string; alt: string }> }>((resolve) => {
     const Component = ({ src, alt }: { src: string; alt: string }) => {
       const [isLoaded, setIsLoaded] = useState(false);
@@ -122,6 +123,9 @@ interface CatalogProps {
 }
 
 const ViewerCatalog: React.FC<CatalogProps> = () => {
+
+  const apiUrl = import.meta.env.VITE_API_BASE_URL;
+
   const [elementos, setElementos] = useState<Elemento[]>([]);
   const [categorias, setCategorias] = useState<CategoriaElemento[]>([]);
   const [colores, setColores] = useState<ColorElemento[]>([]);
@@ -143,10 +147,10 @@ const ViewerCatalog: React.FC<CatalogProps> = () => {
         setLoading(true);
         
         const [elementosRes, categoriasRes, coloresRes, materialesRes] = await Promise.all([
-          axios.get('http://localhost:3000/api/elementos/filtrados'),
-          axios.get('http://localhost:3000/api/elementos/categorias/list'),
-          axios.get('http://localhost:3000/api/elementos/colores/list'),
-          axios.get('http://localhost:3000/api/elementos/materiales/list')
+          axios.get(`${apiUrl}/elementos/filtrados`),
+          axios.get(`${apiUrl}/elementos/categorias/list`),
+          axios.get(`${apiUrl}/elementos/colores/list`),
+          axios.get(`${apiUrl}/elementos/materiales/list`)
         ]);
 
         // Establecer los datos

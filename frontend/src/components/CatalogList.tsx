@@ -6,7 +6,10 @@ import {
   Badge, Drawer, List, ListItem, ListItemText, Button, Snackbar, Alert, Skeleton, Dialog, DialogTitle, DialogContent, DialogActions, Table, TableBody, TableCell,
   TableContainer, TableHead, TableRow, Paper
 } from '@mui/material';
-import type { SelectChangeEvent } from '@mui/material';
+
+const apiUrl = import.meta.env.VITE_API_BASE_URL;
+
+
 import ShoppingCartIcon from '@mui/icons-material/ShoppingCart';
 import AddIcon from '@mui/icons-material/Add';
 import RemoveIcon from '@mui/icons-material/Remove';
@@ -176,12 +179,11 @@ const Catalog: React.FC<CatalogProps> = ({ onAddToCart = true, onComprarCarrito 
     const fetchData = async () => {
       try {
         setLoading(true);
-        
         const [elementosRes, categoriasRes, coloresRes, materialesRes] = await Promise.all([
-          axios.get('http://localhost:3000/api/elementos/filtrados'),
-          axios.get('http://localhost:3000/api/elementos/categorias/list'),
-          axios.get('http://localhost:3000/api/elementos/colores/list'),
-          axios.get('http://localhost:3000/api/elementos/materiales/list')
+          axios.get(`${apiUrl}/elementos/filtrado`),
+          axios.get(`${apiUrl}/elementos/categorias/list`),
+          axios.get(`${apiUrl}/elementos/colores/list`),
+          axios.get(`${apiUrl}/elementos/materiales/list`)
         ]);
 
         // Establecer los datos
@@ -216,7 +218,7 @@ const Catalog: React.FC<CatalogProps> = ({ onAddToCart = true, onComprarCarrito 
   useEffect(() => {
     const fetchEventos = async () => {
       try {
-        const response = await axios.get('http://localhost:3000/api/eventos');
+        const response = await axios.get(`${apiUrl}/eventos`);
         setEventos(response.data);
       } catch (error) {
         console.error('Error al cargar eventos:', error);
@@ -307,7 +309,7 @@ const Catalog: React.FC<CatalogProps> = ({ onAddToCart = true, onComprarCarrito 
 
   const handleNuevoEvento = async () => {
     try {
-      await axios.post('http://localhost:3000/api/eventos', nuevoEvento);
+      await axios.post(`${apiUrl}/eventos`, nuevoEvento);
       setShowNuevoEventoModal(false);
       setNotificacion({
         abierta: true,
@@ -315,7 +317,7 @@ const Catalog: React.FC<CatalogProps> = ({ onAddToCart = true, onComprarCarrito 
         tipo: 'success'
       });
       // Recargar eventos
-      const response = await axios.get('http://localhost:3000/api/eventos');
+      const response = await axios.get(`${apiUrl}/eventos`);
       setEventos(response.data);
     } catch (error) {
       console.error('Error al crear evento:', error);

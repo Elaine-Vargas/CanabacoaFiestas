@@ -216,6 +216,10 @@ interface ProveedorFormData {
 }
 
 const WelcomeMenu: React.FC<WelcomeMenuProps> = () => {
+
+  const apiUrl = import.meta.env.VITE_API_BASE_URL;
+
+
   const navigate = useNavigate();
   const { userRole } = useUser();
   const [userData, setUserData] = useState<any>(null);
@@ -344,7 +348,7 @@ const WelcomeMenu: React.FC<WelcomeMenuProps> = () => {
       try {
         console.log('Intentando cargar espacios...');
         const token = localStorage.getItem('token');
-        const response = await fetch('http://localhost:3000/api/espacios', {
+        const response = await fetch(`${apiUrl}espacios`, {
           headers: {
             'Authorization': `Bearer ${token}`,
             'Content-Type': 'application/json'
@@ -389,7 +393,7 @@ const WelcomeMenu: React.FC<WelcomeMenuProps> = () => {
     const fetchUsuarios = async () => {
       try {
         const token = localStorage.getItem('token');
-        const response = await fetch('http://localhost:3000/api/usuarios', {
+        const response = await fetch(`${apiUrl}/usuarios`, {
           headers: {
             'Authorization': `Bearer ${token}`,
             'Content-Type': 'application/json'
@@ -411,7 +415,7 @@ const WelcomeMenu: React.FC<WelcomeMenuProps> = () => {
     const fetchEventosRealizados = async () => {
       try {
         const token = localStorage.getItem('token');
-        const response = await fetch('http://localhost:3000/api/eventos/realizados', {
+        const response = await fetch(`${apiUrl}/eventos/realizados`, {
           headers: {
             'Authorization': `Bearer ${token}`,
             'Content-Type': 'application/json'
@@ -1972,7 +1976,7 @@ const WelcomeMenu: React.FC<WelcomeMenuProps> = () => {
     e.preventDefault();
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch('http://localhost:3000/api/usuarios', {
+      const response = await fetch(`${apiUrl}/usuarios`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -1999,7 +2003,7 @@ const WelcomeMenu: React.FC<WelcomeMenuProps> = () => {
       });
       
       // Recargar la lista de usuarios
-      const updatedResponse = await fetch('http://localhost:3000/api/usuarios', {
+      const updatedResponse = await fetch(`${apiUrl}/usuarios`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'

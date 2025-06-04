@@ -12,6 +12,11 @@ interface ImageUploadProps {
 }
 
 const ImageUpload = ({ elementoId, imagenUrl, onImageUploaded, onImageDeleted }: ImageUploadProps) => {
+
+  const apiUrl = import.meta.env.VITE_API_BASE_URL;
+  const serverUrl = import.meta.env.VITE_API_URL;
+
+
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -39,7 +44,7 @@ const ImageUpload = ({ elementoId, imagenUrl, onImageUploaded, onImageDeleted }:
 
     try {
       const response = await axios.post(
-        `http://localhost:3000/api/elementos/${elementoId}/imagen`,
+        `${apiUrl}/elementos/${elementoId}/imagen`,
         formData,
         {
           headers: {
@@ -60,7 +65,7 @@ const ImageUpload = ({ elementoId, imagenUrl, onImageUploaded, onImageDeleted }:
   const handleDelete = async () => {
     setLoading(true);
     try {
-      await axios.delete(`http://localhost:3000/api/elementos/${elementoId}/imagen`);
+      await axios.delete(`${apiUrl}/elementos/${elementoId}/imagen`);
       onImageDeleted();
     } catch (err) {
       setError('Error al eliminar la imagen');
@@ -108,7 +113,7 @@ const ImageUpload = ({ elementoId, imagenUrl, onImageUploaded, onImageDeleted }:
       {imagenUrl ? (
         <Box sx={{ position: 'relative' }}>
           <img
-            src={`http://localhost:3000${imagenUrl}`}
+            src={`${serverUrl}${imagenUrl}`}
             alt="Elemento"
             style={{
               width: '100%',

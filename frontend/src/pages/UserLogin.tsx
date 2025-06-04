@@ -9,6 +9,9 @@ import VisibilityIcon from '@mui/icons-material/Visibility';
 import { formatPhoneNumber, formatCedula, validateEmail, validateCedula, validateUsername, validatePhoneNumber } from "../utils/validation";
 
 const UserLogin: React.FC = () => {
+
+  const apiUrl = import.meta.env.VITE_API_BASE_URL;
+
   const [isActive, setIsActive] = useState(false);
   const [showLoginPassword, setShowLoginPassword] = useState(false);
   const [showSignupPassword, setShowSignupPassword] = useState(false);
@@ -105,9 +108,11 @@ const UserLogin: React.FC = () => {
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
+    
   
     try {
-      const response = await fetch('http://localhost:3000/api/auth/login', {
+
+      const response = await fetch(`${apiUrl}/auth/login`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -128,7 +133,7 @@ const UserLogin: React.FC = () => {
         }
         throw new Error(errorMessage);
       }
-  
+
       const data = JSON.parse(responseText);
       localStorage.setItem('token', data.token);
       const userData = {
@@ -156,9 +161,9 @@ const UserLogin: React.FC = () => {
       setError('Las contraseñas no coinciden');
       return;
     }
-  
+
     try {
-      const response = await fetch('http://localhost:3000/api/auth/register-client', {
+      const response = await fetch(`${apiUrl}/auth/register-client`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -166,7 +171,6 @@ const UserLogin: React.FC = () => {
         body: JSON.stringify(signupData),
         credentials: 'include'
       });
-  
       const responseText = await response.text();
       
       if (!response.ok) {

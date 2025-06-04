@@ -21,6 +21,8 @@ interface Comentario {
 }
 
 const Comments = () => {
+  const apiUrl = import.meta.env.VITE_API_BASE_URL;
+
   const [comentarios, setComentarios] = useState<Comentario[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -30,7 +32,7 @@ const Comments = () => {
       setLoading(true);
       setError(null);
 
-      const response = await axios.get('http://localhost:3000/api/comentarios', {
+      const response = await axios.get(`${apiUrl}/comentarios`, {
         params: { includeEvent: true }
       });
 
