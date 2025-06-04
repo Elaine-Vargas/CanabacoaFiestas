@@ -36,11 +36,11 @@ export const createAlquilerServicio = async (req: Request, res: Response) => {
     const alquiler = await AlquilerServicio.create({
       id_evento,
       id_elemento,
-      precio_unitario,
+      precio_unitario: precio_unitario  || null,
       cantidad_alquiler,
-      precioneto_alquiler,
-      itbis_alquiler,
-      total_alquiler
+      precioneto_alquiler: precioneto_alquiler  || null,
+      itbis_alquiler: itbis_alquiler  || null,
+      total_alquiler : total_alquiler  || null
     });
 
     // Actualizar el stock del elemento

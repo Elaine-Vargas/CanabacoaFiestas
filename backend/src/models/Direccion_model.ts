@@ -21,7 +21,7 @@ export default class Direccion extends Model {
   @Column({ type: DataType.STRING(50), allowNull: false })
   sector!: string;
 
-  @Column({ type: DataType.STRING(50) })
+  @Column({ type: DataType.STRING(50), allowNull: false })
   calle!: string;
 
   @Column({ type: DataType.TEXT })

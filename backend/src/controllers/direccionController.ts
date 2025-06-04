@@ -131,7 +131,7 @@ export const createDireccion = async (req: Request, res: Response) => {
       id_provincia,
       sector,
       calle,
-      detalles
+      detalles: detalles || null
     });
 
     // Obtener la dirección con sus relaciones

@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import { Op } from 'sequelize';
 import Pago from '../models/Pago_model';
 import Evento from '../models/Evento_model';
+import Tarjeta from '../models/Tarjeta_model';
 
 // Obtener todos los pagos
 export const getPagos = async (req: Request, res: Response) => {
@@ -11,6 +12,10 @@ export const getPagos = async (req: Request, res: Response) => {
         {
           model: Evento,
           attributes: ['id_evento', 'nombre_evento', 'fecha_evento']
+        },
+        {
+          model: Tarjeta,
+          attributes: ['id_tarjeta', 'numero_tarjeta', 'tipo_tarjeta']
         }
       ],
       order: [['fecha_pago', 'DESC'], ['hora_pago', 'DESC']]
@@ -43,6 +48,10 @@ export const getPagoById = async (req: Request, res: Response) => {
         {
           model: Evento,
           attributes: ['id_evento', 'nombre_evento', 'fecha_evento']
+        },
+        {
+          model: Tarjeta,
+          attributes: ['id_tarjeta', 'numero_tarjeta', 'tipo_tarjeta']
         }
       ]
     });
@@ -67,7 +76,7 @@ export const getPagoById = async (req: Request, res: Response) => {
 // Buscar pagos
 export const searchPagos = async (req: Request, res: Response) => {
   try {
-    const { estado, tipo, fecha_inicio, fecha_fin, id_evento } = req.query;
+    const { estado, tipo, fecha_inicio, fecha_fin, id_evento, id_tarjeta } = req.query;
 
     const whereClause: any = {};
 
@@ -89,12 +98,20 @@ export const searchPagos = async (req: Request, res: Response) => {
       whereClause.id_evento = id_evento;
     }
 
+    if (id_tarjeta) {
+      whereClause.id_tarjeta = id_tarjeta;
+    }
+
     const pagos = await Pago.findAll({
       where: whereClause,
       include: [
         {
           model: Evento,
           attributes: ['id_evento', 'nombre_evento', 'fecha_evento']
+        },
+        {
+          model: Tarjeta,
+          attributes: ['id_tarjeta', 'numero_tarjeta', 'tipo_tarjeta']
         }
       ],
       order: [['fecha_pago', 'DESC'], ['hora_pago', 'DESC']]
@@ -120,12 +137,18 @@ export const searchPagos = async (req: Request, res: Response) => {
 // Crear un nuevo pago
 export const createPago = async (req: Request, res: Response) => {
   try {
-    const { id_evento, monto, tipo_pago } = req.body;
+    const { id_evento, id_tarjeta, monto, tipo_pago } = req.body;
 
     // Verificar que el evento existe
     const evento = await Evento.findByPk(id_evento);
     if (!evento) {
       return res.status(404).json({ error: 'Evento no encontrado' });
+    }
+
+    // Verificar que la tarjeta existe
+    const tarjeta = await Tarjeta.findByPk(id_tarjeta);
+    if (!tarjeta) {
+      return res.status(404).json({ error: 'Tarjeta no encontrada' });
     }
 
     // Validar tipo de pago
@@ -136,6 +159,7 @@ export const createPago = async (req: Request, res: Response) => {
     // Crear el pago
     const pago = await Pago.create({
       id_evento,
+      id_tarjeta,
       monto: Number(monto),
       tipo_pago,
       estado_pago: 'Pendiente'
@@ -147,6 +171,10 @@ export const createPago = async (req: Request, res: Response) => {
         {
           model: Evento,
           attributes: ['id_evento', 'nombre_evento', 'fecha_evento']
+        },
+        {
+          model: Tarjeta,
+          attributes: ['id_tarjeta', 'numero_tarjeta', 'tipo_tarjeta']
         }
       ]
     });
@@ -165,7 +193,7 @@ export const createPago = async (req: Request, res: Response) => {
 export const editPago = async (req: Request, res: Response) => {
   try {
     const { id_pago } = req.params;
-    const { id_evento, monto, tipo_pago, estado_pago } = req.body;
+    const { id_evento, id_tarjeta, monto, tipo_pago, estado_pago } = req.body;
 
     const pago = await Pago.findByPk(id_pago);
     if (!pago) {
@@ -177,6 +205,14 @@ export const editPago = async (req: Request, res: Response) => {
       const evento = await Evento.findByPk(id_evento);
       if (!evento) {
         return res.status(404).json({ error: 'Evento no encontrado' });
+      }
+    }
+
+    // Verificar que la tarjeta existe si se proporciona
+    if (id_tarjeta) {
+      const tarjeta = await Tarjeta.findByPk(id_tarjeta);
+      if (!tarjeta) {
+        return res.status(404).json({ error: 'Tarjeta no encontrada' });
       }
     }
 
@@ -193,6 +229,7 @@ export const editPago = async (req: Request, res: Response) => {
     // Actualizar el pago
     await pago.update({
       id_evento: id_evento || pago.id_evento,
+      id_tarjeta: id_tarjeta || pago.id_tarjeta,
       monto: monto ? Number(monto) : pago.monto,
       tipo_pago: tipo_pago || pago.tipo_pago,
       estado_pago: estado_pago || pago.estado_pago
@@ -204,6 +241,10 @@ export const editPago = async (req: Request, res: Response) => {
         {
           model: Evento,
           attributes: ['id_evento', 'nombre_evento', 'fecha_evento']
+        },
+        {
+          model: Tarjeta,
+          attributes: ['id_tarjeta', 'numero_tarjeta', 'tipo_tarjeta']
         }
       ]
     });
@@ -240,6 +281,10 @@ export const cambiarEstadoPago = async (req: Request, res: Response) => {
         {
           model: Evento,
           attributes: ['id_evento', 'nombre_evento', 'fecha_evento']
+        },
+        {
+          model: Tarjeta,
+          attributes: ['id_tarjeta', 'numero_tarjeta', 'tipo_tarjeta']
         }
       ]
     });
@@ -280,6 +325,10 @@ export const deletePago = async (req: Request, res: Response) => {
         {
           model: Evento,
           attributes: ['id_evento', 'nombre_evento', 'fecha_evento']
+        },
+        {
+          model: Tarjeta,
+          attributes: ['id_tarjeta', 'numero_tarjeta', 'tipo_tarjeta']
         }
       ]
     });

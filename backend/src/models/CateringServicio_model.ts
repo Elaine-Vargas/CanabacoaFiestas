@@ -19,13 +19,13 @@ export default class CateringServicio extends Model {
   @Column({ type: DataType.INTEGER, allowNull: false })
   personas_catering!: number;
 
-  @Column({ type: DataType.DECIMAL(10, 2), allowNull: false })
+  @Column({ type: DataType.DECIMAL(10, 2)})
   precioneto_catering!: number;
 
-  @Column({ type: DataType.DECIMAL(10, 2), allowNull: false })
+  @Column({ type: DataType.DECIMAL(10, 2)})
   itbis_catering!: number;
 
-  @Column({ type: DataType.DECIMAL(10, 2), allowNull: false })
+  @Column({ type: DataType.DECIMAL(10, 2)})
   total_catering!: number;
 
   @HasMany (() => MenuCatering)
