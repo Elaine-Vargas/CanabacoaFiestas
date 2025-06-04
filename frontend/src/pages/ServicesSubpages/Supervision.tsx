@@ -7,14 +7,10 @@ import { useUser } from '../../contexts/UserContext';
 interface Supervision {
   id_supervision?: number;
   id_evento: number;
-  supervisor: string;
-  tipo_supervision: string;
-  descripcion: string;
-  fecha: string;
-  hora_inicio: string;
-  hora_fin: string;
-  estado: string;
-  notas: string;
+  tarifa_hora: number;
+  precioneto_supervision: number;
+  itbis_supervision: number;
+  total_supervision: number;
 }
 
 interface Evento {
@@ -38,12 +34,13 @@ interface EventoSupervisado {
   hora: string;
 }
 
-interface EmpleadoSupervision {
-  id_empleado: number;
-  nombre: string;
-  apellido: string;
-  cedula: string;
-  cantidad_eventos: number;
+interface EventoSupervisadoEmpleado {
+  id_evento: number;
+  nombre_evento: string;
+  cliente: string;
+  fecha: string;
+  lugar: string;
+  hora: string;
 }
 
 interface SupervisionCompletada {
@@ -62,11 +59,11 @@ export default function Supervision() {
   const userData = JSON.parse(localStorage.getItem('userData') || '{}');
   const [showModal, setShowModal] = useState(false);
   const [showEventosModal, setShowEventosModal] = useState(false);
-  const [showEmpleadosModal, setShowEmpleadosModal] = useState(false);
+  const [showEventosEmpleadoModal, setShowEventosEmpleadoModal] = useState (false);
   const [showCompletadasModal, setShowCompletadasModal] = useState(false);
   const [eventos, setEventos] = useState<Evento[]>([]);
   const [eventosSupervisados, setEventosSupervisados] = useState<EventoSupervisado[]>([]);
-  const [empleadosSupervision, setEmpleadosSupervision] = useState<EmpleadoSupervision[]>([]);
+  const [eventoSupervisadoEmpleado, setEventosSupervisadoEmpleado] = useState<EventoSupervisadoEmpleado[]>([])
   const [supervisionesCompletadas, setSupervisionesCompletadas] = useState<SupervisionCompletada[]>([]);
   const [stats, setStats] = useState<SupervisionStats>({
     eventosSupervisados: 0,
@@ -75,11 +72,10 @@ export default function Supervision() {
   });
   const [formData, setFormData] = useState<Partial<Supervision>>({
     id_evento: 0,
-    fecha: '',
-    hora_inicio: '',
-    hora_fin: '',
-    estado: 'Pendiente',
-    notas: ''
+    tarifa_hora: 0,
+    precioneto_supervision: 0,
+    itbis_supervision: 0,
+    total_supervision: 0
   });
   const [editId, setEditId] = useState<number | null>(null);
 
@@ -133,47 +129,50 @@ export default function Supervision() {
   }, [userData.rol]);
 
   useEffect(() => {
+    const ensureArray = (data: any) => Array.isArray(data) ? data : [];
+  
     const fetchEventosSupervisados = async () => {
       if (showEventosModal) {
         try {
           const response = await fetch('/api/supervision/eventos');
           const data = await response.json();
-          setEventosSupervisados(data);
+          setEventosSupervisados(ensureArray(data));
         } catch (error) {
           console.error('Error al cargar eventos supervisados:', error);
+          setEventosSupervisados([]); // fallback seguro
         }
       }
     };
 
-    const fetchEmpleadosSupervision = async () => {
-      if (showEmpleadosModal) {
+    const fetchEventosEmpleadoModal = async () => {
+      if (showEventosEmpleadoModal) {
         try {
-          const response = await fetch('/api/supervision/empleados');
+          const response = await fetch('/api/supervision/eventos');
           const data = await response.json();
-          setEmpleadosSupervision(data);
+          setEventosSupervisados(ensureArray(data));
         } catch (error) {
-          console.error('Error al cargar empleados:', error);
+          console.error('Error al cargar eventos supervisados por el empleado:', error);
+          setEventosSupervisadoEmpleado([]); // fallback seguro
         }
       }
     };
-
+  
     const fetchSupervisionesCompletadas = async () => {
       if (showCompletadasModal) {
         try {
           const response = await fetch('/api/supervision/completadas');
           const data = await response.json();
-          setSupervisionesCompletadas(data);
+          setSupervisionesCompletadas(ensureArray(data));
         } catch (error) {
           console.error('Error al cargar supervisiones completadas:', error);
+          setSupervisionesCompletadas([]); // fallback seguro
         }
       }
     };
-
-    fetchEventosSupervisados();
-    fetchEmpleadosSupervision();
-    fetchSupervisionesCompletadas();
-  }, [showEventosModal, showEmpleadosModal, showCompletadasModal]);
-
+  
+    fetchEventosSupervisados();  fetchEventosEmpleadoModal();  fetchSupervisionesCompletadas();
+  }, [showEventosModal, showEventosEmpleadoModal, showCompletadasModal]);
+  
   const handleInputChange = (e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({
@@ -208,11 +207,10 @@ export default function Supervision() {
       setShowModal(false);
       setFormData({
         id_evento: 0,
-        fecha: '',
-        hora_inicio: '',
-        hora_fin: '',
-        estado: 'Pendiente',
-        notas: ''
+        tarifa_hora: 0,
+        precioneto_supervision: 0,
+        itbis_supervision: 0,
+        total_supervision: 0
       });
       setEditId(null);
     } catch (error) {
@@ -225,7 +223,7 @@ export default function Supervision() {
       <div className="supervision-content">
         <div className="dashboard__stats">
           <div className="stat-card">
-            <span className="stat-card__label">Eventos Supervisados</span>
+            <span className="stat-card__label">Eventos pendientes</span>
             <button 
               className="stat-card__seeInfo"
               onClick={() => setShowEventosModal(true)}
@@ -235,17 +233,7 @@ export default function Supervision() {
           </div>
 
           <div className="stat-card">
-            <span className="stat-card__label">Empleados a Cargo</span>
-            <button 
-              className="stat-card__seeInfo"
-              onClick={() => setShowEmpleadosModal(true)}
-            >
-              Ver empleados
-            </button>
-          </div>
-
-          <div className="stat-card">
-            <span className="stat-card__label">Supervisiones Completadas</span>
+            <span className="stat-card__label">Eventos con supervision</span>
             <button 
               className="stat-card__seeInfo"
               onClick={() => setShowCompletadasModal(true)}
@@ -287,46 +275,59 @@ export default function Supervision() {
                   </label>
 
                   <label>
-                    <span>Tipo de Supervisión:</span>
-                    <select
-                      name="tipo_supervision"
-                      value={formData.tipo_supervision || ''}
-                      onChange={handleSelectChange}
-                      required
-                    >
-                      <option value="">Seleccionar tipo</option>
-                      <option value="General">General</option>
-                      <option value="Seguridad">Seguridad</option>
-                      <option value="Logística">Logística</option>
-                      <option value="Calidad">Calidad</option>
-                    </select>
-                  </label>
-
-                  <label>
-                    <span>Descripción:</span>
-                    <textarea
-                      name="descripcion"
-                      value={formData.descripcion || ''}
+                    <span>Tarifa por Hora:</span>
+                    <input
+                      type="number"
+                      name="tarifa_hora"
+                      value={formData.tarifa_hora || ''}
                       onChange={handleInputChange}
                       required
-                      rows={4}
+                      min="0"
+                      step="0.01"
+                      placeholder="0.00"
                     />
                   </label>
 
                   <label>
-                    <span>Estado:</span>
-                    <select
-                      name="estado"
-                      value={formData.estado || ''}
-                      onChange={handleSelectChange}
+                    <span>Precio Neto:</span>
+                    <input
+                      type="number"
+                      name="precioneto_supervision"
+                      value={formData.precioneto_supervision || ''}
+                      onChange={handleInputChange}
                       required
-                    >
-                      <option value="">Seleccionar estado</option>
-                      <option value="Pendiente">Pendiente</option>
-                      <option value="En Progreso">En Progreso</option>
-                      <option value="Completado">Completado</option>
-                      <option value="Cancelado">Cancelado</option>
-                    </select>
+                      min="0"
+                      step="0.01"
+                      placeholder="0.00"
+                    />
+                  </label>
+
+                  <label>
+                    <span>ITBIS:</span>
+                    <input
+                      type="number"
+                      name="itbis_supervision"
+                      value={formData.itbis_supervision || ''}
+                      onChange={handleInputChange}
+                      required
+                      min="0"
+                      step="0.01"
+                      placeholder="0.00"
+                    />
+                  </label>
+
+                  <label>
+                    <span>Total:</span>
+                    <input
+                      type="number"
+                      name="total_supervision"
+                      value={formData.total_supervision || ''}
+                      onChange={handleInputChange}
+                      required
+                      min="0"
+                      step="0.01"
+                      placeholder="0.00"
+                    />
                   </label>
                 </div>
 
@@ -357,21 +358,12 @@ export default function Supervision() {
           <span className="stat-card__label">Eventos Supervisados por Mí</span>
           <button 
             className="stat-card__seeInfo"
-            onClick={() => setShowEventosModal(true)}
+            onClick={() => setShowEventosEmpleadoModal(true)}
           >
             Ver eventos
           </button>
         </div>
 
-        <div className="stat-card">
-          <span className="stat-card__label">Equipo de Trabajo</span>
-          <button 
-            className="stat-card__seeInfo"
-            onClick={() => setShowEmpleadosModal(true)}
-          >
-            Ver equipo
-          </button>
-        </div>
 
         <div className="stat-card">
           <span className="stat-card__label">Todos los Eventos</span>
@@ -397,7 +389,7 @@ export default function Supervision() {
       <div className="modal-container">
         <button className="close-btn" onClick={() => setShowEventosModal(false)}>×</button>
         <div className="modal-content">
-          <h3>Eventos Supervisados por Mí</h3>
+          <h3>Eventos en proceso con Supervision</h3>
           <div className="table-container">
             <table>
               <thead>
@@ -407,10 +399,12 @@ export default function Supervision() {
                   <th>Fecha</th>
                   <th>Lugar</th>
                   <th>Hora</th>
+                  <th>Estado</th>
+                  <th>Acciones</th>
                 </tr>
               </thead>
               <tbody>
-                {eventosSupervisados.map((evento) => (
+              {Array.isArray(eventosSupervisados) && eventosSupervisados.map(evento => (
                   <tr key={evento.id_evento}>
                     <td>{evento.nombre_evento}</td>
                     <td>{evento.cliente}</td>
@@ -427,29 +421,33 @@ export default function Supervision() {
     </div>
   );
 
-  const renderEmpleadosModal = () => (
+  const renderEventosEmpleadoModal = () => (
     <div className="modal-overlay">
       <div className="modal-container">
-        <button className="close-btn" onClick={() => setShowEmpleadosModal(false)}>×</button>
+        <button className="close-btn" onClick={() => setShowEventosEmpleadoModal(false)}>×</button>
         <div className="modal-content">
-          <h3>Equipo de Trabajo</h3>
+          <h3>Eventos supervisados por Mí</h3>
           <div className="table-container">
             <table>
               <thead>
                 <tr>
-                  <th>Nombre</th>
-                  <th>Apellido</th>
-                  <th>Cédula</th>
-                  <th>Cantidad de Eventos</th>
+                  <th>Evento</th>
+                  <th>Cliente</th>
+                  <th>Fecha</th>
+                  <th>Lugar</th>
+                  <th>Hora</th>
+                  <th>Estado</th>
+                  <th>Acciones</th>
                 </tr>
               </thead>
               <tbody>
-                {empleadosSupervision.map((empleado) => (
-                  <tr key={empleado.id_empleado}>
-                    <td>{empleado.nombre}</td>
-                    <td>{empleado.apellido}</td>
-                    <td>{empleado.cedula}</td>
-                    <td>{empleado.cantidad_eventos}</td>
+              {Array.isArray(eventoSupervisadoEmpleado) && eventoSupervisadoEmpleado.map(evento => (
+                  <tr key={evento.id_evento}>
+                    <td>{evento.nombre_evento}</td>
+                    <td>{evento.cliente}</td>
+                    <td>{evento.fecha}</td>
+                    <td>{evento.lugar}</td>
+                    <td>{evento.hora}</td>
                   </tr>
                 ))}
               </tbody>
@@ -459,6 +457,7 @@ export default function Supervision() {
       </div>
     </div>
   );
+
 
   const renderCompletadasModal = () => (
     <div className="modal-overlay">
@@ -480,7 +479,7 @@ export default function Supervision() {
                 </tr>
               </thead>
               <tbody>
-                {supervisionesCompletadas.map((supervision) => (
+              {Array.isArray(supervisionesCompletadas) && supervisionesCompletadas.map(supervision => (
                   <tr key={supervision.id_supervision}>
                     <td>{supervision.evento}</td>
                     <td>{supervision.cliente}</td>
@@ -550,46 +549,59 @@ export default function Supervision() {
                 </label>
 
                 <label>
-                  <span>Tipo de Supervisión:</span>
-                  <select
-                    name="tipo_supervision"
-                    value={formData.tipo_supervision || ''}
-                    onChange={handleSelectChange}
-                    required
-                  >
-                    <option value="">Seleccionar tipo</option>
-                    <option value="General">General</option>
-                    <option value="Seguridad">Seguridad</option>
-                    <option value="Logística">Logística</option>
-                    <option value="Calidad">Calidad</option>
-                  </select>
-                </label>
-
-                <label>
-                  <span>Descripción:</span>
-                  <textarea
-                    name="descripcion"
-                    value={formData.descripcion || ''}
+                  <span>Tarifa por Hora:</span>
+                  <input
+                    type="number"
+                    name="tarifa_hora"
+                    value={formData.tarifa_hora || ''}
                     onChange={handleInputChange}
                     required
-                    rows={4}
+                    min="0"
+                    step="0.01"
+                    placeholder="0.00"
                   />
                 </label>
 
                 <label>
-                  <span>Estado:</span>
-                  <select
-                    name="estado"
-                    value={formData.estado || ''}
-                    onChange={handleSelectChange}
+                  <span>Precio Neto:</span>
+                  <input
+                    type="number"
+                    name="precioneto_supervision"
+                    value={formData.precioneto_supervision || ''}
+                    onChange={handleInputChange}
                     required
-                  >
-                    <option value="">Seleccionar estado</option>
-                    <option value="Pendiente">Pendiente</option>
-                    <option value="En Progreso">En Progreso</option>
-                    <option value="Completado">Completado</option>
-                    <option value="Cancelado">Cancelado</option>
-                  </select>
+                    min="0"
+                    step="0.01"
+                    placeholder="0.00"
+                  />
+                </label>
+
+                <label>
+                  <span>ITBIS:</span>
+                  <input
+                    type="number"
+                    name="itbis_supervision"
+                    value={formData.itbis_supervision || ''}
+                    onChange={handleInputChange}
+                    required
+                    min="0"
+                    step="0.01"
+                    placeholder="0.00"
+                  />
+                </label>
+
+                <label>
+                  <span>Total:</span>
+                  <input
+                    type="number"
+                    name="total_supervision"
+                    value={formData.total_supervision || ''}
+                    onChange={handleInputChange}
+                    required
+                    min="0"
+                    step="0.01"
+                    placeholder="0.00"
+                  />
                 </label>
               </div>
 
@@ -610,7 +622,7 @@ export default function Supervision() {
         </div>
       )}
       {showEventosModal && renderEventosModal()}
-      {showEmpleadosModal && renderEmpleadosModal()}
+      {showEventosEmpleadoModal && renderEventosEmpleadoModal()}
       {showCompletadasModal && renderCompletadasModal()}
     </div>
   );

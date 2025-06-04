@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import '../../styles/dashboard/ServicesSubpages.scss';
-import { useUser } from '../../contexts/UserContext';
 import '../../components/ServiceBase';
 import DashboardCatalog from '../../components/DashboardCatalog';
 import { Box, Typography, Button, Dialog, DialogTitle, DialogContent, DialogActions, TextField, MenuItem, Snackbar, Alert } from '@mui/material';
@@ -39,15 +38,9 @@ interface Evento {
   estado_evento: string;
 }
 
-interface RentStats {
-  totalPedidos: number;
-  pedidosPendientes: number;
-  totalElementos: number;
-}
-
-export default function Rent() {
+export default function Rent() { 
+  const apiUrl = import.meta.env.VITE_API_BASE_URL;
   const navigate = useNavigate();
-  const { userRole } = useUser();
   const userData = JSON.parse(localStorage.getItem('userData') || '{}');
   const [showModal, setShowModal] = useState(false);
   const [showEventoModal, setShowEventoModal] = useState(false);
@@ -55,11 +48,7 @@ export default function Rent() {
   const [rents, setRents] = useState<Rent[]>([]);
   const [eventos, setEventos] = useState<Evento[]>([]);
   const [mostrarCatalogo, setMostrarCatalogo] = useState(false);
-  const [stats, setStats] = useState<RentStats>({
-    totalPedidos: 0,
-    pedidosPendientes: 0,
-    totalElementos: 0
-  });
+
   const [formData, setFormData] = useState<Partial<Rent>>({
     id_evento: 0,
     id_elemento: 0,
@@ -101,27 +90,30 @@ export default function Rent() {
         setPedidos(response.data);
       } catch (error) {
         console.error('Error al cargar pedidos:', error);
+        setPedidos([]); // fallback seguro
       }
     };
-
+  
     const fetchPedidosPendientes = async () => {
       try {
         const response = await axios.get(`${apiUrl}/alquiler/pendientes`);
         setPedidosPendientes(response.data);
       } catch (error) {
         console.error('Error al cargar pedidos pendientes:', error);
+        setPedidosPendientes([]); // fallback seguro
       }
     };
-
+  
     const fetchItems = async () => {
       try {
         const response = await axios.get(`${apiUrl}/elemento`);
         setItems(response.data);
       } catch (error) {
         console.error('Error al cargar items:', error);
+        setItems([]); // fallback seguro
       }
     };
-
+  
     if (showTotalPedidosModal) {
       fetchPedidos();
     }
@@ -158,23 +150,7 @@ export default function Rent() {
     fetchInitialData();
   }, []);
 
-  useEffect(() => {
-    const fetchStats = async () => {
-      try {
-        const response = await fetch('/api/rent/stats');
-        if (response.ok) {
-          const data = await response.json();
-          setStats(data);
-        }
-      } catch (error) {
-        console.error('Error al cargar estadísticas:', error);
-      }
-    };
-
-    if (userRole !== 'client') {
-      fetchStats();
-    }
-  }, [userRole]);
+  
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
@@ -204,14 +180,6 @@ export default function Rent() {
       
       return newData;
     });
-  };
-
-  const handleSelectChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -713,20 +681,22 @@ export default function Rent() {
       <div className="modal-container">
         <button className="close-btn" onClick={() => setShowTotalPedidosModal(false)}>×</button>
         <div className="modal-content">
-          <h3>Total de Pedidos de Alquiler</h3>
+          <h3>Todos los Pedidos de Alquiler</h3>
           <div className="table-container">
             <table>
               <thead>
                 <tr>
-                  <th>Evento</th>
+                <th>Evento</th>
                   <th>Cliente</th>
+                  <th>Elemento</th>
                   <th>Cantidad</th>
-                  <th>Precio Total</th>
+                  <th>Precio Unitario</th>
                   <th>Estado</th>
+                  <th>Acciones</th>
                 </tr>
               </thead>
               <tbody>
-                {pedidos.map((pedido) => (
+              {Array.isArray(pedidos) && pedidos.map((pedido) => (
                   <tr key={pedido.id_alquiler}>
                     <td>{pedido.nombre_evento}</td>
                     <td>{pedido.nombre_cliente}</td>
@@ -755,12 +725,15 @@ export default function Rent() {
                 <tr>
                   <th>Evento</th>
                   <th>Cliente</th>
+                  <th>Elemento</th>
                   <th>Cantidad</th>
-                  <th>Precio Total</th>
+                  <th>Precio Unitario</th>
+                  <th>Estado</th>
+                  <th>Acciones</th>
                 </tr>
               </thead>
               <tbody>
-                {pedidosPendientes.map((pedido) => (
+              {Array.isArray(pedidosPendientes) && pedidosPendientes.map((pedido) => (
                   <tr key={pedido.id_alquiler}>
                     <td>{pedido.nombre_evento}</td>
                     <td>{pedido.nombre_cliente}</td>
@@ -781,18 +754,20 @@ export default function Rent() {
       <div className="modal-container">
         <button className="close-btn" onClick={() => setShowTotalItemsModal(false)}>×</button>
         <div className="modal-content">
-          <h3>Catálogo de Items</h3>
+          <h3>Catálogo de Elementos</h3>
           <div className="table-container">
             <table>
               <thead>
                 <tr>
-                  <th>Item</th>
+                  <th>Elemento</th>
                   <th>Cantidad Disponible</th>
-                  <th>Veces Alquilado</th>
+                  <th>Precio Unitario</th>
+                  <th>Estado</th>
+                  <th>Acciones</th>
                 </tr>
               </thead>
               <tbody>
-                {items.map((item) => (
+              {Array.isArray(items) && items.map((item) => (
                   <tr key={item.id_item}>
                     <td>{item.nombre}</td>
                     <td>{item.cantidad_disponible}</td>

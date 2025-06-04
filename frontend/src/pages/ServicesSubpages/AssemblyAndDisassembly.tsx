@@ -5,14 +5,11 @@ import '../../components/ServiceBase';
 import { useUser } from "../../contexts/UserContext";
 
 interface Assembly {
-  id_assembly?: number;
+  id_montdes?: number;
   id_evento: number;
-  tipo_servicio: string;
-  descripcion: string;
-  fecha_inicio: string;
-  fecha_fin: string;
-  estado: string;
-  notas: string;
+  precio_neto: number;
+  itbis: number;
+  total: number;
 }
 
 interface Evento {
@@ -76,7 +73,6 @@ export default function AssemblyAndDisassembly() {
   const [showModal, setShowModal] = useState(false);
   const [showEventosCompletadosModal, setShowEventosCompletadosModal] = useState(false);
   const [showEventosPendientesModal, setShowEventosPendientesModal] = useState(false);
-  const [showPersonalModal, setShowPersonalModal] = useState(false);
   const [assemblies, setAssemblies] = useState<Assembly[]>([]);
   const [eventos, setEventos] = useState<Evento[]>([]);
   const [eventosCompletados, setEventosCompletados] = useState<EventoCompletado[]>([]);
@@ -89,9 +85,9 @@ export default function AssemblyAndDisassembly() {
   });
   const [formData, setFormData] = useState<Partial<Assembly>>({
     id_evento: 0,
-    descripcion: '',
-    estado: 'Pendiente',
-    notas: ''
+    precio_neto: 0,
+    itbis: 0,
+    total: 0
   });
   const [editId, setEditId] = useState<number | null>(null);
   const [filtroEvento, setFiltroEvento] = useState<string>('');
@@ -181,22 +177,10 @@ export default function AssemblyAndDisassembly() {
       }
     };
 
-    const fetchPersonalMontaje = async () => {
-      if (showPersonalModal) {
-        try {
-          const response = await fetch('/api/montaje/personal');
-          const data = await response.json();
-          setEmpleadosMontaje(data);
-        } catch (error) {
-          console.error('Error al cargar personal:', error);
-        }
-      }
-    };
 
     fetchEventosCompletados();
     fetchEventosPendientes();
-    fetchPersonalMontaje();
-  }, [showEventosCompletadosModal, showEventosPendientesModal, showPersonalModal]);
+  }, [showEventosCompletadosModal, showEventosPendientesModal]);
 
   const handleInputChange = (e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
@@ -234,9 +218,9 @@ export default function AssemblyAndDisassembly() {
       setShowModal(false);
       setFormData({
         id_evento: 0,
-        descripcion: '',
-        estado: 'Pendiente',
-        notas: ''
+        precio_neto: 0,
+        itbis: 0,
+        total: 0
       });
       setEditId(null);
     } catch (error) {
@@ -246,14 +230,14 @@ export default function AssemblyAndDisassembly() {
 
   const handleEdit = (assembly: Assembly) => {
     setFormData(assembly);
-    setEditId(assembly.id_assembly!);
+    setEditId(assembly.id_montdes!);
     setShowModal(true);
   };
 
   const handleDelete = async (id: number) => {
     try {
       await fetch(`/api/assembly/${id}`, { method: 'DELETE' });
-      setAssemblies(prev => prev.filter(a => a.id_assembly !== id));
+      setAssemblies(prev => prev.filter(a => a.id_montdes !== id));
     } catch (error) {
       console.error('Error al eliminar:', error);
     }
@@ -262,10 +246,6 @@ export default function AssemblyAndDisassembly() {
   const renderInventoryView = () => (
     <div className="assembly-content">
       <div className="dashboard__stats">
-        <div className="stat-card">
-          <span className="stat-card__label">Personal Encargado</span>
-          <button className="stat-card__seeInfo">Ver personal</button>
-        </div>
 
         <div className="stat-card">
           <span className="stat-card__label">Eventos Completados</span>
@@ -306,14 +286,14 @@ export default function AssemblyAndDisassembly() {
                   .includes(filtroEvento.toLowerCase())
               )
               .map((assembly) => (
-                <tr key={assembly.id_assembly}>
-                  <td>{assembly.id_assembly}</td>
+                <tr key={assembly.id_montdes}>
+                  <td>{assembly.id_montdes}</td>
                   <td>
                     {eventos.find(e => e.id_evento === assembly.id_evento)?.tipo_evento}
                   </td>
-                  <td>{assembly.tipo_servicio}</td>
-                  <td>{assembly.descripcion}</td>
-                  <td>{assembly.estado}</td>
+                  <td>{assembly.precio_neto}</td>
+                  <td>{assembly.itbis}</td>
+                  <td>{assembly.total}</td>
                   <td>
                     <button
                       className="edit-btn"
@@ -507,7 +487,7 @@ export default function AssemblyAndDisassembly() {
 
         <center>
           <button className="new-form-btn" onClick={() => setShowModal(true)}>
-          + Agregar Servicio de Montaje y Desmontaje
+          Agregar Servicio de Montaje y Desmontaje
         </button>
         </center>
 
@@ -541,21 +521,12 @@ export default function AssemblyAndDisassembly() {
               Ver pendientes
             </button>
           </div>
-
-          <div className="stat-card">
-            <span className="stat-card__label">Personal Encargado</span>
-            <button 
-              className="stat-card__seeInfo"
-              onClick={() => setShowPersonalModal(true)}
-            >
-              Ver personal
-            </button>
-          </div>
+          
         </div>
 
         <center>
           <button className="new-form-btn" onClick={() => setShowModal(true)}>
-          + Agregar Servicio de Montaje y Desmontaje
+          Agregar Servicio de Montaje y Desmontaje
         </button>
         </center>
 
@@ -585,43 +556,44 @@ export default function AssemblyAndDisassembly() {
                   </label>
 
                   <label>
-                    <span>Tipo de Servicio:</span>
-                    <select
-                      name="tipo_servicio"
-                      value={formData.tipo_servicio || ''}
-                      onChange={handleSelectChange}
-                      required
-                    >
-                      <option value="">Seleccionar tipo</option>
-                      <option value="Montaje">Montaje</option>
-                      <option value="Desmontaje">Desmontaje</option>
-                      <option value="Ambos">Ambos</option>
-                    </select>
-                  </label>
-
-                  <label>
-                    <span>Estado:</span>
-                    <select
-                      name="estado"
-                      value={formData.estado || ''}
-                      onChange={handleSelectChange}
-                      required
-                    >
-                      <option value="">Seleccionar estado</option>
-                      <option value="Pendiente">Pendiente</option>
-                      <option value="En Progreso">En Progreso</option>
-                      <option value="Completado">Completado</option>
-                      <option value="Cancelado">Cancelado</option>
-                    </select>
-                  </label>
-
-                  <label>
-                    <span>Notas:</span>
-                    <textarea
-                      name="notas"
-                      value={formData.notas || ''}
+                    <span>Precio Neto:</span>
+                    <input
+                      type="number"
+                      name="precio_neto"
+                      value={formData.precio_neto || ''}
                       onChange={handleInputChange}
-                      rows={4}
+                      required
+                      min="0"
+                      step="0.01"
+                      placeholder="0.00"
+                    />
+                  </label>
+
+                  <label>
+                    <span>ITBIS:</span>
+                    <input
+                      type="number"
+                      name="itbis"
+                      value={formData.itbis || ''}
+                      onChange={handleInputChange}
+                      required
+                      min="0"
+                      step="0.01"
+                      placeholder="0.00"
+                    />
+                  </label>
+
+                  <label>
+                    <span>Total:</span>
+                    <input
+                      type="number"
+                      name="total"
+                      value={formData.total || ''}
+                      onChange={handleInputChange}
+                      required
+                      min="0"
+                      step="0.01"
+                      placeholder="0.00"
                     />
                   </label>
                 </div>
@@ -645,39 +617,6 @@ export default function AssemblyAndDisassembly() {
       </div>
     );
   };
-
-  const renderEventosCompletadosModal = () => (
-    <div className="modal-overlay">
-      <div className="modal-container">
-        <button className="close-btn" onClick={() => setShowEventosCompletadosModal(false)}>×</button>
-        <div className="modal-content">
-          <h3>Eventos con Mi Participación</h3>
-          <div className="table-container">
-            <table>
-              <thead>
-                <tr>
-                  <th>Evento</th>
-                  <th>Cliente</th>
-                  <th>Fecha</th>
-                  <th>Hora</th>
-                </tr>
-              </thead>
-              <tbody>
-                {eventosCompletados.map((evento) => (
-                  <tr key={evento.id_evento}>
-                    <td>{evento.nombre_evento}</td>
-                    <td>{evento.cliente}</td>
-                    <td>{evento.fecha}</td>
-                    <td>{evento.hora}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
 
   const renderEventosPendientesModal = () => (
     <div className="modal-overlay">
@@ -716,10 +655,10 @@ export default function AssemblyAndDisassembly() {
     </div>
   );
 
-  const renderPersonalModal = () => (
+  const renderEventosCompletadosModal = () => (
     <div className="modal-overlay">
       <div className="modal-container">
-        <button className="close-btn" onClick={() => setShowPersonalModal(false)}>×</button>
+        <button className="close-btn" onClick={() => setShowEventosCompletadosModal(false)}>×</button>
         <div className="modal-content">
           <h3>Eventos Terminados</h3>
           <div className="table-container">
@@ -770,7 +709,6 @@ export default function AssemblyAndDisassembly() {
                 {renderAdminView()}
                 {showEventosCompletadosModal && renderEventosCompletadosModal()}
                 {showEventosPendientesModal && renderEventosPendientesModal()}
-                {showPersonalModal && renderPersonalModal()}
               </>
             );
           }

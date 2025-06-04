@@ -26,7 +26,7 @@ interface Menu {
   id_menu: number;
   desc_menu: string;
   id_proveedor: number;
-  platos: Plato[];
+  platos?: Plato[];
   proveedor?: {
     nombre: string;
   };
@@ -35,14 +35,11 @@ interface Menu {
 interface Catering {
   id_catering?: number;
   id_evento: number;
-  personas: number;
-  precio_neto: number;
-  itbis: number;
-  total: number;
-  menus: Menu[];
-  estado: string;
-  rating: number;
-  comment: string;
+  personas_catering: number;
+  precioneto_catering: number;
+  itbis_catering: number;
+  total_catering: number;
+  menus?: Menu[];
 }
 
 interface Evento {
@@ -53,14 +50,6 @@ interface Evento {
   nombre_cliente?: string;
   lugar?: string;
   decoracion_solicitada?: string;
-}
-
-interface CateringStats {
-  menuDisponibles: number;
-  proveedorActivo: number;
-  totalPedidos: number;
-  pedidosPendientes: number;
-  totalPersonas: number;
 }
 
 // Nueva interfaz para el catálogo
@@ -81,17 +70,14 @@ export default function Catering() {
   const [platos, setPlatos] = useState<Plato[]>([]);
   const [selectedCategory, setSelectedCategory] = useState('todos');
   const [searchTerm, setSearchTerm] = useState('');
-  const [stats, setStats] = useState<CateringStats>({
-    menuDisponibles: 0,
-    proveedorActivo: 0,
-    totalPedidos: 0,
-    pedidosPendientes: 0,
-    totalPersonas: 0
-  });
+
   const [formData, setFormData] = useState<Partial<Catering>>({
-    menus: [],
-    rating: 0,
-    comment: ''
+    id_evento: 0,
+    personas_catering: 0,
+    precioneto_catering: 0,
+    itbis_catering: 0,
+    total_catering: 0,
+    menus: []
   });
   const [newMenuData, setNewMenuData] = useState({
     desc_menu: '',
@@ -143,39 +129,8 @@ export default function Catering() {
   }, []);
 
   useEffect(() => {
-    const fetchStats = async () => {
-      try {
-        const token = localStorage.getItem('token');
-        if (!token) {
-          throw new Error('No hay token de autenticación');
-        }
-
-        const response = await fetch('/api/dashboard/stats', {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
-          }
-        });
-
-        if (!response.ok) {
-          const errorData = await response.json().catch(() => ({ error: 'Error al cargar estadísticas' }));
-          throw new Error(errorData.error || `Error HTTP: ${response.status}`);
-        }
-
-        const data = await response.json();
-        setStats(data);
-      } catch (error) {
-        console.error('Error al cargar estadísticas:', error);
-        setError(error instanceof Error ? error.message : 'Error al cargar estadísticas');
-      }
-    };
-
-    if (userRole === 'admin') {
-      fetchStats();
-    }
-  }, [userRole]);
-
-  useEffect(() => {
+    const ensureArray = (data: any) => Array.isArray(data) ? data : [];
+  
     const fetchPedidos = async () => {
       try {
         const token = localStorage.getItem('token');
@@ -196,13 +151,14 @@ export default function Catering() {
         }
 
         const data = await response.json();
-        setPedidos(data);
+        setPedidos(ensureArray(data));
       } catch (error) {
         console.error('Error al cargar pedidos:', error);
+        setPedidos([]); // fallback seguro
         setError(error instanceof Error ? error.message : 'Error al cargar pedidos. Por favor, intente nuevamente.');
       }
     };
-
+  
     const fetchPedidosPendientes = async () => {
       try {
         const token = localStorage.getItem('token');
@@ -223,13 +179,14 @@ export default function Catering() {
         }
 
         const data = await response.json();
-        setPedidosPendientes(data);
+        setPedidosPendientes(ensureArray(data));
       } catch (error) {
         console.error('Error al cargar pedidos pendientes:', error);
+        setPedidosPendientes([]); // fallback seguro
         setError(error instanceof Error ? error.message : 'Error al cargar pedidos pendientes. Por favor, intente nuevamente.');
       }
     };
-
+  
     const fetchProveedores = async () => {
       try {
         const token = localStorage.getItem('token');
@@ -250,13 +207,14 @@ export default function Catering() {
         }
 
         const data = await response.json();
-        setProveedores(data);
+        setProveedores(ensureArray(data));
       } catch (error) {
         console.error('Error al cargar proveedores:', error);
+        setProveedores([]); // fallback seguro
         setError(error instanceof Error ? error.message : 'Error al cargar proveedores. Por favor, intente nuevamente.');
       }
     };
-
+  
     if (showPedidosModal) {
       fetchPedidos();
     }
@@ -376,13 +334,11 @@ export default function Catering() {
       setShowModal(false);
       setFormData({
         id_evento: 0,
-        personas: 0,
-        precio_neto: 0,
-        itbis: 0,
-        total: 0,
-        menus: [],
-        rating: 0,
-        comment: ''
+        personas_catering: 0,
+        precioneto_catering: 0,
+        itbis_catering: 0,
+        total_catering: 0,
+        menus: []
       });
       setEditId(null);
     } catch (error) {
@@ -401,14 +357,14 @@ export default function Catering() {
         platos: []
       }]
     }));
-  };
+  }; 
 
   const renderPedidosModal = () => (
     <div className="modal-overlay">
       <div className="modal-container">
         <button className="close-btn" onClick={() => setShowPedidosModal(false)}>×</button>
         <div className="modal-content">
-          <h3>Total de Pedidos</h3>
+          <h3>Todos los Pedidos</h3>
           <div className="table-container">
             <table>
               <thead>
@@ -420,18 +376,18 @@ export default function Catering() {
                   <th>ITBIS</th>
                   <th>Total</th>
                   <th>Estado</th>
+                  <th>Acciones</th>
                 </tr>
               </thead>
               <tbody>
-                {pedidos.map((pedido) => (
+                {Array.isArray(pedidos) && pedidos.map((pedido) => (
                   <tr key={pedido.id_catering}>
                     <td>{pedido.id_catering}</td>
                     <td>{pedido.nombre_evento}</td>
-                    <td>{pedido.personas}</td>
-                    <td>${pedido.precio_neto}</td>
-                    <td>${pedido.itbis}</td>
-                    <td>${pedido.total}</td>
-                    <td>{pedido.estado}</td>
+                    <td>{pedido.personas_catering}</td>
+                    <td>${pedido.precioneto_catering}</td>
+                    <td>${pedido.itbis_catering}</td>
+                    <td>${pedido.total_catering}</td>
                   </tr>
                 ))}
               </tbody>
@@ -458,17 +414,19 @@ export default function Catering() {
                   <th>Precio Neto</th>
                   <th>ITBIS</th>
                   <th>Total</th>
+                  <th>Estado</th>
+                  <th>Acciones</th>
                 </tr>
               </thead>
               <tbody>
-                {pedidosPendientes.map((pedido) => (
+              {Array.isArray(pedidosPendientes) && pedidosPendientes.map((pedido) => (
                   <tr key={pedido.id_catering}>
                     <td>{pedido.id_catering}</td>
                     <td>{pedido.nombre_evento}</td>
-                    <td>{pedido.personas}</td>
-                    <td>${pedido.precio_neto}</td>
-                    <td>${pedido.itbis}</td>
-                    <td>${pedido.total}</td>
+                    <td>{pedido.personas_catering}</td>
+                    <td>${pedido.precioneto_catering}</td>
+                    <td>${pedido.itbis_catering}</td>
+                    <td>${pedido.total_catering}</td>
                   </tr>
                 ))}
               </tbody>
@@ -484,7 +442,7 @@ export default function Catering() {
       <div className="modal-container">
         <button className="close-btn" onClick={() => setShowProveedoresModal(false)}>×</button>
         <div className="modal-content">
-          <h3>Proveedores Activos</h3>
+          <h3>Proveedores de Catering Activos</h3>
           <div className="table-container">
             <table>
               <thead>
@@ -492,10 +450,12 @@ export default function Catering() {
                   <th>Nombre</th>
                   <th>Teléfono</th>
                   <th>Correo</th>
+                  <th>Estado</th>
+                  <th>Acciones</th>
                 </tr>
               </thead>
               <tbody>
-                {proveedores.map((proveedor) => (
+              {Array.isArray(proveedores) && proveedores.map((proveedor) => (
                   <tr key={proveedor.id_proveedor}>
                     <td>{proveedor.nombre}</td>
                     <td>{proveedor.telefono}</td>
@@ -660,8 +620,8 @@ export default function Catering() {
                     <span>Número de Personas:</span>
                     <input
                       type="number"
-                      name="personas"
-                      value={formData.personas || ''}
+                      name="personas_catering"
+                      value={formData.personas_catering || ''}
                       onChange={handleInputChange}
                       required
                       min="1"
@@ -672,31 +632,65 @@ export default function Catering() {
                     <span>Precio Neto:</span>
                     <input
                       type="number"
-                      name="precio_neto"
-                      value={formData.precio_neto || ''}
+                      name="precioneto_catering"
+                      value={formData.precioneto_catering || ''}
                       onChange={handleInputChange}
                       required
                       min="0"
                       step="0.01"
+                      placeholder="0.00"
                     />
                   </label>
 
                   <label>
-                    <span>Estado:</span>
-                    <select
-                      name="estado"
-                      value={formData.estado || ''}
+                    <span>ITBIS:</span>
+                    <input
+                      type="number"
+                      name="itbis_catering"
+                      value={formData.itbis_catering || ''}
                       onChange={handleInputChange}
                       required
-                    >
-                      <option value="">Seleccionar estado</option>
-                      <option value="Pendiente">Pendiente</option>
-                      <option value="En Progreso">En Progreso</option>
-                      <option value="Completado">Completado</option>
-                      <option value="Cancelado">Cancelado</option>
-                    </select>
+                      min="0"
+                      step="0.01"
+                      placeholder="0.00"
+                    />
                   </label>
 
+                  <label>
+                    <span>Total:</span>
+                    <input
+                      type="number"
+                      name="total_catering"
+                      value={formData.total_catering || ''}
+                      onChange={handleInputChange}
+                      required
+                      min="0"
+                      step="0.01"
+                      placeholder="0.00"
+                    />
+                  </label>
+
+                  <label className="full-width">
+                    <span>Menús:</span>
+                    <div className="menu-selection">
+                      {menus.map(menu => (
+                        <div
+                          key={menu.id_menu}
+                          className={`menu-card ${
+                            formData.menus?.some(m => m.id_menu === menu.id_menu) ? 'selected' : ''
+                          }`}
+                          onClick={() => handleMenuSelect(menu)}
+                        >
+                          <h4>{menu.desc_menu}</h4>
+                          <div className="menu-platos">
+                            {menu.platos?.map(plato => (
+                              <p key={plato.id_plato}>{plato.desc_plato}</p>
+                            ))}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </label>
                 </div>
 
                 <div className="form-buttons">
