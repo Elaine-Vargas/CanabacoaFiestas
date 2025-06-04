@@ -11,6 +11,7 @@ import dashboardRoutes from './routes/dashboardRoutes';
 import usersRoutes from './routes/usersRoutes';
 import eventoRoutes from './routes/eventoRoutes';
 import alquilerRoutes from './routes/alquilerRoutes';
+import decoracionRoutes from './routes/decoracionRoutes';
 
 dotenv.config();
 
@@ -40,7 +41,7 @@ app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/usuarios', usersRoutes);
 app.use('/api/evento', eventoRoutes);
 app.use('/api/alquiler', alquilerRoutes);
-
+app.use('/api/decoracion', decoracionRoutes);
 // Ruta de prueba
 app.get('/', (req, res) => {
   res.send('Servidor funcionando correctamente');
