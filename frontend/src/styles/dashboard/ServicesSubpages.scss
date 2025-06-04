@@ -325,15 +325,10 @@ $gold-gradient: linear-gradient(135deg, var(--gold) 0%, var(--dark-gold) 100%);
   border-radius: 20px;
   box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
   height: auto;
-  overflow: visible;
+  max-height: 90vh;
+  overflow: auto;
   border: 1px solid rgba(212, 175, 55, 0.2);
   animation: slideUp 0.4s ease;
-
-  @media screen and (max-width: 768px) {
-    margin: 1rem;
-    padding: 2rem;
-    max-width: calc(100% - 2rem);
-  }
 
   .close-btn {
     position: absolute;
@@ -357,48 +352,135 @@ $gold-gradient: linear-gradient(135deg, var(--gold) 0%, var(--dark-gold) 100%);
       transform: rotate(90deg);
     }
   }
-}
 
-.modal-content {
-  background-color: var(--color-background2);
-  padding: 2.5rem;
-  border-radius: 12px;
-  min-width: 300px;
-  text-align: center;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
-  position: relative;
-  z-index: 1000000;
+  .modal-content {
+    background-color: var(--color-background2);
+    padding: 2.5rem;
+    border-radius: 12px;
+    width: fit-content;
+    min-width: 100%;
+    box-sizing: border-box;
 
-  .modal-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 2.5rem;
-    padding: 0 1.5rem;
+    .modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 2.5rem;
+      padding: 0 1.5rem;
 
-    h3 {
-      color: var(--dark-gold);
-      font-size: 2rem;
-      margin: 0;
-      font-weight: normal;
-      font-family: "Parisienne", cursive;
+      h3 {
+        color: var(--dark-gold);
+        font-size: 2rem;
+        margin: 0;
+        font-weight: normal;
+        font-family: "Parisienne", cursive;
+      }
+
+      .add-user-btn {
+        background-color: var(--gold);
+        color: white;
+        border: none;
+        padding: 1rem 2rem;
+        border-radius: 8px;
+        cursor: pointer;
+        font-size: 1.1rem;
+        transition: all 0.3s ease;
+        font-family: "Montserrat Alternates", sans-serif;
+        font-weight: 600;
+
+        &:hover {
+          background-color: var(--dark-gold);
+          transform: translateY(-2px);
+        }
+      }
     }
 
-    .add-user-btn {
-      background-color: var(--gold);
-      color: white;
-      border: none;
-      padding: 1rem 2rem;
-      border-radius: 8px;
-      cursor: pointer;
-      font-size: 1.1rem;
-      transition: all 0.3s ease;
-      font-family: "Montserrat Alternates", sans-serif;
-      font-weight: 600;
+    .table-container {
+      width: 100%;
+      overflow-x: auto;
+      margin-top: 1.5rem;
+      background-color: var(--color-background);
+      border-radius: 12px;
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+      padding: 1.5rem;
 
-      &:hover {
-        background-color: var(--dark-gold);
-        transform: translateY(-2px);
+      table {
+        width: 100%;
+        border-collapse: separate;
+        border-spacing: 0;
+        margin: 0;
+        background-color: var(--color-background);
+        border-radius: 12px;
+        overflow: hidden;
+
+        th, td {
+          padding: 1rem;
+          text-align: left;
+          border-bottom: 1px solid rgba(212, 175, 55, 0.1);
+          font-family: "Nunito Sans", sans-serif;
+          font-size: 0.95rem;
+          white-space: normal;
+          word-wrap: break-word;
+          min-width: 120px;
+          max-width: 200px;
+        }
+
+        th {
+          background-color: var(--color-background2);
+          color: var(--dark-gold);
+          font-weight: 600;
+          text-transform: uppercase;
+          font-size: 0.85rem;
+          letter-spacing: 0.5px;
+          position: sticky;
+          top: 0;
+          z-index: 1;
+        }
+
+        td {
+          background-color: var(--color-background);
+          color: var(--color-text);
+          vertical-align: middle;
+        }
+
+        tr {
+          transition: $transition-standard;
+          
+          &:hover {
+            background-color: rgba(212, 175, 55, 0.05);
+          }
+
+          &:last-child td {
+            border-bottom: none;
+          }
+        }
+      }
+    }
+  }
+
+  @media screen and (max-width: 768px) {
+    margin: 1rem;
+    padding: 1.5rem;
+    max-width: calc(100% - 2rem);
+
+    .modal-content {
+      padding: 1.5rem;
+
+      .table-container {
+        padding: 1rem;
+        margin-top: 1rem;
+
+        table {
+          th, td {
+            padding: 0.8rem;
+            font-size: 0.85rem;
+            min-width: 100px;
+          }
+
+          th {
+            font-size: 0.8rem;
+          }
+        }
       }
     }
   }
@@ -774,6 +856,56 @@ $gold-gradient: linear-gradient(135deg, var(--gold) 0%, var(--dark-gold) 100%);
       color: var(--white);
       box-shadow: 0 4px 15px rgba(212, 175, 55, 0.2);
     }
+  }
+}
+
+/* Estilos para el select de filtro */
+.escri {
+  padding: 0.8rem 2.5rem 0.8rem 1.5rem;
+  border: 2px solid var(--gold);
+  border-radius: 10px;
+  background-color: var(--color-background);
+  color: var(--text-color);
+  font-family: "Montserrat Alternates", sans-serif;
+  font-weight: 600;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: $transition-standard;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%23D4AF37' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 1rem center;
+  background-size: 1.2rem;
+  min-width: 200px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+
+  &:hover {
+    border-color: var(--dark-gold);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 15px rgba(212, 175, 55, 0.1);
+  }
+
+  &:focus {
+    outline: none;
+    border-color: var(--dark-gold);
+    box-shadow: 0 0 0 4px rgba(212, 175, 55, 0.1);
+  }
+
+  option {
+    padding: 1rem;
+    font-family: "Montserrat Alternates", sans-serif;
+    font-weight: 500;
+    background-color: var(--color-background);
+    color: var(--text-color);
+  }
+}
+
+@media screen and (max-width: 768px) {
+  .escri {
+    width: 100%;
+    min-width: unset;
+    font-size: 0.85rem;
+    padding: 0.7rem 2rem 0.7rem 1rem;
   }
 }
 

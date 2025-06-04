@@ -1107,6 +1107,7 @@ export default function Rent() {
     <div className="rent-content">
       <div className="table-section">
         <h4>Alquileres Registrados</h4>
+        <br />
         <div className="search-container">
           <select
             className="escri"
@@ -1119,6 +1120,7 @@ export default function Rent() {
             <option value="completados">Alquileres completados</option>
           </select>
         </div>
+        <br />
         <table>
           <thead>
             <tr>
