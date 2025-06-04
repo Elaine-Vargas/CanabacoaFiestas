@@ -2321,25 +2321,29 @@ const WelcomeMenu: React.FC<WelcomeMenuProps> = () => {
       <div className="modal-container">
         <button className="close-btn" onClick={() => setShowProveedoresModal(false)}>×</button>
         <div className="modal-content">
-          <h3>Gestión de Proveedores</h3>
-          
-          <button className="new-form-btn" onClick={() => {
-            setEditId(null);
-            setShowProveedorForm(true);
-            setProveedorFormData({
-              id_tipo_proveedor: '',
-              nombre_proveedor: '',
-              tel_proveedor: '',
-              correo_proveedor: '',
-              id_provincia: '',
-              sector: '',
-              calle: '',
-              detalles: '',
-              estado_proveedor: 'Activo'
-            });
-          }}>
-            Nuevo Proveedor
-          </button>
+          <div className="modal-header">
+            <h3>Gestión de Proveedores</h3>
+            <button 
+              className="add-user-btn"
+              onClick={() => {
+                setEditId(null);
+                setShowProveedorForm(true);
+                setProveedorFormData({
+                  id_tipo_proveedor: '',
+                  nombre_proveedor: '',
+                  tel_proveedor: '',
+                  correo_proveedor: '',
+                  id_provincia: '',
+                  sector: '',
+                  calle: '',
+                  detalles: '',
+                  estado_proveedor: 'Activo'
+                });
+              }}
+            >
+              Nuevo Proveedor
+            </button>
+          </div>
 
           <div className="table-container">
             <table>
@@ -2391,163 +2395,180 @@ const WelcomeMenu: React.FC<WelcomeMenuProps> = () => {
               </tbody>
             </table>
           </div>
-
-          {showProveedorForm && (
-            <div className="modal-form">
-              <h4>{editId ? 'Editar Proveedor' : 'Nuevo Proveedor'}</h4>
-              <form onSubmit={handleProveedorSubmit}>
-                <div className="form-grid">
-                  <label>
-                    <span>Tipo de Proveedor:</span>
-                    <select
-                      name="id_tipo_proveedor"
-                      value={proveedorFormData.id_tipo_proveedor}
-                      onChange={handleProveedorInputChange}
-                      required
-                    >
-                      <option value="">Seleccionar tipo</option>
-                      {tiposProveedor && tiposProveedor.map((tipo) => (
-                        <option key={tipo.id_tipo_proveedor} value={tipo.id_tipo_proveedor}>
-                          {tipo.nombre_tipo}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
-
-                  <label>
-                    <span>Nombre:</span>
-                    <input
-                      type="text"
-                      name="nombre_proveedor"
-                      value={proveedorFormData.nombre_proveedor}
-                      onChange={handleProveedorInputChange}
-                      required
-                      maxLength={50}
-                    />
-                  </label>
-
-                  <label>
-                    <span>Teléfono:</span>
-                    <input
-                      type="tel"
-                      name="tel_proveedor"
-                      value={proveedorFormData.tel_proveedor}
-                      onChange={handleProveedorInputChange}
-                      required
-                      pattern="[0-9]{12}"
-                      maxLength={12}
-                      placeholder="809123456789"
-                    />
-                  </label>
-
-                  <label>
-                    <span>Correo:</span>
-                    <input
-                      type="email"
-                      name="correo_proveedor"
-                      value={proveedorFormData.correo_proveedor}
-                      onChange={handleProveedorInputChange}
-                      required
-                      maxLength={100}
-                    />
-                  </label>
-
-                  <label>
-                    <span>Provincia:</span>
-                    <select
-                      name="id_provincia"
-                      value={proveedorFormData.id_provincia}
-                      onChange={handleProveedorInputChange}
-                      required
-                    >
-                      <option value="">Seleccionar provincia</option>
-                      {provincias && provincias.map((provincia) => (
-                        <option key={provincia.id_provincia} value={provincia.id_provincia}>
-                          {provincia.nombre_provincia}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
-
-                  <label>
-                    <span>Sector:</span>
-                    <input
-                      type="text"
-                      name="sector"
-                      value={proveedorFormData.sector}
-                      onChange={handleProveedorInputChange}
-                      required
-                      maxLength={50}
-                    />
-                  </label>
-
-                  <label>
-                    <span>Calle:</span>
-                    <input
-                      type="text"
-                      name="calle"
-                      value={proveedorFormData.calle}
-                      onChange={handleProveedorInputChange}
-                      required
-                      maxLength={50}
-                    />
-                  </label>
-
-                  <label>
-                    <span>Detalles:</span>
-                    <textarea
-                      name="detalles"
-                      value={proveedorFormData.detalles}
-                      onChange={handleProveedorInputChange}
-                      rows={3}
-                    />
-                  </label>
-
-                  <label>
-                    <span>Estado:</span>
-                    <select
-                      name="estado_proveedor"
-                      value={proveedorFormData.estado_proveedor}
-                      onChange={handleProveedorInputChange}
-                      required
-                    >
-                      <option value="Activo">Activo</option>
-                      <option value="Inactivo">Inactivo</option>
-                      <option value="Eliminado">Eliminado</option>
-                    </select>
-                  </label>
-                </div>
-
-                <div className="form-buttons">
-                  <button type="submit" className="submit-btn">
-                    {editId ? 'Actualizar' : 'Guardar'}
-                  </button>
-                  <button
-                    type="button"
-                    className="reset-btn"
-                    onClick={() => {
-                      setEditId(null);
-                      setShowProveedorForm(false);
-                      setProveedorFormData({
-                        id_tipo_proveedor: '',
-                        nombre_proveedor: '',
-                        tel_proveedor: '',
-                        correo_proveedor: '',
-                        id_provincia: '',
-                        sector: '',
-                        calle: '',
-                        detalles: '',
-                        estado_proveedor: 'Activo'
-                      });
-                    }}
-                  >
-                    Cancelar
-                  </button>
-                </div>
-              </form>
-            </div>
-          )}
         </div>
+      </div>
+    </div>
+  );
+
+  const renderProveedorForm = () => (
+    <div className="modal-overlay">
+      <div className="modal-container">
+        <button className="close-btn" onClick={() => {
+          setShowProveedorForm(false);
+          setEditId(null);
+          setProveedorFormData({
+            id_tipo_proveedor: '',
+            nombre_proveedor: '',
+            tel_proveedor: '',
+            correo_proveedor: '',
+            id_provincia: '',
+            sector: '',
+            calle: '',
+            detalles: '',
+            estado_proveedor: 'Activo'
+          });
+        }}>×</button>
+        <form className="modal-form" onSubmit={handleProveedorSubmit}>
+          <h2>{editId ? 'Editar Proveedor' : 'Nuevo Proveedor'}</h2>
+          <div className="form-grid">
+            <label>
+              <span>Tipo de Proveedor:</span>
+              <select
+                name="id_tipo_proveedor"
+                value={proveedorFormData.id_tipo_proveedor}
+                onChange={handleProveedorInputChange}
+                required
+              >
+                <option value="">Seleccionar tipo</option>
+                {tiposProveedor && tiposProveedor.map((tipo) => (
+                  <option key={tipo.id_tipo_proveedor} value={tipo.id_tipo_proveedor}>
+                    {tipo.nombre_tipo}
+                  </option>
+                ))}
+              </select>
+            </label>
+
+            <label>
+              <span>Nombre:</span>
+              <input
+                type="text"
+                name="nombre_proveedor"
+                value={proveedorFormData.nombre_proveedor}
+                onChange={handleProveedorInputChange}
+                required
+                maxLength={50}
+              />
+            </label>
+
+            <label>
+              <span>Teléfono:</span>
+              <input
+                type="tel"
+                name="tel_proveedor"
+                value={proveedorFormData.tel_proveedor}
+                onChange={handleProveedorInputChange}
+                required
+                pattern="[0-9]{12}"
+                maxLength={12}
+                placeholder="809123456789"
+              />
+            </label>
+
+            <label>
+              <span>Correo:</span>
+              <input
+                type="email"
+                name="correo_proveedor"
+                value={proveedorFormData.correo_proveedor}
+                onChange={handleProveedorInputChange}
+                required
+                maxLength={100}
+              />
+            </label>
+
+            <label>
+              <span>Provincia:</span>
+              <select
+                name="id_provincia"
+                value={proveedorFormData.id_provincia}
+                onChange={handleProveedorInputChange}
+                required
+              >
+                <option value="">Seleccionar provincia</option>
+                {provincias && provincias.map((provincia) => (
+                  <option key={provincia.id_provincia} value={provincia.id_provincia}>
+                    {provincia.nombre_provincia}
+                  </option>
+                ))}
+              </select>
+            </label>
+
+            <label>
+              <span>Sector:</span>
+              <input
+                type="text"
+                name="sector"
+                value={proveedorFormData.sector}
+                onChange={handleProveedorInputChange}
+                required
+                maxLength={50}
+              />
+            </label>
+
+            <label>
+              <span>Calle:</span>
+              <input
+                type="text"
+                name="calle"
+                value={proveedorFormData.calle}
+                onChange={handleProveedorInputChange}
+                required
+                maxLength={50}
+              />
+            </label>
+
+            <label className="full-width">
+              <span>Detalles:</span>
+              <textarea
+                name="detalles"
+                value={proveedorFormData.detalles}
+                onChange={handleProveedorInputChange}
+                rows={3}
+              />
+            </label>
+
+            <label>
+              <span>Estado:</span>
+              <select
+                name="estado_proveedor"
+                value={proveedorFormData.estado_proveedor}
+                onChange={handleProveedorInputChange}
+                required
+              >
+                <option value="Activo">Activo</option>
+                <option value="Inactivo">Inactivo</option>
+                <option value="Eliminado">Eliminado</option>
+              </select>
+            </label>
+          </div>
+
+          <div className="form-buttons">
+            <button type="submit" className="submit-btn">
+              {editId ? 'Actualizar' : 'Guardar'}
+            </button>
+            <button
+              type="button"
+              className="reset-btn"
+              onClick={() => {
+                setShowProveedorForm(false);
+                setEditId(null);
+                setProveedorFormData({
+                  id_tipo_proveedor: '',
+                  nombre_proveedor: '',
+                  tel_proveedor: '',
+                  correo_proveedor: '',
+                  id_provincia: '',
+                  sector: '',
+                  calle: '',
+                  detalles: '',
+                  estado_proveedor: 'Activo'
+                });
+              }}
+            >
+              Cancelar
+            </button>
+          </div>
+        </form>
       </div>
     </div>
   );
@@ -2889,6 +2910,7 @@ const WelcomeMenu: React.FC<WelcomeMenuProps> = () => {
       )}
 
       {showProveedoresModal && renderProveedoresModal()}
+      {showProveedorForm && renderProveedorForm()}
     </div>
   );
 };
