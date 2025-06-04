@@ -477,12 +477,12 @@ $gold-gradient: linear-gradient(135deg, var(--gold) 0%, var(--dark-gold) 100%);
   }
 }
 
-/* Formularios */
+/* Formularios en páginas de servicio */
 .modal-form {
   background: var(--color-background);
   width: 100%;
   margin: 0 auto;
-  padding: 0 4rem;
+  padding: 2rem;
   box-sizing: border-box;
 
   h2, h3 {
@@ -555,6 +555,10 @@ $gold-gradient: linear-gradient(135deg, var(--gold) 0%, var(--dark-gold) 100%);
         min-height: 120px;
         resize: vertical;
       }
+
+      &.full-width {
+        grid-column: 1 / -1;
+      }
     }
   }
 
@@ -597,6 +601,26 @@ $gold-gradient: linear-gradient(135deg, var(--gold) 0%, var(--dark-gold) 100%);
           background-color: var(--color-border);
           transform: translateY(-2px);
         }
+      }
+    }
+  }
+}
+
+/* Responsive para formularios */
+@media screen and (max-width: 768px) {
+  .modal-form {
+    padding: 1.5rem;
+
+    .form-grid {
+      grid-template-columns: 1fr;
+      gap: 1.5rem;
+    }
+
+    .form-buttons {
+      flex-direction: column;
+      
+      button {
+        width: 100%;
       }
     }
   }
@@ -772,23 +796,6 @@ tr.deshabilitado {
     &__stats {
       grid-template-columns: 1fr;
       gap: 1.5rem;
-    }
-  }
-
-  .modal-form {
-    padding: 0 1rem;
-
-    .form-grid {
-      grid-template-columns: 1fr;
-      gap: 1.5rem;
-    }
-
-    .form-buttons {
-      flex-direction: column;
-      
-      button {
-        width: 100%;
-      }
     }
   }
 

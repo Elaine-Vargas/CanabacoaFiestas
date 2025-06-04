@@ -502,39 +502,81 @@ export default function Catering() {
           <div className="modal-container">
             <button className="close-btn" onClick={() => setShowModal(false)}>×</button>
             <form className="modal-form" onSubmit={handleSubmit}>
-              <h2>Seleccionar Menú para el Evento</h2>
+              <h2>{editId ? 'Editar Servicio de Catering' : 'Nuevo Servicio de Catering'}</h2>
               
-              <label>
-                Número de personas:
-                <input
-                  type="number"
-                  name="personas"
-                  value={formData.personas || ''}
-                  onChange={handleInputChange}
-                  required
-                  min="1"
-                />
-              </label>
+              <div className="form-grid">
+                <label>
+                  <span>Evento:</span>
+                  <select
+                    name="id_evento"
+                    value={formData.id_evento || ''}
+                    onChange={handleInputChange}
+                    required
+                  >
+                    <option value="">Seleccionar evento</option>
+                    {eventos.map((evento) => (
+                      <option key={evento.id_evento} value={evento.id_evento}>
+                        {evento.tipo_evento} - {evento.fecha_evento}
+                      </option>
+                    ))}
+                  </select>
+                </label>
 
-              <div className="selected-menus">
-                <h4>Menús seleccionados:</h4>
-                {formData.menus?.map(menu => (
-                  <div key={menu.id_menu} className="selected-menu">
-                    <p>{menu.desc_menu}</p>
-                    <button
-                      type="button"
-                      onClick={() => handleMenuSelect(menu)}
-                      className="remove-menu-btn"
-                    >
-                      ×
-                    </button>
-                  </div>
-                ))}
+                <label>
+                  <span>Número de Personas:</span>
+                  <input
+                    type="number"
+                    name="personas"
+                    value={formData.personas || ''}
+                    onChange={handleInputChange}
+                    required
+                    min="1"
+                  />
+                </label>
+
+                <label>
+                  <span>Precio Neto:</span>
+                  <input
+                    type="number"
+                    name="precio_neto"
+                    value={formData.precio_neto || ''}
+                    onChange={handleInputChange}
+                    required
+                    min="0"
+                    step="0.01"
+                  />
+                </label>
+
+                <label>
+                  <span>Estado:</span>
+                  <select
+                    name="estado"
+                    value={formData.estado || ''}
+                    onChange={handleInputChange}
+                    required
+                  >
+                    <option value="">Seleccionar estado</option>
+                    <option value="Pendiente">Pendiente</option>
+                    <option value="En Progreso">En Progreso</option>
+                    <option value="Completado">Completado</option>
+                    <option value="Cancelado">Cancelado</option>
+                  </select>
+                </label>
+
+                <label>
+                  <span>Notas:</span>
+                  <textarea
+                    name="notas"
+                    value={formData.notas || ''}
+                    onChange={handleInputChange}
+                    rows={4}
+                  />
+                </label>
               </div>
 
               <div className="form-buttons">
                 <button type="submit" className="submit-btn">
-                  Confirmar Selección
+                  {editId ? 'Actualizar' : 'Guardar'}
                 </button>
                 <button
                   type="button"
@@ -604,89 +646,75 @@ export default function Catering() {
               <form className="modal-form" onSubmit={handleSubmit}>
                 <h2>{editId ? 'Editar Servicio de Catering' : 'Nuevo Servicio de Catering'}</h2>
                 
-                <label>
-                  Evento:
-                  <select
-                    name="id_evento"
-                    value={formData.id_evento || ''}
-                    onChange={handleInputChange}
-                    required
-                  >
-                    <option value="">Seleccionar evento</option>
-                    {eventos.map((evento) => (
-                      <option key={evento.id_evento} value={evento.id_evento}>
-                        {evento.tipo_evento} - {evento.fecha_evento}
-                      </option>
-                    ))}
-                  </select>
-                </label>
+                <div className="form-grid">
+                  <label>
+                    <span>Evento:</span>
+                    <select
+                      name="id_evento"
+                      value={formData.id_evento || ''}
+                      onChange={handleInputChange}
+                      required
+                    >
+                      <option value="">Seleccionar evento</option>
+                      {eventos.map((evento) => (
+                        <option key={evento.id_evento} value={evento.id_evento}>
+                          {evento.tipo_evento} - {evento.fecha_evento}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
 
-                <label>
-                  Número de Personas:
-                  <input
-                    type="number"
-                    name="personas"
-                    value={formData.personas || ''}
-                    onChange={handleInputChange}
-                    required
-                    min="1"
-                  />
-                </label>
+                  <label>
+                    <span>Número de Personas:</span>
+                    <input
+                      type="number"
+                      name="personas"
+                      value={formData.personas || ''}
+                      onChange={handleInputChange}
+                      required
+                      min="1"
+                    />
+                  </label>
 
-                <label>
-                  Precio Neto:
-                  <input
-                    type="number"
-                    name="precio_neto"
-                    value={formData.precio_neto || ''}
-                    onChange={handleInputChange}
-                    required
-                    min="0"
-                    step="0.01"
-                  />
-                </label>
+                  <label>
+                    <span>Precio Neto:</span>
+                    <input
+                      type="number"
+                      name="precio_neto"
+                      value={formData.precio_neto || ''}
+                      onChange={handleInputChange}
+                      required
+                      min="0"
+                      step="0.01"
+                    />
+                  </label>
 
-                <label>
-                  ITBIS:
-                  <input
-                    type="number"
-                    name="itbis"
-                    value={formData.itbis || ''}
-                    onChange={handleInputChange}
-                    required
-                    min="0"
-                    step="0.01"
-                  />
-                </label>
+                  <label>
+                    <span>Estado:</span>
+                    <select
+                      name="estado"
+                      value={formData.estado || ''}
+                      onChange={handleInputChange}
+                      required
+                    >
+                      <option value="">Seleccionar estado</option>
+                      <option value="Pendiente">Pendiente</option>
+                      <option value="En Progreso">En Progreso</option>
+                      <option value="Completado">Completado</option>
+                      <option value="Cancelado">Cancelado</option>
+                    </select>
+                  </label>
 
-                <label>
-                  Total:
-                  <input
-                    type="number"
-                    name="total"
-                    value={formData.total || ''}
-                    onChange={handleInputChange}
-                    required
-                    min="0"
-                    step="0.01"
-                  />
-                </label>
-
-                <label>
-                  Estado:
-                  <select
-                    name="estado"
-                    value={formData.estado || ''}
-                    onChange={handleInputChange}
-                    required
-                  >
-                    <option value="">Seleccionar estado</option>
-                    <option value="Pendiente">Pendiente</option>
-                    <option value="En Progreso">En Progreso</option>
-                    <option value="Completado">Completado</option>
-                    <option value="Cancelado">Cancelado</option>
-                  </select>
-                </label>
+                  <label>
+                    <span>Notas:</span>
+                    <textarea
+                      name="notas"
+                      value={formData.notas || ''}
+                      onChange={handleInputChange}
+                      rows={4}
+                    />
+                  </label>
+                </div>
 
                 <div className="form-buttons">
                   <button type="submit" className="submit-btn">
