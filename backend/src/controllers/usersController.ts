@@ -179,18 +179,7 @@ export const searchUsers = async (req: Request, res: Response) => {
 export const updateUser = async (req: Request, res: Response) => {
     const { cedula } = req.params;
     const updateData = req.body;
-  
-    try {
-      // Validar que no se intente modificar campos sensibles
-      const camposProhibidos = ['cedula_usuario', 'contrasena_login', 'creacion_usuario'];
-      for (const campo of camposProhibidos) {
-        if (updateData[campo]) {
-          return res.status(400).json({ 
-            error: `No está permitido modificar el campo ${campo}` 
-          });
-        }
-      }
-  
+    
       // Buscar el usuario
       const usuario = await Usuario.findOne({ 
         where: { cedula_usuario: cedula } 
@@ -224,15 +213,11 @@ export const updateUser = async (req: Request, res: Response) => {
       });
   
       res.json({
-        mensaje: 'Usuario actualizado correctamente',
+        mensaje: 'Usuario actualizado Correctamente',
         usuario: usuarioActualizado
       });
   
-    } catch (error) {
-      console.error('Error al actualizar usuario:', error);
-      res.status(500).json({ error: 'Error al actualizar usuario' });
-    }
-  };
+    } 
   
   /**
    * @description Elimina lógicamente un usuario (cambia estado a "Eliminado")

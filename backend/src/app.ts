@@ -55,7 +55,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/permissions', permissionRoutes);
 app.use('/api/elemento', elementoRoutes);
 app.use('/api/comentarios', comentarioRoutes);
-app.use('/api/usuarios', usersRoutes);
+app.use('/api/usuario', usersRoutes);
 app.use('/api/evento', eventoRoutes);
 app.use('/api/alquiler', alquilerRoutes);
 app.use('/api/decoracion', decoracionRoutes);

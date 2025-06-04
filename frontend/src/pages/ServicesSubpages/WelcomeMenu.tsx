@@ -54,15 +54,15 @@ interface EventoRealizado {
 }
 
 interface Usuario {
-  id_usuario: number;
-  nombre: string;
-  apellido: string;
-  cedula: string;
-  usuario: string;
-  rol: string;
-  estado: string;
-  telefono: string;
-  correo: string;
+  cedula_usuario: string;
+  nombre_usuario: string;
+  apellido_usuario: string;
+  correo_usuario: string;
+  tel_usuario: string;
+  usuario_login: string;
+  id_rol: number;
+  rol_nombre: string;
+  estado_usuario: string;
 }
 
 type WelcomeMenuProps = {
@@ -362,6 +362,10 @@ const WelcomeMenu: React.FC<WelcomeMenuProps> = () => {
   const [showProveedorForm, setShowProveedorForm] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [tiposEvento, setTiposEvento] = useState<TipoEvento[]>([]);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [rolFilter, setRolFilter] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [tableError, setTableError] = useState<string | null>(null);
 
 
 
@@ -371,7 +375,7 @@ const WelcomeMenu: React.FC<WelcomeMenuProps> = () => {
       try {
         console.log('Intentando cargar espacios...');
         const token = localStorage.getItem('token');
-        const response = await fetch(`${apiUrl}espacios`, {
+        const response = await fetch(`${apiUrl}/espacio`, {
           headers: {
             'Authorization': `Bearer ${token}`,
             'Content-Type': 'application/json'
@@ -415,41 +419,42 @@ const WelcomeMenu: React.FC<WelcomeMenuProps> = () => {
   useEffect(() => {
     const fetchUsuarios = async () => {
       try {
-        const token = localStorage.getItem('token');
-        const response = await fetch(`${apiUrl}/usuarios`, {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
-          }
-        });
-  
-        const data = await response.json();
-  
-        if (Array.isArray(data)) {
-          setUsuarios(data);
-          console.log('Usuarios recibidos:', data);
-        } else if (Array.isArray(data.usuarios)) {
-          setUsuarios(data.usuarios);
-          console.log('Usuarios recibidos:', data);
-        } else {
-          console.error('Respuesta inesperada del endpoint de usuarios:', data);
-          setUsuarios([]); // fallback para evitar errores en renderizado
+        setLoading(true);
+        let url = `${apiUrl}/usuario`;
+        
+        const params = new URLSearchParams();
+        if (searchTerm) params.append('search', searchTerm);
+        if (rolFilter) params.append('rol', rolFilter);
+        
+        if (params.toString()) {
+          url += `?${params.toString()}`;
         }
-      } catch (error) {
-        console.error('Error al cargar usuarios:', error);
+
+        const response = await fetch(url);
+        if (!response.ok) {
+          throw new Error('Error al obtener usuarios');
+        }
+        
+        const data = await response.json();
+        setUsuarios(data.usuarios);
+        setTableError(null);
+      } catch (err) {
+        setTableError(err instanceof Error ? err.message : 'Error desconocido');
+      } finally {
+        setLoading(false);
       }
     };
-  
+
     if (showUsersModal) {
       fetchUsuarios();
     }
-  }, [showUsersModal]);
+  }, [showUsersModal, searchTerm, rolFilter]);
   
   useEffect(() => {
     const fetchEventosRealizados = async () => {
       try {
         const token = localStorage.getItem('token');
-        const response = await fetch(`${apiUrl}/eventos/realizados`, {
+        const response = await fetch(`${apiUrl}/evento/Completado`, {
           headers: {
             'Authorization': `Bearer ${token}`,
             'Content-Type': 'application/json'
@@ -568,7 +573,7 @@ const WelcomeMenu: React.FC<WelcomeMenuProps> = () => {
     const fetchTiposEvento = async () => {
       try {
         const token = localStorage.getItem('token');
-        const response = await fetch(`${apiUrl}/tipos-evento`, {
+        const response = await fetch(`${apiUrl}/evento/tipos-evento`, {
           headers: {
             'Authorization': `Bearer ${token}`,
             'Content-Type': 'application/json'
@@ -592,7 +597,7 @@ const WelcomeMenu: React.FC<WelcomeMenuProps> = () => {
   const fetchProveedores = async () => {
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch(`${apiUrl}proveedores`, {
+      const response = await fetch(`${apiUrl}/proveedor`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
@@ -612,7 +617,7 @@ const WelcomeMenu: React.FC<WelcomeMenuProps> = () => {
   const fetchTiposProveedor = async () => {
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch(`${apiUrl}tipos-proveedor`, {
+      const response = await fetch(`${apiUrl}/tipos-proveedor`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
@@ -632,7 +637,7 @@ const WelcomeMenu: React.FC<WelcomeMenuProps> = () => {
   const fetchProvincias = async () => {
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch(`${apiUrl}provincias`, {
+      const response = await fetch(`${apiUrl}/provincia`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
@@ -1743,7 +1748,7 @@ const WelcomeMenu: React.FC<WelcomeMenuProps> = () => {
   const handleNuevoUsuarioSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      const response = await fetch('/api/usuarios', {
+      const response = await fetch('/api/usuario', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -1765,7 +1770,7 @@ const WelcomeMenu: React.FC<WelcomeMenuProps> = () => {
           estado: 'Activo'
         });
         // Actualizar la lista de usuarios
-        const updatedResponse = await fetch('/api/usuarios');
+        const updatedResponse = await fetch('/api/usuario');
         const data = await updatedResponse.json();
         setUsuarios(data);
       }
@@ -2201,7 +2206,7 @@ const WelcomeMenu: React.FC<WelcomeMenuProps> = () => {
     e.preventDefault();
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch(`${apiUrl}/usuarios`, {
+      const response = await fetch(`${apiUrl}/usuario`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -2228,7 +2233,7 @@ const WelcomeMenu: React.FC<WelcomeMenuProps> = () => {
       });
       
       // Recargar la lista de usuarios
-      const updatedResponse = await fetch(`${apiUrl}/usuarios`, {
+      const updatedResponse = await fetch(`${apiUrl}/usuario`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
@@ -2703,82 +2708,74 @@ const WelcomeMenu: React.FC<WelcomeMenuProps> = () => {
                 </button>
               </div>
               
-              <div className="filter-buttons">
-                <button 
-                  className={`filter-btn ${filteredRole === null ? 'active' : ''}`}
-                  onClick={() => setFilteredRole(null)}
+              <div className="filters">
+                <input
+                  type="text"
+                  placeholder="Buscar..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                />
+                <select
+                  value={rolFilter}
+                  onChange={(e) => setRolFilter(e.target.value)}
                 >
-                  Todos
-                </button>
-                <button 
-                  className={`filter-btn ${filteredRole === 'cliente' ? 'active' : ''}`}
-                  onClick={() => setFilteredRole('cliente')}
-                >
-                  Clientes
-                </button>
-                <button 
-                  className={`filter-btn ${filteredRole === 'admin' ? 'active' : ''}`}
-                  onClick={() => setFilteredRole('admin')}
-                >
-                  Administradores
-                </button>
-                <button 
-                  className={`filter-btn ${filteredRole === 'organizador' ? 'active' : ''}`}
-                  onClick={() => setFilteredRole('organizador')}
-                >
-                  Organizadores
-                </button>
-                <button 
-                  className={`filter-btn ${filteredRole === 'inventario' ? 'active' : ''}`}
-                  onClick={() => setFilteredRole('inventario')}
-                >
-                  Inventario
-                </button>
+                  <option value="">Todos los roles</option>
+                  <option value="1">Administrador</option>
+                  <option value="2">Cliente</option>
+                  <option value="3">Organizador de eventos</option>
+                  <option value="4">Encargado de Inventario</option>
+                </select>
               </div>
 
               <div className="table-section">
                 <div className="table-container">
-                  <table>
-                    <thead>
-                      <tr>
-                        <th>Nombre</th>
-                        <th>Apellido</th>
-                        <th>Cédula</th>
-                        <th>Rol</th>
-                        <th>Contacto</th>
-                        <th>Correo</th>
-                        <th>Usuario</th>
-                        <th>Estado</th>
-                        <th>Acciones</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {usuarios
-                        .filter(usuario => !filteredRole || usuario.rol === filteredRole)
-                        .map((usuario) => (
-                          <tr key={usuario.id_usuario}>
-                            <td>{usuario.nombre}</td>
-                            <td>{usuario.apellido}</td>
-                            <td>{usuario.cedula}</td>
-                            <td>{usuario.rol}</td>
-                            <td>{usuario.telefono}</td>
-                            <td>{usuario.correo}</td>
-                            <td>{usuario.usuario}</td>
-                            <td>
-                            <span className={`estado-badge ${usuario.estado?.toLowerCase?.() || 'desconocido'}`}>
-                              {usuario.estado || 'Desconocido'}
-                              </span>
-                            </td>
-                            <td>
-                              <div className="acciones-buttons">
-                                <button className="edit-btn">Editar</button>
-                                <button className="delete-btn">Deshabilitar</button>
-                              </div>
-                            </td>
+                  {loading ? (
+                    <div>Cargando usuarios...</div>
+                  ) : tableError ? (
+                    <div className="text-red-500">Error: {tableError}</div>
+                  ) : (
+                    <table className="user-table">
+                      <thead>
+                        <tr>
+                          <th>Cédula</th>
+                          <th>Nombre</th>
+                          <th>Apellido</th>
+                          <th>Correo</th>
+                          <th>Teléfono</th>
+                          <th>Usuario</th>
+                          <th>Rol</th>
+                          <th>Estado</th>
+                          <th>Acciones</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {usuarios.length === 0 ? (
+                          <tr>
+                            <td colSpan={9}>No se encontraron usuarios</td>
                           </tr>
-                        ))}
-                    </tbody>
-                  </table>
+                        ) : (
+                          usuarios.map((usuario) => (
+                            <tr key={usuario.cedula_usuario}>
+                              <td>{usuario.cedula_usuario}</td>
+                              <td>{usuario.nombre_usuario}</td>
+                              <td>{usuario.apellido_usuario}</td>
+                              <td>{usuario.correo_usuario}</td>
+                              <td>{usuario.tel_usuario}</td>
+                              <td>{usuario.usuario_login}</td>
+                              <td>{usuario.rol_nombre}</td>
+                              <td className={`status ${usuario.estado_usuario.toLowerCase()}`}>
+                                {usuario.estado_usuario}
+                              </td>
+                              <td className="actions">
+                                <button className="edit-btn">Editar</button>
+                                <button className="delete-btn">Eliminar</button>
+                              </td>
+                            </tr>
+                          ))
+                        )}
+                      </tbody>
+                    </table>
+                  )}
                 </div>
               </div>
             </div>
