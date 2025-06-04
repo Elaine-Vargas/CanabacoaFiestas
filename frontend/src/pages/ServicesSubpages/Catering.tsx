@@ -3,6 +3,7 @@ import type { FormEvent } from 'react';
 import '../../styles/dashboard/ServicesSubpages.scss';
 import '../../components/ServiceBase';
 import { useUser } from '../../contexts/UserContext';
+import './MenuCatalogoCards.scss';
 
 export type UserRole = 'admin' | 'client' | 'supervisor' | 'inventory';
 
@@ -123,44 +124,18 @@ export default function Catering() {
           'Content-Type': 'application/json'
         };
 
-        // Use proxy configuration
-        const [cateringRes, menusRes, platosRes, eventosRes] = await Promise.all([
-          fetch('/api/catering', { headers }),
-          fetch('/api/menu/catalogo', { headers }),
-          fetch('/api/platos', { headers }),
-          fetch('/api/evento', { headers })
-        ]);
-
-        if (!cateringRes.ok || !menusRes.ok || !platosRes.ok || !eventosRes.ok) {
-          const errorData = await Promise.all([
-            cateringRes.ok ? null : cateringRes.json().catch(() => ({ error: 'Error al cargar catering' })),
-            menusRes.ok ? null : menusRes.json().catch(() => ({ error: 'Error al cargar menús' })),
-            platosRes.ok ? null : platosRes.json().catch(() => ({ error: 'Error al cargar platos' })),
-            eventosRes.ok ? null : eventosRes.json().catch(() => ({ error: 'Error al cargar eventos' }))
-          ]);
-          
-          console.error('Error responses:', errorData);
-          const errorMessages = errorData
-            .filter(Boolean)
-            .map(err => err?.error || err?.message || 'Error desconocido')
-            .join(', ');
-          throw new Error(`Error en la respuesta del servidor: ${errorMessages}`);
+        const menusRes = await fetch('/api/menu/catalogo', { headers });
+        
+        if (!menusRes.ok) {
+          throw new Error('Error al cargar el catálogo de menús');
         }
 
-        const [cateringData, menusData, platosData, eventosData] = await Promise.all([
-          cateringRes.json(),
-          menusRes.json(),
-          platosRes.json(),
-          eventosRes.json()
-        ]);
-
-        setCaterings(cateringData);
-        setMenus(menusData);
-        setPlatos(platosData);
-        setEventos(eventosData);
+        const menusData = await menusRes.json();
+        console.log('Menus data:', menusData); // Debug log
+        setMenusCatalogo(menusData);
       } catch (error) {
-        console.error('Error al cargar datos:', error);
-        setError(error instanceof Error ? error.message : 'Error al cargar los datos. Por favor, intente nuevamente.');
+        console.error('Error al cargar el catálogo:', error);
+        setError(error instanceof Error ? error.message : 'Error al cargar el catálogo');
       }
     };
 
@@ -175,31 +150,27 @@ export default function Catering() {
           throw new Error('No hay token de autenticación');
         }
 
-        const userData = JSON.parse(localStorage.getItem('userData') || '{}');
-        const response = await fetch('/api/catering/stats', {
-          method: 'GET',
+        const response = await fetch('/api/dashboard/stats', {
           headers: {
-            'Content-Type': 'application/json',
             'Authorization': `Bearer ${token}`,
-            'user-role': userData.rol || '',
-            'user-cedula': userData.cedula || ''
+            'Content-Type': 'application/json'
           }
         });
 
         if (!response.ok) {
-          const errorData = await response.json().catch(() => null);
-          throw new Error(errorData?.message || `Error HTTP: ${response.status}`);
+          const errorData = await response.json().catch(() => ({ error: 'Error al cargar estadísticas' }));
+          throw new Error(errorData.error || `Error HTTP: ${response.status}`);
         }
 
         const data = await response.json();
         setStats(data);
       } catch (error) {
         console.error('Error al cargar estadísticas:', error);
-        setError(error instanceof Error ? error.message : 'Error al cargar estadísticas. Por favor, intente nuevamente.');
+        setError(error instanceof Error ? error.message : 'Error al cargar estadísticas');
       }
     };
 
-    if (userRole !== 'client') {
+    if (userRole === 'admin') {
       fetchStats();
     }
   }, [userRole]);
@@ -419,6 +390,14 @@ export default function Catering() {
     }
   };
 
+  const handleSolicitarMenu = (menuId: number) => {
+    setShowModal(true);
+    setFormData(prev => ({
+      ...prev,
+      menus: [{ id_menu: menuId }]
+    }));
+  };
+
   const renderPedidosModal = () => (
     <div className="modal-overlay">
       <div className="modal-container">
@@ -526,39 +505,82 @@ export default function Catering() {
     </div>
   );
 
-  const renderClientView = () => (
-    <div className="catering-content">
-      <div className="menu-filters">
-        <div className="search-container">
-          <input
-            type="text"
-            placeholder="Buscar menús..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-          />
+  const renderClientView = () => {
+    const filteredMenus = menusCatalogo?.filter(menu => 
+      menu.desc_menu.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      menu.proveedor.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      menu.platos.some(plato => plato.nombre.toLowerCase().includes(searchTerm.toLowerCase()))
+    ) || [];
+
+    return (
+      <div className="menu-catalogo-container">
+        <h1 className="menu-catalogo-title">Catálogo de Menús</h1>
+        
+        <div className="menu-catalogo-filters">
+          <div className="search-container">
+            <svg className="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <circle cx="11" cy="11" r="8"/>
+              <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+            </svg>
+            <input
+              type="text"
+              placeholder="Buscar por menú, proveedor o plato..."
+              className="search-input"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+          </div>
+          <select
+            className="filter-select"
+            value={selectedCategory}
+            onChange={(e) => setSelectedCategory(e.target.value)}
+          >
+            <option value="todos">Todos los menús</option>
+            <option value="economico">Económicos</option>
+            <option value="premium">Premium</option>
+          </select>
+        </div>
+
+        <div className="menu-catalogo-grid">
+          {filteredMenus.length > 0 ? (
+            filteredMenus.map((menu) => (
+              <div key={menu.id_menu} className="menu-catalogo-card">
+                <span className="menu-catalogo-proveedor">{menu.proveedor}</span>
+                <div className="menu-catalogo-card-content">
+                  <h3 className="menu-catalogo-card-title">{menu.desc_menu}</h3>
+                  <div className="menu-catalogo-platos-list">
+                    <h4>Platos incluidos:</h4>
+                    <ul>
+                      {menu.platos.map((plato, index) => (
+                        <li key={index}>
+                          <svg viewBox="0 0 20 20" fill="currentColor"><path d="M10 2a8 8 0 100 16 8 8 0 000-16zm1 11H9v-2h2v2zm0-4H9V5h2v4z" /></svg>
+                          <span>{plato.nombre}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                  <div className="menu-catalogo-precio">
+                    <span>Precio total:</span>
+                    <span className="precio-total">${menu.precio_total?.toFixed(2) || '0.00'}</span>
+                  </div>
+                  <button
+                    onClick={() => handleSolicitarMenu(menu.id_menu)}
+                    className="menu-catalogo-btn"
+                  >
+                    Solicitar este menú
+                  </button>
+                </div>
+              </div>
+            ))
+          ) : (
+            <div className="text-center py-12">
+              <p className="text-gray-500 text-lg">No se encontraron menús disponibles</p>
+            </div>
+          )}
         </div>
       </div>
-      <div className="menus-grid">
-        {menusCatalogo
-          .filter(menu => menu.desc_menu.toLowerCase().includes(searchTerm.toLowerCase()))
-          .map(menu => (
-            <div key={menu.id_menu} className="menu-card">
-              <h3>{menu.desc_menu}</h3>
-              <div className="menu-platos">
-                {menu.platos && menu.platos.map((plato, idx) => (
-                  <p key={idx}>{typeof plato === 'string' ? plato : plato.nombre}</p>
-                ))}
-              </div>
-              <div className="menu-proveedor">Proveedor: {menu.proveedor}</div>
-              <div className="menu-precio">
-                Precio promedio: {menu.precio_total ? `$${menu.precio_total.toFixed(2)}` : 'No disponible'}
-              </div>
-              <button className="select-menu-btn">Reservar menú</button>
-            </div>
-          ))}
-      </div>
-    </div>
-  );
+    );
+  };
 
   const renderAdminView = () => {
     return (
@@ -848,7 +870,7 @@ export default function Catering() {
     <div className="catering-page">
       <div className="welcome-header">
         <h1>Gestión de Catering</h1>
-        <p>Gestiona los servicios de catering para eventos</p>
+        <p>selecciona un menú y solicítalo para tu evento</p>
       </div>
 
       <div className="service-content">

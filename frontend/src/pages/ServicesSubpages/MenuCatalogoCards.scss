@@ -1,0 +1,273 @@
+// Estilos exclusivos para las cartas del catálogo de menús
+.menu-catalogo-container {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 2rem 1rem;
+  background-color: var(--color-background);
+}
+
+.menu-catalogo-title {
+  text-align: center;
+  font-size: 2.2rem;
+  font-weight: 700;
+  color: var(--color-text2);
+  margin-bottom: 2rem;
+  text-shadow: 0 2px 8px var(--color-shadow);
+}
+
+// Estilos para el buscador y filtros
+.menu-catalogo-filters {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+  padding: 1.5rem;
+  background: var(--color-background2);
+  border-radius: 1rem;
+  box-shadow: 0 4px 16px var(--color-shadow);
+  border: 1px solid var(--dark-beige);
+
+  @media (min-width: 768px) {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    gap: 2rem;
+  }
+}
+
+.search-container {
+  flex: 1;
+  max-width: 500px;
+  position: relative;
+  margin-right: 1rem;
+
+  .search-input {
+    width: 100%;
+    padding: 1rem 1rem 1rem 3rem;
+    border: 2px solid var(--dark-beige);
+    border-radius: 0.8rem;
+    background: var(--light-beige);
+    color: var(--color-text2);
+    font-size: 1rem;
+    transition: all 0.3s ease;
+
+    &:focus {
+      outline: none;
+      border-color: var(--gold);
+      box-shadow: 0 0 0 3px var(--color-shadow);
+      background: var(--white);
+    }
+
+    &::placeholder {
+      color: var(--light-brown);
+    }
+  }
+
+  .search-icon {
+    position: absolute;
+    left: 1rem;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--brown);
+    width: 1.2rem;
+    height: 1.2rem;
+  }
+
+  @media (min-width: 768px) {
+    margin-right: 2rem;
+  }
+}
+
+.filter-select {
+  padding: 1rem 2rem;
+  border: 2px solid var(--dark-beige);
+  border-radius: 0.8rem;
+  background: var(--light-beige);
+  color: var(--color-text2);
+  font-size: 1rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%236c432d' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 1rem center;
+  background-size: 1.2rem;
+  padding-right: 3rem;
+
+  &:focus {
+    outline: none;
+    border-color: var(--gold);
+    box-shadow: 0 0 0 3px var(--color-shadow);
+    background-color: var(--white);
+  }
+
+  option {
+    background: var(--white);
+    color: var(--color-text2);
+    padding: 1rem;
+  }
+}
+
+.menu-catalogo-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 2rem;
+  padding: 1rem;
+  min-height: 100vh;
+}
+
+.menu-catalogo-card {
+  position: relative;
+  background: var(--color-background2);
+  backdrop-filter: blur(12px);
+  border-radius: 1.5rem;
+  box-shadow: 0 8px 32px 0 var(--color-shadow);
+  border: 1.5px solid var(--dark-beige);
+  overflow: hidden;
+  transition: all 0.3s ease;
+  height: 500px;
+  display: flex;
+  flex-direction: column;
+
+  &:hover {
+    box-shadow: 0 16px 48px 0 var(--color-shadow);
+    transform: translateY(-10px) scale(1.02);
+    border-color: var(--gold);
+  }
+}
+
+.menu-catalogo-proveedor {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  background: linear-gradient(90deg, var(--brown) 0%, var(--light-brown) 100%);
+  color: var(--white);
+  font-size: 0.85rem;
+  font-weight: 700;
+  padding: 0.3rem 1rem;
+  border-radius: 999px;
+  box-shadow: 0 2px 8px var(--color-shadow);
+  z-index: 2;
+}
+
+.menu-catalogo-card-content {
+  padding: 2rem 1.5rem 1.5rem 1.5rem;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background: linear-gradient(to bottom, var(--color-background2), var(--beige));
+  overflow-y: auto;
+}
+
+.menu-catalogo-card-title {
+  font-size: 1.3rem;
+  font-weight: 800;
+  color: var(--color-text2);
+  margin-bottom: 0.7rem;
+  text-shadow: 0 1px 4px var(--color-shadow);
+}
+
+.menu-catalogo-platos-list {
+  margin-bottom: 1.2rem;
+  flex: 1;
+  overflow-y: auto;
+
+  h4 {
+    font-weight: 600;
+    color: var(--color-text2);
+    margin-bottom: 0.5rem;
+    position: sticky;
+    top: 0;
+    background: inherit;
+    padding: 0.5rem 0;
+    z-index: 1;
+  }
+
+  ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+
+    li {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 0.98rem;
+      color: var(--color-text);
+      background: var(--light-beige);
+      border-radius: 0.5rem;
+      padding: 0.3rem 0.7rem;
+      margin-bottom: 0.3rem;
+
+      svg {
+        color: var(--gold);
+        width: 1.1em;
+        height: 1.1em;
+        flex-shrink: 0;
+      }
+
+      span {
+        flex: 1;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+    }
+  }
+}
+
+.menu-catalogo-precio {
+  border-top: 1px solid var(--dark-beige);
+  padding-top: 1.2rem;
+  margin-top: 1.2rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+
+  span {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--color-text2);
+  }
+  
+  .precio-total {
+    font-size: 1.5rem;
+    font-weight: 800;
+    color: var(--brown);
+    text-shadow: 0 1px 4px var(--color-shadow);
+  }
+}
+
+.menu-catalogo-btn {
+  width: 100%;
+  margin-top: 1.5rem;
+  background: linear-gradient(90deg, var(--brown) 0%, var(--light-brown) 100%);
+  color: var(--white);
+  padding: 0.9rem 0;
+  border-radius: 1rem;
+  font-weight: 700;
+  font-size: 1.1rem;
+  box-shadow: 0 2px 8px var(--color-shadow);
+  border: none;
+  cursor: pointer;
+  transition: all 0.3s ease;
+
+  &:hover {
+    background: linear-gradient(90deg, var(--light-brown) 0%, var(--brown) 100%);
+    box-shadow: 0 6px 18px var(--color-shadow);
+    transform: translateY(-2px);
+  }
+}
+
+// Media queries para responsividad
+@media (max-width: 1200px) {
+  .menu-catalogo-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 768px) {
+  .menu-catalogo-grid {
+    grid-template-columns: 1fr;
+  }
+} 

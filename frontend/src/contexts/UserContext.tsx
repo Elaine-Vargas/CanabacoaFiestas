@@ -27,128 +27,48 @@ export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
   useEffect(() => {
     const fetchUserData = async () => {
       try {
-        const userData = JSON.parse(localStorage.getItem('userData') || '{}');
-        if (userData.rol) {
-          const role = userData.rol === 1 ? 'admin' : userData.rol === 2 ? 'client' : userData.rol === 3 ? 'supervisor' : 'inventory';
-          setUserRole(role);
-          // Permisos por defecto para el administrador
-          if (role === 'admin') {
-            setUserPermissions([
-              { id: 'view_transportation', name: 'Ver Transporte' },
-              { id: 'view_supervision', name: 'Ver Supervisión' },
-              { id: 'view_assembly', name: 'Ver Montaje y Desmontaje' },
-              { id: 'manage_transportation', name: 'Gestionar Transporte' },
-              { id: 'manage_supervision', name: 'Gestionar Supervisión' },
-              { id: 'manage_assembly', name: 'Gestionar Montaje y Desmontaje' }
-            ]);
-          } else {
-            // Obtener permisos basados en el rol distinto a admin
-            try {
-              const token = localStorage.getItem('token');
-              const permissionsResponse = await fetch(`/api/permissions/${userData.rol}`, {
-                headers: {
-                  'Authorization': `Bearer ${token}`
-                }
-              });
-              if (permissionsResponse.ok) {
-                const permissionsData = await permissionsResponse.json();
-                setUserPermissions(permissionsData);
-              } else {
-                setUserPermissions([]);
-              }
-            } catch {
-              setUserPermissions([]);
-            }
-          }
-          return;
-        }
-        // Si no hay userData válido, intentar obtener desde el backend
         const token = localStorage.getItem('token');
         if (!token) {
-          setUserRole('client');
-          setUserPermissions([]);
-        } else {
-          // Si hay token pero hubo error, intentar obtener el rol del backend
-          try {
-            const response = await fetch('/api/auth/current', {
-              headers: {
-                'Authorization': `Bearer ${token}`
-              }
-            });
-            if (response.ok) {
-              const data = await response.json();
-              if (data.id_rol) {
-                const role = data.id_rol === 1 ? 'admin' : data.id_rol === 2 ? 'client' : data.id_rol === 3 ? 'supervisor' : 'inventory';
-                setUserRole(role);
-                if (role === 'admin') {
-                  setUserPermissions([
-                    { id: 'view_transportation', name: 'Ver Transporte' },
-                    { id: 'view_supervision', name: 'Ver Supervisión' },
-                    { id: 'view_assembly', name: 'Ver Montaje y Desmontaje' },
-                    { id: 'manage_transportation', name: 'Gestionar Transporte' },
-                    { id: 'manage_supervision', name: 'Gestionar Supervisión' },
-                    { id: 'manage_assembly', name: 'Gestionar Montaje y Desmontaje' }
-                  ]);
-                } else {
-                  try {
-                    const token = localStorage.getItem('token');
-                    const permissionsResponse = await fetch(`/api/permissions/${data.id_rol}`, {
-                      headers: {
-                        'Authorization': `Bearer ${token}`
-                      }
-                    });
-                    if (permissionsResponse.ok) {
-                      const permissionsData = await permissionsResponse.json();
-                      setUserPermissions(permissionsData);
-                    } else {
-                      setUserPermissions([]);
-                    }
-                  } catch {
-                    setUserPermissions([]);
-                  }
-                }
-              } else {
-                setUserRole('client');
-                setUserPermissions([]);
-              }
-            } else {
-              setUserRole('client');
-              setUserPermissions([]);
+          throw new Error('No hay token de autenticación');
+        }
+
+        const response = await fetch('/api/auth/current', {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        });
+
+        if (!response.ok) {
+          throw new Error('Error al obtener datos del usuario');
+        }
+
+        const userData = await response.json();
+        const role = userData.id_rol === 1 ? 'admin' : userData.id_rol === 2 ? 'client' : userData.id_rol === 3 ? 'supervisor' : 'inventory';
+        setUserRole(role);
+        localStorage.setItem('userRole', role);
+
+        // Fetch permissions after getting user role
+        if (userData.id_rol) {
+          const permissionsResponse = await fetch(`/api/permissions/${userData.id_rol}`, {
+            headers: {
+              'Authorization': `Bearer ${token}`,
+              'Content-Type': 'application/json'
             }
-          } catch {
-            setUserRole('client');
+          });
+
+          if (!permissionsResponse.ok) {
+            console.error('Error al obtener permisos:', await permissionsResponse.text());
             setUserPermissions([]);
+          } else {
+            const permissionsData = await permissionsResponse.json();
+            setUserPermissions(permissionsData);
           }
         }
       } catch (error) {
-        // No hay sesión activa o error inesperado
-        const token = localStorage.getItem('token');
-        if (!token) {
-          setUserRole('client');
-          setUserPermissions([]);
-        } else {
-          // Si hay token pero hubo error, intentar obtener el rol del backend
-          try {
-            const response = await fetch('/api/auth/current', {
-              headers: {
-                'Authorization': `Bearer ${token}`
-              }
-            });
-            if (response.ok) {
-              const data = await response.json();
-              if (data.id_rol) {
-                const role = data.id_rol === 1 ? 'admin' : data.id_rol === 2 ? 'client' : data.id_rol === 3 ? 'supervisor' : 'inventory';
-                setUserRole(role);
-              } else {
-                setUserRole('client');
-              }
-            } else {
-              setUserRole('client');
-            }
-          } catch {
-            setUserRole('client');
-          }
-        }
+        console.error('Error al cargar datos del usuario:', error);
+        setUserRole(null);
+        setUserPermissions([]);
       }
     };
     fetchUserData();
