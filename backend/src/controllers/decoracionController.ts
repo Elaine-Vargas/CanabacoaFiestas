@@ -8,7 +8,7 @@ export const createDecoracion = async (req: Request, res: Response) => {
         const {
             id_evento,
             tema_decoracion,
-            precioneto_decor,
+            precioneto_decoracion,
             itbis_decoracion,
             total_decoracion
         } = req.body;
@@ -23,9 +23,9 @@ export const createDecoracion = async (req: Request, res: Response) => {
         const decoracion = await DecoracionServicio.create({
             id_evento,
             tema_decoracion,
-            precioneto_decor,
-            itbis_decoracion,
-            total_decoracion
+            precioneto_decoracion: precioneto_decoracion || null,
+            itbis_decoracion: itbis_decoracion  || null,
+            total_decoracion: total_decoracion  || null
         });
 
         res.status(201).json(decoracion);
@@ -80,7 +80,7 @@ export const editDecoracion = async (req: Request, res: Response) => {
         const { id_decoracion } = req.params;
         const {
             tema_decoracion,
-            precioneto_decor,
+            precioneto_decoracion,
             itbis_decoracion,
             total_decoracion
         } = req.body;
@@ -93,7 +93,7 @@ export const editDecoracion = async (req: Request, res: Response) => {
         // Actualizar el servicio de decoración
         await decoracion.update({
             tema_decoracion: tema_decoracion || decoracion.tema_decoracion,
-            precioneto_decor: precioneto_decor || decoracion.precioneto_decor,
+            precioneto_decoracion: precioneto_decoracion || decoracion.precioneto_decoracion,
             itbis_decoracion: itbis_decoracion || decoracion.itbis_decoracion,
             total_decoracion: total_decoracion || decoracion.total_decoracion
         });

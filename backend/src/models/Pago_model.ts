@@ -1,5 +1,6 @@
 import { Table, Model, Column, PrimaryKey, AutoIncrement, DataType, ForeignKey, BelongsTo } from 'sequelize-typescript';
 import Evento from './Evento_model';
+import Tarjeta from './Tarjeta_model';
 
 @Table({ tableName: 'pago', timestamps: false })
 export default class Pago extends Model {
@@ -29,6 +30,13 @@ export default class Pago extends Model {
 
   @Column({ type: DataType.DECIMAL(10, 2), allowNull: false })
   monto!: number;
+  
+  @ForeignKey(() => Tarjeta)
+  @Column({ type: DataType.INTEGER })
+  id_tarjeta!: number;
+
+  @BelongsTo(() => Tarjeta)
+  tarjeta!: Tarjeta;
 
   @Column({
     type: DataType.ENUM('Inicial', 'Final', 'Adicional'),

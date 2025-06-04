@@ -24,9 +24,9 @@ export const createCatering = async (req: Request, res: Response) => {
         const catering = await CateringServicio.create({
             id_evento,
             personas_catering,
-            precioneto_catering,
-            itbis_catering,
-            total_catering
+            precioneto_catering: precioneto_catering  || null,
+            itbis_catering: precioneto_catering  || null,
+            total_catering: precioneto_catering  || null
         });
 
         // Si se proporcionaron menús, crearlos

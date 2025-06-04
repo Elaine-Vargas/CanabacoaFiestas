@@ -23,18 +23,18 @@ export default class AlquilerServicio extends Model {
   @BelongsTo(() => Elemento)
   elemento!: Elemento;
 
-  @Column({ type: DataType.DECIMAL(10, 2), allowNull: false })
+  @Column({ type: DataType.DECIMAL(10, 2)})
   precio_unitario!: number;
 
   @Column({ type: DataType.INTEGER, allowNull: false })
   cantidad_alquiler!: number;
 
-  @Column({ type: DataType.DECIMAL(10, 2), allowNull: false })
+  @Column({ type: DataType.DECIMAL(10, 2)})
   precioneto_alquiler!: number;
 
-  @Column({ type: DataType.DECIMAL(10, 2), allowNull: false })
+  @Column({ type: DataType.DECIMAL(10, 2) })
   itbis_alquiler!: number;
 
-  @Column({ type: DataType.DECIMAL(10, 2), allowNull: false })
+  @Column({ type: DataType.DECIMAL(10, 2),})
   total_alquiler!: number;
 }

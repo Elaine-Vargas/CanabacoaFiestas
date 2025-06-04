@@ -19,12 +19,12 @@ export default class DecoracionServicio extends Model {
   @Column({ type: DataType.TEXT, allowNull: false })
   tema_decoracion!: string;
 
-  @Column({ type: DataType.DECIMAL(10, 2), allowNull: false })
-  precioneto_decor!: number;
+  @Column({ type: DataType.DECIMAL(10, 2)})
+  precioneto_decoracion!: number;
 
-  @Column({ type: DataType.DECIMAL(10, 2), allowNull: false })
+  @Column({ type: DataType.DECIMAL(10, 2)})
   itbis_decoracion!: number;
 
-  @Column({ type: DataType.DECIMAL(10, 2), allowNull: false })
+  @Column({ type: DataType.DECIMAL(10, 2)})
   total_decoracion!: number;
 }

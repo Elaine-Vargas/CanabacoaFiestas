@@ -1,4 +1,4 @@
-import { Table, Model, Column, PrimaryKey, AutoIncrement, DataType, ForeignKey, BelongsTo } from 'sequelize-typescript';
+import { Table, Model, Column, PrimaryKey, AutoIncrement, DataType, ForeignKey, BelongsTo, AllowNull } from 'sequelize-typescript';
 import SupervisionServicio from './SupervisionServicio_model';
 import Usuario from './Usuario_model';
 
@@ -26,6 +26,6 @@ export default class DetalleSupervision extends Model {
   @Column({ type: DataType.DECIMAL(10, 2), allowNull: false })
   horas_trabajo!: number;
 
-  @Column({ type: DataType.DECIMAL(10, 2) })
+  @Column({ type: DataType.DECIMAL(10, 2), allowNull: false})
   precioneto_supervision!: number;
 }

@@ -18,7 +18,7 @@ router.use(verificarToken as RequestHandler);
 // Obtener todos los pagos
 router.get('/', getPagos as RequestHandler);
 
-// Buscar pagos
+// Buscar pagos con filtros (estado, tipo, fecha_inicio, fecha_fin, id_evento, id_tarjeta)
 router.get('/search', searchPagos as RequestHandler);
 
 // Crear un nuevo pago
