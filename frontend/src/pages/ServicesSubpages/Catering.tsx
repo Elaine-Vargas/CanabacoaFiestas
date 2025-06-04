@@ -3,7 +3,7 @@ import type { FormEvent } from 'react';
 import '../../styles/dashboard/ServicesSubpages.scss';
 import '../../components/ServiceBase';
 import { useUser } from '../../contexts/UserContext';
-import './MenuCatalogoCards.scss';
+import '../../styles/dashboard/MenuCatalogoCards.scss';
 
 export type UserRole = 'admin' | 'client' | 'supervisor' | 'inventory';
 
@@ -394,7 +394,12 @@ export default function Catering() {
     setShowModal(true);
     setFormData(prev => ({
       ...prev,
-      menus: [{ id_menu: menuId }]
+      menus: [{
+        id_menu: menuId,
+        desc_menu: '',
+        id_proveedor: 0,
+        platos: []
+      }]
     }));
   };
 
