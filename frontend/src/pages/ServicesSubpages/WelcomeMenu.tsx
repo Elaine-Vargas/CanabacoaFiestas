@@ -358,6 +358,7 @@ const WelcomeMenu: React.FC<WelcomeMenuProps> = () => {
     estado_proveedor: 'Activo'
   });
   const [showProveedorForm, setShowProveedorForm] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   useEffect(() => {
     const fetchEspacios = async () => {
@@ -415,18 +416,29 @@ const WelcomeMenu: React.FC<WelcomeMenuProps> = () => {
             'Content-Type': 'application/json'
           }
         });
+  
         const data = await response.json();
-        setUsuarios(data);
+  
+        if (Array.isArray(data)) {
+          setUsuarios(data);
+          console.log('Usuarios recibidos:', data);
+        } else if (Array.isArray(data.usuarios)) {
+          setUsuarios(data.usuarios);
+          console.log('Usuarios recibidos:', data);
+        } else {
+          console.error('Respuesta inesperada del endpoint de usuarios:', data);
+          setUsuarios([]); // fallback para evitar errores en renderizado
+        }
       } catch (error) {
         console.error('Error al cargar usuarios:', error);
       }
     };
-
+  
     if (showUsersModal) {
       fetchUsuarios();
     }
   }, [showUsersModal]);
-
+  
   useEffect(() => {
     const fetchEventosRealizados = async () => {
       try {
@@ -2707,8 +2719,8 @@ const WelcomeMenu: React.FC<WelcomeMenuProps> = () => {
                             <td>{usuario.correo}</td>
                             <td>{usuario.usuario}</td>
                             <td>
-                              <span className={`estado-badge ${usuario.estado.toLowerCase()}`}>
-                                {usuario.estado}
+                            <span className={`estado-badge ${usuario.estado?.toLowerCase?.() || 'desconocido'}`}>
+                              {usuario.estado || 'Desconocido'}
                               </span>
                             </td>
                             <td>
@@ -2734,7 +2746,6 @@ const WelcomeMenu: React.FC<WelcomeMenuProps> = () => {
             <button className="close-btn" onClick={() => setShowCreateUserModal(false)}>×</button>
             <form className="modal-form" onSubmit={handleCreateUser}>
               <h2>Crear Nuevo Usuario</h2>
-              
               <div className="form-grid">
                 <label>
                   Cédula:
@@ -2794,15 +2805,24 @@ const WelcomeMenu: React.FC<WelcomeMenuProps> = () => {
                   />
                 </label>
 
-                <label>
+                <label className="password-field">
                   Contraseña:
-                  <input
-                    type="password"
-                    value={newUser.contrasena}
-                    onChange={(e) => setNewUser(prev => ({ ...prev, contrasena: e.target.value }))}
-                    required
-                    minLength={8}
-                  />
+                  <div className="password-input-container">
+                    <input
+                      type={showPassword ? "text" : "password"}
+                      value={newUser.contrasena}
+                      onChange={(e) => setNewUser(prev => ({ ...prev, contrasena: e.target.value }))}
+                      required
+                      minLength={8}
+                    />
+                    <button
+                      type="button"
+                      className="toggle-password"
+                      onClick={() => setShowPassword(!showPassword)}
+                    >
+                      {showPassword ? "👁️" : "👁️‍🗨️"}
+                    </button>
+                  </div>
                 </label>
 
                 <label>
