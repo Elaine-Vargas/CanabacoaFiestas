@@ -1,4 +1,4 @@
-import { Router, Request, Response, NextFunction } from 'express';
+import { Router, Request, Response, NextFunction, RequestHandler } from 'express';
 import {
     createEvent,
     showAllEvents,
@@ -6,7 +6,8 @@ import {
     showEventsByClient,
     showEventsByAsesor,
     editEvent,
-    deleteEvent
+    deleteEvent,
+    getTiposEventos
 } from '../controllers/eventoController';
 import { verificarToken } from '../middlewares/authMiddleware';
 
@@ -82,5 +83,8 @@ router.delete('/:id_evento', async (req: Request, res: Response, next: NextFunct
         next(error);
     }
 });
+
+router.get('/tipo-eventos/list', getTiposEventos as RequestHandler);
+
 
 export default router;

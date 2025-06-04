@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import Evento from '../models/Evento_model';
 import Usuario from '../models/Usuario_model';
 import { Op } from 'sequelize';
+import TipoEvento from '../models/TipoEvento_model';
 
 export const createEvent = async (req: Request, res: Response) => {
     try {
@@ -178,3 +179,28 @@ export const deleteEvent = async (req: Request, res: Response) => {
         res.status(500).json({ message: 'Error al eliminar el evento', error });
     }
 };
+
+
+export const getTiposEventos = async (req: Request, res: Response) => {
+    try {
+      console.log('Intentando obtener tipos de evento...');
+      const tipoevento = await TipoEvento.findAll({
+      });
+  
+      if (!tipoevento || tipoevento.length === 0) {
+        console.log('No se encontraron tipos de eventos');
+        return res.status(404).json({ 
+          error: 'No se encontraron tipos de eventos',
+          mensaje: 'No hay tipos de eventos disponibles'
+        });
+      }
+  
+      res.json(tipoevento);
+    } catch (error) {
+      console.error('Error detallado al obtener tipos de eventos:', error);
+      res.status(500).json({ 
+        error: 'Error al obtener los tipos de eventos',
+        mensaje: 'Ocurrió un error al cargar los tipos de eventos. Por favor, intente más tarde.'
+      });
+    }
+  };
