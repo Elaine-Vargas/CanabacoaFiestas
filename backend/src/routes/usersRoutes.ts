@@ -1,5 +1,11 @@
 import { Router } from 'express';
-import { getAllUsers, getUsersByRole, searchUsers } from '../controllers/usersController';
+import { 
+  getAllUsers, 
+  getUsersByRole, 
+  searchUsers,
+  updateUser,
+  deleteUser 
+} from '../controllers/usersController';
 
 const router = Router();
 
@@ -22,6 +28,22 @@ router.get('/rol/:id_rol', async (req, res, next) => {
 router.get('/buscar', async (req, res, next) => {
   try {
     await searchUsers(req, res);
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.put('/:cedula', async (req, res, next) => {
+  try {
+    await updateUser(req, res);
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.delete('/:cedula', async (req, res, next) => {
+  try {
+    await deleteUser(req, res);
   } catch (error) {
     next(error);
   }

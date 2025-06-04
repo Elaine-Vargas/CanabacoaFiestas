@@ -170,3 +170,103 @@ export const searchUsers = async (req: Request, res: Response) => {
     res.status(500).json({ error: 'Error al buscar usuarios' });
   }
 };
+
+/**
+ * @description Actualiza un usuario existente
+ * @route PUT /api/usuarios/:cedula
+ * @access Privado (Admin)
+ */
+export const updateUser = async (req: Request, res: Response) => {
+    const { cedula } = req.params;
+    const updateData = req.body;
+  
+    try {
+      // Validar que no se intente modificar campos sensibles
+      const camposProhibidos = ['cedula_usuario', 'contrasena_login', 'creacion_usuario'];
+      for (const campo of camposProhibidos) {
+        if (updateData[campo]) {
+          return res.status(400).json({ 
+            error: `No está permitido modificar el campo ${campo}` 
+          });
+        }
+      }
+  
+      // Buscar el usuario
+      const usuario = await Usuario.findOne({ 
+        where: { cedula_usuario: cedula } 
+      });
+  
+      if (!usuario) {
+        return res.status(404).json({ error: 'Usuario no encontrado' });
+      }
+  
+      // Si se está actualizando el correo, verificar que no exista otro usuario con el mismo correo
+      if (updateData.correo_usuario) {
+        const usuarioConMismoCorreo = await Usuario.findOne({
+          where: {
+            correo_usuario: updateData.correo_usuario,
+            cedula_usuario: { [Op.ne]: cedula } // Excluir al usuario actual
+          }
+        });
+  
+        if (usuarioConMismoCorreo) {
+          return res.status(400).json({ error: 'El correo electrónico ya está en uso' });
+        }
+      }
+  
+      // Actualizar el usuario
+      await usuario.update(updateData);
+  
+      // Obtener el usuario actualizado (con los datos frescos de la base de datos)
+      const usuarioActualizado = await Usuario.findByPk(cedula, {
+        attributes: { exclude: ['contrasena_login'] },
+        include: [{ association: 'rol' }]
+      });
+  
+      res.json({
+        mensaje: 'Usuario actualizado correctamente',
+        usuario: usuarioActualizado
+      });
+  
+    } catch (error) {
+      console.error('Error al actualizar usuario:', error);
+      res.status(500).json({ error: 'Error al actualizar usuario' });
+    }
+  };
+  
+  /**
+   * @description Elimina lógicamente un usuario (cambia estado a "Eliminado")
+   * @route DELETE /api/usuarios/:cedula
+   * @access Privado (Admin)
+   */
+  export const deleteUser = async (req: Request, res: Response) => {
+    const { cedula } = req.params;
+  
+    try {
+      const usuario = await Usuario.findOne({ 
+        where: { cedula_usuario: cedula } 
+      });
+  
+      if (!usuario) {
+        return res.status(404).json({ error: 'Usuario no encontrado' });
+      }
+  
+      // Verificar si el usuario ya está eliminado
+      if (usuario.estado_usuario === 'Eliminado') {
+        return res.status(400).json({ error: 'El usuario ya está eliminado' });
+      }
+  
+      // Eliminación lógica (cambiar estado)
+      await usuario.update({ estado_usuario: 'Eliminado' });
+  
+      res.json({ 
+        mensaje: 'Usuario eliminado correctamente (lógicamente)',
+        cedula_usuario: usuario.cedula_usuario,
+        estado_actual: 'Eliminado'
+      });
+  
+    } catch (error) {
+      console.error('Error al eliminar usuario:', error);
+      res.status(500).json({ error: 'Error al eliminar usuario' });
+    }
+  };
