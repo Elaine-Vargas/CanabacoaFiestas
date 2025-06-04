@@ -224,6 +224,7 @@ export default function Decor() {
               <th>Precio</th>
               <th>Fecha</th>
               <th>Estado</th>
+              <th>Acciones</th>
             </tr>
           </thead>
           <tbody>

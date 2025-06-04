@@ -1100,3 +1100,68 @@ tr.deshabilitado {
     font-weight: bold;
   }
 }
+
+.password-field {
+  .password-input-container {
+    position: relative;
+    display: flex;
+    align-items: center;
+
+    input {
+      width: 100%;
+      padding-right: 40px;
+    }
+
+    .toggle-password {
+      position: absolute;
+      right: 10px;
+      background: none;
+      border: none;
+      cursor: pointer;
+      padding: 5px;
+      font-size: 1.2rem;
+      color: var(--dark-gold);
+      transition: all 0.3s ease;
+
+      &:hover {
+        transform: scale(1.1);
+      }
+    }
+  }
+}
+
+/* Estilos para el sistema de calificación */
+.comment-modal__rating {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 2rem;
+
+  &-label {
+    color: var(--dark-gold);
+    font-family: "Montserrat Alternates", sans-serif;
+    font-weight: 600;
+    font-size: 1.1rem;
+  }
+
+  &-stars {
+    display: flex;
+    gap: 0.5rem;
+
+    .star {
+      font-size: 2rem;
+      color: var(--color-input-border);
+      cursor: pointer;
+      transition: $transition-standard;
+
+      &:hover {
+        transform: scale(1.1);
+      }
+
+      &.active {
+        color: var(--gold);
+      }
+    }
+  }
+}

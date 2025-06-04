@@ -34,7 +34,6 @@ interface EventoEnProceso {
   desea_supervision: number;
   nota_cliente: string;
   creacion_evento: string;
-  estado_cotizacion: 'Pendiente' | 'Completada' | 'Aceptada' | 'Rechazada' | 'Cancelada' | 'Eliminada';
   subtotal_evento: number;
   itbis_evento: number;
   total_evento: number;
@@ -113,7 +112,6 @@ interface EventoFormData {
   id_tipo_evento: number;
   supervision_evento: boolean;
   nota_cliente: string;
-  estado_cotizacion: 'Pendiente' | 'Completada' | 'Aceptada' | 'Rechazada' | 'Cancelada' | 'Eliminada';
   subtotal_evento: number;
   itbis_evento: number;
   total_evento: number;
@@ -225,6 +223,11 @@ interface ProveedorFormData {
   estado_proveedor: 'Activo' | 'Inactivo' | 'Eliminado';
 }
 
+interface TipoEvento {
+  id_tipo_evento: number;
+  nombre_tipo_evento: string;
+}
+
 const WelcomeMenu: React.FC<WelcomeMenuProps> = () => {
 
   const apiUrl = import.meta.env.VITE_API_BASE_URL;
@@ -274,8 +277,7 @@ const WelcomeMenu: React.FC<WelcomeMenuProps> = () => {
     estado_evento: 'Pendiente',
     id_tipo_evento: 0,
     supervision_evento: false,
-    nota_cliente: '',
-    estado_cotizacion: 'Pendiente',
+    nota_cliente: '', 
     subtotal_evento: 0.00,
     itbis_evento: 0.00,
     total_evento: 0.00
@@ -358,6 +360,11 @@ const WelcomeMenu: React.FC<WelcomeMenuProps> = () => {
     estado_proveedor: 'Activo'
   });
   const [showProveedorForm, setShowProveedorForm] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [tiposEvento, setTiposEvento] = useState<TipoEvento[]>([]);
+
+
+
 
   useEffect(() => {
     const fetchEspacios = async () => {
@@ -415,18 +422,29 @@ const WelcomeMenu: React.FC<WelcomeMenuProps> = () => {
             'Content-Type': 'application/json'
           }
         });
+  
         const data = await response.json();
-        setUsuarios(data);
+  
+        if (Array.isArray(data)) {
+          setUsuarios(data);
+          console.log('Usuarios recibidos:', data);
+        } else if (Array.isArray(data.usuarios)) {
+          setUsuarios(data.usuarios);
+          console.log('Usuarios recibidos:', data);
+        } else {
+          console.error('Respuesta inesperada del endpoint de usuarios:', data);
+          setUsuarios([]); // fallback para evitar errores en renderizado
+        }
       } catch (error) {
         console.error('Error al cargar usuarios:', error);
       }
     };
-
+  
     if (showUsersModal) {
       fetchUsuarios();
     }
   }, [showUsersModal]);
-
+  
   useEffect(() => {
     const fetchEventosRealizados = async () => {
       try {
@@ -545,6 +563,31 @@ const WelcomeMenu: React.FC<WelcomeMenuProps> = () => {
       fetchProvincias();
     }
   }, [showProveedoresModal]);
+
+  useEffect(() => {
+    const fetchTiposEvento = async () => {
+      try {
+        const token = localStorage.getItem('token');
+        const response = await fetch(`${apiUrl}/tipos-evento`, {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        });
+        
+        if (!response.ok) {
+          throw new Error('Error al cargar tipos de evento');
+        }
+        
+        const data = await response.json();
+        setTiposEvento(data);
+      } catch (error) {
+        console.error('Error al cargar tipos de evento:', error);
+      }
+    };
+
+    fetchTiposEvento();
+  }, []);
 
   const fetchProveedores = async () => {
     try {
@@ -714,7 +757,6 @@ const WelcomeMenu: React.FC<WelcomeMenuProps> = () => {
         id_tipo_evento: 0,
         supervision_evento: false,
         nota_cliente: '',
-        estado_cotizacion: 'Pendiente',
         subtotal_evento: 0.00,
         itbis_evento: 0.00,
         total_evento: 0.00
@@ -756,11 +798,16 @@ const WelcomeMenu: React.FC<WelcomeMenuProps> = () => {
 
   const renderEventForm = () => {
     if (!userData) return null;
-    
+    // Si el usuario es cliente y la cédula no está en el formData, autocompletar
+    if (Number(userData.rol) === 2 && formData.cedula_cliente !== userData.cedula_usuario) {
+      setFormData(prev => ({
+        ...prev,
+        cedula_cliente: userData.cedula_usuario
+      }));
+    }
     return (
       <form className="modal-form" onSubmit={handleEventSubmit}>
         <h2>Nuevo Evento</h2>
-
         <div className="form-grid">
           {Number(userData.rol) === 2 ? (
             <label>
@@ -768,7 +815,7 @@ const WelcomeMenu: React.FC<WelcomeMenuProps> = () => {
               <input
                 type="text"
                 name="cedula_cliente"
-                value={userData.cedula_usuario}
+                value={formData.cedula_cliente || userData.cedula_usuario}
                 disabled
                 className="disabled-input"
               />
@@ -860,11 +907,11 @@ const WelcomeMenu: React.FC<WelcomeMenuProps> = () => {
               required
             >
               <option value="0">Seleccionar tipo</option>
-              <option value="1">Compleaños</option>
-              <option value="2">Boda</option>
-              <option value="3">Reunión</option>
-              <option value="4">Graduación</option>
-              <option value="5">Otro</option>
+              {tiposEvento.map((tipo) => (
+                <option key={tipo.id_tipo_evento} value={tipo.id_tipo_evento}>
+                  {tipo.nombre_tipo_evento}
+                </option>
+              ))}
             </select>
           </label>
 
@@ -1015,7 +1062,6 @@ const WelcomeMenu: React.FC<WelcomeMenuProps> = () => {
                         <th>Tipo Evento</th>
                         <th>Supervisión</th>
                         <th>Estado</th>
-                        <th>Cotización</th>
                         <th>Total</th>
                         <th>Acciones</th>
                       </tr>
@@ -1034,11 +1080,6 @@ const WelcomeMenu: React.FC<WelcomeMenuProps> = () => {
                           <td>
                             <span className={`estado-badge ${evento.estado_evento.toLowerCase()}`}>
                               {evento.estado_evento}
-                            </span>
-                          </td>
-                          <td>
-                            <span className={`estado-badge ${evento.estado_cotizacion.toLowerCase()}`}>
-                              {evento.estado_cotizacion}
                             </span>
                           </td>
                           <td>${evento.total_evento.toFixed(2)}</td>
@@ -1091,21 +1132,22 @@ const WelcomeMenu: React.FC<WelcomeMenuProps> = () => {
             <form className="modal-form" onSubmit={handleCommentSubmit}>
               <h3>Agregar Comentario</h3>
               
-              <div className="event-select">
-                <label>Seleccionar Evento:</label>
-                <select
-                  value={selectedEventId || ''}
-                  onChange={(e) => setSelectedEventId(Number(e.target.value))}
-                  required
-                  className="event-select-input"
-                >
-                  <option value="">Seleccionar evento</option>
-                  {eventos.map(evento => (
-                    <option key={evento.id_evento} value={evento.id_evento}>
-                      {evento.fecha_evento} - {evento.tipo_evento}
-                    </option>
-                  ))}
-                </select>
+              <div className="form-grid">
+                <label className="full-width">
+                  <span>Seleccionar Evento:</span>
+                  <select
+                    value={selectedEventId || ''}
+                    onChange={(e) => setSelectedEventId(Number(e.target.value))}
+                    required
+                  >
+                    <option value="">Seleccionar evento</option>
+                    {eventos.map(evento => (
+                      <option key={evento.id_evento} value={evento.id_evento}>
+                        {evento.fecha_evento} - {evento.tipo_evento}
+                      </option>
+                    ))}
+                  </select>
+                </label>
               </div>
 
               <div className="comment-modal__rating">
@@ -1116,8 +1158,6 @@ const WelcomeMenu: React.FC<WelcomeMenuProps> = () => {
                       key={star}
                       className={`star ${star <= rating ? 'active' : ''}`}
                       onClick={() => setRating(star)}
-                      onMouseEnter={() => setRating(star)}
-                      onMouseLeave={() => setRating(rating)}
                     >
                       ★
                     </span>
@@ -1125,16 +1165,18 @@ const WelcomeMenu: React.FC<WelcomeMenuProps> = () => {
                 </div>
               </div>
 
-              <label>
-                Comentario:
-                <textarea
-                  value={comment}
-                  onChange={(e) => setComment(e.target.value)}
-                  placeholder="Escribe tu comentario aquí..."
-                  required
-                  rows={4}
-                />
-              </label>
+              <div className="form-grid">
+                <label className="full-width">
+                  <span>Comentario:</span>
+                  <textarea
+                    value={comment}
+                    onChange={(e) => setComment(e.target.value)}
+                    placeholder="Escribe tu comentario aquí..."
+                    required
+                    rows={4}
+                  />
+                </label>
+              </div>
 
               <div className="form-buttons">
                 <button 
@@ -1279,7 +1321,6 @@ const WelcomeMenu: React.FC<WelcomeMenuProps> = () => {
                         <th>Tipo Evento</th>
                         <th>Supervisión</th>
                         <th>Estado</th>
-                        <th>Cotización</th>
                         <th>Total</th>
                         <th>Acciones</th>
                       </tr>
@@ -1298,11 +1339,6 @@ const WelcomeMenu: React.FC<WelcomeMenuProps> = () => {
                           <td>
                             <span className={`estado-badge ${evento.estado_evento.toLowerCase()}`}>
                               {evento.estado_evento}
-                            </span>
-                          </td>
-                          <td>
-                            <span className={`estado-badge ${evento.estado_cotizacion.toLowerCase()}`}>
-                              {evento.estado_cotizacion}
                             </span>
                           </td>
                           <td>${evento.total_evento.toFixed(2)}</td>
@@ -2285,25 +2321,29 @@ const WelcomeMenu: React.FC<WelcomeMenuProps> = () => {
       <div className="modal-container">
         <button className="close-btn" onClick={() => setShowProveedoresModal(false)}>×</button>
         <div className="modal-content">
-          <h3>Gestión de Proveedores</h3>
-          
-          <button className="new-form-btn" onClick={() => {
-            setEditId(null);
-            setShowProveedorForm(true);
-            setProveedorFormData({
-              id_tipo_proveedor: '',
-              nombre_proveedor: '',
-              tel_proveedor: '',
-              correo_proveedor: '',
-              id_provincia: '',
-              sector: '',
-              calle: '',
-              detalles: '',
-              estado_proveedor: 'Activo'
-            });
-          }}>
-            Nuevo Proveedor
-          </button>
+          <div className="modal-header">
+            <h3>Gestión de Proveedores</h3>
+            <button 
+              className="add-user-btn"
+              onClick={() => {
+                setEditId(null);
+                setShowProveedorForm(true);
+                setProveedorFormData({
+                  id_tipo_proveedor: '',
+                  nombre_proveedor: '',
+                  tel_proveedor: '',
+                  correo_proveedor: '',
+                  id_provincia: '',
+                  sector: '',
+                  calle: '',
+                  detalles: '',
+                  estado_proveedor: 'Activo'
+                });
+              }}
+            >
+              Nuevo Proveedor
+            </button>
+          </div>
 
           <div className="table-container">
             <table>
@@ -2355,163 +2395,180 @@ const WelcomeMenu: React.FC<WelcomeMenuProps> = () => {
               </tbody>
             </table>
           </div>
-
-          {showProveedorForm && (
-            <div className="modal-form">
-              <h4>{editId ? 'Editar Proveedor' : 'Nuevo Proveedor'}</h4>
-              <form onSubmit={handleProveedorSubmit}>
-                <div className="form-grid">
-                  <label>
-                    <span>Tipo de Proveedor:</span>
-                    <select
-                      name="id_tipo_proveedor"
-                      value={proveedorFormData.id_tipo_proveedor}
-                      onChange={handleProveedorInputChange}
-                      required
-                    >
-                      <option value="">Seleccionar tipo</option>
-                      {tiposProveedor && tiposProveedor.map((tipo) => (
-                        <option key={tipo.id_tipo_proveedor} value={tipo.id_tipo_proveedor}>
-                          {tipo.nombre_tipo}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
-
-                  <label>
-                    <span>Nombre:</span>
-                    <input
-                      type="text"
-                      name="nombre_proveedor"
-                      value={proveedorFormData.nombre_proveedor}
-                      onChange={handleProveedorInputChange}
-                      required
-                      maxLength={50}
-                    />
-                  </label>
-
-                  <label>
-                    <span>Teléfono:</span>
-                    <input
-                      type="tel"
-                      name="tel_proveedor"
-                      value={proveedorFormData.tel_proveedor}
-                      onChange={handleProveedorInputChange}
-                      required
-                      pattern="[0-9]{12}"
-                      maxLength={12}
-                      placeholder="809123456789"
-                    />
-                  </label>
-
-                  <label>
-                    <span>Correo:</span>
-                    <input
-                      type="email"
-                      name="correo_proveedor"
-                      value={proveedorFormData.correo_proveedor}
-                      onChange={handleProveedorInputChange}
-                      required
-                      maxLength={100}
-                    />
-                  </label>
-
-                  <label>
-                    <span>Provincia:</span>
-                    <select
-                      name="id_provincia"
-                      value={proveedorFormData.id_provincia}
-                      onChange={handleProveedorInputChange}
-                      required
-                    >
-                      <option value="">Seleccionar provincia</option>
-                      {provincias && provincias.map((provincia) => (
-                        <option key={provincia.id_provincia} value={provincia.id_provincia}>
-                          {provincia.nombre_provincia}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
-
-                  <label>
-                    <span>Sector:</span>
-                    <input
-                      type="text"
-                      name="sector"
-                      value={proveedorFormData.sector}
-                      onChange={handleProveedorInputChange}
-                      required
-                      maxLength={50}
-                    />
-                  </label>
-
-                  <label>
-                    <span>Calle:</span>
-                    <input
-                      type="text"
-                      name="calle"
-                      value={proveedorFormData.calle}
-                      onChange={handleProveedorInputChange}
-                      required
-                      maxLength={50}
-                    />
-                  </label>
-
-                  <label>
-                    <span>Detalles:</span>
-                    <textarea
-                      name="detalles"
-                      value={proveedorFormData.detalles}
-                      onChange={handleProveedorInputChange}
-                      rows={3}
-                    />
-                  </label>
-
-                  <label>
-                    <span>Estado:</span>
-                    <select
-                      name="estado_proveedor"
-                      value={proveedorFormData.estado_proveedor}
-                      onChange={handleProveedorInputChange}
-                      required
-                    >
-                      <option value="Activo">Activo</option>
-                      <option value="Inactivo">Inactivo</option>
-                      <option value="Eliminado">Eliminado</option>
-                    </select>
-                  </label>
-                </div>
-
-                <div className="form-buttons">
-                  <button type="submit" className="submit-btn">
-                    {editId ? 'Actualizar' : 'Guardar'}
-                  </button>
-                  <button
-                    type="button"
-                    className="reset-btn"
-                    onClick={() => {
-                      setEditId(null);
-                      setShowProveedorForm(false);
-                      setProveedorFormData({
-                        id_tipo_proveedor: '',
-                        nombre_proveedor: '',
-                        tel_proveedor: '',
-                        correo_proveedor: '',
-                        id_provincia: '',
-                        sector: '',
-                        calle: '',
-                        detalles: '',
-                        estado_proveedor: 'Activo'
-                      });
-                    }}
-                  >
-                    Cancelar
-                  </button>
-                </div>
-              </form>
-            </div>
-          )}
         </div>
+      </div>
+    </div>
+  );
+
+  const renderProveedorForm = () => (
+    <div className="modal-overlay">
+      <div className="modal-container">
+        <button className="close-btn" onClick={() => {
+          setShowProveedorForm(false);
+          setEditId(null);
+          setProveedorFormData({
+            id_tipo_proveedor: '',
+            nombre_proveedor: '',
+            tel_proveedor: '',
+            correo_proveedor: '',
+            id_provincia: '',
+            sector: '',
+            calle: '',
+            detalles: '',
+            estado_proveedor: 'Activo'
+          });
+        }}>×</button>
+        <form className="modal-form" onSubmit={handleProveedorSubmit}>
+          <h2>{editId ? 'Editar Proveedor' : 'Nuevo Proveedor'}</h2>
+          <div className="form-grid">
+            <label>
+              <span>Tipo de Proveedor:</span>
+              <select
+                name="id_tipo_proveedor"
+                value={proveedorFormData.id_tipo_proveedor}
+                onChange={handleProveedorInputChange}
+                required
+              >
+                <option value="">Seleccionar tipo</option>
+                {tiposProveedor && tiposProveedor.map((tipo) => (
+                  <option key={tipo.id_tipo_proveedor} value={tipo.id_tipo_proveedor}>
+                    {tipo.nombre_tipo}
+                  </option>
+                ))}
+              </select>
+            </label>
+
+            <label>
+              <span>Nombre:</span>
+              <input
+                type="text"
+                name="nombre_proveedor"
+                value={proveedorFormData.nombre_proveedor}
+                onChange={handleProveedorInputChange}
+                required
+                maxLength={50}
+              />
+            </label>
+
+            <label>
+              <span>Teléfono:</span>
+              <input
+                type="tel"
+                name="tel_proveedor"
+                value={proveedorFormData.tel_proveedor}
+                onChange={handleProveedorInputChange}
+                required
+                pattern="[0-9]{12}"
+                maxLength={12}
+                placeholder="809123456789"
+              />
+            </label>
+
+            <label>
+              <span>Correo:</span>
+              <input
+                type="email"
+                name="correo_proveedor"
+                value={proveedorFormData.correo_proveedor}
+                onChange={handleProveedorInputChange}
+                required
+                maxLength={100}
+              />
+            </label>
+
+            <label>
+              <span>Provincia:</span>
+              <select
+                name="id_provincia"
+                value={proveedorFormData.id_provincia}
+                onChange={handleProveedorInputChange}
+                required
+              >
+                <option value="">Seleccionar provincia</option>
+                {provincias && provincias.map((provincia) => (
+                  <option key={provincia.id_provincia} value={provincia.id_provincia}>
+                    {provincia.nombre_provincia}
+                  </option>
+                ))}
+              </select>
+            </label>
+
+            <label>
+              <span>Sector:</span>
+              <input
+                type="text"
+                name="sector"
+                value={proveedorFormData.sector}
+                onChange={handleProveedorInputChange}
+                required
+                maxLength={50}
+              />
+            </label>
+
+            <label>
+              <span>Calle:</span>
+              <input
+                type="text"
+                name="calle"
+                value={proveedorFormData.calle}
+                onChange={handleProveedorInputChange}
+                required
+                maxLength={50}
+              />
+            </label>
+
+            <label className="full-width">
+              <span>Detalles:</span>
+              <textarea
+                name="detalles"
+                value={proveedorFormData.detalles}
+                onChange={handleProveedorInputChange}
+                rows={3}
+              />
+            </label>
+
+            <label>
+              <span>Estado:</span>
+              <select
+                name="estado_proveedor"
+                value={proveedorFormData.estado_proveedor}
+                onChange={handleProveedorInputChange}
+                required
+              >
+                <option value="Activo">Activo</option>
+                <option value="Inactivo">Inactivo</option>
+                <option value="Eliminado">Eliminado</option>
+              </select>
+            </label>
+          </div>
+
+          <div className="form-buttons">
+            <button type="submit" className="submit-btn">
+              {editId ? 'Actualizar' : 'Guardar'}
+            </button>
+            <button
+              type="button"
+              className="reset-btn"
+              onClick={() => {
+                setShowProveedorForm(false);
+                setEditId(null);
+                setProveedorFormData({
+                  id_tipo_proveedor: '',
+                  nombre_proveedor: '',
+                  tel_proveedor: '',
+                  correo_proveedor: '',
+                  id_provincia: '',
+                  sector: '',
+                  calle: '',
+                  detalles: '',
+                  estado_proveedor: 'Activo'
+                });
+              }}
+            >
+              Cancelar
+            </button>
+          </div>
+        </form>
       </div>
     </div>
   );
@@ -2530,21 +2587,22 @@ const WelcomeMenu: React.FC<WelcomeMenuProps> = () => {
             <form className="modal-form" onSubmit={handleCommentSubmit}>
               <h3>Agregar Comentario</h3>
               
-              <div className="event-select">
-                <label>Seleccionar Evento:</label>
-                <select
-                  value={selectedEventId || ''}
-                  onChange={(e) => setSelectedEventId(Number(e.target.value))}
-                  required
-                  className="event-select-input"
-                >
-                  <option value="">Seleccionar evento</option>
-                  {eventos.map(evento => (
-                    <option key={evento.id_evento} value={evento.id_evento}>
-                      {evento.fecha_evento} - {evento.tipo_evento}
-                    </option>
-                  ))}
-                </select>
+              <div className="form-grid">
+                <label className="full-width">
+                  <span>Seleccionar Evento:</span>
+                  <select
+                    value={selectedEventId || ''}
+                    onChange={(e) => setSelectedEventId(Number(e.target.value))}
+                    required
+                  >
+                    <option value="">Seleccionar evento</option>
+                    {eventos.map(evento => (
+                      <option key={evento.id_evento} value={evento.id_evento}>
+                        {evento.fecha_evento} - {evento.tipo_evento}
+                      </option>
+                    ))}
+                  </select>
+                </label>
               </div>
 
               <div className="comment-modal__rating">
@@ -2555,8 +2613,6 @@ const WelcomeMenu: React.FC<WelcomeMenuProps> = () => {
                       key={star}
                       className={`star ${star <= rating ? 'active' : ''}`}
                       onClick={() => setRating(star)}
-                      onMouseEnter={() => setRating(star)}
-                      onMouseLeave={() => setRating(rating)}
                     >
                       ★
                     </span>
@@ -2564,16 +2620,18 @@ const WelcomeMenu: React.FC<WelcomeMenuProps> = () => {
                 </div>
               </div>
 
-              <label>
-                Comentario:
-                <textarea
-                  value={comment}
-                  onChange={(e) => setComment(e.target.value)}
-                  placeholder="Escribe tu comentario aquí..."
-                  required
-                  rows={4}
-                />
-              </label>
+              <div className="form-grid">
+                <label className="full-width">
+                  <span>Comentario:</span>
+                  <textarea
+                    value={comment}
+                    onChange={(e) => setComment(e.target.value)}
+                    placeholder="Escribe tu comentario aquí..."
+                    required
+                    rows={4}
+                  />
+                </label>
+              </div>
 
               <div className="form-buttons">
                 <button 
@@ -2707,8 +2765,8 @@ const WelcomeMenu: React.FC<WelcomeMenuProps> = () => {
                             <td>{usuario.correo}</td>
                             <td>{usuario.usuario}</td>
                             <td>
-                              <span className={`estado-badge ${usuario.estado.toLowerCase()}`}>
-                                {usuario.estado}
+                            <span className={`estado-badge ${usuario.estado?.toLowerCase?.() || 'desconocido'}`}>
+                              {usuario.estado || 'Desconocido'}
                               </span>
                             </td>
                             <td>
@@ -2734,7 +2792,6 @@ const WelcomeMenu: React.FC<WelcomeMenuProps> = () => {
             <button className="close-btn" onClick={() => setShowCreateUserModal(false)}>×</button>
             <form className="modal-form" onSubmit={handleCreateUser}>
               <h2>Crear Nuevo Usuario</h2>
-              
               <div className="form-grid">
                 <label>
                   Cédula:
@@ -2794,15 +2851,24 @@ const WelcomeMenu: React.FC<WelcomeMenuProps> = () => {
                   />
                 </label>
 
-                <label>
+                <label className="password-field">
                   Contraseña:
-                  <input
-                    type="password"
-                    value={newUser.contrasena}
-                    onChange={(e) => setNewUser(prev => ({ ...prev, contrasena: e.target.value }))}
-                    required
-                    minLength={8}
-                  />
+                  <div className="password-input-container">
+                    <input
+                      type={showPassword ? "text" : "password"}
+                      value={newUser.contrasena}
+                      onChange={(e) => setNewUser(prev => ({ ...prev, contrasena: e.target.value }))}
+                      required
+                      minLength={8}
+                    />
+                    <button
+                      type="button"
+                      className="toggle-password"
+                      onClick={() => setShowPassword(!showPassword)}
+                    >
+                      {showPassword ? "👁️" : "👁️‍🗨️"}
+                    </button>
+                  </div>
                 </label>
 
                 <label>
@@ -2844,6 +2910,7 @@ const WelcomeMenu: React.FC<WelcomeMenuProps> = () => {
       )}
 
       {showProveedoresModal && renderProveedoresModal()}
+      {showProveedorForm && renderProveedorForm()}
     </div>
   );
 };
