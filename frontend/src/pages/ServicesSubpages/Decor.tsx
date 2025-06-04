@@ -65,12 +65,26 @@ export default function Decor() {
   const [showPendientesModal, setShowPendientesModal] = useState(false);
 
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }));
+    
+    if (name === 'precioneto_decoracion') {
+      const precioNeto = parseFloat(value) || 0;
+      const itbis = precioNeto * 0.18; // 18% de ITBIS
+      const total = precioNeto + itbis;
+      
+      setFormData(prev => ({
+        ...prev,
+        [name]: precioNeto,
+        itbis_decoracion: itbis,
+        total_decoracion: total
+      }));
+    } else {
+      setFormData(prev => ({
+        ...prev,
+        [name]: value
+      }));
+    }
   };
 
   const handleSelectChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
@@ -410,16 +424,14 @@ export default function Decor() {
                   </label>
 
                   <label>
-                    <span>ITBIS:</span>
+                    <span>ITBIS (18%):</span>
                     <input
                       type="number"
                       name="itbis_decoracion"
                       value={formData.itbis_decoracion || ''}
-                      onChange={handleInputChange}
-                      required
-                      min="0"
-                      step="0.01"
-                      placeholder="0.00"
+                      readOnly
+                      className="readonly"
+                      placeholder="ITBIS calculado automáticamente"
                     />
                   </label>
 
@@ -429,11 +441,9 @@ export default function Decor() {
                       type="number"
                       name="total_decoracion"
                       value={formData.total_decoracion || ''}
-                      onChange={handleInputChange}
-                      required
-                      min="0"
-                      step="0.01"
-                      placeholder="0.00"
+                      readOnly
+                      className="readonly"
+                      placeholder="Total calculado automáticamente"
                     />
                   </label>
                 </div>
@@ -656,16 +666,14 @@ export default function Decor() {
                 </label>
 
                 <label>
-                  <span>ITBIS:</span>
+                  <span>ITBIS (18%):</span>
                   <input
                     type="number"
                     name="itbis_decoracion"
                     value={formData.itbis_decoracion || ''}
-                    onChange={handleInputChange}
-                    required
-                    min="0"
-                    step="0.01"
-                    placeholder="0.00"
+                    readOnly
+                    className="readonly"
+                    placeholder="ITBIS calculado automáticamente"
                   />
                 </label>
 
@@ -675,11 +683,9 @@ export default function Decor() {
                     type="number"
                     name="total_decoracion"
                     value={formData.total_decoracion || ''}
-                    onChange={handleInputChange}
-                    required
-                    min="0"
-                    step="0.01"
-                    placeholder="0.00"
+                    readOnly
+                    className="readonly"
+                    placeholder="Total calculado automáticamente"
                   />
                 </label>
               </div>
