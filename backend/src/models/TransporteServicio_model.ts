@@ -17,13 +17,6 @@ export default class TransporteServicio extends Model {
   @BelongsTo(() => Evento)
   evento!: Evento;
 
-  @ForeignKey(() => Direccion)
-  @Column({ type: DataType.INTEGER, allowNull: false })
-  id_direccion!: number;
-
-  @BelongsTo(() => Direccion)
-  direccion!: Direccion;
-
   @Column({ type: DataType.DECIMAL(10, 2), allowNull: false })
   distancia_km!: number;
 

@@ -1165,3 +1165,9 @@ tr.deshabilitado {
     }
   }
 }
+
+.readonly {
+  background-color: #f5f5f5;
+  cursor: not-allowed;
+  color: #666;
+}

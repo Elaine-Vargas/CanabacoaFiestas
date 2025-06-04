@@ -173,12 +173,26 @@ export default function Supervision() {
     fetchEventosSupervisados();  fetchEventosEmpleadoModal();  fetchSupervisionesCompletadas();
   }, [showEventosModal, showEventosEmpleadoModal, showCompletadasModal]);
   
-  const handleInputChange = (e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }));
+    
+    if (name === 'precioneto_supervision') {
+      const precioNeto = parseFloat(value) || 0;
+      const itbis = precioNeto * 0.18; // 18% de ITBIS
+      const total = precioNeto + itbis;
+      
+      setFormData(prev => ({
+        ...prev,
+        [name]: precioNeto,
+        itbis_supervision: itbis,
+        total_supervision: total
+      }));
+    } else {
+      setFormData(prev => ({
+        ...prev,
+        [name]: value
+      }));
+    }
   };
 
   const handleSelectChange = (e: ChangeEvent<HTMLSelectElement>) => {
@@ -303,16 +317,14 @@ export default function Supervision() {
                   </label>
 
                   <label>
-                    <span>ITBIS:</span>
+                    <span>ITBIS (18%):</span>
                     <input
                       type="number"
                       name="itbis_supervision"
                       value={formData.itbis_supervision || ''}
-                      onChange={handleInputChange}
-                      required
-                      min="0"
-                      step="0.01"
-                      placeholder="0.00"
+                      readOnly
+                      className="readonly"
+                      placeholder="ITBIS calculado automáticamente"
                     />
                   </label>
 
@@ -322,11 +334,9 @@ export default function Supervision() {
                       type="number"
                       name="total_supervision"
                       value={formData.total_supervision || ''}
-                      onChange={handleInputChange}
-                      required
-                      min="0"
-                      step="0.01"
-                      placeholder="0.00"
+                      readOnly
+                      className="readonly"
+                      placeholder="Total calculado automáticamente"
                     />
                   </label>
                 </div>
@@ -577,16 +587,14 @@ export default function Supervision() {
                 </label>
 
                 <label>
-                  <span>ITBIS:</span>
+                  <span>ITBIS (18%):</span>
                   <input
                     type="number"
                     name="itbis_supervision"
                     value={formData.itbis_supervision || ''}
-                    onChange={handleInputChange}
-                    required
-                    min="0"
-                    step="0.01"
-                    placeholder="0.00"
+                    readOnly
+                    className="readonly"
+                    placeholder="ITBIS calculado automáticamente"
                   />
                 </label>
 
@@ -596,11 +604,9 @@ export default function Supervision() {
                     type="number"
                     name="total_supervision"
                     value={formData.total_supervision || ''}
-                    onChange={handleInputChange}
-                    required
-                    min="0"
-                    step="0.01"
-                    placeholder="0.00"
+                    readOnly
+                    className="readonly"
+                    placeholder="Total calculado automáticamente"
                   />
                 </label>
               </div>
