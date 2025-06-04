@@ -3,9 +3,10 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 import sequelize from './config';
 import { syncDatabase } from './config/syncDatabase';
-import authRoutes from './routes/authRoutes';
-import elementoRoutes from './routes/elementoRoutes';
 import path from 'path';
+
+import elementoRoutes from './routes/elementoRoutes';
+import authRoutes from './routes/authRoutes';
 import comentarioRoutes from './routes/comentarioRoutes';
 import dashboardRoutes from './routes/dashboardRoutes';
 import usersRoutes from './routes/usersRoutes';
@@ -19,6 +20,14 @@ import direccionRoutes from './routes/direccionRoutes'
 import transporteRoutes from './routes/transporteRoutes';
 import supervisionRoutes from './routes/supervisionRoutes'
 import tarjetaRoutes from './routes/tarjetaRoutes';
+import bancoRoutes from './routes/bancoRoutes';
+import vehiculoRoutes from './routes/supervisionRoutes';
+import compraRoutes from './routes/compraRoutes';
+import costoAgregadoRoutes from './routes/costoAgregadoRoutes';
+import espacioRoutes from './routes/espacioRoutes';
+import montajeDesmontajeRoutes from './routes/montajeDesmontajeRoutes';
+import pagoRoutes from './routes/pagoRoutes';
+import proveedorRoutes from './routes/proveedorRoutes';
 
 dotenv.config();
 
@@ -49,13 +58,26 @@ app.use('/api/usuarios', usersRoutes);
 app.use('/api/evento', eventoRoutes);
 app.use('/api/alquiler', alquilerRoutes);
 app.use('/api/decoracion', decoracionRoutes);
-app.use('/api/catering', cateringRoutes);
 app.use('/api/menu', menuRoutes)
-app.use('/api/direcciones', direccionRoutes);
+app.use('/api/direccion', direccionRoutes);
 app.use('/api/provincias', provinciaRoutes);
 app.use('/api/tarjeta', tarjetaRoutes);
 app.use('/api/transporte',transporteRoutes);
 app.use('/api/supervision',supervisionRoutes);
+app.use('/api/banco', bancoRoutes);
+app.use('/api/catering', cateringRoutes);
+app.use('/api/compra', compraRoutes);
+app.use('/api/costo-agregado', costoAgregadoRoutes);  
+app.use('/api/espacio', espacioRoutes);
+app.use('/api/montajedesmontaje', montajeDesmontajeRoutes);
+app.use('/api/pago', pagoRoutes);
+app.use('/api/proveedor', proveedorRoutes);
+app.use('/api/vehiculo', vehiculoRoutes);
+
+
+
+
+
 
 
 // Ruta de prueba
