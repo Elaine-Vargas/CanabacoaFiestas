@@ -1,0 +1,225 @@
+import { Request, Response } from 'express';
+import { Op } from 'sequelize';
+import Direccion from '../models/Direccion_model';
+import Provincia from '../models/Provincia_model';
+
+// Obtener todas las direcciones
+export const getDirecciones = async (req: Request, res: Response) => {
+  try {
+    const direcciones = await Direccion.findAll({
+      include: [
+        {
+          model: Provincia,
+          attributes: ['id_provincia', 'nombre_provincia']
+        }
+      ]
+    });
+
+    if (!direcciones || direcciones.length === 0) {
+      return res.status(404).json({ 
+        error: 'No se encontraron direcciones',
+        mensaje: 'No hay direcciones registradas'
+      });
+    }
+
+    res.json(direcciones);
+  } catch (error) {
+    console.error('Error al obtener direcciones:', error);
+    res.status(500).json({ 
+      error: 'Error al obtener las direcciones',
+      mensaje: 'Ocurrió un error al cargar las direcciones'
+    });
+  }
+};
+
+// Obtener una dirección por ID
+export const getDireccionById = async (req: Request, res: Response) => {
+  try {
+    const { id_direccion } = req.params;
+    
+    const direccion = await Direccion.findByPk(id_direccion, {
+      include: [
+        {
+          model: Provincia,
+          attributes: ['id_provincia', 'nombre_provincia']
+        }
+      ]
+    });
+
+    if (!direccion) {
+      return res.status(404).json({
+        error: 'Dirección no encontrada',
+        mensaje: 'No se encontró la dirección solicitada'
+      });
+    }
+
+    res.json(direccion);
+  } catch (error) {
+    console.error('Error al buscar dirección:', error);
+    res.status(500).json({
+      error: 'Error al buscar dirección',
+      mensaje: 'Ocurrió un error al buscar la dirección'
+    });
+  }
+};
+
+// Buscar direcciones
+export const searchDirecciones = async (req: Request, res: Response) => {
+  try {
+    const { sector, calle, provincia } = req.query;
+
+    const whereClause: any = {};
+
+    if (sector) {
+      whereClause.sector = {
+        [Op.like]: `%${sector}%`
+      };
+    }
+
+    if (calle) {
+      whereClause.calle = {
+        [Op.like]: `%${calle}%`
+      };
+    }
+
+    if (provincia) {
+      whereClause['$provincia.nombre_provincia$'] = {
+        [Op.like]: `%${provincia}%`
+      };
+    }
+
+    const direcciones = await Direccion.findAll({
+      where: whereClause,
+      include: [
+        {
+          model: Provincia,
+          attributes: ['id_provincia', 'nombre_provincia']
+        }
+      ]
+    });
+
+    if (!direcciones || direcciones.length === 0) {
+      return res.status(404).json({ 
+        error: 'No se encontraron direcciones',
+        mensaje: 'No hay direcciones que coincidan con los criterios de búsqueda'
+      });
+    }
+
+    res.json(direcciones);
+  } catch (error) {
+    console.error('Error al buscar direcciones:', error);
+    res.status(500).json({ 
+      error: 'Error al buscar direcciones',
+      mensaje: 'Ocurrió un error al realizar la búsqueda'
+    });
+  }
+};
+
+// Crear una nueva dirección
+export const createDireccion = async (req: Request, res: Response) => {
+  try {
+    const { id_provincia, sector, calle, detalles } = req.body;
+
+    // Verificar que la provincia existe
+    const provincia = await Provincia.findByPk(id_provincia);
+    if (!provincia) {
+      return res.status(404).json({ error: 'Provincia no encontrada' });
+    }
+
+    // Crear la dirección
+    const direccion = await Direccion.create({
+      id_provincia,
+      sector,
+      calle,
+      detalles
+    });
+
+    // Obtener la dirección con sus relaciones
+    const direccionCompleta = await Direccion.findByPk(direccion.id_direccion, {
+      include: [
+        {
+          model: Provincia,
+          attributes: ['id_provincia', 'nombre_provincia']
+        }
+      ]
+    });
+
+    res.status(201).json(direccionCompleta);
+  } catch (error) {
+    console.error('Error al crear dirección:', error);
+    res.status(500).json({ 
+      error: 'Error al crear dirección',
+      mensaje: 'Ocurrió un error al crear la dirección'
+    });
+  }
+};
+
+// Editar una dirección
+export const editDireccion = async (req: Request, res: Response) => {
+  try {
+    const { id_direccion } = req.params;
+    const { id_provincia, sector, calle, detalles } = req.body;
+
+    const direccion = await Direccion.findByPk(id_direccion);
+    if (!direccion) {
+      return res.status(404).json({ error: 'Dirección no encontrada' });
+    }
+
+    // Verificar que la provincia existe si se proporciona
+    if (id_provincia) {
+      const provincia = await Provincia.findByPk(id_provincia);
+      if (!provincia) {
+        return res.status(404).json({ error: 'Provincia no encontrada' });
+      }
+    }
+
+    // Actualizar la dirección
+    await direccion.update({
+      id_provincia: id_provincia || direccion.id_provincia,
+      sector: sector || direccion.sector,
+      calle: calle || direccion.calle,
+      detalles: detalles || direccion.detalles
+    });
+
+    // Obtener la dirección actualizada con sus relaciones
+    const direccionActualizada = await Direccion.findByPk(id_direccion, {
+      include: [
+        {
+          model: Provincia,
+          attributes: ['id_provincia', 'nombre_provincia']
+        }
+      ]
+    });
+
+    res.json(direccionActualizada);
+  } catch (error) {
+    console.error('Error al editar dirección:', error);
+    res.status(500).json({ 
+      error: 'Error al editar dirección',
+      mensaje: 'Ocurrió un error al actualizar la dirección'
+    });
+  }
+};
+
+// Eliminar lógicamente una dirección
+export const deleteDireccion = async (req: Request, res: Response) => {
+  try {
+    const { id_direccion } = req.params;
+
+    const direccion = await Direccion.findByPk(id_direccion);
+    if (!direccion) {
+      return res.status(404).json({ error: 'Dirección no encontrada' });
+    }
+
+    // Eliminar lógicamente la dirección
+    await direccion.destroy();
+
+    res.json({ mensaje: 'Dirección eliminada correctamente' });
+  } catch (error) {
+    console.error('Error al eliminar dirección:', error);
+    res.status(500).json({ 
+      error: 'Error al eliminar dirección',
+      mensaje: 'Ocurrió un error al eliminar la dirección'
+    });
+  }
+}; 

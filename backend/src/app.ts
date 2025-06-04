@@ -14,6 +14,11 @@ import alquilerRoutes from './routes/alquilerRoutes';
 import decoracionRoutes from './routes/decoracionRoutes';
 import cateringRoutes from './routes/cateringRoutes';
 import menuRoutes from './routes/menuRoutes';
+import provinciaRoutes from './routes/provinciaRoutes';
+import direccionRoutes from './routes/direccionRoutes'
+import transporteRoutes from './routes/transporteRoutes';
+import supervisionRoutes from './routes/supervisionRoutes'
+import tarjetaRoutes from './routes/tarjetaRoutes';
 
 dotenv.config();
 
@@ -37,7 +42,7 @@ app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 
 // Rutas
 app.use('/api/auth', authRoutes);
-app.use('/api/elementos', elementoRoutes);
+app.use('/api/elemento', elementoRoutes);
 app.use('/api/comentarios', comentarioRoutes);
 app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/usuarios', usersRoutes);
@@ -46,6 +51,12 @@ app.use('/api/alquiler', alquilerRoutes);
 app.use('/api/decoracion', decoracionRoutes);
 app.use('/api/catering', cateringRoutes);
 app.use('/api/menu', menuRoutes)
+app.use('/api/direcciones', direccionRoutes);
+app.use('/api/provincias', provinciaRoutes);
+app.use('/api/tarjeta', tarjetaRoutes);
+app.use('/api/transporte',transporteRoutes);
+app.use('/api/supervision',supervisionRoutes);
+
 
 // Ruta de prueba
 app.get('/', (req, res) => {

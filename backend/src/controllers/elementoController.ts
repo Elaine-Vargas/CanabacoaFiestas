@@ -197,3 +197,262 @@ export const getMateriales = async (req: Request, res: Response) => {
     });
   }
 };
+
+// Crear un nuevo elemento
+export const createElemento = async (req: Request, res: Response) => {
+  try {
+    const {
+      nombre_elemento,
+      id_subcategoria,
+      id_material,
+      id_color,
+      precio_elemento,
+      cantidad_total,
+      cantidad_disponible,
+      imagen_url,
+      estado_elemento
+    } = req.body;
+
+    // Verificar que la subcategoría existe
+    const subcategoria = await SubcategoriaElemento.findByPk(id_subcategoria);
+    if (!subcategoria) {
+      return res.status(404).json({ error: 'Subcategoría no encontrada' });
+    }
+
+    // Verificar que el material existe
+    const material = await MaterialElemento.findByPk(id_material);
+    if (!material) {
+      return res.status(404).json({ error: 'Material no encontrado' });
+    }
+
+    // Verificar que el color existe
+    const color = await ColorElemento.findByPk(id_color);
+    if (!color) {
+      return res.status(404).json({ error: 'Color no encontrado' });
+    }
+
+    // Crear el elemento
+    const elemento = await Elemento.create({
+      nombre_elemento,
+      id_subcategoria,
+      id_material,
+      id_color,
+      precio_elemento,
+      cantidad_total: cantidad_total || 0,
+      cantidad_disponible: cantidad_disponible || cantidad_total || 0,
+      imagen_url,
+      estado_elemento: estado_elemento || 'Activo'
+    });
+
+    // Obtener el elemento con sus relaciones
+    const elementoCompleto = await Elemento.findByPk(elemento.id_elemento, {
+      include: [
+        {
+          model: SubcategoriaElemento,
+          as: 'subcategoria',
+          include: [{
+            model: CategoriaElemento,
+            as: 'categoria'
+          }]
+        },
+        {
+          model: ColorElemento,
+          as: 'color'
+        },
+        {
+          model: MaterialElemento,
+          as: 'material'
+        }
+      ]
+    });
+
+    res.status(201).json(elementoCompleto);
+  } catch (error) {
+    console.error('Error al crear elemento:', error);
+    res.status(500).json({ error: 'Error al crear elemento' });
+  }
+};
+
+// Buscar elementos por nombre o categoría
+export const searchElementos = async (req: Request, res: Response) => {
+  try {
+    const { query, categoria, subcategoria, material, color } = req.query;
+
+    const whereClause: any = {
+      estado_elemento: {
+        [Op.ne]: 'Eliminado'
+      }
+    };
+
+    if (query) {
+      whereClause.nombre_elemento = {
+        [Op.like]: `%${query}%`
+      };
+    }
+
+    if (categoria) {
+      whereClause['$subcategoria.categoria.id_categoria$'] = categoria;
+    }
+
+    if (subcategoria) {
+      whereClause.id_subcategoria = subcategoria;
+    }
+
+    if (material) {
+      whereClause.id_material = material;
+    }
+
+    if (color) {
+      whereClause.id_color = color;
+    }
+
+    const elementos = await Elemento.findAll({
+      where: whereClause,
+      include: [
+        {
+          model: SubcategoriaElemento,
+          as: 'subcategoria',
+          include: [{
+            model: CategoriaElemento,
+            as: 'categoria'
+          }]
+        },
+        {
+          model: ColorElemento,
+          as: 'color'
+        },
+        {
+          model: MaterialElemento,
+          as: 'material'
+        }
+      ]
+    });
+
+    if (!elementos || elementos.length === 0) {
+      return res.status(404).json({ 
+        error: 'No se encontraron elementos',
+        mensaje: 'No hay elementos que coincidan con los criterios de búsqueda'
+      });
+    }
+
+    res.json(elementos);
+  } catch (error) {
+    console.error('Error al buscar elementos:', error);
+    res.status(500).json({ error: 'Error al buscar elementos' });
+  }
+};
+
+// Editar un elemento
+export const editElemento = async (req: Request, res: Response) => {
+  try {
+    const { id_elemento } = req.params;
+    const {
+      nombre_elemento,
+      id_subcategoria,
+      id_material,
+      id_color,
+      precio_elemento,
+      cantidad_total,
+      cantidad_disponible,
+      imagen_url,
+      estado_elemento
+    } = req.body;
+
+    const elemento = await Elemento.findByPk(id_elemento);
+    if (!elemento) {
+      return res.status(404).json({ error: 'Elemento no encontrado' });
+    }
+
+    if (elemento.estado_elemento === 'Eliminado') {
+      return res.status(404).json({ error: 'Elemento no encontrado' });
+    }
+
+    // Verificar que la subcategoría existe si se proporciona
+    if (id_subcategoria) {
+      const subcategoria = await SubcategoriaElemento.findByPk(id_subcategoria);
+      if (!subcategoria) {
+        return res.status(404).json({ error: 'Subcategoría no encontrada' });
+      }
+    }
+
+    // Verificar que el material existe si se proporciona
+    if (id_material) {
+      const material = await MaterialElemento.findByPk(id_material);
+      if (!material) {
+        return res.status(404).json({ error: 'Material no encontrado' });
+      }
+    }
+
+    // Verificar que el color existe si se proporciona
+    if (id_color) {
+      const color = await ColorElemento.findByPk(id_color);
+      if (!color) {
+        return res.status(404).json({ error: 'Color no encontrado' });
+      }
+    }
+
+    // Actualizar el elemento
+    await elemento.update({
+      nombre_elemento: nombre_elemento || elemento.nombre_elemento,
+      id_subcategoria: id_subcategoria || elemento.id_subcategoria,
+      id_material: id_material || elemento.id_material,
+      id_color: id_color || elemento.id_color,
+      precio_elemento: precio_elemento || elemento.precio_elemento,
+      cantidad_total: cantidad_total || elemento.cantidad_total,
+      cantidad_disponible: cantidad_disponible || elemento.cantidad_disponible,
+      imagen_url: imagen_url || elemento.imagen_url,
+      estado_elemento: estado_elemento || elemento.estado_elemento
+    });
+
+    // Obtener el elemento actualizado con sus relaciones
+    const elementoActualizado = await Elemento.findByPk(id_elemento, {
+      include: [
+        {
+          model: SubcategoriaElemento,
+          as: 'subcategoria',
+          include: [{
+            model: CategoriaElemento,
+            as: 'categoria'
+          }]
+        },
+        {
+          model: ColorElemento,
+          as: 'color'
+        },
+        {
+          model: MaterialElemento,
+          as: 'material'
+        }
+      ]
+    });
+
+    res.json(elementoActualizado);
+  } catch (error) {
+    console.error('Error al editar elemento:', error);
+    res.status(500).json({ error: 'Error al editar elemento' });
+  }
+};
+
+// Eliminar lógicamente un elemento
+export const deleteElemento = async (req: Request, res: Response) => {
+  try {
+    const { id_elemento } = req.params;
+
+    const elemento = await Elemento.findByPk(id_elemento);
+    if (!elemento) {
+      return res.status(404).json({ error: 'Elemento no encontrado' });
+    }
+
+    if (elemento.estado_elemento === 'Eliminado') {
+      return res.status(404).json({ error: 'Elemento no encontrado' });
+    }
+
+    // Eliminar lógicamente el elemento
+    await elemento.update({ estado_elemento: 'Eliminado' });
+
+    res.json({ message: 'Elemento eliminado correctamente' });
+  } catch (error) {
+    console.error('Error al eliminar elemento:', error);
+    res.status(500).json({ error: 'Error al eliminar elemento' });
+  }
+};

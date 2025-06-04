@@ -1,0 +1,35 @@
+import { Router, RequestHandler } from 'express';
+import { 
+  getDirecciones, 
+  getDireccionById, 
+  searchDirecciones,
+  createDireccion,
+  editDireccion,
+  deleteDireccion
+} from '../controllers/direccionController';
+import { verificarToken } from '../middlewares/authMiddleware';
+
+const router = Router();
+
+// Middleware de autenticación para todas las rutas
+router.use(verificarToken as RequestHandler);
+
+// Obtener todas las direcciones
+router.get('/', getDirecciones as RequestHandler);
+
+// Buscar direcciones
+router.get('/search', searchDirecciones as RequestHandler);
+
+// Crear una nueva dirección
+router.post('/', createDireccion as RequestHandler);
+
+// Obtener una dirección por ID
+router.get('/:id_direccion', getDireccionById as RequestHandler);
+
+// Editar una dirección
+router.put('/:id_direccion', editDireccion as RequestHandler);
+
+// Eliminar una dirección
+router.delete('/:id_direccion', deleteDireccion as RequestHandler);
+
+export default router; 
