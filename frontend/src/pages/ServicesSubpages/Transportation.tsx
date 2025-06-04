@@ -337,26 +337,25 @@ export default function Transportation() {
         <div className="dashboard__stats">
           <div className="stat-card">
             <span className="stat-card__label">Pedidos Completados</span>
-            <strong className="stat-card__number">{stats.pedidosCompletados}</strong>
             <button className="stat-card__seeInfo" onClick={() => setShowPedidosCompletadosModal(true)}>Ver completados</button>
           </div>
 
           <div className="stat-card">
             <span className="stat-card__label">Pedidos Pendientes</span>
-            <strong className="stat-card__number">{stats.pedidosPendientes}</strong>
             <button className="stat-card__seeInfo" onClick={() => setShowPedidosPendientesModal(true)}>Ver pendientes</button>
           </div>
 
           <div className="stat-card">
             <span className="stat-card__label">Vehículos Disponibles</span>
-            <strong className="stat-card__number">{stats.vehiculos}</strong>
             <button className="stat-card__seeInfo" onClick={() => setShowVehiculosModal(true)}>Ver vehículos</button>
           </div>
         </div>
 
+        <center>
         <button className="new-form-btn" onClick={() => setShowModal(true)}>
           Agregar Servicio de Transporte
         </button>
+        </center>
 
         {showModal && (
           <div className="modal-overlay">
@@ -494,26 +493,26 @@ export default function Transportation() {
       <div className="dashboard__stats">
         <div className="stat-card">
           <span className="stat-card__label">Pedidos Completados</span>
-          <strong className="stat-card__number">{stats.pedidosCompletados}</strong>
           <button className="stat-card__seeInfo" onClick={() => setShowPedidosCompletadosModal(true)}>Ver completados</button>
         </div>
 
         <div className="stat-card">
           <span className="stat-card__label">Pedidos Pendientes</span>
-          <strong className="stat-card__number">{stats.pedidosPendientes}</strong>
           <button className="stat-card__seeInfo" onClick={() => setShowPedidosPendientesModal(true)}>Ver pendientes</button>
         </div>
 
         <div className="stat-card">
           <span className="stat-card__label">Vehículos Disponibles</span>
-          <strong className="stat-card__number">{stats.vehiculos}</strong>
           <button className="stat-card__seeInfo" onClick={() => setShowVehiculosModal(true)}>Ver vehículos</button>
         </div>
       </div>
 
-      <button className="new-form-btn" onClick={() => setShowModal(true)}>
-        Agregar Servicio de Transporte
-      </button>
+      <center>
+        <button className="new-form-btn" onClick={() => setShowModal(true)}>
+          Agregar Servicio de Transporte
+        </button>
+        </center>
+
     </div>
   );
 
@@ -820,8 +819,7 @@ export default function Transportation() {
       <div className="transportation-content">
         <div className="dashboard__stats">
           <div className="stat-card">
-            <span className="stat-card__label">Total de Vehículos</span>
-            <strong className="stat-card__number">{stats.vehiculos}</strong>
+            <span className="stat-card__label">Vehículos Registrados</span>
             <button className="stat-card__seeInfo" onClick={() => setShowVehiculosModal(true)}>
               Ver vehículos
             </button>
@@ -829,7 +827,6 @@ export default function Transportation() {
 
           <div className="stat-card">
             <span className="stat-card__label">Transportes Realizados</span>
-            <strong className="stat-card__number">{stats.pedidosCompletados}</strong>
             <button className="stat-card__seeInfo" onClick={() => setShowPedidosCompletadosModal(true)}>
               Ver transportes
             </button>

@@ -563,15 +563,6 @@ export default function Catering() {
                   </select>
                 </label>
 
-                <label>
-                  <span>Notas:</span>
-                  <textarea
-                    name="notas"
-                    value={formData.notas || ''}
-                    onChange={handleInputChange}
-                    rows={4}
-                  />
-                </label>
               </div>
 
               <div className="form-buttons">
@@ -598,8 +589,7 @@ export default function Catering() {
       <div className="catering-content">
         <div className="dashboard__stats">
           <div className="stat-card">
-            <span className="stat-card__label">Total de Pedidos</span>
-            <strong className="stat-card__number">{stats.totalPedidos}</strong>
+            <span className="stat-card__label">Todos los Pedidos</span>
             <button 
               className="stat-card__seeInfo"
               onClick={() => setShowPedidosModal(true)}
@@ -610,7 +600,6 @@ export default function Catering() {
 
           <div className="stat-card">
             <span className="stat-card__label">Pedidos Pendientes</span>
-            <strong className="stat-card__number">{stats.pedidosPendientes}</strong>
             <button 
               className="stat-card__seeInfo"
               onClick={() => setShowPendientesModal(true)}
@@ -621,7 +610,6 @@ export default function Catering() {
 
           <div className="stat-card">
             <span className="stat-card__label">Proveedores de Catering</span>
-            <strong className="stat-card__number">{stats.proveedorActivo}</strong>
             <button 
               className="stat-card__seeInfo"
               onClick={() => setShowProveedoresModal(true)}
@@ -635,9 +623,11 @@ export default function Catering() {
         {showPendientesModal && renderPendientesModal()}
         {showProveedoresModal && renderProveedoresModal()}
 
-        <button className="new-form-btn" onClick={() => setShowModal(true)}>
+        <center>
+          <button className="new-form-btn" onClick={() => setShowModal(true)}>
           Agregar Servicio de Catering
         </button>
+        </center>
 
         {showModal && (
           <div className="modal-overlay">
@@ -705,15 +695,6 @@ export default function Catering() {
                     </select>
                   </label>
 
-                  <label>
-                    <span>Notas:</span>
-                    <textarea
-                      name="notas"
-                      value={formData.notas || ''}
-                      onChange={handleInputChange}
-                      rows={4}
-                    />
-                  </label>
                 </div>
 
                 <div className="form-buttons">
@@ -741,7 +722,6 @@ export default function Catering() {
       <div className="dashboard__stats">
         <div className="stat-card">
           <span className="stat-card__label">Menús Disponibles</span>
-          <strong className="stat-card__number">{stats.menuDisponibles}</strong>
           <button 
             className="stat-card__seeInfo"
             onClick={() => setShowMenusModal(true)}
@@ -752,7 +732,6 @@ export default function Catering() {
 
         <div className="stat-card">
           <span className="stat-card__label">Proveedores Activos</span>
-          <strong className="stat-card__number">{stats.proveedorActivo}</strong>
           <button 
             className="stat-card__seeInfo"
             onClick={() => setShowProveedoresModal(true)}
@@ -763,7 +742,6 @@ export default function Catering() {
 
         <div className="stat-card">
           <span className="stat-card__label">Eventos con Catering</span>
-          <strong className="stat-card__number">{stats.totalPedidos}</strong>
           <button 
             className="stat-card__seeInfo"
             onClick={() => setShowEventosModal(true)}
@@ -881,10 +859,12 @@ export default function Catering() {
           </div>
         </div>
       )}
-
-      <button className="new-form-btn" onClick={() => setShowModal(true)}>
-        Agregar Servicio de Catering
-      </button>
+      
+      <center>
+          <button className="new-form-btn" onClick={() => setShowModal(true)}>
+          Agregar Servicio de Catering
+        </button>
+        </center>
     </div>
   );
 

@@ -404,7 +404,6 @@ export default function Decor() {
         <div className="dashboard__stats">
           <div className="stat-card">
             <span className="stat-card__label">Empleados Encargados</span>
-            <strong className="stat-card__number">{stats.empleadosEncargados}</strong>
             <button 
               className="stat-card__seeInfo"
               onClick={() => setShowEmpleadosModal(true)}
@@ -415,7 +414,6 @@ export default function Decor() {
 
           <div className="stat-card">
             <span className="stat-card__label">Eventos con Decoración</span>
-            <strong className="stat-card__number">{stats.eventosConDecoracion}</strong>
             <button 
               className="stat-card__seeInfo"
               onClick={() => setShowEventosModal(true)}
@@ -426,7 +424,6 @@ export default function Decor() {
 
           <div className="stat-card">
             <span className="stat-card__label">Decoraciones Completadas</span>
-            <strong className="stat-card__number">{stats.decoracionesCompletadas}</strong>
             <button 
               className="stat-card__seeInfo"
               onClick={() => setShowCompletadosModal(true)}
@@ -440,9 +437,12 @@ export default function Decor() {
         {showEventosModal && renderEventosModal()}
         {showCompletadosModal && renderCompletadosModal()}
 
+        <center>
         <button className="new-form-btn" onClick={() => setShowModal(true)}>
           Agregar Servicio de Decoración
         </button>
+        </center>
+
         {showModal && (
           <div className="modal-overlay">
             <div className="modal-container">
@@ -482,31 +482,6 @@ export default function Decor() {
                       <option value="Corporativo">Corporativo</option>
                       <option value="Otros">Otros</option>
                     </select>
-                  </label>
-
-                  <label>
-                    <span>Área a Decorar (m²):</span>
-                    <input
-                      type="number"
-                      name="area_decoracion"
-                      value={formData.area_decoracion || ''}
-                      onChange={handleInputChange}
-                      required
-                      min="1"
-                    />
-                  </label>
-
-                  <label>
-                    <span>Precio por m²:</span>
-                    <input
-                      type="number"
-                      name="precio_m2"
-                      value={formData.precio_m2 || ''}
-                      onChange={handleInputChange}
-                      required
-                      min="0"
-                      step="0.01"
-                    />
                   </label>
 
                   <label>
@@ -561,7 +536,6 @@ export default function Decor() {
       <div className="dashboard__stats">
         <div className="stat-card">
           <span className="stat-card__label">Eventos en los que participé</span>
-          <strong className="stat-card__number">{stats.eventosConDecoracion}</strong>
           <button 
             className="stat-card__seeInfo"
             onClick={() => setShowEventosModal(true)}
@@ -572,7 +546,6 @@ export default function Decor() {
 
         <div className="stat-card">
           <span className="stat-card__label">Decoraciones Pendientes</span>
-          <strong className="stat-card__number">{stats.decoracionesPendintes}</strong>
           <button 
             className="stat-card__seeInfo"
             onClick={() => setShowPendientesModal(true)}
@@ -583,7 +556,6 @@ export default function Decor() {
 
         <div className="stat-card">
           <span className="stat-card__label">Personal Encargado</span>
-          <strong className="stat-card__number">{stats.empleadosEncargados}</strong>
           <button 
             className="stat-card__seeInfo"
             onClick={() => setShowEmpleadosModal(true)}
@@ -593,9 +565,11 @@ export default function Decor() {
         </div>
       </div>
 
-      <button className="new-form-btn" onClick={() => setShowModal(true)}>
-        Agregar Servicio de Decoración
-      </button>
+      <center>
+        <button className="new-form-btn" onClick={() => setShowModal(true)}>
+          Agregar Servicio de Decoración
+        </button>
+        </center>
 
       {showEventosModal && (
         <div className="modal-overlay">
@@ -783,31 +757,6 @@ export default function Decor() {
                     <option value="Corporativo">Corporativo</option>
                     <option value="Otros">Otros</option>
                   </select>
-                </label>
-
-                <label>
-                  <span>Área a Decorar (m²):</span>
-                  <input
-                    type="number"
-                    name="area_decoracion"
-                    value={formData.area_decoracion || ''}
-                    onChange={handleInputChange}
-                    required
-                    min="1"
-                  />
-                </label>
-
-                <label>
-                  <span>Precio por m²:</span>
-                  <input
-                    type="number"
-                    name="precio_m2"
-                    value={formData.precio_m2 || ''}
-                    onChange={handleInputChange}
-                    required
-                    min="0"
-                    step="0.01"
-                  />
                 </label>
 
                 <label>

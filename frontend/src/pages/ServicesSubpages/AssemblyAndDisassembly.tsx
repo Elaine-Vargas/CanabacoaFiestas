@@ -264,19 +264,16 @@ export default function AssemblyAndDisassembly() {
       <div className="dashboard__stats">
         <div className="stat-card">
           <span className="stat-card__label">Personal Encargado</span>
-          <strong className="stat-card__number">{stats.personalEncargado}</strong>
           <button className="stat-card__seeInfo">Ver personal</button>
         </div>
 
         <div className="stat-card">
           <span className="stat-card__label">Eventos Completados</span>
-          <strong className="stat-card__number">{stats.eventosCompletados}</strong>
           <button className="stat-card__seeInfo">Ver completados</button>
         </div>
 
         <div className="stat-card">
           <span className="stat-card__label">Eventos Pendientes</span>
-          <strong className="stat-card__number">{stats.eventosPendientes}</strong>
           <button className="stat-card__seeInfo">Ver pendientes</button>
         </div>
       </div>
@@ -479,7 +476,6 @@ export default function AssemblyAndDisassembly() {
         <div className="dashboard__stats">
           <div className="stat-card">
             <span className="stat-card__label">Eventos Pendientes</span>
-            <strong className="stat-card__number">{eventosPendientes.length}</strong>
             <button 
               className="stat-card__seeInfo"
               onClick={() => setShowPendientesModal(true)}
@@ -490,7 +486,6 @@ export default function AssemblyAndDisassembly() {
 
           <div className="stat-card">
             <span className="stat-card__label">Mi Participación</span>
-            <strong className="stat-card__number">{eventosParticipacion.length}</strong>
             <button 
               className="stat-card__seeInfo"
               onClick={() => setShowParticipacionModal(true)}
@@ -501,7 +496,6 @@ export default function AssemblyAndDisassembly() {
 
           <div className="stat-card">
             <span className="stat-card__label">Eventos Terminados</span>
-            <strong className="stat-card__number">{eventosTerminados.length}</strong>
             <button 
               className="stat-card__seeInfo"
               onClick={() => setShowTerminadosModal(true)}
@@ -511,9 +505,11 @@ export default function AssemblyAndDisassembly() {
           </div>
         </div>
 
-        <button className="new-form-btn" onClick={() => setShowModal(true)}>
+        <center>
+          <button className="new-form-btn" onClick={() => setShowModal(true)}>
           + Agregar Servicio de Montaje y Desmontaje
         </button>
+        </center>
 
         {showPendientesModal && renderPendientesModal()}
         {showParticipacionModal && renderParticipacionModal()}
@@ -528,7 +524,6 @@ export default function AssemblyAndDisassembly() {
         <div className="dashboard__stats">
           <div className="stat-card">
             <span className="stat-card__label">Eventos Completados</span>
-            <strong className="stat-card__number">{stats.eventosCompletados}</strong>
             <button 
               className="stat-card__seeInfo"
               onClick={() => setShowEventosCompletadosModal(true)}
@@ -539,7 +534,6 @@ export default function AssemblyAndDisassembly() {
 
           <div className="stat-card">
             <span className="stat-card__label">Eventos Pendientes</span>
-            <strong className="stat-card__number">{stats.eventosPendientes}</strong>
             <button 
               className="stat-card__seeInfo"
               onClick={() => setShowEventosPendientesModal(true)}
@@ -550,7 +544,6 @@ export default function AssemblyAndDisassembly() {
 
           <div className="stat-card">
             <span className="stat-card__label">Personal Encargado</span>
-            <strong className="stat-card__number">{stats.personalEncargado}</strong>
             <button 
               className="stat-card__seeInfo"
               onClick={() => setShowPersonalModal(true)}
@@ -560,9 +553,11 @@ export default function AssemblyAndDisassembly() {
           </div>
         </div>
 
-        <button className="new-form-btn" onClick={() => setShowModal(true)}>
+        <center>
+          <button className="new-form-btn" onClick={() => setShowModal(true)}>
           + Agregar Servicio de Montaje y Desmontaje
         </button>
+        </center>
 
         {showModal && (
           <div className="modal-overlay">
@@ -602,31 +597,6 @@ export default function AssemblyAndDisassembly() {
                       <option value="Desmontaje">Desmontaje</option>
                       <option value="Ambos">Ambos</option>
                     </select>
-                  </label>
-
-                  <label>
-                    <span>Número de Personas:</span>
-                    <input
-                      type="number"
-                      name="numero_personas"
-                      value={formData.numero_personas || ''}
-                      onChange={handleInputChange}
-                      required
-                      min="1"
-                    />
-                  </label>
-
-                  <label>
-                    <span>Precio por Persona:</span>
-                    <input
-                      type="number"
-                      name="precio_persona"
-                      value={formData.precio_persona || ''}
-                      onChange={handleInputChange}
-                      required
-                      min="0"
-                      step="0.01"
-                    />
                   </label>
 
                   <label>

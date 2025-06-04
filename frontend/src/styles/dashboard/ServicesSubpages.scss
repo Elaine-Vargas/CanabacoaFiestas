@@ -642,6 +642,73 @@ $gold-gradient: linear-gradient(135deg, var(--gold) 0%, var(--dark-gold) 100%);
         grid-column: 1 / -1;
       }
     }
+
+    .radio-group {
+      display: flex;
+      gap: 2rem;
+      margin-top: 0.5rem;
+
+      .radio-label {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        cursor: pointer;
+        padding: 0.5rem 1rem;
+        border-radius: 8px;
+        transition: $transition-standard;
+        background-color: var(--color-background2);
+        border: 2px solid var(--color-input-border);
+
+        &:hover {
+          border-color: var(--gold);
+        }
+
+        input[type="radio"] {
+          width: 18px;
+          height: 18px;
+          margin: 0;
+          cursor: pointer;
+          accent-color: var(--gold);
+          appearance: none;
+          -webkit-appearance: none;
+          border: 2px solid var(--color-input-border);
+          border-radius: 4px;
+          background-color: var(--color-background);
+          transition: $transition-standard;
+
+          &:checked {
+            background-color: var(--gold);
+            border-color: var(--gold);
+            position: relative;
+
+            &::after {
+              content: '✓';
+              position: absolute;
+              top: 50%;
+              left: 50%;
+              transform: translate(-50%, -50%);
+              color: var(--white);
+              font-size: 12px;
+            }
+          }
+        }
+
+        span {
+          font-family: "Montserrat Alternates", sans-serif;
+          font-size: 1rem;
+          color: var(--text-color);
+        }
+
+        &:has(input[type="radio"]:checked) {
+          background-color: var(--gold);
+          border-color: var(--gold);
+
+          span {
+            color: var(--white);
+          }
+        }
+      }
+    }
   }
 
   .form-buttons {
@@ -1001,9 +1068,7 @@ tr.deshabilitado {
 }
 
 /* Botones de agregar y crear */
-.new-form-btn,
-.add-user-btn,
-.create-menu-btn {
+.new-form-btn {
   background: $gold-gradient;
   color: var(--white);
   border: none;
@@ -1015,7 +1080,6 @@ tr.deshabilitado {
   font-weight: 600;
   transition: $transition-standard;
   display: inline-flex;
-  align-items: center;
   gap: 0.75rem;
   text-transform: uppercase;
   letter-spacing: 0.5px;
@@ -1023,6 +1087,7 @@ tr.deshabilitado {
   margin: 3rem auto;
   position: relative;
   z-index: 2;
+  width: 50rem;
 
   &:hover {
     transform: translateY(-2px);
