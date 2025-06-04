@@ -44,4 +44,7 @@ router.delete('/:id_elemento', deleteElemento as RequestHandler);
 // Obtener todos los elementos
 router.get('/', getElementos as RequestHandler);
 
+// Obtener elementos filtrados
+router.get('/filtrados', getElementos as RequestHandler);
+
 export default router; 

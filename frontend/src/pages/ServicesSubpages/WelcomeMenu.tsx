@@ -592,7 +592,7 @@ const WelcomeMenu: React.FC<WelcomeMenuProps> = () => {
   const fetchProveedores = async () => {
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch('http://localhost:3000/api/proveedores', {
+      const response = await fetch(`${apiUrl}proveedores`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
@@ -612,7 +612,7 @@ const WelcomeMenu: React.FC<WelcomeMenuProps> = () => {
   const fetchTiposProveedor = async () => {
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch('http://localhost:3000/api/tipos-proveedor', {
+      const response = await fetch(`${apiUrl}tipos-proveedor`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
@@ -632,7 +632,7 @@ const WelcomeMenu: React.FC<WelcomeMenuProps> = () => {
   const fetchProvincias = async () => {
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch('http://localhost:3000/api/provincias', {
+      const response = await fetch(`${apiUrl}provincias`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'

@@ -6,6 +6,7 @@ import '../../components/ServiceBase';
 import DashboardCatalog from '../../components/DashboardCatalog';
 import { Box, Typography, Button, Dialog, DialogTitle, DialogContent, DialogActions, TextField, MenuItem, Snackbar, Alert } from '@mui/material';
 import ViewModuleIcon from '@mui/icons-material/ViewModule';
+import axios from 'axios';
 
 export type UserRole = 'admin' | 'client' | 'supervisor' | 'inventory';
 
@@ -94,26 +95,67 @@ export default function Rent() {
   const [items, setItems] = useState<any[]>([]);
 
   useEffect(() => {
-    const fetchData = async () => {
+    const fetchPedidos = async () => {
       try {
-        const [rentsRes, eventosRes] = await Promise.all([
-          fetch('/api/rent'),
-          fetch('/api/eventos')
-        ]);
-
-        const [rentsData, eventosData] = await Promise.all([
-          rentsRes.json(),
-          eventosRes.json()
-        ]);
-
-        setRents(rentsData);
-        setEventos(eventosData);
+        const response = await axios.get(`${apiUrl}/alquiler`);
+        setPedidos(response.data);
       } catch (error) {
-        console.error('Error al cargar datos:', error);
+        console.error('Error al cargar pedidos:', error);
       }
     };
 
-    fetchData();
+    const fetchPedidosPendientes = async () => {
+      try {
+        const response = await axios.get(`${apiUrl}/alquiler/pendientes`);
+        setPedidosPendientes(response.data);
+      } catch (error) {
+        console.error('Error al cargar pedidos pendientes:', error);
+      }
+    };
+
+    const fetchItems = async () => {
+      try {
+        const response = await axios.get(`${apiUrl}/elemento`);
+        setItems(response.data);
+      } catch (error) {
+        console.error('Error al cargar items:', error);
+      }
+    };
+
+    if (showTotalPedidosModal) {
+      fetchPedidos();
+    }
+    if (showPedidosPendientesModal) {
+      fetchPedidosPendientes();
+    }
+    if (showTotalItemsModal) {
+      fetchItems();
+    }
+  }, [showTotalPedidosModal, showPedidosPendientesModal, showTotalItemsModal]);
+
+  useEffect(() => {
+    const fetchInitialData = async () => {
+      try {
+        const [rentsRes, eventosRes, itemsRes] = await Promise.all([
+          axios.get(`${apiUrl}/alquiler`),
+          axios.get(`${apiUrl}/eventos`),
+          axios.get(`${apiUrl}/elemento`)
+        ]);
+
+        setRents(rentsRes.data);
+        setEventos(eventosRes.data);
+        setItems(itemsRes.data);
+      } catch (error) {
+        console.error('Error al cargar datos iniciales:', error);
+        setNotificacion({
+          abierta: true,
+          mensaje: 'Error al cargar los datos. Por favor, intente nuevamente.',
+          tipo: 'error'
+        });
+      }
+    };
+
+    fetchInitialData();
   }, []);
 
   useEffect(() => {
@@ -133,48 +175,6 @@ export default function Rent() {
       fetchStats();
     }
   }, [userRole]);
-
-  useEffect(() => {
-    const fetchPedidos = async () => {
-      try {
-        const response = await fetch('/api/alquiler/pedidos');
-        const data = await response.json();
-        setPedidos(data);
-      } catch (error) {
-        console.error('Error al cargar pedidos:', error);
-      }
-    };
-
-    const fetchPedidosPendientes = async () => {
-      try {
-        const response = await fetch('/api/alquiler/pendientes');
-        const data = await response.json();
-        setPedidosPendientes(data);
-      } catch (error) {
-        console.error('Error al cargar pedidos pendientes:', error);
-      }
-    };
-
-    const fetchItems = async () => {
-      try {
-        const response = await fetch('/api/alquiler/items');
-        const data = await response.json();
-        setItems(data);
-      } catch (error) {
-        console.error('Error al cargar items:', error);
-      }
-    };
-
-    if (showTotalPedidosModal) {
-      fetchPedidos();
-    }
-    if (showPedidosPendientesModal) {
-      fetchPedidosPendientes();
-    }
-    if (showTotalItemsModal) {
-      fetchItems();
-    }
-  }, [showTotalPedidosModal, showPedidosPendientesModal, showTotalItemsModal]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;

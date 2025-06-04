@@ -514,7 +514,6 @@ export default function Catering() {
 
     return (
       <div className="menu-catalogo-container">
-        <h1 className="menu-catalogo-title">Catálogo de Menús</h1>
         
         <div className="menu-catalogo-filters">
           <div className="search-container">
