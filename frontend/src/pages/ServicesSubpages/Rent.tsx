@@ -790,8 +790,7 @@ export default function Rent() {
       <div className="rent-content">
         <div className="dashboard__stats">
           <div className="stat-card">
-            <span className="stat-card__label">Total de Pedidos</span>
-            <strong className="stat-card__number">{stats.totalPedidos}</strong>
+            <span className="stat-card__label">Todos los Pedidos</span>
             <button 
               className="stat-card__seeInfo"
               onClick={() => setShowTotalPedidosModal(true)}
@@ -802,7 +801,6 @@ export default function Rent() {
 
           <div className="stat-card">
             <span className="stat-card__label">Pedidos Pendientes</span>
-            <strong className="stat-card__number">{stats.pedidosPendientes}</strong>
             <button 
               className="stat-card__seeInfo"
               onClick={() => setShowPedidosPendientesModal(true)}
@@ -812,8 +810,7 @@ export default function Rent() {
           </div>
 
           <div className="stat-card">
-            <span className="stat-card__label">Items en Catálogo</span>
-            <strong className="stat-card__number">{stats.totalElementos}</strong>
+            <span className="stat-card__label">Elementos del Catálogo</span>
             <button 
               className="stat-card__seeInfo"
               onClick={() => setShowTotalItemsModal(true)}
@@ -827,9 +824,11 @@ export default function Rent() {
         {showPedidosPendientesModal && renderPedidosPendientesModal()}
         {showTotalItemsModal && renderTotalItemsModal()}
 
+        <center>
         <button className="new-form-btn" onClick={() => setShowModal(true)}>
           Agregar Servicio de Alquiler
         </button>
+        </center>
 
         {showModal && (
           <div className="modal-overlay">
@@ -949,8 +948,7 @@ export default function Rent() {
     <div className="rent-content">
       <div className="dashboard__stats">
         <div className="stat-card">
-          <span className="stat-card__label">Total de Pedidos</span>
-          <strong className="stat-card__number">{stats.totalPedidos}</strong>
+          <span className="stat-card__label">Todos los Pedidos</span>
           <button 
             className="stat-card__seeInfo"
             onClick={() => setShowTotalPedidosModal(true)}
@@ -961,7 +959,6 @@ export default function Rent() {
 
         <div className="stat-card">
           <span className="stat-card__label">Pedidos Pendientes</span>
-          <strong className="stat-card__number">{stats.pedidosPendientes}</strong>
           <button 
             className="stat-card__seeInfo"
             onClick={() => setShowPedidosPendientesModal(true)}
@@ -972,7 +969,6 @@ export default function Rent() {
 
         <div className="stat-card">
           <span className="stat-card__label">Items en Catálogo</span>
-          <strong className="stat-card__number">{stats.totalElementos}</strong>
           <button 
             className="stat-card__seeInfo"
             onClick={() => setShowTotalItemsModal(true)}
@@ -986,9 +982,11 @@ export default function Rent() {
       {showPedidosPendientesModal && renderPedidosPendientesModal()}
       {showTotalItemsModal && renderTotalItemsModal()}
 
-      <button className="new-form-btn" onClick={() => setShowModal(true)}>
-        Agregar Servicio de Alquiler
-      </button>
+      <center>
+        <button className="new-form-btn" onClick={() => setShowModal(true)}>
+          Agregar Servicio de Alquiler
+        </button>
+        </center>
 
       {showModal && (
         <div className="modal-overlay">

@@ -226,7 +226,6 @@ export default function Supervision() {
         <div className="dashboard__stats">
           <div className="stat-card">
             <span className="stat-card__label">Eventos Supervisados</span>
-            <strong className="stat-card__number">{stats.eventosSupervisados}</strong>
             <button 
               className="stat-card__seeInfo"
               onClick={() => setShowEventosModal(true)}
@@ -237,7 +236,6 @@ export default function Supervision() {
 
           <div className="stat-card">
             <span className="stat-card__label">Empleados a Cargo</span>
-            <strong className="stat-card__number">{stats.empleadosEncargados}</strong>
             <button 
               className="stat-card__seeInfo"
               onClick={() => setShowEmpleadosModal(true)}
@@ -248,7 +246,6 @@ export default function Supervision() {
 
           <div className="stat-card">
             <span className="stat-card__label">Supervisiones Completadas</span>
-            <strong className="stat-card__number">{stats.supervisionesCompletadas}</strong>
             <button 
               className="stat-card__seeInfo"
               onClick={() => setShowCompletadasModal(true)}
@@ -258,9 +255,11 @@ export default function Supervision() {
           </div>
         </div>
 
+        <center>
         <button className="new-form-btn" onClick={() => setShowModal(true)}>
           Agregar Servicio de Supervisión
         </button>
+        </center>
 
         {showModal && (
           <div className="modal-overlay">
@@ -356,7 +355,6 @@ export default function Supervision() {
       <div className="dashboard__stats">
         <div className="stat-card">
           <span className="stat-card__label">Eventos Supervisados por Mí</span>
-          <strong className="stat-card__number">{stats.eventosSupervisados}</strong>
           <button 
             className="stat-card__seeInfo"
             onClick={() => setShowEventosModal(true)}
@@ -367,7 +365,6 @@ export default function Supervision() {
 
         <div className="stat-card">
           <span className="stat-card__label">Equipo de Trabajo</span>
-          <strong className="stat-card__number">{stats.empleadosEncargados}</strong>
           <button 
             className="stat-card__seeInfo"
             onClick={() => setShowEmpleadosModal(true)}
@@ -378,7 +375,6 @@ export default function Supervision() {
 
         <div className="stat-card">
           <span className="stat-card__label">Todos los Eventos</span>
-          <strong className="stat-card__number">{stats.supervisionesCompletadas}</strong>
           <button 
             className="stat-card__seeInfo"
             onClick={() => setShowCompletadasModal(true)}
@@ -388,9 +384,11 @@ export default function Supervision() {
         </div>
       </div>
 
-      <button className="new-form-btn" onClick={() => setShowModal(true)}>
-        Agregar Servicio de Supervisión
-      </button>
+      <center>
+        <button className="new-form-btn" onClick={() => setShowModal(true)}>
+          Agregar Servicio de Supervisión
+        </button>
+        </center>
     </div>
   );
 

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import '../../styles/dashboard/ServicesSubpages.scss';
 import { useUser } from '../../contexts/UserContext';
 import { useNavigate } from 'react-router-dom';
+import UserConfig from './UserConfig';
 
 export type UserRole = 'admin' | 'client' | 'supervisor' | 'inventory';
 
@@ -63,19 +64,6 @@ interface Usuario {
   estado: string;
   telefono: string;
   correo: string;
-}
-
-interface Cotizacion {
-  id_cotizacion: number;
-  cliente: string;
-  espacio: string;
-  servicios_adicionales: string[];
-  empleado_encargado: string;
-  estado: string;
-  contacto_asesor: string;
-  fecha_evento: string;
-  hora_evento: string;
-  monto?: number;
 }
 
 type WelcomeMenuProps = {
@@ -183,14 +171,64 @@ interface NuevaCompra {
   detalles: DetalleCompra[];
 }
 
+interface Proveedor {
+  id_proveedor: number;
+  id_tipo_proveedor: number;
+  nombre_proveedor: string;
+  tel_proveedor: string;
+  correo_proveedor: string;
+  id_direccion: number;
+  estado_proveedor: 'Activo' | 'Inactivo' | 'Eliminado';
+  tipo_proveedor?: {
+    nombre_tipo: string;
+  };
+  direccion?: {
+    sector: string;
+    calle: string;
+    detalles?: string;
+    provincia?: {
+      id_provincia: number;
+      nombre_provincia: string;
+    };
+  };
+}
+
+interface TipoProveedor {
+  id_tipo_proveedor: number;
+  nombre_tipo: string;
+}
+
+interface Provincia {
+  id_provincia: number;
+  nombre_provincia: string;
+}
+
+interface ProveedorFormData {
+  id_tipo_proveedor: string;
+  nombre_proveedor: string;
+  tel_proveedor: string;
+  correo_proveedor: string;
+  id_provincia: string;
+  sector: string;
+  calle: string;
+  detalles: string;
+  estado_proveedor: 'Activo' | 'Inactivo' | 'Eliminado';
+}
+
 const WelcomeMenu: React.FC<WelcomeMenuProps> = () => {
   const navigate = useNavigate();
   const { userRole } = useUser();
-  const userData = JSON.parse(localStorage.getItem('userData') || '{}');
+  const [userData, setUserData] = useState<any>(null);
   
+  useEffect(() => {
+    const storedUserData = JSON.parse(localStorage.getItem('userData') || '{}');
+    setUserData(storedUserData);
+  }, []);
+
   // Corregir la detección del rol
-  const currentRole = Number(userData.rol);
+  const currentRole = userData ? Number(userData.rol) : 0;
   console.log('Rol actual:', currentRole);
+  console.log('Datos del usuario:', userData);
   const [showCommentModal, setShowCommentModal] = useState(false);
   const [showEventModal, setShowEventModal] = useState(false);
   const [showServicesModal, setShowServicesModal] = useState(false);
@@ -239,7 +277,6 @@ const WelcomeMenu: React.FC<WelcomeMenuProps> = () => {
   const [selectedEventId, setSelectedEventId] = useState<number | null>(null);
   const [eventosEnProceso, setEventosEnProceso] = useState<EventoEnProceso[]>([]);
   const [usuarios, setUsuarios] = useState<Usuario[]>([]);
-  const [cotizaciones, setCotizaciones] = useState<Cotizacion[]>([]);
   const [nuevoUsuario, setNuevoUsuario] = useState({
     cedula: '',
     nombre: '',
@@ -284,6 +321,22 @@ const WelcomeMenu: React.FC<WelcomeMenuProps> = () => {
     telefono: '',
     correo: '',
     estado: 'Activo'
+  });
+  const [showProveedoresModal, setShowProveedoresModal] = useState(false);
+  const [proveedores, setProveedores] = useState<Proveedor[]>([]);
+  const [tiposProveedor, setTiposProveedor] = useState<TipoProveedor[]>([]);
+  const [provincias, setProvincias] = useState<Provincia[]>([]);
+  const [editId, setEditId] = useState<number | null>(null);
+  const [proveedorFormData, setProveedorFormData] = useState<ProveedorFormData>({
+    id_tipo_proveedor: '',
+    nombre_proveedor: '',
+    tel_proveedor: '',
+    correo_proveedor: '',
+    id_provincia: '',
+    sector: '',
+    calle: '',
+    detalles: '',
+    estado_proveedor: 'Activo'
   });
 
   useEffect(() => {
@@ -333,128 +386,6 @@ const WelcomeMenu: React.FC<WelcomeMenuProps> = () => {
   }, [espacios]);
 
   useEffect(() => {
-    const fetchStats = async () => {
-      try {
-        console.log('Iniciando fetch de estadísticas...');
-        const token = localStorage.getItem('token');
-        const userData = JSON.parse(localStorage.getItem('userData') || '{}');
-        console.log('Datos del usuario:', userData);
-        console.log('Token disponible:', !!token);
-
-        const headers = {
-          'Content-Type': 'application/json',
-          'Authorization': token ? `Bearer ${token}` : '',
-          'user-role': userData.rol || '',
-          'user-cedula': userData.cedula || ''
-        };
-        console.log('Headers enviados:', headers);
-
-        const response = await fetch('/api/dashboard/stats', {
-          method: 'GET',
-          headers
-        });
-        
-        console.log('Respuesta recibida:', {
-          status: response.status,
-          statusText: response.statusText,
-          headers: Object.fromEntries(response.headers.entries())
-        });
-
-        let data;
-        try {
-          data = await response.json();
-          console.log('Datos recibidos del backend:', data);
-        } catch (jsonError) {
-          console.error('Error al parsear JSON:', jsonError);
-          throw new Error('Error al procesar la respuesta del servidor');
-        }
-        
-        if (!response.ok) {
-          console.error('Error en la respuesta:', data);
-          throw new Error(data.details || `Error HTTP: ${response.status}`);
-        }
-        
-        // Verificar que los datos tengan la estructura correcta
-        if (data && typeof data === 'object') {
-          const statsData: WelcomeStats = {
-            eventsInProcess: Number(data.eventsInProcess) || 0,
-            totalUsers: Number(data.totalUsers) || 0,
-            spaces: Array.isArray(data.spaces) ? data.spaces : [],
-            quotations: Number(data.quotations) || 0,
-            averageRating: Number(data.averageRating) || 0,
-            eventosActivos: Number(data.eventosActivos) || 0,
-            eventosRealizados: Number(data.eventosRealizados) || 0,
-            comentariosEnviados: Number(data.comentariosEnviados) || 0
-          };
-          
-          console.log('Datos procesados para actualizar estado:', statsData);
-          
-          // Verificar que los datos sean válidos antes de actualizar el estado
-          if (isNaN(statsData.eventsInProcess) || 
-              isNaN(statsData.totalUsers) || 
-              isNaN(statsData.quotations) || 
-              isNaN(statsData.averageRating)) {
-            console.error('Datos inválidos detectados:', statsData);
-            throw new Error('Datos inválidos recibidos del servidor');
-          }
-          
-          setStats(statsData);
-        } else {
-          console.error('Datos recibidos no tienen la estructura esperada:', data);
-          throw new Error('Estructura de datos inválida');
-        }
-      } catch (error) {
-        console.error('Error detallado al cargar estadísticas:', error);
-        // Mostrar mensaje de error más específico al usuario
-        const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
-        alert(`Error al cargar las estadísticas: ${errorMessage}. Por favor, intente nuevamente.`);
-        // Establecer valores por defecto
-        setStats({
-          quotations: 0,
-          spaces: [],
-          eventsInProcess: 0,
-          totalUsers: 0,
-          averageRating: 0,
-          eventosActivos: 0,
-          eventosRealizados: 0,
-          comentariosEnviados: 0
-        });
-      }
-    };
-
-    fetchStats();
-  }, []);
-
-  useEffect(() => {
-    const fetchEventosEnProceso = async () => {
-      try {
-        const token = localStorage.getItem('token');
-        const response = await fetch('http://localhost:3000/api/eventos/en-proceso', {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
-          }
-        });
-
-        if (!response.ok) {
-          throw new Error(`Error HTTP: ${response.status}`);
-        }
-
-        const data = await response.json();
-        console.log('Eventos en proceso cargados:', data);
-        setEventosEnProceso(data);
-      } catch (error) {
-        console.error('Error al cargar eventos en proceso:', error);
-        alert('Error al cargar los eventos en proceso. Por favor, intente nuevamente.');
-      }
-    };
-
-    if (showEventsInProcessModal) {
-      fetchEventosEnProceso();
-    }
-  }, [showEventsInProcessModal]);
-
-  useEffect(() => {
     const fetchUsuarios = async () => {
       try {
         const token = localStorage.getItem('token');
@@ -487,7 +418,6 @@ const WelcomeMenu: React.FC<WelcomeMenuProps> = () => {
           }
         });
         const data = await response.json();
-        setCotizaciones(data);
       } catch (error) {
         console.error('Error al cargar eventos realizados:', error);
       }
@@ -588,6 +518,44 @@ const WelcomeMenu: React.FC<WelcomeMenuProps> = () => {
     }
   }, [showInventarioModal, showComprasModal, showComprasProcesoModal]);
 
+  useEffect(() => {
+    if (showProveedoresModal) {
+      fetchProveedores();
+      fetchTiposProveedor();
+      fetchProvincias();
+    }
+  }, [showProveedoresModal]);
+
+  const fetchProveedores = async () => {
+    try {
+      const response = await fetch('/api/proveedores');
+      const data = await response.json();
+      setProveedores(data);
+    } catch (error) {
+      console.error('Error al cargar proveedores:', error);
+    }
+  };
+
+  const fetchTiposProveedor = async () => {
+    try {
+      const response = await fetch('/api/tipos-proveedor');
+      const data = await response.json();
+      setTiposProveedor(data);
+    } catch (error) {
+      console.error('Error al cargar tipos de proveedor:', error);
+    }
+  };
+
+  const fetchProvincias = async () => {
+    try {
+      const response = await fetch('/api/provincias');
+      const data = await response.json();
+      setProvincias(data);
+    } catch (error) {
+      console.error('Error al cargar provincias:', error);
+    }
+  };
+
   const handleCommentSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedEventId) {
@@ -651,9 +619,11 @@ const WelcomeMenu: React.FC<WelcomeMenuProps> = () => {
   const handleEventSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
+      const storedUserData = JSON.parse(localStorage.getItem('userData') || '{}');
       const eventoData = {
         ...formData,
-        supervision_evento: formData.supervision_evento ? 1 : 0 // Convertir boolean a tinyint
+        cedula_cliente: Number(storedUserData.rol) === 2 ? storedUserData.cedula_usuario : formData.cedula_cliente,
+        supervision_evento: formData.supervision_evento ? 1 : 0
       };
 
       const response = await fetch('/api/eventos', {
@@ -720,158 +690,187 @@ const WelcomeMenu: React.FC<WelcomeMenuProps> = () => {
     );
   };
 
-  const renderEventForm = () => (
-    <form className="modal-form" onSubmit={handleEventSubmit}>
-      <h2>Nuevo Evento</h2>
+  const renderEventForm = () => {
+    if (!userData) return null;
+    
+    return (
+      <form className="modal-form" onSubmit={handleEventSubmit}>
+        <h2>Nuevo Evento</h2>
 
-      <label>
-        {Number(userData.rol) === 2 ? 'Cédula:' : 'Cédula del Cliente:'}
-        <input
-          type="text"
-          name="cedula_cliente"
-          value={formData.cedula_cliente}
-          onChange={handleInputChange}
-          required
-          maxLength={13}
-          pattern="[0-9]{11,13}"
-          title="La cédula debe tener entre 11 y 13 dígitos"
-        />
-      </label>
-
-      {(Number(userData.rol) === 1 || Number(userData.rol) === 3) && (
-        <label>
-          Cédula del Asesor:
-          <input
-            type="text"
-            name="cedula_asesor"
-            value={formData.cedula_asesor}
-            onChange={handleInputChange}
-            required
-            maxLength={13}
-            pattern="[0-9]{11,13}"
-            title="La cédula debe tener entre 11 y 13 dígitos"
-          />
-        </label>
-      )}
-
-      <label>
-        Fecha del evento:
-        <input
-          type="date"
-          name="fecha_evento"
-          value={formData.fecha_evento}
-          onChange={handleInputChange}
-          required
-        />
-      </label>
-
-      <label>
-        Hora del evento:
-        <input
-          type="time"
-          name="hora_evento"
-          value={formData.hora_evento}
-          onChange={handleInputChange}
-          required
-        />
-      </label>
-
-      <label>
-        Espacio:
-        <select
-          name="id_espacio"
-          value={formData.id_espacio || ''}
-          onChange={handleEspacioChange}
-          required
-        >
-          <option value="">Seleccionar espacio</option>
-          {espacios && espacios.length > 0 ? (
-            espacios.map(espacio => (
-              <option 
-                key={espacio.id_espacio} 
-                value={espacio.id_espacio}
-              >
-                {espacio.nombre}
-              </option>
-            ))
+        <div className="form-grid">
+          {Number(userData.rol) === 2 ? (
+            <label>
+              <span>Cédula:</span>
+              <input
+                type="text"
+                name="cedula_cliente"
+                value={userData.cedula_usuario}
+                disabled
+                className="disabled-input"
+              />
+            </label>
           ) : (
-            <option disabled>No hay espacios disponibles</option>
+            <label>
+              <span>Cédula del Cliente:</span>
+              <input
+                type="text"
+                name="cedula_cliente"
+                value={formData.cedula_cliente}
+                onChange={handleInputChange}
+                required
+                maxLength={13}
+                pattern="[0-9]{11,13}"
+                title="La cédula debe tener entre 11 y 13 dígitos"
+              />
+            </label>
           )}
-        </select>
-      </label>
 
-      <label>
-        Tipo de evento:
-        <select
-          name="id_tipo_evento"
-          value={formData.id_tipo_evento}
-          onChange={handleInputChange}
-          required
-        >
-          <option value="0">Seleccionar tipo</option>
-          <option value="1">Compleaños</option>
-          <option value="2">Boda</option>
-          <option value="3">Reunión</option>
-          <option value="4">Graduación</option>
-          <option value="5">Otro</option>
-        </select>
-      </label>
+          {(Number(userData.rol) === 1 || Number(userData.rol) === 3) && (
+            <label>
+              <span>Cédula del Asesor:</span>
+              <input
+                type="text"
+                name="cedula_asesor"
+                value={formData.cedula_asesor}
+                onChange={handleInputChange}
+                required
+                maxLength={13}
+                pattern="[0-9]{11,13}"
+                title="La cédula debe tener entre 11 y 13 dígitos"
+              />
+            </label>
+          )}
 
-      <label>
-        ¿Requiere supervisión?
-        <div className="radio-group">
-          <label className="radio-label">
+          <label>
+            <span>Fecha del evento:</span>
             <input
-              type="radio"
-              name="supervision_evento"
-              checked={formData.supervision_evento}
-              onChange={() => setFormData(prev => ({
-                ...prev,
-                supervision_evento: true
-              }))}
+              type="date"
+              name="fecha_evento"
+              value={formData.fecha_evento}
+              onChange={handleInputChange}
+              required
             />
-            Sí
           </label>
-          <label className="radio-label">
+
+          <label>
+            <span>Hora del evento:</span>
             <input
-              type="radio"
-              name="supervision_evento"
-              checked={!formData.supervision_evento}
-              onChange={() => setFormData(prev => ({
-                ...prev,
-                supervision_evento: false
-              }))}
+              type="time"
+              name="hora_evento"
+              value={formData.hora_evento}
+              onChange={handleInputChange}
+              required
             />
-            No
+          </label>
+
+          <label>
+            <span>Espacio:</span>
+            <select
+              name="id_espacio"
+              value={formData.id_espacio || ''}
+              onChange={handleEspacioChange}
+              required
+            >
+              <option value="">Seleccionar espacio</option>
+              {espacios && espacios.length > 0 ? (
+                espacios.map(espacio => (
+                  <option 
+                    key={espacio.id_espacio} 
+                    value={espacio.id_espacio}
+                  >
+                    {espacio.nombre}
+                  </option>
+                ))
+              ) : (
+                <option disabled>No hay espacios disponibles</option>
+              )}
+            </select>
+          </label>
+
+          <label>
+            <span>Tipo de evento:</span>
+            <select
+              name="id_tipo_evento"
+              value={formData.id_tipo_evento}
+              onChange={handleInputChange}
+              required
+            >
+              <option value="0">Seleccionar tipo</option>
+              <option value="1">Compleaños</option>
+              <option value="2">Boda</option>
+              <option value="3">Reunión</option>
+              <option value="4">Graduación</option>
+              <option value="5">Otro</option>
+            </select>
+          </label>
+
+          <label className="full-width">
+            <span>¿Requiere supervisión?</span>
+            <div className="radio-group">
+              <label className="radio-label">
+                <input
+                  type="radio"
+                  name="supervision_evento"
+                  checked={formData.supervision_evento}
+                  onChange={() => setFormData(prev => ({
+                    ...prev,
+                    supervision_evento: true
+                  }))}
+                />
+                <span>Sí</span>
+              </label>
+              <label className="radio-label">
+                <input
+                  type="radio"
+                  name="supervision_evento"
+                  checked={!formData.supervision_evento}
+                  onChange={() => setFormData(prev => ({
+                    ...prev,
+                    supervision_evento: false
+                  }))}
+                />
+                <span>No</span>
+              </label>
+            </div>
+          </label>
+
+          <label className="full-width">
+            <span>Notas extras:</span>
+            <textarea
+              name="nota_cliente"
+              value={formData.nota_cliente}
+              onChange={handleInputChange}
+              rows={4}
+              placeholder="Escriba aquí cualquier nota o detalle adicional..."
+            />
           </label>
         </div>
-      </label>
 
-      <label>
-        Notas extras:
-        <textarea
-          name="nota_cliente"
-          value={formData.nota_cliente}
-          onChange={handleInputChange}
-          rows={4}
-          placeholder="Escriba aquí cualquier nota o detalle adicional..."
-        />
-      </label>
+        <div className="form-buttons">
+          <button type="submit" className="submit-btn">
+            Crear Evento
+          </button>
+          <button
+            type="button"
+            className="reset-btn"
+            onClick={() => setShowEventModal(false)}
+          >
+            Cancelar
+          </button>
+        </div>
+      </form>
+    );
+  };
 
-      <div className="form-buttons">
-        <button type="submit" className="submit-btn">
-          Crear Evento
-        </button>
-        <button
-          type="button"
-          className="reset-btn"
-          onClick={() => setShowEventModal(false)}
-        >
-          Cancelar
-        </button>
-      </div>
-    </form>
-  );
+  const handleOpenEventModal = () => {
+    if (userData && Number(userData.rol) === 2) {
+      setFormData(prev => ({
+        ...prev,
+        cedula_cliente: userData.cedula_usuario
+      }));
+    }
+    setShowEventModal(true);
+  };
 
   const renderClientDashboard = () => (
     <>
@@ -885,7 +884,6 @@ const WelcomeMenu: React.FC<WelcomeMenuProps> = () => {
       <div className="dashboard__stats">
         <div className="stat-card">
           <span className="stat-card__label">Mis Eventos Activos</span>
-          <strong className="stat-card__number">{stats.eventosActivos}</strong>
           <button 
             className="stat-card__seeInfo"
             onClick={() => setShowEventsInProcessModal(true)}
@@ -895,8 +893,7 @@ const WelcomeMenu: React.FC<WelcomeMenuProps> = () => {
         </div>
 
         <div className="stat-card">
-          <span className="stat-card__label">Total de Eventos Realizados</span>
-          <strong className="stat-card__number">{stats.eventosRealizados}</strong>
+          <span className="stat-card__label">Mis Eventos Realizados</span>
           <button 
             className="stat-card__seeInfo"
             onClick={() => setShowQuotationsModal(true)}
@@ -907,7 +904,6 @@ const WelcomeMenu: React.FC<WelcomeMenuProps> = () => {
 
         <div className="stat-card">
           <span className="stat-card__label">Comentarios Enviados</span>
-          <strong className="stat-card__number">{stats.comentariosEnviados}</strong>
           <button 
             className="stat-card__seeInfo2"
             onClick={() => setShowCommentModal(true)}
@@ -921,7 +917,7 @@ const WelcomeMenu: React.FC<WelcomeMenuProps> = () => {
         <center>
           <button 
             className="new-form-btn"
-            onClick={() => setShowEventModal(true)}>
+            onClick={handleOpenEventModal}>
             Nuevo evento
           </button>
         </center>
@@ -1017,18 +1013,6 @@ const WelcomeMenu: React.FC<WelcomeMenuProps> = () => {
                       <th>Servicios Adicionales</th>
                     </tr>
                   </thead>
-                  <tbody>
-                    {cotizaciones.map((evento) => (
-                      <tr key={evento.id_cotizacion}>
-                        <td>{evento.empleado_encargado}</td>
-                        <td>{evento.contacto_asesor}</td>
-                        <td>{evento.fecha_evento}</td>
-                        <td>{evento.hora_evento}</td>
-                        <td>{evento.espacio}</td>
-                        <td>{evento.servicios_adicionales.join(', ')}</td>
-                      </tr>
-                    ))}
-                  </tbody>
                 </table>
               </div>
             </div>
@@ -1154,7 +1138,6 @@ const WelcomeMenu: React.FC<WelcomeMenuProps> = () => {
       <div className="dashboard__stats">
         <div className="stat-card">
           <span className="stat-card__label">Eventos en Proceso</span>
-          <strong className="stat-card__number">{stats.eventsInProcess}</strong>
           <button 
             className="stat-card__seeInfo"
             onClick={() => setShowEventsInProcessModal(true)}
@@ -1164,8 +1147,7 @@ const WelcomeMenu: React.FC<WelcomeMenuProps> = () => {
         </div>
 
         <div className="stat-card">
-          <span className="stat-card__label">Total de Usuarios</span>
-          <strong className="stat-card__number">{stats.totalUsers}</strong>
+          <span className="stat-card__label">Usuarios Registrados</span>
           <button 
             className="stat-card__seeInfo"
             onClick={() => setShowUsersModal(true)}
@@ -1175,19 +1157,23 @@ const WelcomeMenu: React.FC<WelcomeMenuProps> = () => {
         </div>
 
         <div className="stat-card">
-          <span className="stat-card__label">Calificación Promedio</span>
-          <strong className="stat-card__number">{stats.averageRating.toFixed(1)}</strong>
-          <div className="stat-card__stars">{renderStars(stats.averageRating)}</div>
-        </div>
-
-        <div className="stat-card">
           <span className="stat-card__label">Espacios Disponibles</span>
-          <strong className="stat-card__number">{stats.spaces.length}</strong>
           <button 
             className="stat-card__seeInfo"
             onClick={() => setShowSpacesModal(true)}
           >
             Ver espacios
+          </button>
+        </div>
+
+
+        <div className="stat-card">
+          <span className="stat-card__label">Proveedores</span>
+          <button 
+            className="stat-card__seeInfo"
+            onClick={() => setShowProveedoresModal(true)}
+          >
+            Ver proveedores
           </button>
         </div>
       </div>
@@ -1196,7 +1182,7 @@ const WelcomeMenu: React.FC<WelcomeMenuProps> = () => {
         <center>
           <button 
             className="new-form-btn"
-            onClick={() => setShowEventModal(true)}>
+            onClick={handleOpenEventModal}>
             Nuevo evento
           </button>
         </center>
@@ -1217,7 +1203,6 @@ const WelcomeMenu: React.FC<WelcomeMenuProps> = () => {
         <div className="dashboard__stats">
           <div className="stat-card">
             <span className="stat-card__label">Eventos Asignados</span>
-            <strong className="stat-card__number">{stats.eventsInProcess}</strong>
             <button 
               className="stat-card__seeInfo"
               onClick={() => setShowEventosAsignadosModal(true)}
@@ -1228,13 +1213,11 @@ const WelcomeMenu: React.FC<WelcomeMenuProps> = () => {
 
           <div className="stat-card">
             <span className="stat-card__label">Calificación Promedio</span>
-            <strong className="stat-card__number">{stats.averageRating.toFixed(1)}</strong>
             <div className="stat-card__stars">{renderStars(stats.averageRating)}</div>
           </div>
 
           <div className="stat-card">
             <span className="stat-card__label">Clientes activos</span>
-            <strong className="stat-card__number">{stats.totalUsers}</strong>
             <button 
               className="stat-card__seeInfo"
               onClick={() => setShowClientesActivosModal(true)}
@@ -1248,7 +1231,7 @@ const WelcomeMenu: React.FC<WelcomeMenuProps> = () => {
           <center>
             <button 
               className="new-form-btn"
-              onClick={() => setShowEventModal(true)}>
+              onClick={handleOpenEventModal}>
               Nuevo evento
             </button>
           </center>
@@ -1273,7 +1256,6 @@ const WelcomeMenu: React.FC<WelcomeMenuProps> = () => {
         <div className="dashboard__stats">
           <div className="stat-card">
             <span className="stat-card__label">Elementos Disponibles</span>
-            <strong className="stat-card__number">{stats.eventsInProcess}</strong>
             <button 
               className="stat-card__seeInfo"
               onClick={() => setShowInventarioModal(true)}
@@ -1284,7 +1266,6 @@ const WelcomeMenu: React.FC<WelcomeMenuProps> = () => {
 
           <div className="stat-card">
             <span className="stat-card__label">Todas las Compras</span>
-            <strong className="stat-card__number">{stats.totalUsers}</strong>
             <button 
               className="stat-card__seeInfo"
               onClick={() => setShowComprasModal(true)}
@@ -1295,7 +1276,6 @@ const WelcomeMenu: React.FC<WelcomeMenuProps> = () => {
 
           <div className="stat-card">
             <span className="stat-card__label">Compras en Proceso</span>
-            <strong className="stat-card__number">{stats.quotations}</strong>
             <button 
               className="stat-card__seeInfo"
               onClick={() => setShowComprasProcesoModal(true)}
@@ -1377,9 +1357,9 @@ const WelcomeMenu: React.FC<WelcomeMenuProps> = () => {
                       <tr key={compra.id_compra}>
                         <td>{compra.id_compra}</td>
                         <td>{compra.proveedor}</td>
-                        <td>{compra.cantidad_elementos}</td>
                         <td>{compra.fecha_compra}</td>
                         <td>{compra.hora_compra}</td>
+                        <td>{compra.cantidad_elementos}</td>
                         <td>${compra.costo_compra}</td>
                       </tr>
                     ))}
@@ -2033,6 +2013,305 @@ const WelcomeMenu: React.FC<WelcomeMenuProps> = () => {
     }
   };
 
+  const handleProveedorInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
+    const { name, value } = e.target;
+    setProveedorFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
+
+  const handleEdit = (proveedor: Proveedor) => {
+    setEditId(proveedor.id_proveedor);
+    setProveedorFormData({
+      id_tipo_proveedor: proveedor.id_tipo_proveedor.toString(),
+      nombre_proveedor: proveedor.nombre_proveedor,
+      tel_proveedor: proveedor.tel_proveedor,
+      correo_proveedor: proveedor.correo_proveedor,
+      id_provincia: proveedor.direccion?.provincia?.id_provincia?.toString() || '',
+      sector: proveedor.direccion?.sector || '',
+      calle: proveedor.direccion?.calle || '',
+      detalles: proveedor.direccion?.detalles || '',
+      estado_proveedor: proveedor.estado_proveedor
+    });
+  };
+
+  const handleDelete = async (id: number) => {
+    if (window.confirm('¿Está seguro de eliminar este proveedor?')) {
+      try {
+        const response = await fetch(`/api/proveedores/${id}`, {
+          method: 'DELETE',
+        });
+
+        if (response.ok) {
+          fetchProveedores();
+        }
+      } catch (error) {
+        console.error('Error al eliminar proveedor:', error);
+      }
+    }
+  };
+
+  const handleProveedorSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      const url = editId ? `/api/proveedores/${editId}` : '/api/proveedores';
+      const method = editId ? 'PUT' : 'POST';
+
+      const response = await fetch(url, {
+        method,
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(proveedorFormData),
+      });
+
+      if (response.ok) {
+        fetchProveedores();
+        setShowProveedoresModal(false);
+        setProveedorFormData({
+          id_tipo_proveedor: '',
+          nombre_proveedor: '',
+          tel_proveedor: '',
+          correo_proveedor: '',
+          id_provincia: '',
+          sector: '',
+          calle: '',
+          detalles: '',
+          estado_proveedor: 'Activo'
+        });
+        setEditId(null);
+      }
+    } catch (error) {
+      console.error('Error al guardar proveedor:', error);
+    }
+  };
+
+  const renderProveedoresModal = () => (
+    <div className="modal-overlay">
+      <div className="modal-container">
+        <button className="close-btn" onClick={() => setShowProveedoresModal(false)}>×</button>
+        <div className="modal-content">
+          <h3>Gestión de Proveedores</h3>
+          
+          <button className="new-form-btn" onClick={() => {
+            setEditId(null);
+            setProveedorFormData({
+              id_tipo_proveedor: '',
+              nombre_proveedor: '',
+              tel_proveedor: '',
+              correo_proveedor: '',
+              id_provincia: '',
+              sector: '',
+              calle: '',
+              detalles: '',
+              estado_proveedor: 'Activo'
+            });
+          }}>
+            Nuevo Proveedor
+          </button>
+
+          <div className="table-container">
+            <table>
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>Nombre</th>
+                  <th>Contacto</th>
+                  <th>Correo</th>
+                  <th>Tipo</th>
+                  <th>Dirección</th>
+                  <th>Estado</th>
+                  <th>Acciones</th>
+                </tr>
+              </thead>
+              <tbody>
+                {proveedores.map((proveedor) => (
+                  <tr key={proveedor.id_proveedor}>
+                    <td>{proveedor.id_proveedor}</td>
+                    <td>{proveedor.nombre_proveedor}</td>
+                    <td>{proveedor.tel_proveedor}</td>
+                    <td>{proveedor.correo_proveedor}</td>
+                    <td>{proveedor.tipo_proveedor?.nombre_tipo}</td>
+                    <td>
+                      {proveedor.direccion?.calle}, {proveedor.direccion?.sector}
+                      {proveedor.direccion?.provincia?.nombre_provincia && 
+                        `, ${proveedor.direccion.provincia.nombre_provincia}`}
+                    </td>
+                    <td>{proveedor.estado_proveedor}</td>
+                    <td>
+                      <button 
+                        className="edit-btn"
+                        onClick={() => handleEdit(proveedor)}
+                      >
+                        Editar
+                      </button>
+                      <button 
+                        className="delete-btn"
+                        onClick={() => handleDelete(proveedor.id_proveedor)}
+                      >
+                        Eliminar
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          {(editId !== null || proveedorFormData.nombre_proveedor) && (
+            <div className="modal-form">
+              <h4>{editId ? 'Editar Proveedor' : 'Nuevo Proveedor'}</h4>
+              <form onSubmit={handleProveedorSubmit}>
+                <div className="form-grid">
+                  <label>
+                    <span>Tipo de Proveedor:</span>
+                    <select
+                      name="id_tipo_proveedor"
+                      value={proveedorFormData.id_tipo_proveedor}
+                      onChange={handleProveedorInputChange}
+                      required
+                    >
+                      <option value="">Seleccionar tipo</option>
+                      {tiposProveedor.map((tipo) => (
+                        <option key={tipo.id_tipo_proveedor} value={tipo.id_tipo_proveedor}>
+                          {tipo.nombre_tipo}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+
+                  <label>
+                    <span>Nombre:</span>
+                    <input
+                      type="text"
+                      name="nombre_proveedor"
+                      value={proveedorFormData.nombre_proveedor}
+                      onChange={handleProveedorInputChange}
+                      required
+                    />
+                  </label>
+
+                  <label>
+                    <span>Teléfono:</span>
+                    <input
+                      type="tel"
+                      name="tel_proveedor"
+                      value={proveedorFormData.tel_proveedor}
+                      onChange={handleProveedorInputChange}
+                      required
+                      pattern="[0-9]{10}"
+                    />
+                  </label>
+
+                  <label>
+                    <span>Correo:</span>
+                    <input
+                      type="email"
+                      name="correo_proveedor"
+                      value={proveedorFormData.correo_proveedor}
+                      onChange={handleProveedorInputChange}
+                      required
+                    />
+                  </label>
+
+                  <label>
+                    <span>Provincia:</span>
+                    <select
+                      name="id_provincia"
+                      value={proveedorFormData.id_provincia}
+                      onChange={handleProveedorInputChange}
+                      required
+                    >
+                      <option value="">Seleccionar provincia</option>
+                      {provincias.map((provincia) => (
+                        <option key={provincia.id_provincia} value={provincia.id_provincia}>
+                          {provincia.nombre_provincia}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+
+                  <label>
+                    <span>Sector:</span>
+                    <input
+                      type="text"
+                      name="sector"
+                      value={proveedorFormData.sector}
+                      onChange={handleProveedorInputChange}
+                      required
+                    />
+                  </label>
+
+                  <label>
+                    <span>Calle:</span>
+                    <input
+                      type="text"
+                      name="calle"
+                      value={proveedorFormData.calle}
+                      onChange={handleProveedorInputChange}
+                      required
+                    />
+                  </label>
+
+                  <label>
+                    <span>Detalles:</span>
+                    <textarea
+                      name="detalles"
+                      value={proveedorFormData.detalles}
+                      onChange={handleProveedorInputChange}
+                      rows={3}
+                    />
+                  </label>
+
+                  <label>
+                    <span>Estado:</span>
+                    <select
+                      name="estado_proveedor"
+                      value={proveedorFormData.estado_proveedor}
+                      onChange={handleProveedorInputChange}
+                      required
+                    >
+                      <option value="Activo">Activo</option>
+                      <option value="Inactivo">Inactivo</option>
+                      <option value="Eliminado">Eliminado</option>
+                    </select>
+                  </label>
+                </div>
+
+                <div className="form-buttons">
+                  <button type="submit" className="submit-btn">
+                    {editId ? 'Actualizar' : 'Guardar'}
+                  </button>
+                  <button
+                    type="button"
+                    className="reset-btn"
+                    onClick={() => {
+                      setEditId(null);
+                      setProveedorFormData({
+                        id_tipo_proveedor: '',
+                        nombre_proveedor: '',
+                        tel_proveedor: '',
+                        correo_proveedor: '',
+                        id_provincia: '',
+                        sector: '',
+                        calle: '',
+                        detalles: '',
+                        estado_proveedor: 'Activo'
+                      });
+                    }}
+                  >
+                    Cancelar
+                  </button>
+                </div>
+              </form>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+
   return (
     <div className="welcome-menu">
       {currentRole === 1 && renderAdminDashboard()}
@@ -2359,6 +2638,8 @@ const WelcomeMenu: React.FC<WelcomeMenuProps> = () => {
           </div>
         </div>
       )}
+
+      {showProveedoresModal && renderProveedoresModal()}
     </div>
   );
 };
