@@ -34,7 +34,6 @@ interface EventoEnProceso {
   desea_supervision: number;
   nota_cliente: string;
   creacion_evento: string;
-  estado_cotizacion: 'Pendiente' | 'Completada' | 'Aceptada' | 'Rechazada' | 'Cancelada' | 'Eliminada';
   subtotal_evento: number;
   itbis_evento: number;
   total_evento: number;
@@ -113,7 +112,6 @@ interface EventoFormData {
   id_tipo_evento: number;
   supervision_evento: boolean;
   nota_cliente: string;
-  estado_cotizacion: 'Pendiente' | 'Completada' | 'Aceptada' | 'Rechazada' | 'Cancelada' | 'Eliminada';
   subtotal_evento: number;
   itbis_evento: number;
   total_evento: number;
@@ -225,6 +223,11 @@ interface ProveedorFormData {
   estado_proveedor: 'Activo' | 'Inactivo' | 'Eliminado';
 }
 
+interface TipoEvento {
+  id_tipo_evento: number;
+  nombre_tipo_evento: string;
+}
+
 const WelcomeMenu: React.FC<WelcomeMenuProps> = () => {
 
   const apiUrl = import.meta.env.VITE_API_BASE_URL;
@@ -274,8 +277,7 @@ const WelcomeMenu: React.FC<WelcomeMenuProps> = () => {
     estado_evento: 'Pendiente',
     id_tipo_evento: 0,
     supervision_evento: false,
-    nota_cliente: '',
-    estado_cotizacion: 'Pendiente',
+    nota_cliente: '', 
     subtotal_evento: 0.00,
     itbis_evento: 0.00,
     total_evento: 0.00
@@ -359,6 +361,10 @@ const WelcomeMenu: React.FC<WelcomeMenuProps> = () => {
   });
   const [showProveedorForm, setShowProveedorForm] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [tiposEvento, setTiposEvento] = useState<TipoEvento[]>([]);
+
+
+
 
   useEffect(() => {
     const fetchEspacios = async () => {
@@ -558,6 +564,31 @@ const WelcomeMenu: React.FC<WelcomeMenuProps> = () => {
     }
   }, [showProveedoresModal]);
 
+  useEffect(() => {
+    const fetchTiposEvento = async () => {
+      try {
+        const token = localStorage.getItem('token');
+        const response = await fetch(`${apiUrl}/tipos-evento`, {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        });
+        
+        if (!response.ok) {
+          throw new Error('Error al cargar tipos de evento');
+        }
+        
+        const data = await response.json();
+        setTiposEvento(data);
+      } catch (error) {
+        console.error('Error al cargar tipos de evento:', error);
+      }
+    };
+
+    fetchTiposEvento();
+  }, []);
+
   const fetchProveedores = async () => {
     try {
       const token = localStorage.getItem('token');
@@ -726,7 +757,6 @@ const WelcomeMenu: React.FC<WelcomeMenuProps> = () => {
         id_tipo_evento: 0,
         supervision_evento: false,
         nota_cliente: '',
-        estado_cotizacion: 'Pendiente',
         subtotal_evento: 0.00,
         itbis_evento: 0.00,
         total_evento: 0.00
@@ -768,11 +798,16 @@ const WelcomeMenu: React.FC<WelcomeMenuProps> = () => {
 
   const renderEventForm = () => {
     if (!userData) return null;
-    
+    // Si el usuario es cliente y la cédula no está en el formData, autocompletar
+    if (Number(userData.rol) === 2 && formData.cedula_cliente !== userData.cedula_usuario) {
+      setFormData(prev => ({
+        ...prev,
+        cedula_cliente: userData.cedula_usuario
+      }));
+    }
     return (
       <form className="modal-form" onSubmit={handleEventSubmit}>
         <h2>Nuevo Evento</h2>
-
         <div className="form-grid">
           {Number(userData.rol) === 2 ? (
             <label>
@@ -780,7 +815,7 @@ const WelcomeMenu: React.FC<WelcomeMenuProps> = () => {
               <input
                 type="text"
                 name="cedula_cliente"
-                value={userData.cedula_usuario}
+                value={formData.cedula_cliente || userData.cedula_usuario}
                 disabled
                 className="disabled-input"
               />
@@ -872,11 +907,11 @@ const WelcomeMenu: React.FC<WelcomeMenuProps> = () => {
               required
             >
               <option value="0">Seleccionar tipo</option>
-              <option value="1">Compleaños</option>
-              <option value="2">Boda</option>
-              <option value="3">Reunión</option>
-              <option value="4">Graduación</option>
-              <option value="5">Otro</option>
+              {tiposEvento.map((tipo) => (
+                <option key={tipo.id_tipo_evento} value={tipo.id_tipo_evento}>
+                  {tipo.nombre_tipo_evento}
+                </option>
+              ))}
             </select>
           </label>
 
@@ -1027,7 +1062,6 @@ const WelcomeMenu: React.FC<WelcomeMenuProps> = () => {
                         <th>Tipo Evento</th>
                         <th>Supervisión</th>
                         <th>Estado</th>
-                        <th>Cotización</th>
                         <th>Total</th>
                         <th>Acciones</th>
                       </tr>
@@ -1046,11 +1080,6 @@ const WelcomeMenu: React.FC<WelcomeMenuProps> = () => {
                           <td>
                             <span className={`estado-badge ${evento.estado_evento.toLowerCase()}`}>
                               {evento.estado_evento}
-                            </span>
-                          </td>
-                          <td>
-                            <span className={`estado-badge ${evento.estado_cotizacion.toLowerCase()}`}>
-                              {evento.estado_cotizacion}
                             </span>
                           </td>
                           <td>${evento.total_evento.toFixed(2)}</td>
@@ -1103,21 +1132,22 @@ const WelcomeMenu: React.FC<WelcomeMenuProps> = () => {
             <form className="modal-form" onSubmit={handleCommentSubmit}>
               <h3>Agregar Comentario</h3>
               
-              <div className="event-select">
-                <label>Seleccionar Evento:</label>
-                <select
-                  value={selectedEventId || ''}
-                  onChange={(e) => setSelectedEventId(Number(e.target.value))}
-                  required
-                  className="event-select-input"
-                >
-                  <option value="">Seleccionar evento</option>
-                  {eventos.map(evento => (
-                    <option key={evento.id_evento} value={evento.id_evento}>
-                      {evento.fecha_evento} - {evento.tipo_evento}
-                    </option>
-                  ))}
-                </select>
+              <div className="form-grid">
+                <label className="full-width">
+                  <span>Seleccionar Evento:</span>
+                  <select
+                    value={selectedEventId || ''}
+                    onChange={(e) => setSelectedEventId(Number(e.target.value))}
+                    required
+                  >
+                    <option value="">Seleccionar evento</option>
+                    {eventos.map(evento => (
+                      <option key={evento.id_evento} value={evento.id_evento}>
+                        {evento.fecha_evento} - {evento.tipo_evento}
+                      </option>
+                    ))}
+                  </select>
+                </label>
               </div>
 
               <div className="comment-modal__rating">
@@ -1128,8 +1158,6 @@ const WelcomeMenu: React.FC<WelcomeMenuProps> = () => {
                       key={star}
                       className={`star ${star <= rating ? 'active' : ''}`}
                       onClick={() => setRating(star)}
-                      onMouseEnter={() => setRating(star)}
-                      onMouseLeave={() => setRating(rating)}
                     >
                       ★
                     </span>
@@ -1137,16 +1165,18 @@ const WelcomeMenu: React.FC<WelcomeMenuProps> = () => {
                 </div>
               </div>
 
-              <label>
-                Comentario:
-                <textarea
-                  value={comment}
-                  onChange={(e) => setComment(e.target.value)}
-                  placeholder="Escribe tu comentario aquí..."
-                  required
-                  rows={4}
-                />
-              </label>
+              <div className="form-grid">
+                <label className="full-width">
+                  <span>Comentario:</span>
+                  <textarea
+                    value={comment}
+                    onChange={(e) => setComment(e.target.value)}
+                    placeholder="Escribe tu comentario aquí..."
+                    required
+                    rows={4}
+                  />
+                </label>
+              </div>
 
               <div className="form-buttons">
                 <button 
@@ -1291,7 +1321,6 @@ const WelcomeMenu: React.FC<WelcomeMenuProps> = () => {
                         <th>Tipo Evento</th>
                         <th>Supervisión</th>
                         <th>Estado</th>
-                        <th>Cotización</th>
                         <th>Total</th>
                         <th>Acciones</th>
                       </tr>
@@ -1310,11 +1339,6 @@ const WelcomeMenu: React.FC<WelcomeMenuProps> = () => {
                           <td>
                             <span className={`estado-badge ${evento.estado_evento.toLowerCase()}`}>
                               {evento.estado_evento}
-                            </span>
-                          </td>
-                          <td>
-                            <span className={`estado-badge ${evento.estado_cotizacion.toLowerCase()}`}>
-                              {evento.estado_cotizacion}
                             </span>
                           </td>
                           <td>${evento.total_evento.toFixed(2)}</td>
@@ -2542,21 +2566,22 @@ const WelcomeMenu: React.FC<WelcomeMenuProps> = () => {
             <form className="modal-form" onSubmit={handleCommentSubmit}>
               <h3>Agregar Comentario</h3>
               
-              <div className="event-select">
-                <label>Seleccionar Evento:</label>
-                <select
-                  value={selectedEventId || ''}
-                  onChange={(e) => setSelectedEventId(Number(e.target.value))}
-                  required
-                  className="event-select-input"
-                >
-                  <option value="">Seleccionar evento</option>
-                  {eventos.map(evento => (
-                    <option key={evento.id_evento} value={evento.id_evento}>
-                      {evento.fecha_evento} - {evento.tipo_evento}
-                    </option>
-                  ))}
-                </select>
+              <div className="form-grid">
+                <label className="full-width">
+                  <span>Seleccionar Evento:</span>
+                  <select
+                    value={selectedEventId || ''}
+                    onChange={(e) => setSelectedEventId(Number(e.target.value))}
+                    required
+                  >
+                    <option value="">Seleccionar evento</option>
+                    {eventos.map(evento => (
+                      <option key={evento.id_evento} value={evento.id_evento}>
+                        {evento.fecha_evento} - {evento.tipo_evento}
+                      </option>
+                    ))}
+                  </select>
+                </label>
               </div>
 
               <div className="comment-modal__rating">
@@ -2567,8 +2592,6 @@ const WelcomeMenu: React.FC<WelcomeMenuProps> = () => {
                       key={star}
                       className={`star ${star <= rating ? 'active' : ''}`}
                       onClick={() => setRating(star)}
-                      onMouseEnter={() => setRating(star)}
-                      onMouseLeave={() => setRating(rating)}
                     >
                       ★
                     </span>
@@ -2576,16 +2599,18 @@ const WelcomeMenu: React.FC<WelcomeMenuProps> = () => {
                 </div>
               </div>
 
-              <label>
-                Comentario:
-                <textarea
-                  value={comment}
-                  onChange={(e) => setComment(e.target.value)}
-                  placeholder="Escribe tu comentario aquí..."
-                  required
-                  rows={4}
-                />
-              </label>
+              <div className="form-grid">
+                <label className="full-width">
+                  <span>Comentario:</span>
+                  <textarea
+                    value={comment}
+                    onChange={(e) => setComment(e.target.value)}
+                    placeholder="Escribe tu comentario aquí..."
+                    required
+                    rows={4}
+                  />
+                </label>
+              </div>
 
               <div className="form-buttons">
                 <button 

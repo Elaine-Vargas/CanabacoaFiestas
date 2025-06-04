@@ -1129,3 +1129,39 @@ tr.deshabilitado {
     }
   }
 }
+
+/* Estilos para el sistema de calificación */
+.comment-modal__rating {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 2rem;
+
+  &-label {
+    color: var(--dark-gold);
+    font-family: "Montserrat Alternates", sans-serif;
+    font-weight: 600;
+    font-size: 1.1rem;
+  }
+
+  &-stars {
+    display: flex;
+    gap: 0.5rem;
+
+    .star {
+      font-size: 2rem;
+      color: var(--color-input-border);
+      cursor: pointer;
+      transition: $transition-standard;
+
+      &:hover {
+        transform: scale(1.1);
+      }
+
+      &.active {
+        color: var(--gold);
+      }
+    }
+  }
+}

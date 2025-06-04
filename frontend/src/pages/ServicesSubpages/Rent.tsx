@@ -20,16 +20,14 @@ export type RolePermissions = {
 };
 
 interface Rent {
-  id_rent?: number;
+  id_alquiler?: number;
   id_evento: number;
   id_elemento: number;
-  tipo_elemento: string;
-  cantidad: number;
   precio_unitario: number;
-  estado: string;
-  fecha_inicio?: string;
-  fecha_fin?: string;
-  notas?: string;
+  cantidad_alquiler: number;
+  precioneto_alquiler: number;
+  itbis_alquiler: number;
+  total_alquiler: number;
 }
 
 interface Evento {
@@ -64,11 +62,11 @@ export default function Rent() {
   const [formData, setFormData] = useState<Partial<Rent>>({
     id_evento: 0,
     id_elemento: 0,
-    tipo_elemento: '',
-    cantidad: 0,
     precio_unitario: 0,
-    estado: 'Pendiente',
-    notas: ''
+    cantidad_alquiler: 0,
+    precioneto_alquiler: 0,
+    itbis_alquiler: 0,
+    total_alquiler: 0
   });
   const [editId, setEditId] = useState<number | null>(null);
   const [filtroEvento, setFiltroEvento] = useState<string>('');
@@ -180,10 +178,32 @@ export default function Rent() {
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }));
+    const numValue = name === 'id_evento' || name === 'id_elemento' ? Number(value) : parseFloat(value);
+    
+    setFormData(prev => {
+      const newData = {
+        ...prev,
+        [name]: numValue
+      };
+      
+      // Calcular campos derivados
+      if (name === 'precio_unitario' || name === 'cantidad_alquiler') {
+        const precioUnitario = name === 'precio_unitario' ? numValue : prev.precio_unitario || 0;
+        const cantidad = name === 'cantidad_alquiler' ? numValue : prev.cantidad_alquiler || 0;
+        const precioneto = precioUnitario * cantidad;
+        const itbis = precioneto * 0.18;
+        const total = precioneto + itbis;
+        
+        return {
+          ...newData,
+          precioneto_alquiler: precioneto,
+          itbis_alquiler: itbis,
+          total_alquiler: total
+        };
+      }
+      
+      return newData;
+    });
   };
 
   const handleSelectChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
@@ -211,7 +231,7 @@ export default function Rent() {
       if (response.ok) {
         const updatedRent = await response.json();
         if (editId) {
-          setRents(prev => prev.map(r => r.id_rent === editId ? updatedRent : r));
+          setRents(prev => prev.map(r => r.id_alquiler === editId ? updatedRent : r));
         } else {
           setRents(prev => [...prev, updatedRent]);
         }
@@ -651,12 +671,13 @@ export default function Rent() {
             <tr>
               <th>ID</th>
               <th>Evento</th>
-              <th>Item</th>
+              <th>Elemento</th>
               <th>Cantidad</th>
               <th>Precio Unitario</th>
-              <th>Fecha Inicio</th>
-              <th>Fecha Fin</th>
+              <th>Precio Neto</th>
+              <th>Total</th>
               <th>Estado</th>
+              <th>Acciones</th>
             </tr>
           </thead>
           <tbody>
@@ -667,17 +688,18 @@ export default function Rent() {
                   .includes(filtroEvento.toLowerCase())
               )
               .map((rent) => (
-                <tr key={rent.id_rent}>
-                  <td>{rent.id_rent}</td>
+                <tr key={rent.id_alquiler}>
+                  <td>{rent.id_alquiler}</td>
                   <td>
                     {eventos.find(e => e.id_evento === rent.id_evento)?.tipo_evento}
                   </td>
-                  <td>{rent.tipo_elemento}</td>
-                  <td>{rent.cantidad}</td>
+                  <td>
+                    {items.find(i => i.id_elemento === rent.id_elemento)?.nombre_elemento}
+                  </td>
+                  <td>{rent.cantidad_alquiler}</td>
                   <td>${rent.precio_unitario}</td>
-                  <td>{rent.fecha_inicio}</td>
-                  <td>{rent.fecha_fin}</td>
-                  <td>{rent.estado}</td>
+                  <td>${rent.precioneto_alquiler}</td>
+                  <td>${rent.total_alquiler}</td>
                 </tr>
               ))}
           </tbody>
@@ -843,7 +865,7 @@ export default function Rent() {
                     <select
                       name="id_evento"
                       value={formData.id_evento || ''}
-                      onChange={handleSelectChange}
+                      onChange={handleInputChange}
                       required
                     >
                       <option value="">Seleccionar evento</option>
@@ -860,7 +882,7 @@ export default function Rent() {
                     <select
                       name="id_elemento"
                       value={formData.id_elemento || ''}
-                      onChange={handleSelectChange}
+                      onChange={handleInputChange}
                       required
                     >
                       <option value="">Seleccionar elemento</option>
@@ -873,19 +895,7 @@ export default function Rent() {
                   </label>
 
                   <label>
-                    <span>Cantidad:</span>
-                    <input
-                      type="number"
-                      name="cantidad"
-                      value={formData.cantidad || ''}
-                      onChange={handleInputChange}
-                      required
-                      min="1"
-                    />
-                  </label>
-
-                  <label>
-                    <span>Precio:</span>
+                    <span>Precio Unitario:</span>
                     <input
                       type="number"
                       name="precio_unitario"
@@ -898,28 +908,41 @@ export default function Rent() {
                   </label>
 
                   <label>
-                    <span>Estado:</span>
-                    <select
-                      name="estado"
-                      value={formData.estado || ''}
-                      onChange={handleSelectChange}
+                    <span>Cantidad:</span>
+                    <input
+                      type="number"
+                      name="cantidad_alquiler"
+                      value={formData.cantidad_alquiler || ''}
+                      onChange={handleInputChange}
                       required
-                    >
-                      <option value="">Seleccionar estado</option>
-                      <option value="Pendiente">Pendiente</option>
-                      <option value="En Progreso">En Progreso</option>
-                      <option value="Completado">Completado</option>
-                      <option value="Cancelado">Cancelado</option>
-                    </select>
+                      min="1"
+                    />
                   </label>
 
                   <label>
-                    <span>Notas:</span>
-                    <textarea
-                      name="notas"
-                      value={formData.notas || ''}
-                      onChange={handleInputChange}
-                      rows={4}
+                    <span>Precio Neto:</span>
+                    <input
+                      type="number"
+                      value={formData.precioneto_alquiler?.toFixed(2) || '0.00'}
+                      disabled
+                    />
+                  </label>
+
+                  <label>
+                    <span>ITBIS (18%):</span>
+                    <input
+                      type="number"
+                      value={formData.itbis_alquiler?.toFixed(2) || '0.00'}
+                      disabled
+                    />
+                  </label>
+
+                  <label>
+                    <span>Total:</span>
+                    <input
+                      type="number"
+                      value={formData.total_alquiler?.toFixed(2) || '0.00'}
+                      disabled
                     />
                   </label>
                 </div>
@@ -1001,7 +1024,7 @@ export default function Rent() {
                   <select
                     name="id_evento"
                     value={formData.id_evento || ''}
-                    onChange={handleSelectChange}
+                    onChange={handleInputChange}
                     required
                   >
                     <option value="">Seleccionar evento</option>
@@ -1018,7 +1041,7 @@ export default function Rent() {
                   <select
                     name="id_elemento"
                     value={formData.id_elemento || ''}
-                    onChange={handleSelectChange}
+                    onChange={handleInputChange}
                     required
                   >
                     <option value="">Seleccionar elemento</option>
@@ -1031,19 +1054,7 @@ export default function Rent() {
                 </label>
 
                 <label>
-                  <span>Cantidad:</span>
-                  <input
-                    type="number"
-                    name="cantidad"
-                    value={formData.cantidad || ''}
-                    onChange={handleInputChange}
-                    required
-                    min="1"
-                  />
-                </label>
-
-                <label>
-                  <span>Precio:</span>
+                  <span>Precio Unitario:</span>
                   <input
                     type="number"
                     name="precio_unitario"
@@ -1056,28 +1067,41 @@ export default function Rent() {
                 </label>
 
                 <label>
-                  <span>Estado:</span>
-                  <select
-                    name="estado"
-                    value={formData.estado || ''}
-                    onChange={handleSelectChange}
+                  <span>Cantidad:</span>
+                  <input
+                    type="number"
+                    name="cantidad_alquiler"
+                    value={formData.cantidad_alquiler || ''}
+                    onChange={handleInputChange}
                     required
-                  >
-                    <option value="">Seleccionar estado</option>
-                    <option value="Pendiente">Pendiente</option>
-                    <option value="En Progreso">En Progreso</option>
-                    <option value="Completado">Completado</option>
-                    <option value="Cancelado">Cancelado</option>
-                  </select>
+                    min="1"
+                  />
                 </label>
 
                 <label>
-                  <span>Notas:</span>
-                  <textarea
-                    name="notas"
-                    value={formData.notas || ''}
-                    onChange={handleInputChange}
-                    rows={4}
+                  <span>Precio Neto:</span>
+                  <input
+                    type="number"
+                    value={formData.precioneto_alquiler?.toFixed(2) || '0.00'}
+                    disabled
+                  />
+                </label>
+
+                <label>
+                  <span>ITBIS (18%):</span>
+                  <input
+                    type="number"
+                    value={formData.itbis_alquiler?.toFixed(2) || '0.00'}
+                    disabled
+                  />
+                </label>
+
+                <label>
+                  <span>Total:</span>
+                  <input
+                    type="number"
+                    value={formData.total_alquiler?.toFixed(2) || '0.00'}
+                    disabled
                   />
                 </label>
               </div>
@@ -1132,13 +1156,15 @@ export default function Rent() {
           </thead>
           <tbody>
             {rents.map((rent) => (
-              <tr key={rent.id_rent}>
+              <tr key={rent.id_alquiler}>
                 <td>{rent.id_evento}</td>
-                <td>{rent.tipo_elemento}</td>
+                <td>
+                  {items.find(i => i.id_elemento === rent.id_elemento)?.nombre_elemento}
+                </td>
                 <td>${rent.precio_unitario}</td>
-                <td>{rent.cantidad}</td>
-                <td>${rent.precio_unitario * rent.cantidad}</td>
-                <td>${(rent.precio_unitario * rent.cantidad * 1.18).toFixed(2)}</td>
+                <td>{rent.cantidad_alquiler}</td>
+                <td>${rent.precioneto_alquiler}</td>
+                <td>${rent.total_alquiler}</td>
               </tr>
             ))}
           </tbody>
