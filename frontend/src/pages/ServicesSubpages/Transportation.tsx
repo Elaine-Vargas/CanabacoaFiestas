@@ -6,16 +6,17 @@ import '../../components/ServiceBase';
 export type UserRole = 'admin' | 'coordinator' | 'inventory' | 'client';
 
 interface Transportation {
-  id_transportation?: number;
+  id_transportacion: number;
   id_evento: number;
-  tipo_vehiculo: string;
-  capacidad: number;
-  fecha: string;
-  hora_inicio: string;
-  hora_fin: string;
+  direccion: string;
+  distancia: number;
+  vehiculo: string;
+  conductor: string;
+  cantidad_elementos: number;
+  precio_neto: number;
   estado: string;
-  notas: string;
-  precio: number;
+  fecha_creacion: string;
+  fecha_actualizacion: string;
 }
 
 interface Evento {
@@ -72,15 +73,17 @@ export default function Transportation() {
     vehiculos: 0
   });
   const [formData, setFormData] = useState<Partial<Transportation>>({
+    id_transportacion: 0,
     id_evento: 0,
-    tipo_vehiculo: '',
-    capacidad: 0,
-    fecha: '',
-    hora_inicio: '',
-    hora_fin: '',
+    direccion: '',
+    distancia: 0,
+    vehiculo: '',
+    conductor: '',
+    cantidad_elementos: 0,
+    precio_neto: 0,
     estado: 'Pendiente',
-    notas: '',
-    precio: 0
+    fecha_creacion: new Date().toISOString(),
+    fecha_actualizacion: new Date().toISOString()
   });
   const [editId, setEditId] = useState<number | null>(null);
   const [filtroEvento, setFiltroEvento] = useState<string>('');
@@ -259,16 +262,17 @@ export default function Transportation() {
       setTransportations(data);
       setShowModal(false);
       setFormData({
-        id_transportation: 0,
+        id_transportacion: 0,
         id_evento: 0,
-        tipo_vehiculo: '',
-        capacidad: 0,
-        fecha: '',
-        hora_inicio: '',
-        hora_fin: '',
+        direccion: '',
+        distancia: 0,
+        vehiculo: '',
+        conductor: '',
+        cantidad_elementos: 0,
+        precio_neto: 0,
         estado: 'Pendiente',
-        notas: '',
-        precio: 0
+        fecha_creacion: new Date().toISOString(),
+        fecha_actualizacion: new Date().toISOString()
       });
       setEditId(null);
     } catch (error) {
@@ -278,14 +282,14 @@ export default function Transportation() {
 
   const handleEdit = (transportation: Transportation) => {
     setFormData(transportation);
-    setEditId(transportation.id_transportation!);
+    setEditId(transportation.id_transportacion!);
     setShowModal(true);
   };
 
   const handleDelete = async (id: number) => {
     try {
       await fetch(`/api/transportation/${id}`, { method: 'DELETE' });
-      setTransportations(prev => prev.filter(t => t.id_transportation !== id));
+      setTransportations(prev => prev.filter(t => t.id_transportacion !== id));
     } catch (error) {
       console.error('Error al eliminar:', error);
     }
@@ -380,14 +384,44 @@ export default function Transportation() {
                   </label>
 
                   <label>
-                    <span>Tipo de Vehículo:</span>
+                    <span>Dirección:</span>
+                    <input
+                      type="text"
+                      name="direccion"
+                      value={formData.direccion || ''}
+                      onChange={handleInputChange}
+                      required
+                      placeholder="Ingrese la dirección del evento"
+                    />
+                  </label>
+
+                  <label>
+                    <span>Distancia (km):</span>
+                    <input
+                      type="number"
+                      name="distancia"
+                      value={formData.distancia || ''}
+                      onChange={handleInputChange}
+                      required
+                      min="0"
+                      step="0.1"
+                      placeholder="Ingrese la distancia en kilómetros"
+                    />
+                  </label>
+
+                  <label className="full-width">
+                    <span>DETALLE DE TRANSPORTE</span>
+                  </label>
+
+                  <label>
+                    <span>Vehículo:</span>
                     <select
-                      name="tipo_vehiculo"
-                      value={formData.tipo_vehiculo || ''}
+                      name="vehiculo"
+                      value={formData.vehiculo || ''}
                       onChange={handleSelectChange}
                       required
                     >
-                      <option value="">Seleccionar tipo</option>
+                      <option value="">Seleccionar vehículo</option>
                       <option value="Bus">Bus</option>
                       <option value="Van">Van</option>
                       <option value="Carro">Carro</option>
@@ -396,53 +430,41 @@ export default function Transportation() {
                   </label>
 
                   <label>
-                    <span>Número de Pasajeros:</span>
+                    <span>Conductor:</span>
                     <input
-                      type="number"
-                      name="numero_pasajeros"
-                      value={formData.numero_pasajeros || ''}
+                      type="text"
+                      name="conductor"
+                      value={formData.conductor || ''}
                       onChange={handleInputChange}
                       required
-                      min="1"
+                      placeholder="Nombre del conductor"
                     />
                   </label>
 
                   <label>
-                    <span>Precio por Kilómetro:</span>
+                    <span>Cantidad de Elementos:</span>
                     <input
                       type="number"
-                      name="precio_km"
-                      value={formData.precio_km || ''}
+                      name="cantidad_elementos"
+                      value={formData.cantidad_elementos || ''}
+                      onChange={handleInputChange}
+                      required
+                      min="1"
+                      placeholder="Número de elementos a transportar"
+                    />
+                  </label>
+
+                  <label>
+                    <span>Precio Neto:</span>
+                    <input
+                      type="number"
+                      name="precio_neto"
+                      value={formData.precio_neto || ''}
                       onChange={handleInputChange}
                       required
                       min="0"
                       step="0.01"
-                    />
-                  </label>
-
-                  <label>
-                    <span>Estado:</span>
-                    <select
-                      name="estado"
-                      value={formData.estado || ''}
-                      onChange={handleSelectChange}
-                      required
-                    >
-                      <option value="">Seleccionar estado</option>
-                      <option value="Pendiente">Pendiente</option>
-                      <option value="En Progreso">En Progreso</option>
-                      <option value="Completado">Completado</option>
-                      <option value="Cancelado">Cancelado</option>
-                    </select>
-                  </label>
-
-                  <label>
-                    <span>Notas:</span>
-                    <textarea
-                      name="notas"
-                      value={formData.notas || ''}
-                      onChange={handleInputChange}
-                      rows={4}
+                      placeholder="Precio total del servicio"
                     />
                   </label>
                 </div>
@@ -616,70 +638,76 @@ export default function Transportation() {
       <div className="modal-container">
         <button className="close-btn" onClick={() => setShowAddVehiculoModal(false)}>×</button>
         <form className="modal-form" onSubmit={handleAddVehiculo}>
-          <h3>Agregar Nuevo Vehículo</h3>
+          <h2>Agregar Nuevo Vehículo</h2>
           
-          <label>
-            Matrícula:
-            <input
-              type="text"
-              name="matricula"
-              value={nuevoVehiculo.matricula}
-              onChange={handleVehiculoInputChange}
-              required
-            />
-          </label>
+          <div className="form-grid">
+            <label>
+              <span>Matrícula</span>
+              <input
+                type="text"
+                name="matricula"
+                value={nuevoVehiculo.matricula}
+                onChange={handleVehiculoInputChange}
+                required
+                placeholder="Ingrese la matrícula del vehículo"
+              />
+            </label>
 
-          <label>
-            Marca:
-            <input
-              type="text"
-              name="marca"
-              value={nuevoVehiculo.marca}
-              onChange={handleVehiculoInputChange}
-              required
-            />
-          </label>
+            <label>
+              <span>Marca</span>
+              <input
+                type="text"
+                name="marca"
+                value={nuevoVehiculo.marca}
+                onChange={handleVehiculoInputChange}
+                required
+                placeholder="Ingrese la marca del vehículo"
+              />
+            </label>
 
-          <label>
-            Modelo:
-            <input
-              type="text"
-              name="modelo"
-              value={nuevoVehiculo.modelo}
-              onChange={handleVehiculoInputChange}
-              required
-            />
-          </label>
+            <label>
+              <span>Modelo</span>
+              <input
+                type="text"
+                name="modelo"
+                value={nuevoVehiculo.modelo}
+                onChange={handleVehiculoInputChange}
+                required
+                placeholder="Ingrese el modelo del vehículo"
+              />
+            </label>
 
-          <label>
-            Tipo:
-            <select
-              name="tipo"
-              value={nuevoVehiculo.tipo}
-              onChange={handleVehiculoInputChange}
-              required
-            >
-              <option value="Automóvil">Automóvil</option>
-              <option value="Remolque">Remolque</option>
-              <option value="Máquinas pesadas">Máquinas pesadas</option>
-              <option value="Montacargas">Montacargas</option>
-            </select>
-          </label>
+            <label>
+              <span>Tipo</span>
+              <select
+                name="tipo"
+                value={nuevoVehiculo.tipo}
+                onChange={handleVehiculoInputChange}
+                required
+                className="escri"
+              >
+                <option value="Automóvil">Automóvil</option>
+                <option value="Remolque">Remolque</option>
+                <option value="Máquinas pesadas">Máquinas pesadas</option>
+                <option value="Montacargas">Montacargas</option>
+              </select>
+            </label>
 
-          <label>
-            Estado:
-            <select
-              name="estado"
-              value={nuevoVehiculo.estado}
-              onChange={handleVehiculoInputChange}
-              required
-            >
-              <option value="">Seleccionar estado</option>
-              <option value="Disponible">Disponible</option>
-              <option value="En uso">En uso</option>
-              <option value="Mantenimiento">Mantenimiento</option>
-            </select>
-          </label>
+            <label>
+              <span>Estado</span>
+              <select
+                name="estado"
+                value={nuevoVehiculo.estado}
+                onChange={handleVehiculoInputChange}
+                required
+                className="escri"
+              >
+                <option value="Disponible">Disponible</option>
+                <option value="En uso">En uso</option>
+                <option value="Mantenimiento">Mantenimiento</option>
+              </select>
+            </label>
+          </div>
 
           <div className="form-buttons">
             <button type="submit" className="submit-btn">
@@ -704,64 +732,77 @@ export default function Transportation() {
       <div className="modal-container">
         <button className="close-btn" onClick={() => setShowEditVehiculoModal(false)}>×</button>
         <form className="modal-form" onSubmit={handleUpdateVehiculo}>
-          <h3>Editar Vehículo</h3>
-          <label>
-            Matrícula:
-            <input
-              type="text"
-              name="matricula"
-              value={editVehiculo?.matricula || ''}
-              onChange={handleEditVehiculoInputChange}
-              required
-            />
-          </label>
-          <label>
-            Marca:
-            <input
-              type="text"
-              name="marca"
-              value={editVehiculo?.marca || ''}
-              onChange={handleEditVehiculoInputChange}
-              required
-            />
-          </label>
-          <label>
-            Modelo:
-            <input
-              type="text"
-              name="modelo"
-              value={editVehiculo?.modelo || ''}
-              onChange={handleEditVehiculoInputChange}
-              required
-            />
-          </label>
-          <label>
-            Tipo:
-            <select
-              name="tipo"
-              value={editVehiculo?.tipo || ''}
-              onChange={handleEditVehiculoInputChange}
-              required
-            >
-              <option value="Automóvil">Automóvil</option>
-              <option value="Remolque">Remolque</option>
-              <option value="Máquinas pesadas">Máquinas pesadas</option>
-              <option value="Montacargas">Montacargas</option>
-            </select>
-          </label>
-          <label>
-            Estado:
-            <select
-              name="estado"
-              value={editVehiculo?.estado || ''}
-              onChange={handleEditVehiculoInputChange}
-              required
-            >
-              <option value="Disponible">Disponible</option>
-              <option value="En uso">En uso</option>
-              <option value="Mantenimiento">Mantenimiento</option>
-            </select>
-          </label>
+          <h2>Editar Vehículo</h2>
+          
+          <div className="form-grid">
+            <label>
+              <span>Matrícula</span>
+              <input
+                type="text"
+                name="matricula"
+                value={editVehiculo?.matricula || ''}
+                onChange={handleEditVehiculoInputChange}
+                required
+                placeholder="Ingrese la matrícula del vehículo"
+              />
+            </label>
+
+            <label>
+              <span>Marca</span>
+              <input
+                type="text"
+                name="marca"
+                value={editVehiculo?.marca || ''}
+                onChange={handleEditVehiculoInputChange}
+                required
+                placeholder="Ingrese la marca del vehículo"
+              />
+            </label>
+
+            <label>
+              <span>Modelo</span>
+              <input
+                type="text"
+                name="modelo"
+                value={editVehiculo?.modelo || ''}
+                onChange={handleEditVehiculoInputChange}
+                required
+                placeholder="Ingrese el modelo del vehículo"
+              />
+            </label>
+
+            <label>
+              <span>Tipo</span>
+              <select
+                name="tipo"
+                value={editVehiculo?.tipo || ''}
+                onChange={handleEditVehiculoInputChange}
+                required
+                className="escri"
+              >
+                <option value="Automóvil">Automóvil</option>
+                <option value="Remolque">Remolque</option>
+                <option value="Máquinas pesadas">Máquinas pesadas</option>
+                <option value="Montacargas">Montacargas</option>
+              </select>
+            </label>
+
+            <label>
+              <span>Estado</span>
+              <select
+                name="estado"
+                value={editVehiculo?.estado || ''}
+                onChange={handleEditVehiculoInputChange}
+                required
+                className="escri"
+              >
+                <option value="Disponible">Disponible</option>
+                <option value="En uso">En uso</option>
+                <option value="Mantenimiento">Mantenimiento</option>
+              </select>
+            </label>
+          </div>
+
           <div className="form-buttons">
             <button type="submit" className="submit-btn">Guardar</button>
             <button type="button" className="reset-btn" onClick={() => setShowEditVehiculoModal(false)}>Cancelar</button>

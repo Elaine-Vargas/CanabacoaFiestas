@@ -1327,8 +1327,13 @@ const WelcomeMenu: React.FC<WelcomeMenuProps> = () => {
                   <thead>
                     <tr>
                       <th>Elemento</th>
-                      <th>Cantidad Disponible</th>
-                      <th>Veces Utilizado</th>
+                      <th>Categoría</th>
+                      <th>Material</th>
+                      <th>Color</th>
+                      <th>Precio</th>
+                      <th>Cantidad</th>
+                      <th>Estado</th>
+                      <th>Acciones</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -1359,10 +1364,12 @@ const WelcomeMenu: React.FC<WelcomeMenuProps> = () => {
                     <tr>
                       <th>ID Compra</th>
                       <th>Proveedor</th>
-                      <th>Cantidad de Elementos</th>
-                      <th>Fecha de la Compra</th>
-                      <th>Hora de la Compra</th>
-                      <th>Costo de la Compra</th>
+                      <th>Fecha</th>
+                      <th>Hora</th>
+                      <th>Cantidad Elementos</th>
+                      <th>Precio total</th>
+                      <th>Estado</th>
+                      <th>Acciones</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -1394,12 +1401,12 @@ const WelcomeMenu: React.FC<WelcomeMenuProps> = () => {
                 <table>
                   <thead>
                     <tr>
+                    <th>ID Compra</th>
                       <th>Proveedor</th>
-                      <th>Cantidad de Elementos</th>
-                      <th>Fecha de Compra</th>
-                      <th>Hora de Compra</th>
-                      <th>Costo</th>
-                      <th>Estado</th>
+                      <th>Fecha</th>
+                      <th>Hora</th>
+                      <th>Cantidad Elementos</th>
+                      <th>Precio total</th>
                       <th>Acciones</th>
                     </tr>
                   </thead>
@@ -1486,76 +1493,76 @@ const WelcomeMenu: React.FC<WelcomeMenuProps> = () => {
               </div>
 
               <h2>Detalles de la Compra</h2>
-              <div className="table-container">
-                <table>
-                  <thead>
-                    <tr>
-                      <th>Elemento</th>
-                      <th>Cantidad</th>
-                      <th>Precio Unitario</th>
-                      <th>Precio Total</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {nuevaCompra.detalles.map((detalle, index) => (
-                      <tr key={index}>
-                        <td>
-                          <input
-                            type="text"
-                            value={detalle.elemento}
-                            onChange={(e) => {
-                              const nuevosDetalles = [...nuevaCompra.detalles];
-                              nuevosDetalles[index].elemento = e.target.value;
-                              setNuevaCompra(prev => ({ ...prev, detalles: nuevosDetalles }));
-                            }}
-                            required
-                          />
-                        </td>
-                        <td>
-                          <input
-                            type="number"
-                            value={detalle.cantidad}
-                            onChange={(e) => {
-                              const nuevosDetalles = [...nuevaCompra.detalles];
-                              nuevosDetalles[index].cantidad = Number(e.target.value);
-                              nuevosDetalles[index].precio_total = nuevosDetalles[index].cantidad * nuevosDetalles[index].precio_unitario;
-                              setNuevaCompra(prev => ({ ...prev, detalles: nuevosDetalles }));
-                            }}
-                            required
-                          />
-                        </td>
-                        <td>
-                          <input
-                            type="number"
-                            value={detalle.precio_unitario}
-                            onChange={(e) => {
-                              const nuevosDetalles = [...nuevaCompra.detalles];
-                              nuevosDetalles[index].precio_unitario = Number(e.target.value);
-                              nuevosDetalles[index].precio_total = nuevosDetalles[index].cantidad * nuevosDetalles[index].precio_unitario;
-                              setNuevaCompra(prev => ({ ...prev, detalles: nuevosDetalles }));
-                            }}
-                            required
-                          />
-                        </td>
-                        <td>${detalle.precio_total}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+
+              <div className="form-grid">
+                <label>
+                  Elemento:
+                  <input
+                    type="text"
+                    value={nuevaCompra.detalles[0].elemento}
+                    onChange={(e) => {
+                      const nuevosDetalles = [...nuevaCompra.detalles];
+                      nuevosDetalles[0].elemento = e.target.value;
+                      setNuevaCompra(prev => ({ ...prev, detalles: nuevosDetalles }));
+                    }}
+                    required
+                  />
+                </label>
+
+                <label>
+                  Cantidad:
+                  <input
+                    type="number"
+                    min="1"
+                    value={nuevaCompra.detalles[0].cantidad}
+                    onChange={(e) => {
+                      const nuevosDetalles = [...nuevaCompra.detalles];
+                      nuevosDetalles[0].cantidad = Number(e.target.value);
+                      nuevosDetalles[0].precio_total = nuevosDetalles[0].cantidad * nuevosDetalles[0].precio_unitario;
+                      setNuevaCompra(prev => ({ ...prev, detalles: nuevosDetalles }));
+                    }}
+                    required
+                  />
+                </label>
+
+                <label>
+                  Precio Unitario:
+                  <input
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    value={nuevaCompra.detalles[0].precio_unitario}
+                    onChange={(e) => {
+                      const nuevosDetalles = [...nuevaCompra.detalles];
+                      nuevosDetalles[0].precio_unitario = Number(e.target.value);
+                      nuevosDetalles[0].precio_total = nuevosDetalles[0].cantidad * nuevosDetalles[0].precio_unitario;
+                      setNuevaCompra(prev => ({ ...prev, detalles: nuevosDetalles }));
+                    }}
+                    required
+                  />
+                </label>
+
+                <label>
+                  Precio Total:
+                  <input
+                    type="number"
+                    value={nuevaCompra.detalles[0].precio_total}
+                    disabled
+                  />
+                </label>
               </div>
 
-              <button 
-                type="button"
-                className="submit-btn"
-                onClick={() => setNuevaCompra(prev => ({
-                  ...prev,
-                  detalles: [...prev.detalles, { elemento: '', cantidad: 0, precio_unitario: 0, precio_total: 0 }]
-                }))}
-              >
-                Agregar Elemento
-              </button>
-
               <div className="form-buttons">
+                <button 
+                  type="button"
+                  className="submit-btn"
+                  onClick={() => setNuevaCompra(prev => ({
+                    ...prev,
+                    detalles: [...prev.detalles, { elemento: '', cantidad: 0, precio_unitario: 0, precio_total: 0 }]
+                  }))}
+                >
+                  Agregar Elemento
+                </button>
                 <button type="submit" className="submit-btn">
                   Guardar Compra
                 </button>
