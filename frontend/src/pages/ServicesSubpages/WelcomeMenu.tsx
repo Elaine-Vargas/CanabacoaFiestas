@@ -1787,7 +1787,7 @@ const WelcomeMenu: React.FC<WelcomeMenuProps> = () => {
       });
 
       if (response.ok) {
-        showCreateUserModal(false);
+        setShowCreateUserModal(false);
         setNuevoUsuario({
           nombre_usuario: '',
           apellido_usuario: '',
