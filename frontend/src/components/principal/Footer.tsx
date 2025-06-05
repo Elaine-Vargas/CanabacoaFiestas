@@ -3,10 +3,10 @@ import "../styles/mainPages/Footer.scss";
 import InstagramIcon from '@mui/icons-material/Instagram';
 import WhatsAppIcon from '@mui/icons-material/WhatsApp';
 import MailIcon from '@mui/icons-material/MailOutlineRounded';
-import Comments from "./Comments";
+import Comments from "../Otros/Comments";
 
 // Lazy load the map component
-const MapComponent = lazy(() => import('./MapComponent'));
+const MapComponent = lazy(() => import('../Otros/MapComponent'));
 
 const Footer = () => {
   return (

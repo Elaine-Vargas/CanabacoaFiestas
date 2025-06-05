@@ -1,7 +1,7 @@
 import { Container } from '@mui/material';
-import ViewerCatalog from '../components/ViewerCatalog';
-import CatalogAlquiler from '../components/CatalogList';
-import Footer from '../components/Footer';
+import ViewerCatalog from '../../components/Otros/ViewerCatalog';
+import CatalogAlquiler from '../../components/DashboardComponents/Rent/CatalogList';
+import Footer from '../../components/principal/Footer';
 import { useLocation } from 'react-router-dom';
 
 const Catalog = () => {

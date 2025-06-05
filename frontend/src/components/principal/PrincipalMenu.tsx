@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import Navbar from "../NavBar";
+import Navbar from "../Otros/NavBar";
 import React from "react";
 
 const PrincipalMenu: React.FC = React.memo(() => (

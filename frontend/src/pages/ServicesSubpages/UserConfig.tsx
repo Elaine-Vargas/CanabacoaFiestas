@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import VisibilityOffIcon from '@mui/icons-material/VisibilityOff';
 import VisibilityIcon from '@mui/icons-material/Visibility';
 import "../../styles/dashboard/UserConfig.scss";
-import { validateEmail, validateCedula, validateUsername, validatePhoneNumber, formatPhoneNumber, formatCedula } from "../../utils/validation";
+import { validateEmail, validateUsername, validatePhoneNumber, formatPhoneNumber} from "../../utils/validation";
 
 export default function UserConfig() {
   const [userData, setUserData] = useState({

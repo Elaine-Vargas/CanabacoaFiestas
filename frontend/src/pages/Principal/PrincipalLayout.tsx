@@ -1,9 +1,9 @@
 // PrincipalLayout.tsx
 import { Outlet } from "react-router-dom";
-import Navbar from "../components/NavBar";
+import Navbar from "../../components/Otros/NavBar";
 import { Suspense } from "react";
-import {MainLoadingScreen} from "../components/LoadingScreen";
-import Footer from "../components/Footer";
+import {MainLoadingScreen} from "../../components/Otros/LoadingScreen";
+import Footer from "../../components/principal/Footer";
 
 const PrincipalLayout = () => {
   return (

@@ -5,28 +5,25 @@ import ColorTheme from '../functions/ColorTheme';
 import { UserProvider } from '../contexts/UserContext';
 
 // Lazy loaded pages
-const AboutUs = lazy(() => import('./AboutUs'));
-const Services = lazy(() => import('./Services'));
+const AboutUs = lazy(() => import('./Principal/AboutUs'));
+const Services = lazy(() => import('./Principal/Services'));
 const UserConfig = lazy(() => import('./ServicesSubpages/UserConfig'));
-const UserLogin = lazy(() => import('./UserLogin'));
-const DashboardLayout = lazy(() => import('../components/DashboardLayout'));
+const UserLogin = lazy(() => import('./Principal/UserLogin'));
+const DashboardLayout = lazy(() => import('../components/DashboardComponents/MoreDash/DashboardLayout'));
 const WelcomeMenu = lazy(() => import('./ServicesSubpages/WelcomeMenu'));
 const Rent = lazy(() => import('./ServicesSubpages/Rent'));
-const Decor = lazy(() => import('./ServicesSubpages/Decor'));
 const Catering = lazy(() => import('./ServicesSubpages/Catering'));
-const Supervision = lazy(() => import('./ServicesSubpages/Supervision'));
-const Transportation = lazy(() => import('./ServicesSubpages/Transportation'));
-const AssemblyAndDisassembly = lazy(() => import('./ServicesSubpages/AssemblyAndDisassembly'));
-const Catalogo = lazy(() => import('./Catalog'));
-const Principal = lazy(() => import('./Principal')); // Ahora puede ser lazy-loaded
+const Report = lazy(() => import('./ServicesSubpages/Report'));
+const Catalogo = lazy(() => import('./Principal/Catalog'));
+const Principal = lazy(() => import('./Principal/Principal')); // Ahora puede ser lazy-loaded
 const PasswordRecovery = lazy(() => import ('./PassRecovery'));
 const PasswordReset = lazy(() => import('./PasswordReset'));
 
 
-import ProtectedRoute from '../components/ProtectedRoute';
-import PublicRoute from '../components/PublicRoute';
-import PrincipalLayout from './PrincipalLayout'; // Importa el nuevo Layout
-import { LoadingScreen } from '../components/LoadingScreen';
+import ProtectedRoute from '../components/Otros/ProtectedRoute';
+import PublicRoute from '../components/Otros/PublicRoute';
+import PrincipalLayout from './Principal/PrincipalLayout'; // Importa el nuevo Layout
+import { LoadingScreen } from '../components/Otros/LoadingScreen';
 
 function App() {
   return (
@@ -81,11 +78,8 @@ function App() {
               <Route path="Bienvenida" element={<WelcomeMenu/>} />
               <Route path="Ajustes-Usuario" element={<UserConfig />} />
               <Route path="Alquiler" element={<Rent />} />
-              <Route path="Decoracion" element={<Decor />} />
               <Route path="Catering" element={<Catering />} />
-              <Route path="Supervision" element={<Supervision />} />
-              <Route path="Transporte" element={<Transportation />} />
-              <Route path="Montaje-Desmontaje" element={<AssemblyAndDisassembly />} />
+              <Route path="Reportes-Facturas" element={<Report />} />
             </Route>
           </Routes>
         </BrowserRouter>

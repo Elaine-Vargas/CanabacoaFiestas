@@ -1,6 +1,6 @@
 import React from "react";
 import "../styles/mainPages/Info.scss";
-import Footer from "../components/Footer";
+import "../../components/principal/Footer";
 import { Box, Container } from "@mui/material";
 
 const Nosotros: React.FC = () => {

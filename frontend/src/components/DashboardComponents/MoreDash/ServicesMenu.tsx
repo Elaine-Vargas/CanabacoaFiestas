@@ -10,7 +10,7 @@ import {
 } from "react-icons/fa";
 import { IoIosExit } from "react-icons/io";
 import { useState } from "react";
-import ColorTheme from "../functions/ColorTheme";
+import ColorTheme from "../../../functions/ColorTheme";
 import "../styles/dashboard/DashboardServices.scss";
 import { useMediaQuery } from "@mui/material";
 import { Drawer, IconButton, List, ListItem, ListItemButton, ListItemText } from "@mui/material";

@@ -1,4 +1,4 @@
-import ColorTheme from "../functions/ColorTheme";
+import ColorTheme from "../../functions/ColorTheme";
 import Back from '@mui/icons-material/ArrowBackRounded';
 import { useLocalStorage } from 'react-haiku';
 

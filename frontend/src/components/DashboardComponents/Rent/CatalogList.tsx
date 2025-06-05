@@ -18,7 +18,7 @@ import CloseIcon from '@mui/icons-material/Close';
 import { useNavigate } from 'react-router-dom';
 
 // Lazy-loaded components
-const NavBar = lazy(() => import('./NavBar'));
+const NavBar = lazy(() => import('../../Otros/NavBar'));
 
 interface CategoriaElemento {
   id_categoria: number;

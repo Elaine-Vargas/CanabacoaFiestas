@@ -1,8 +1,8 @@
 import React from 'react'
 
- const Welcome = () => {
+ const Report = () => {
   return (
     <div>Report</div>
   )
 }
-export default Welcome;
+export default Report;
