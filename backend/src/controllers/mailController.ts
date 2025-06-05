@@ -88,18 +88,18 @@ export const sendRecoveryEmail = async (req: Request, res: Response) => {
       to: correo_usuario,
       subject: 'Recuperación de contraseña',
       html: `
-        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-          <h2 style="color: #2c3e50;">Hola ${usuario.nombre_usuario},</h2>
+        <div style="font-family: 'Century Gothic', sans-serif; max-width: 600px; margin: 0 auto;">
+          <h2 style="color: #c49a44;">¡Hola!, ${usuario.nombre_usuario},</h2>
           <p>Hemos recibido una solicitud para restablecer tu contraseña.</p>
           <p>Haz clic en el siguiente enlace para continuar:</p>
           <p style="margin: 20px 0;">
             <a href="${recoveryUrl}" 
-               style="background-color: #3498db; color: white; padding: 10px 15px; text-decoration: none; border-radius: 5px;">
+               style="background-color: #e0c55a; color: white; padding: 10px 15px; text-decoration: none; border-radius: 5px;">
                Restablecer contraseña
             </a>
           </p>
           <p><small>Este enlace expirará en 15 minutos.</small></p>
-          <p style="color: #7f8c8d; font-size: 0.9em;">
+          <p style="color:rgb(100, 100, 100); font-size: 0.9em;">
             Si no solicitaste este cambio, por favor ignora este mensaje y considera cambiar tu contraseña.
           </p>
         </div>
@@ -252,6 +252,105 @@ export const resetPassword = async (req: Request, res: Response) => {
 
     return res.status(500).json({ 
       error: 'Error al restablecer la contraseña',
+      details: process.env.NODE_ENV === 'development' ? (error as Error).message : undefined
+    });
+  }
+};
+
+export const sendWelcomeEmail = async (req: Request, res: Response) => {
+  const { correo_usuario } = req.body;
+  console.log('[Welcome] Correo de Bienvenida para:', correo_usuario);
+
+  if (!correo_usuario) {
+    console.log('[Welcome] Error: Correo no proporcionado');
+    return res.status(400).json({ error: 'El correo es requerido' });
+  }
+
+  try {
+    // Buscar usuario activo (case-insensitive)
+    console.log('[Welcome] Buscando usuario en BD...');
+    const usuario = await Usuario.findOne({
+      where: {
+        correo_usuario: {
+          [Op.like]: correo_usuario // Búsqueda insensible a mayúsculas/minúsculas
+        },
+        estado_usuario: 'Activo'
+      },
+      logging: console.log // Muestra la consulta SQL en consola
+    });
+
+    if (!usuario) {
+      console.log('[Welcome] Usuario no encontrado o inactivo');
+      return res.status(404).json({ 
+        error: 'No existe una cuenta activa con ese correo electrónico',
+        details: 'Verifica que el correo esté correctamente escrito'
+      });
+    }
+
+    console.log('[Welcome] Usuario encontrado:', usuario.cedula_usuario);
+
+    // Configurar transporte de nodemailer
+    const transporter = nodemailer.createTransport({
+      service: 'gmail',
+      auth: {
+        user: process.env.EMAIL_USER,
+        pass: process.env.EMAIL_PASS
+      },
+      tls: {
+        rejectUnauthorized: false // Solo para desarrollo, quitar en producción
+      }
+    });
+
+    // Verificar conexión con el servicio de correo
+    try {
+      await transporter.verify();
+      console.log('[Welcome] Servicio de correo verificado correctamente');
+    } catch (mailError) {
+      console.error('[Welcome] Error al verificar servicio de correo:', mailError);
+      throw new Error('Error al conectar con el servicio de correo');
+    }
+
+    // Configurar el correo
+    const mailOptions = {
+      from: `"Canabacoa Fiestas" <${process.env.EMAIL_USER}>`,
+      to: correo_usuario,
+      subject: '¡Bienvenido a Canabacoa Fiestas!',
+      html: `
+        <div style="font-family: 'Century Gothic', sans-serif; max-width: 600px; margin: 0 auto;">
+          <h2 style="color: #c49a44;">¡Hola, ${usuario.nombre_usuario}!</h2>
+          <p>¡Bienvenido a la familia Canabacoa Fiestas!</p>
+          <p style="margin: 20px 0;">
+            Estamos emocionados de tenerte como parte de nuestra comunidad. Ahora podrás:
+          </p>
+          <ul style="list-style: none; padding: 0;">
+            <li style="margin: 10px 0;">✓ Planificar tus eventos especiales</li>
+            <li style="margin: 10px 0;">✓ Gestionar tus reservaciones</li>
+            <li style="margin: 10px 0;">✓ Acceder a nuestros servicios exclusivos</li>
+          </ul>
+          <p style="font-weight: 600; margin-top: 20px;">
+            Esperamos que disfrutes cada momento con nosotros y que creemos juntos experiencias inolvidables.
+          </p>
+          <p style="color: #c49a44; margin-top: 30px;">
+            ¡Gracias por confiar en Canabacoa Fiestas!
+          </p>
+        </div>
+      `
+    };
+
+    // Enviar el correo
+    const info = await transporter.sendMail(mailOptions);
+    console.log('[Welcome] Correo enviado con ID:', info.messageId);
+
+    return res.json({ 
+      success: true,
+      message: 'Correo de bienvenida enviado con éxito',
+      email: correo_usuario // Solo para desarrollo, quitar en producción
+    });
+
+  } catch (error) {
+    console.error('[Welcome] Error completo:', error);
+    return res.status(500).json({ 
+      error: 'Ocurrió un error al intentar enviar el correo de bienvenida',
       details: process.env.NODE_ENV === 'development' ? (error as Error).message : undefined
     });
   }

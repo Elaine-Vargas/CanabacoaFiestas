@@ -134,11 +134,13 @@ interface Evento {
 
 interface EventoAsignado {
   id_evento: number;
-  tipo_evento: string;
   cliente: string;
-  contacto_cliente: string;
+  asesor: string;
   fecha_evento: string;
-  servicios_realizados: string[];
+  hora_evento: string;
+  espacio: string;
+  tipo_evento: string;
+  desea_supervision: boolean;
   estado_evento: string;
   activo: boolean;
 }
@@ -549,9 +551,34 @@ const WelcomeMenu: React.FC<WelcomeMenuProps> = () => {
   useEffect(() => {
     const fetchEventosAsignados = async () => {
       try {
-        const response = await fetch('/api/evento/Pendiente');
+        const token = localStorage.getItem('token');
+        const response = await fetch(`${apiUrl}/evento/Pendiente`, {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        });
+        
+        if (!response.ok) {
+          throw new Error('Error al cargar eventos pendientes');
+        }
+
         const data = await response.json();
-        setEventosAsignados(data);
+        // Mapear los datos al formato correcto
+        const eventosMapeados = data.map((evento: any) => ({
+          id_evento: evento.id_evento,
+          cliente: evento.cliente?.nombre_usuario + ' ' + evento.cliente?.apellido_usuario,
+          asesor: evento.asesor?.nombre_usuario + ' ' + evento.asesor?.apellido_usuario,
+          fecha_evento: evento.fecha_evento,
+          hora_evento: evento.hora_evento,
+          espacio: evento.espacio?.nombre_espacio,
+          tipo_evento: evento.tipo_evento?.tipo_evento,
+          desea_supervision: evento.desea_supervision === 1,
+          estado_evento: evento.estado_evento,
+          activo: true
+        }));
+        
+        setEventosAsignados(eventosMapeados);
       } catch (error) {
         console.error('Error al cargar eventos pendientes:', error);
       }
@@ -2202,27 +2229,33 @@ const WelcomeMenu: React.FC<WelcomeMenuProps> = () => {
             <table>
               <thead>
                 <tr>
-                  <th>Evento</th>
+                  <th>ID</th>
                   <th>Cliente</th>
-                  <th>Contacto</th>
+                  <th>Asesor</th>
                   <th>Fecha</th>
-                  <th>Servicios</th>
+                  <th>Hora</th>
+                  <th>Espacio</th>
+                  <th>Tipo de Evento</th>
+                  <th>Supervisión</th>
                   <th>Estado</th>
                   <th>Acciones</th>
                 </tr>
               </thead>
               <tbody>
                 {eventosAsignados.map((evento) => (
-                  <tr key={evento.id_evento} className={!evento.activo ? 'deshabilitado' : ''}>
-                    <td>{evento.tipo_evento}</td>
+                  <tr key={evento.id_evento}>
+                    <td>{evento.id_evento}</td>
                     <td>{evento.cliente}</td>
-                    <td>{evento.contacto_cliente}</td>
-                    <td>{evento.fecha_evento}</td>
-                    <td>{evento.servicios_realizados.join(', ')}</td>
+                    <td>{evento.asesor}</td>
+                    <td>{new Date(evento.fecha_evento).toLocaleDateString()}</td>
                     <td>
-                      <span className={`estado-badge ${evento.estado_evento.toLowerCase()}`}>
-                        {evento.estado_evento}
-                      </span>
+                      {(() => {
+                        const [horas, minutos] = evento.hora_evento.split(':');
+                        const hora = parseInt(horas);
+                        const ampm = hora >= 12 ? 'PM' : 'AM';
+                        const hora12 = hora % 12 || 12;
+                        return `${hora12}:${minutos} ${ampm}`;
+                      })()}
                     </td>
                     <td>
                       <div className="acciones-buttons">

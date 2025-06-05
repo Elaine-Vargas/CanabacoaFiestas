@@ -198,6 +198,29 @@ const UserLogin: React.FC = () => {
         tel_usuario: signupData.tel_usuario
       };
       localStorage.setItem('userData', JSON.stringify(userInfo));
+
+      // Enviar correo de bienvenida
+      try {
+        console.log('Enviando correo de bienvenida a:', signupData.correo_usuario);
+        const welcomeResponse = await fetch(`${apiUrl}/auth/welcome-mail`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            correo_usuario: signupData.correo_usuario
+          })
+        });
+
+        const welcomeData = await welcomeResponse.json();
+        if (!welcomeResponse.ok) {
+          console.error('Error al enviar correo de bienvenida:', welcomeData.error || welcomeData);
+        } else {
+          console.log('Correo de bienvenida enviado exitosamente:', welcomeData.message);
+        }
+      } catch (welcomeError) {
+        console.error('Error al enviar correo de bienvenida:', welcomeError);
+      }
       
       alert(data.mensaje);
       navigate('/Menu-Servicios/Bienvenida');

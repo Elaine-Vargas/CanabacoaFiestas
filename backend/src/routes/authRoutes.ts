@@ -2,7 +2,7 @@ import { Router } from 'express';
 import { 
   Login, RegisterClient, RegisterUser, GetUserData, UpdateUserData, getCurrentUser 
 } from '../controllers/authController';
-import { sendRecoveryEmail, resetPassword } from '../controllers/mailController';
+import { sendRecoveryEmail, resetPassword, sendWelcomeEmail } from '../controllers/mailController';
 
 const router = Router();
 
@@ -65,6 +65,14 @@ router.post('/mail-recovery', async (req, res, next) => {
 router.post('/reset-password', async (req, res, next) => {
   try {
     await resetPassword(req, res);
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.post('/welcome-mail', async (req, res, next) => {
+  try {
+    await sendWelcomeEmail(req, res);
   } catch (error) {
     next(error);
   }
