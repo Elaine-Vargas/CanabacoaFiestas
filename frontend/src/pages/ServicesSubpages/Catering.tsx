@@ -96,6 +96,10 @@ export default function Catering() {
   const [showEventosModal, setShowEventosModal] = useState(false);
   const [menusCatalogo, setMenusCatalogo] = useState<MenuCatalogo[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const [selectedMenu, setSelectedMenu] = useState<MenuCatalogo | null>(null);
+  const [showCateringForm, setShowCateringForm] = useState(false);
+  const [bandejaMenus, setBandejaMenus] = useState<MenuCatalogo[]>([]);
+  const [showBandeja, setShowBandeja] = useState(false);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -392,17 +396,36 @@ export default function Catering() {
   };
 
   const handleSolicitarMenu = (menuId: number) => {
-    setShowModal(true);
-    setFormData(prev => ({
-      ...prev,
-      menus: [{
-        id_menu: menuId,
-        desc_menu: '',
-        id_proveedor: 0,
-        platos: []
-      }]
-    }));
-  }; 
+    const menu = menusCatalogo.find(m => m.id_menu === menuId) || null;
+    setSelectedMenu(menu);
+    setShowCateringForm(true);
+    if (menu) {
+      setFormData(prev => ({
+        ...prev,
+        precioneto_catering: menu.precio_menu,
+        itbis_catering: +(menu.precio_menu * 0.18).toFixed(2),
+        total_catering: +(menu.precio_menu * 1.18).toFixed(2),
+        personas_catering: 1,
+        menus: [{
+          id_menu: menu.id_menu,
+          desc_menu: menu.desc_menu,
+          id_proveedor: 0,
+          precio_menu: menu.precio_menu,
+          proveedor: menu.proveedor || '',
+          platos: (menu.platos || []).map((p, idx) => ({
+            id_plato: p.id || idx,
+            nombre: p.nombre,
+            descripcion: p.descripcion || '',
+          })),
+        }],
+      }));
+    }
+  };
+
+  const closeCateringForm = () => {
+    setShowCateringForm(false);
+    setSelectedMenu(null);
+  };
 
   const renderPedidosModal = () => (
     <div className="modal-overlay">
@@ -549,6 +572,43 @@ export default function Catering() {
     return matchesSearch;
   });
 
+  const toggleBandejaMenu = (menu: MenuCatalogo) => {
+    setBandejaMenus(prev => {
+      const exists = prev.some(m => m.id_menu === menu.id_menu);
+      if (exists) {
+        return prev.filter(m => m.id_menu !== menu.id_menu);
+      } else {
+        return [...prev, menu];
+      }
+    });
+  };
+
+  const handleSolicitarCateringDesdeBandeja = () => {
+    setShowBandeja(false);
+    setShowCateringForm(true);
+    if (bandejaMenus.length > 0) {
+      setFormData(prev => ({
+        ...prev,
+        menus: bandejaMenus.map(menu => ({
+          id_menu: menu.id_menu,
+          desc_menu: menu.desc_menu,
+          id_proveedor: 0,
+          precio_menu: menu.precio_menu,
+          proveedor: menu.proveedor || '',
+          platos: (menu.platos || []).map((p, idx) => ({
+            id_plato: idx,
+            nombre: p.nombre,
+            descripcion: '',
+          })),
+        })),
+        precioneto_catering: bandejaMenus.reduce((acc, m) => acc + m.precio_menu, 0),
+        itbis_catering: +(bandejaMenus.reduce((acc, m) => acc + m.precio_menu, 0) * 0.18).toFixed(2),
+        total_catering: +(bandejaMenus.reduce((acc, m) => acc + m.precio_menu, 0) * 1.18).toFixed(2),
+        personas_catering: 1,
+      }));
+    }
+  };
+
   const renderClientView = () => {
     return (
       <div className="catering-content">
@@ -605,10 +665,11 @@ export default function Catering() {
                     </span>
                   </div>
                   <button
-                    onClick={() => handleSolicitarMenu(menu.id_menu)}
+                    onClick={() => toggleBandejaMenu(menu)}
                     className="menu-catalogo-btn"
+                    style={{marginTop: 8, background: bandejaMenus.some(m => m.id_menu === menu.id_menu) ? 'var(--dark-gold)' : undefined}}
                   >
-                    Solicitar este menú
+                    {bandejaMenus.some(m => m.id_menu === menu.id_menu) ? 'Quitar de la bandeja' : 'Agregar a la bandeja'}
                   </button>
                 </div>
               </div>
@@ -619,6 +680,140 @@ export default function Catering() {
             </div>
           )}
         </div>
+
+        {showCateringForm && (
+          <div className="modal-overlay">
+            <div className="modal-container" style={{ maxWidth: 400, padding: '1.2rem', borderRadius: 16 }}>
+              <button className="close-btn" onClick={closeCateringForm} style={{ position: 'absolute', top: 16, right: 16, fontSize: 24, background: 'none', border: 'none', cursor: 'pointer' }}>×</button>
+              <h2 style={{fontSize: '1.1rem', marginBottom: '0.5rem'}}>Solicitar Catering</h2>
+              <form onSubmit={handleSubmit} style={{display: 'flex', flexDirection: 'column', gap: '0.5rem'}}>
+                <label>
+                  Evento:
+                  <select
+                    name="id_evento"
+                    value={formData.id_evento}
+                    onChange={handleInputChange}
+                    required
+                    style={{width: '100%', fontSize: '1rem', marginTop: '0.2rem'}}>
+                    <option value="">Selecciona un evento</option>
+                    {eventos.map(ev => (
+                      <option key={ev.id_evento} value={ev.id_evento}>{ev.nombre_evento || `Evento #${ev.id_evento}`}</option>
+                    ))}
+                  </select>
+                </label>
+                <label>
+                  Personas:
+                  <input
+                    type="number"
+                    name="personas_catering"
+                    min={1}
+                    value={formData.personas_catering}
+                    onChange={handleInputChange}
+                    required
+                    style={{width: '100%', fontSize: '1rem', marginTop: '0.2rem'}}
+                  />
+                </label>
+                <label>
+                  Precio Neto:
+                  <input
+                    type="number"
+                    name="precioneto_catering"
+                    value={formData.precioneto_catering}
+                    readOnly
+                    style={{width: '100%', fontSize: '1rem', marginTop: '0.2rem', background: '#f5f5f5'}}
+                  />
+                </label>
+                <label>
+                  ITBIS (18%):
+                  <input
+                    type="number"
+                    name="itbis_catering"
+                    value={formData.itbis_catering}
+                    readOnly
+                    style={{width: '100%', fontSize: '1rem', marginTop: '0.2rem', background: '#f5f5f5'}}
+                  />
+                </label>
+                <label>
+                  Total:
+                  <input
+                    type="number"
+                    name="total_catering"
+                    value={formData.total_catering}
+                    readOnly
+                    style={{width: '100%', fontSize: '1rem', marginTop: '0.2rem', background: '#f5f5f5'}}
+                  />
+                </label>
+                <div style={{display: 'flex', gap: '0.5rem', marginTop: '0.7rem'}}>
+                  <button type="submit" style={{flex: 1, background: 'var(--gold)', color: '#fff', border: 'none', borderRadius: '8px', padding: '0.6rem', fontWeight: 700}}>Solicitar</button>
+                  <button type="button" onClick={closeCateringForm} style={{flex: 1, background: '#eee', color: '#333', border: 'none', borderRadius: '8px', padding: '0.6rem'}}>Cancelar</button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
+
+        {/* Icono de bandeja flotante */}
+        <div style={{position: 'fixed', top: 24, right: 24, zIndex: 1200}}>
+          <button onClick={() => setShowBandeja(true)} style={{
+            background: 'var(--gold)',
+            border: 'none',
+            borderRadius: '50%',
+            width: 56,
+            height: 56,
+            boxShadow: '0 4px 16px rgba(0,0,0,0.15)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            position: 'relative',
+            cursor: 'pointer',
+          }}>
+            <span role="img" aria-label="bandeja" style={{fontSize: 32}}>🍽️</span>
+            {bandejaMenus.length > 0 && (
+              <span style={{
+                position: 'absolute',
+                top: 6,
+                right: 6,
+                background: '#fff',
+                color: 'var(--gold)',
+                borderRadius: '50%',
+                width: 22,
+                height: 22,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontWeight: 700,
+                fontSize: 14,
+                border: '2px solid var(--gold)'
+              }}>{bandejaMenus.length}</span>
+            )}
+          </button>
+        </div>
+
+        {/* Modal de bandeja */}
+        {showBandeja && (
+          <div className="modal-overlay">
+            <div className="modal-container" style={{ maxWidth: 400, padding: '1.2rem', borderRadius: 16, minHeight: 200 }}>
+              <button className="close-btn" onClick={() => setShowBandeja(false)} style={{ position: 'absolute', top: 16, right: 16, fontSize: 24, background: 'none', border: 'none', cursor: 'pointer' }}>×</button>
+              <h2 style={{fontSize: '1.1rem', marginBottom: '0.5rem'}}>Bandeja de Menús</h2>
+              {bandejaMenus.length === 0 ? (
+                <p style={{textAlign: 'center', color: '#888'}}>No hay menús en la bandeja.</p>
+              ) : (
+                <ul style={{listStyle: 'none', padding: 0, margin: 0, maxHeight: 200, overflowY: 'auto'}}>
+                  {bandejaMenus.map(menu => (
+                    <li key={menu.id_menu} style={{display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8, background: '#f5f5f5', borderRadius: 8, padding: '0.5rem 0.7rem'}}>
+                      <span style={{fontWeight: 600}}>{menu.desc_menu}</span>
+                      <button onClick={() => toggleBandejaMenu(menu)} style={{background: 'none', border: 'none', color: 'var(--gold)', fontWeight: 700, fontSize: 18, cursor: 'pointer'}}>✕</button>
+                    </li>
+                  ))}
+                </ul>
+              )}
+              <div style={{display: 'flex', justifyContent: 'space-between', marginTop: 16, gap: 8}}>
+                <button onClick={() => setBandejaMenus([])} style={{flex: 1, background: '#eee', color: '#333', border: 'none', borderRadius: 8, padding: '0.6rem'}}>Vaciar bandeja</button>
+                <button onClick={handleSolicitarCateringDesdeBandeja} disabled={bandejaMenus.length === 0} style={{flex: 1, background: 'var(--gold)', color: '#fff', border: 'none', borderRadius: 8, padding: '0.6rem', fontWeight: 700}}>Solicitar catering</button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     );
   };
