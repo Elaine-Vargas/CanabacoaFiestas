@@ -8,7 +8,7 @@ export const getAllPlatos = async (req: Request, res: Response) => {
         res.json(platos);
     } catch (error) {
         console.error('Error al obtener platos:', error);
-        res.status(500).json({ message: 'Error al obtener platos' });
+        res.status(500).json({ error: 'Error al obtener platos' });
     }
 };
 

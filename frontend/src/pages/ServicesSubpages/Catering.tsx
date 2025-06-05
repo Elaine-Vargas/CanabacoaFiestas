@@ -32,6 +32,15 @@ interface Menu {
   proveedor: string;
 }
 
+interface Proveedor {
+  id_proveedor: number;
+  nombre_proveedor: string;
+  tipo_proveedor: string;
+  telefono: string;
+  correo: string;
+  estado: string;
+}
+
 interface Catering {
   id_catering?: number;
   id_evento: number;
@@ -66,6 +75,7 @@ export default function Catering() {
   const userData = JSON.parse(localStorage.getItem('userData') || '{}');
   const [showModal, setShowModal] = useState(false);
   const [showCreateMenuModal, setShowCreateMenuModal] = useState(false);
+  const [showCreateEventModal, setShowCreateEventModal] = useState(false);
   const [menus, setMenus] = useState<Menu[]>([]);
   const [platos, setPlatos] = useState<Plato[]>([]);
   const [selectedCategory, setSelectedCategory] = useState('todos');
@@ -81,6 +91,7 @@ export default function Catering() {
   });
   const [newMenuData, setNewMenuData] = useState({
     desc_menu: '',
+    id_proveedor: '',
     selectedPlatos: [] as Plato[]
   });
   const [caterings, setCaterings] = useState<Catering[]>([]);
@@ -91,7 +102,7 @@ export default function Catering() {
   const [showProveedoresModal, setShowProveedoresModal] = useState(false);
   const [pedidos, setPedidos] = useState<any[]>([]);
   const [pedidosPendientes, setPedidosPendientes] = useState<any[]>([]);
-  const [proveedores, setProveedores] = useState<any[]>([]);
+  const [proveedores, setProveedores] = useState<Proveedor[]>([]);
   const [showMenusModal, setShowMenusModal] = useState(false);
   const [showEventosModal, setShowEventosModal] = useState(false);
   const [menusCatalogo, setMenusCatalogo] = useState<MenuCatalogo[]>([]);
@@ -100,6 +111,14 @@ export default function Catering() {
   const [showCateringForm, setShowCateringForm] = useState(false);
   const [bandejaMenus, setBandejaMenus] = useState<MenuCatalogo[]>([]);
   const [showBandeja, setShowBandeja] = useState(false);
+  const [newEventData, setNewEventData] = useState({
+    nombre_evento: '',
+    fecha_evento: '',
+    hora_inicio: '',
+    hora_fin: '',
+    lugar_evento: '',
+    descripcion: ''
+  });
 
   useEffect(() => {
     const fetchData = async () => {
@@ -276,6 +295,39 @@ export default function Catering() {
     }
   }, [userRole]);
 
+  // Obtener proveedores únicos de los menús del catálogo
+  const proveedoresCatering = React.useMemo(() => {
+    const proveedoresSet = new Set();
+    return menusCatalogo
+      .filter(menu => {
+        if (proveedoresSet.has(menu.proveedor)) return false;
+        proveedoresSet.add(menu.proveedor);
+        return true;
+      })
+      .map(menu => ({
+        id_proveedor: menu.id_menu,
+        nombre_proveedor: menu.proveedor,
+        tipo_proveedor: 'catering'
+      }));
+  }, [menusCatalogo]);
+
+  // Obtener platos únicos de los menús del catálogo
+  const platosDisponibles = React.useMemo(() => {
+    const platosSet = new Set();
+    return menusCatalogo
+      .flatMap(menu => menu.platos)
+      .filter(plato => {
+        if (platosSet.has(plato.nombre)) return false;
+        platosSet.add(plato.nombre);
+        return true;
+      })
+      .map((plato, index) => ({
+        id_plato: index + 1,
+        nombre: plato.nombre,
+        descripcion: ''
+      }));
+  }, [menusCatalogo]);
+
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     
@@ -340,23 +392,65 @@ export default function Catering() {
   const handleCreateMenu = async (e: FormEvent) => {
     e.preventDefault();
     try {
-      const response = await fetch('/api/menus', {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        throw new Error('No hay token de autenticación');
+      }
+
+      // Validar que se hayan seleccionado platos
+      if (newMenuData.selectedPlatos.length === 0) {
+        setError('Debe seleccionar al menos un plato para el menú');
+        return;
+      }
+
+      const menuData = {
+        desc_menu: newMenuData.desc_menu,
+        id_proveedor: parseInt(newMenuData.id_proveedor),
+        platos: newMenuData.selectedPlatos.map(plato => ({
+          id_plato: plato.id_plato,
+          nombre: plato.nombre,
+          descripcion: plato.descripcion
+        }))
+      };
+
+      const response = await fetch('/api/menu', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          desc_menu: newMenuData.desc_menu,
-          platos: newMenuData.selectedPlatos.map(p => p.id_plato)
-        })
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(menuData)
       });
 
-      if (response.ok) {
-        const updatedMenus = await fetch('/api/menus').then(res => res.json());
-        setMenus(updatedMenus);
-        setShowCreateMenuModal(false);
-        setNewMenuData({ desc_menu: '', selectedPlatos: [] });
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Error al crear el menú');
       }
+
+      // Recargar menús
+      const menusRes = await fetch('/api/menu/catalogo', {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (!menusRes.ok) {
+        throw new Error('Error al recargar menús');
+      }
+
+      const menusData = await menusRes.json();
+      setMenusCatalogo(menusData);
+      setShowCreateMenuModal(false);
+      setNewMenuData({
+        desc_menu: '',
+        id_proveedor: '',
+        selectedPlatos: []
+      });
+      setError(null);
     } catch (error) {
-      console.error('Error al crear menú:', error);
+      console.error('Error:', error);
+      setError(error instanceof Error ? error.message : 'Error al crear el menú');
     }
   };
 
@@ -525,7 +619,7 @@ export default function Catering() {
               <tbody>
               {Array.isArray(proveedores) && proveedores.map((proveedor) => (
                   <tr key={proveedor.id_proveedor}>
-                    <td>{proveedor.nombre}</td>
+                    <td>{proveedor.nombre_proveedor}</td>
                     <td>{proveedor.telefono}</td>
                     <td>{proveedor.correo}</td>
                   </tr>
@@ -609,6 +703,56 @@ export default function Catering() {
     }
   };
 
+  const handleCreateEvent = async (e: FormEvent) => {
+    e.preventDefault();
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        throw new Error('No hay token de autenticación');
+      }
+
+      const response = await fetch('/api/evento', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(newEventData)
+      });
+
+      if (!response.ok) {
+        throw new Error('Error al crear el evento');
+      }
+
+      // Recargar eventos
+      const eventosRes = await fetch('/api/eventos', {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (!eventosRes.ok) {
+        throw new Error('Error al recargar eventos');
+      }
+
+      const eventosData = await eventosRes.json();
+      setEventos(eventosData);
+      setShowCreateEventModal(false);
+      setNewEventData({
+        nombre_evento: '',
+        fecha_evento: '',
+        hora_inicio: '',
+        hora_fin: '',
+        lugar_evento: '',
+        descripcion: ''
+      });
+    } catch (error) {
+      console.error('Error:', error);
+      setError(error instanceof Error ? error.message : 'Error al crear el evento');
+    }
+  };
+
   const renderClientView = () => {
     return (
       <div className="catering-content">
@@ -631,6 +775,25 @@ export default function Catering() {
               <option value="premium">Premium (más de $250)</option>
             </select>
           </div>
+          <button
+            onClick={() => setShowCreateMenuModal(true)}
+            className="create-menu-btn"
+            style={{
+              background: 'var(--gold)',
+              color: '#fff',
+              border: 'none',
+              borderRadius: '8px',
+              padding: '0.6rem 1.2rem',
+              fontWeight: 600,
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.5rem'
+            }}
+          >
+            <span role="img" aria-label="create">➕</span>
+            Crear Menú
+          </button>
         </div>
 
         <div className="menu-catalogo-grid">
@@ -814,6 +977,320 @@ export default function Catering() {
             </div>
           </div>
         )}
+
+        {/* Modal de Crear Evento */}
+        {showCreateEventModal && (
+          <div className="modal-overlay">
+            <div className="modal-container" style={{ maxWidth: 500, padding: '1.5rem', borderRadius: 16 }}>
+              <button 
+                className="close-btn" 
+                onClick={() => setShowCreateEventModal(false)} 
+                style={{ position: 'absolute', top: 16, right: 16, fontSize: 24, background: 'none', border: 'none', cursor: 'pointer' }}
+              >
+                ×
+              </button>
+              <h2 style={{fontSize: '1.2rem', marginBottom: '1rem'}}>Crear Nuevo Evento</h2>
+              <form onSubmit={handleCreateEvent} style={{display: 'flex', flexDirection: 'column', gap: '1rem'}}>
+                <div>
+                  <label style={{display: 'block', marginBottom: '0.5rem', fontWeight: 500}}>
+                    Nombre del Evento:
+                    <input
+                      type="text"
+                      value={newEventData.nombre_evento}
+                      onChange={(e) => setNewEventData(prev => ({...prev, nombre_evento: e.target.value}))}
+                      required
+                      style={{
+                        width: '100%',
+                        padding: '0.6rem',
+                        borderRadius: '8px',
+                        border: '1px solid #ddd',
+                        marginTop: '0.3rem'
+                      }}
+                    />
+                  </label>
+                </div>
+                <div>
+                  <label style={{display: 'block', marginBottom: '0.5rem', fontWeight: 500}}>
+                    Fecha del Evento:
+                    <input
+                      type="date"
+                      value={newEventData.fecha_evento}
+                      onChange={(e) => setNewEventData(prev => ({...prev, fecha_evento: e.target.value}))}
+                      required
+                      style={{
+                        width: '100%',
+                        padding: '0.6rem',
+                        borderRadius: '8px',
+                        border: '1px solid #ddd',
+                        marginTop: '0.3rem'
+                      }}
+                    />
+                  </label>
+                </div>
+                <div style={{display: 'flex', gap: '1rem'}}>
+                  <div style={{flex: 1}}>
+                    <label style={{display: 'block', marginBottom: '0.5rem', fontWeight: 500}}>
+                      Hora de Inicio:
+                      <input
+                        type="time"
+                        value={newEventData.hora_inicio}
+                        onChange={(e) => setNewEventData(prev => ({...prev, hora_inicio: e.target.value}))}
+                        required
+                        style={{
+                          width: '100%',
+                          padding: '0.6rem',
+                          borderRadius: '8px',
+                          border: '1px solid #ddd',
+                          marginTop: '0.3rem'
+                        }}
+                      />
+                    </label>
+                  </div>
+                  <div style={{flex: 1}}>
+                    <label style={{display: 'block', marginBottom: '0.5rem', fontWeight: 500}}>
+                      Hora de Fin:
+                      <input
+                        type="time"
+                        value={newEventData.hora_fin}
+                        onChange={(e) => setNewEventData(prev => ({...prev, hora_fin: e.target.value}))}
+                        required
+                        style={{
+                          width: '100%',
+                          padding: '0.6rem',
+                          borderRadius: '8px',
+                          border: '1px solid #ddd',
+                          marginTop: '0.3rem'
+                        }}
+                      />
+                    </label>
+                  </div>
+                </div>
+                <div>
+                  <label style={{display: 'block', marginBottom: '0.5rem', fontWeight: 500}}>
+                    Lugar del Evento:
+                    <input
+                      type="text"
+                      value={newEventData.lugar_evento}
+                      onChange={(e) => setNewEventData(prev => ({...prev, lugar_evento: e.target.value}))}
+                      required
+                      style={{
+                        width: '100%',
+                        padding: '0.6rem',
+                        borderRadius: '8px',
+                        border: '1px solid #ddd',
+                        marginTop: '0.3rem'
+                      }}
+                    />
+                  </label>
+                </div>
+                <div>
+                  <label style={{display: 'block', marginBottom: '0.5rem', fontWeight: 500}}>
+                    Descripción:
+                    <textarea
+                      value={newEventData.descripcion}
+                      onChange={(e) => setNewEventData(prev => ({...prev, descripcion: e.target.value}))}
+                      required
+                      style={{
+                        width: '100%',
+                        padding: '0.6rem',
+                        borderRadius: '8px',
+                        border: '1px solid #ddd',
+                        marginTop: '0.3rem',
+                        minHeight: '100px',
+                        resize: 'vertical'
+                      }}
+                    />
+                  </label>
+                </div>
+                <div style={{display: 'flex', gap: '1rem', marginTop: '1rem'}}>
+                  <button 
+                    type="submit" 
+                    style={{
+                      flex: 1,
+                      background: 'var(--gold)',
+                      color: '#fff',
+                      border: 'none',
+                      borderRadius: '8px',
+                      padding: '0.8rem',
+                      fontWeight: 600,
+                      cursor: 'pointer'
+                    }}
+                  >
+                    Crear Evento
+                  </button>
+                  <button 
+                    type="button" 
+                    onClick={() => setShowCreateEventModal(false)}
+                    style={{
+                      flex: 1,
+                      background: '#eee',
+                      color: '#333',
+                      border: 'none',
+                      borderRadius: '8px',
+                      padding: '0.8rem',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    Cancelar
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
+
+        {/* Modal de Crear Menú */}
+        {showCreateMenuModal && (
+          <div className="modal-overlay">
+            <div className="modal-container" style={{ maxWidth: 500, padding: '1.5rem', borderRadius: 16 }}>
+              <button 
+                className="close-btn" 
+                onClick={() => setShowCreateMenuModal(false)} 
+                style={{ position: 'absolute', top: 16, right: 16, fontSize: 24, background: 'none', border: 'none', cursor: 'pointer' }}
+              >
+                ×
+              </button>
+              <h2 style={{fontSize: '1.2rem', marginBottom: '1rem'}}>Crear Nuevo Menú</h2>
+              {error && (
+                <div style={{
+                  background: '#fee',
+                  color: '#c00',
+                  padding: '0.5rem',
+                  borderRadius: '4px',
+                  marginBottom: '1rem'
+                }}>
+                  {error}
+                </div>
+              )}
+              <form onSubmit={handleCreateMenu} style={{display: 'flex', flexDirection: 'column', gap: '1rem'}}>
+                <div>
+                  <label style={{display: 'block', marginBottom: '0.5rem', fontWeight: 500}}>
+                    Nombre del Menú:
+                    <input
+                      type="text"
+                      value={newMenuData.desc_menu}
+                      onChange={(e) => setNewMenuData(prev => ({...prev, desc_menu: e.target.value}))}
+                      required
+                      placeholder="Ej: Menú Vegetariano"
+                      style={{
+                        width: '100%',
+                        padding: '0.6rem',
+                        borderRadius: '8px',
+                        border: '1px solid #ddd',
+                        marginTop: '0.3rem'
+                      }}
+                    />
+                  </label>
+                </div>
+                <div>
+                  <label style={{display: 'block', marginBottom: '0.5rem', fontWeight: 500}}>
+                    Proveedor de Catering:
+                    <select
+                      value={newMenuData.id_proveedor}
+                      onChange={(e) => setNewMenuData(prev => ({...prev, id_proveedor: e.target.value}))}
+                      required
+                      style={{
+                        width: '100%',
+                        padding: '0.6rem',
+                        borderRadius: '8px',
+                        border: '1px solid #ddd',
+                        marginTop: '0.3rem'
+                      }}
+                    >
+                      <option value="">Seleccione un proveedor</option>
+                      {proveedoresCatering.map(proveedor => (
+                        <option key={proveedor.id_proveedor} value={proveedor.id_proveedor}>
+                          {proveedor.nombre_proveedor}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                </div>
+                <div>
+                  <label style={{display: 'block', marginBottom: '0.5rem', fontWeight: 500}}>
+                    Platos Disponibles:
+                    <div style={{
+                      maxHeight: '200px',
+                      overflowY: 'auto',
+                      border: '1px solid #ddd',
+                      borderRadius: '8px',
+                      padding: '0.5rem',
+                      marginTop: '0.3rem'
+                    }}>
+                      {platosDisponibles.length === 0 ? (
+                        <div style={{ textAlign: 'center', padding: '1rem', color: '#666' }}>
+                          No hay platos disponibles
+                        </div>
+                      ) : (
+                        platosDisponibles.map(plato => (
+                          <div key={plato.id_plato} style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            padding: '0.5rem',
+                            borderBottom: '1px solid #eee'
+                          }}>
+                            <input
+                              type="checkbox"
+                              id={`plato-${plato.id_plato}`}
+                              checked={newMenuData.selectedPlatos.some(p => p.id_plato === plato.id_plato)}
+                              onChange={() => {
+                                setNewMenuData(prev => ({
+                                  ...prev,
+                                  selectedPlatos: prev.selectedPlatos.some(p => p.id_plato === plato.id_plato)
+                                    ? prev.selectedPlatos.filter(p => p.id_plato !== plato.id_plato)
+                                    : [...prev.selectedPlatos, plato]
+                                }));
+                              }}
+                              style={{ marginRight: '0.5rem' }}
+                            />
+                            <label htmlFor={`plato-${plato.id_plato}`} style={{ flex: 1 }}>
+                              {plato.nombre}
+                            </label>
+                          </div>
+                        ))
+                      )}
+                    </div>
+                  </label>
+                </div>
+                <div style={{display: 'flex', gap: '1rem', marginTop: '1rem'}}>
+                  <button 
+                    type="submit" 
+                    style={{
+                      flex: 1,
+                      background: 'var(--gold)',
+                      color: '#fff',
+                      border: 'none',
+                      borderRadius: '8px',
+                      padding: '0.8rem',
+                      fontWeight: 600,
+                      cursor: 'pointer'
+                    }}
+                  >
+                    Crear Menú
+                  </button>
+                  <button 
+                    type="button" 
+                    onClick={() => {
+                      setShowCreateMenuModal(false);
+                      setError(null);
+                    }}
+                    style={{
+                      flex: 1,
+                      background: '#eee',
+                      color: '#333',
+                      border: 'none',
+                      borderRadius: '8px',
+                      padding: '0.8rem',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    Cancelar
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
       </div>
     );
   };
@@ -875,7 +1352,7 @@ export default function Catering() {
                     <span>Evento:</span>
                     <select
                       name="id_evento"
-                      value={formData.id_evento || ''}
+                      value={formData.id_evento}
                       onChange={handleInputChange}
                       required
                     >
@@ -893,7 +1370,7 @@ export default function Catering() {
                     <input
                       type="number"
                       name="personas_catering"
-                      value={formData.personas_catering || ''}
+                      value={formData.personas_catering}
                       onChange={handleInputChange}
                       required
                       min="1"
@@ -905,7 +1382,7 @@ export default function Catering() {
                     <input
                       type="number"
                       name="precioneto_catering"
-                      value={formData.precioneto_catering || ''}
+                      value={formData.precioneto_catering}
                       onChange={handleInputChange}
                       required
                       min="0"
@@ -919,7 +1396,7 @@ export default function Catering() {
                     <input
                       type="number"
                       name="itbis_catering"
-                      value={formData.itbis_catering || ''}
+                      value={formData.itbis_catering}
                       readOnly
                       className="readonly"
                       placeholder="ITBIS calculado automáticamente"
@@ -931,7 +1408,7 @@ export default function Catering() {
                     <input
                       type="number"
                       name="total_catering"
-                      value={formData.total_catering || ''}
+                      value={formData.total_catering}
                       readOnly
                       className="readonly"
                       placeholder="Total calculado automáticamente"
@@ -1065,7 +1542,7 @@ export default function Catering() {
                   <tbody>
                     {proveedores.map((proveedor) => (
                       <tr key={proveedor.id_proveedor}>
-                        <td>{proveedor.nombre}</td>
+                        <td>{proveedor.nombre_proveedor}</td>
                         <td>{proveedor.telefono}</td>
                         <td>
                           <span className={`estado-badge ${proveedor.estado.toLowerCase()}`}>
