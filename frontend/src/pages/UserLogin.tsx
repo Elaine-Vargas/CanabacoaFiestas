@@ -163,12 +163,14 @@ const UserLogin: React.FC = () => {
     }
 
     try {
+      const { confirmar_contrasena, ...userData } = signupData;
+      
       const response = await fetch(`${apiUrl}/auth/register-client`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(signupData),
+        body: JSON.stringify(userData),
         credentials: 'include'
       });
       const responseText = await response.text();
@@ -186,7 +188,7 @@ const UserLogin: React.FC = () => {
   
       const data = JSON.parse(responseText);
       localStorage.setItem('token', data.token);
-      const userData = {
+      const userInfo = {
         nombre_usuario: signupData.nombre_usuario,
         apellido_usuario: signupData.apellido_usuario,
         usuario_login: signupData.usuario_login,
@@ -195,7 +197,7 @@ const UserLogin: React.FC = () => {
         correo_usuario: signupData.correo_usuario,
         tel_usuario: signupData.tel_usuario
       };
-      localStorage.setItem('userData', JSON.stringify(userData));
+      localStorage.setItem('userData', JSON.stringify(userInfo));
       
       alert(data.mensaje);
       navigate('/Menu-Servicios/Bienvenida');
