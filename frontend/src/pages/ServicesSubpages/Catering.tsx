@@ -19,17 +19,17 @@ export type RolePermissions = {
 
 interface Plato {
   id_plato: number;
-  desc_plato: string;
+  nombre: string;
+  descripcion: string;
 }
 
 interface Menu {
   id_menu: number;
   desc_menu: string;
   id_proveedor: number;
-  platos?: Plato[];
-  proveedor?: {
-    nombre: string;
-  };
+  precio_menu: number;
+  platos: Plato[];
+  proveedor: string;
 }
 
 interface Catering {
@@ -57,7 +57,7 @@ interface MenuCatalogo {
   id_menu: number;
   desc_menu: string;
   proveedor: string;
-  precio_total: number | null;
+  precio_menu: number;
   platos: { nombre: string }[];
 }
 
@@ -308,7 +308,7 @@ export default function Catering() {
       // Calcular el precio neto basado en los menús seleccionados
       const precioNeto = newMenus.reduce((total, menu) => {
         const menuCatalogo = menusCatalogo.find(m => m.id_menu === menu.id_menu);
-        return total + (menuCatalogo?.precio_total || 0);
+        return total + (menuCatalogo?.precio_menu || 0);
       }, 0);
       
       const itbis = precioNeto * 0.18;
@@ -515,46 +515,74 @@ export default function Catering() {
     </div>
   );
 
-  const renderClientView = () => {
-    const filteredMenus = menusCatalogo?.filter(menu => 
-      menu.desc_menu.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      menu.proveedor.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      menu.platos.some(plato => plato.nombre.toLowerCase().includes(searchTerm.toLowerCase()))
-    ) || [];
+  const filteredMenus = menusCatalogo.filter((menu) => {
+    const searchTermLower = searchTerm.toLowerCase().trim();
+    
+    // Si no hay término de búsqueda, solo filtrar por categoría
+    if (!searchTermLower) {
+      const precio = Number(menu.precio_menu);
+      if (selectedCategory === 'todos') return true;
+      if (selectedCategory === 'economico') return precio <= 250;
+      if (selectedCategory === 'premium') return precio > 250;
+      return true;
+    }
 
+    // Buscar en todos los campos
+    const menuMatch = menu.desc_menu.toLowerCase().includes(searchTermLower);
+    const proveedorMatch = menu.proveedor.toLowerCase().includes(searchTermLower);
+    const platosMatch = menu.platos.some(plato => 
+      plato.nombre.toLowerCase().includes(searchTermLower)
+    );
+
+    const matchesSearch = menuMatch || proveedorMatch || platosMatch;
+
+    // Aplicar filtro de categoría
+    const precio = Number(menu.precio_menu);
+    if (selectedCategory === 'todos') {
+      return matchesSearch;
+    } else if (selectedCategory === 'economico') {
+      return matchesSearch && precio <= 250;
+    } else if (selectedCategory === 'premium') {
+      return matchesSearch && precio > 250;
+    }
+
+    return matchesSearch;
+  });
+
+  const renderClientView = () => {
     return (
-      <div className="menu-catalogo-container">
-        
+      <div className="catering-content">
         <div className="menu-catalogo-filters">
-          <div className="search-container">
-            <svg className="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <circle cx="11" cy="11" r="8"/>
-              <line x1="21" y1="21" x2="16.65" y2="16.65"/>
-            </svg>
+          <div className="search-bar">
             <input
               type="text"
-              placeholder="Buscar por menú, proveedor o plato..."
-              className="search-input"
+              placeholder="Buscar menús, platos o proveedores..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
           </div>
-          <select
-            className="filter-select"
-            value={selectedCategory}
-            onChange={(e) => setSelectedCategory(e.target.value)}
-          >
-            <option value="todos">Todos los menús</option>
-            <option value="economico">Económicos</option>
-            <option value="premium">Premium</option>
-          </select>
+          <div className="category-filter">
+            <select
+              value={selectedCategory}
+              onChange={(e) => setSelectedCategory(e.target.value)}
+            >
+              <option value="todos">Todos los menús</option>
+              <option value="economico">Económicos (hasta $250)</option>
+              <option value="premium">Premium (más de $250)</option>
+            </select>
+          </div>
         </div>
 
         <div className="menu-catalogo-grid">
           {filteredMenus.length > 0 ? (
             filteredMenus.map((menu) => (
-              <div key={menu.id_menu} className="menu-catalogo-card">
-                <span className="menu-catalogo-proveedor">{menu.proveedor}</span>
+              <div
+                key={menu.id_menu}
+                className={`menu-catalogo-card ${Number(menu.precio_menu) > 250 ? 'premium' : 'economico'}`}
+              >
+                <span className="menu-catalogo-proveedor">
+                  {menu.proveedor}
+                </span>
                 <div className="menu-catalogo-card-content">
                   <h3 className="menu-catalogo-card-title">{menu.desc_menu}</h3>
                   <div className="menu-catalogo-platos-list">
@@ -562,7 +590,9 @@ export default function Catering() {
                     <ul>
                       {menu.platos.map((plato, index) => (
                         <li key={index}>
-                          <svg viewBox="0 0 20 20" fill="currentColor"><path d="M10 2a8 8 0 100 16 8 8 0 000-16zm1 11H9v-2h2v2zm0-4H9V5h2v4z" /></svg>
+                          <svg viewBox="0 0 20 20" fill="currentColor">
+                            <path d="M10 2a8 8 0 100 16 8 8 0 000-16zm1 11H9v-2h2v2zm0-4H9V5h2v4z" />
+                          </svg>
                           <span>{plato.nombre}</span>
                         </li>
                       ))}
@@ -570,7 +600,9 @@ export default function Catering() {
                   </div>
                   <div className="menu-catalogo-precio">
                     <span>Precio total:</span>
-                    <span className="precio-total">${menu.precio_total?.toFixed(2) || '0.00'}</span>
+                    <span className="precio-total">
+                      ${Number(menu.precio_menu).toFixed(2)}
+                    </span>
                   </div>
                   <button
                     onClick={() => handleSolicitarMenu(menu.id_menu)}
@@ -725,7 +757,7 @@ export default function Catering() {
                           <h4>{menu.desc_menu}</h4>
                           <div className="menu-platos">
                             {menu.platos?.map(plato => (
-                              <p key={plato.id_plato}>{plato.desc_plato}</p>
+                              <p key={plato.id_plato}>{plato.nombre}</p>
                             ))}
                           </div>
                         </div>
@@ -807,7 +839,7 @@ export default function Catering() {
                     {menus.map((menu) => (
                       <tr key={menu.id_menu}>
                         <td>{menu.desc_menu}</td>
-                        <td>{menu.proveedor?.nombre || 'No asignado'}</td>
+                        <td>{menu.proveedor}</td>
                         <td>{menu.platos?.length || 0}</td>
                       </tr>
                     ))}

@@ -157,166 +157,140 @@ $search-shadow: 0 4px 16px var(--color-shadow);
   }
 }
 
+// Estilos para la cuadrícula de menús
 .menu-catalogo-grid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 2rem;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 1.5rem;
   padding: 1rem;
-  min-height: 100vh;
 }
 
-.menu-catalogo-card {
-  position: relative;
+// Estilos para las tarjetas de menú
+.menu-card {
   background: var(--color-background2);
-  backdrop-filter: blur(12px);
-  border-radius: 1.5rem;
-  box-shadow: 0 8px 32px 0 var(--color-shadow);
-  border: 1.5px solid var(--dark-beige);
+  border-radius: $border-radius;
+  box-shadow: 0 4px 12px var(--color-shadow);
+  padding: 1.5rem;
+  transition: $transition;
+  border: 2px solid transparent;
+  position: relative;
   overflow: hidden;
-  transition: all 0.3s ease;
-  height: 500px;
-  display: flex;
-  flex-direction: column;
 
   &:hover {
-    box-shadow: 0 16px 48px 0 var(--color-shadow);
-    transform: translateY(-10px) scale(1.02);
+    transform: translateY(-4px);
+    box-shadow: 0 8px 24px var(--color-shadow);
+  }
+
+  &.economic {
     border-color: var(--gold);
-  }
-}
-
-.menu-catalogo-proveedor {
-  position: absolute;
-  top: 1rem;
-  right: 1rem;
-  background: linear-gradient(90deg, var(--brown) 0%, var(--light-brown) 100%);
-  color: var(--white);
-  font-size: 0.85rem;
-  font-weight: 700;
-  padding: 0.3rem 1rem;
-  border-radius: 999px;
-  box-shadow: 0 2px 8px var(--color-shadow);
-  z-index: 2;
-}
-
-.menu-catalogo-card-content {
-  padding: 2rem 1.5rem 1.5rem 1.5rem;
-  display: flex;
-  flex-direction: column;
-  height: 100%;
-  background: linear-gradient(to bottom, var(--color-background2), var(--beige));
-  overflow-y: auto;
-}
-
-.menu-catalogo-card-title {
-  font-size: 1.3rem;
-  font-weight: 800;
-  color: var(--color-text2);
-  margin-bottom: 0.7rem;
-  text-shadow: 0 1px 4px var(--color-shadow);
-}
-
-.menu-catalogo-platos-list {
-  margin-bottom: 1.2rem;
-  flex: 1;
-  overflow-y: auto;
-
-  h4 {
-    font-weight: 600;
-    color: var(--color-text2);
-    margin-bottom: 0.5rem;
-    position: sticky;
-    top: 0;
-    background: inherit;
-    padding: 0.5rem 0;
-    z-index: 1;
+    &::before {
+      content: 'Económico';
+      position: absolute;
+      top: 12px;
+      right: -30px;
+      background: var(--gold);
+      color: var(--color-background2);
+      padding: 4px 40px;
+      transform: rotate(45deg);
+      font-size: 12px;
+      font-weight: 600;
+    }
   }
 
-  ul {
-    list-style: none;
-    padding: 0;
-    margin: 0;
+  &.premium {
+    border-color: var(--dark-gold);
+    &::before {
+      content: 'Premium';
+      position: absolute;
+      top: 12px;
+      right: -30px;
+      background: var(--dark-gold);
+      color: var(--color-background2);
+      padding: 4px 40px;
+      transform: rotate(45deg);
+      font-size: 12px;
+      font-weight: 600;
+    }
+  }
 
-    li {
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
-      font-size: 0.98rem;
-      color: var(--color-text);
-      background: var(--light-beige);
-      border-radius: 0.5rem;
-      padding: 0.3rem 0.7rem;
-      margin-bottom: 0.3rem;
+  .menu-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
 
-      svg {
-        color: var(--gold);
-        width: 1.1em;
-        height: 1.1em;
-        flex-shrink: 0;
-      }
+    h3 {
+      font-size: 1.2rem;
+      font-weight: 600;
+      color: var(--color-text2);
+      margin: 0;
+    }
 
-      span {
-        flex: 1;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
+    .menu-price {
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: var(--gold);
+    }
+  }
+
+  .menu-description {
+    color: var(--color-text);
+    font-size: 0.95rem;
+    line-height: 1.5;
+    margin-bottom: 1rem;
+  }
+
+  .menu-dishes {
+    margin-bottom: 1.5rem;
+
+    h4 {
+      font-size: 1rem;
+      font-weight: 600;
+      color: var(--color-text2);
+      margin-bottom: 0.5rem;
+    }
+
+    ul {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+
+      li {
+        color: var(--color-text);
+        font-size: 0.9rem;
+        padding: 0.25rem 0;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+
+        &::before {
+          content: '•';
+          color: var(--gold);
+          font-size: 1.2rem;
+        }
       }
     }
   }
-}
 
-.menu-catalogo-precio {
-  border-top: 1px solid var(--dark-beige);
-  padding-top: 1.2rem;
-  margin-top: 1.2rem;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-
-  span {
-    font-size: 1.1rem;
+  .request-button {
+    width: 100%;
+    padding: 0.8rem;
+    background: linear-gradient(90deg, var(--gold) 0%, var(--dark-gold) 100%);
+    color: var(--color-background2);
+    border: none;
+    border-radius: $border-radius;
+    font-size: 0.95rem;
     font-weight: 600;
-    color: var(--color-text2);
-  }
-  
-  .precio-total {
-    font-size: 1.5rem;
-    font-weight: 800;
-    color: var(--brown);
-    text-shadow: 0 1px 4px var(--color-shadow);
-  }
-}
+    cursor: pointer;
+    transition: $transition;
 
-.menu-catalogo-btn {
-  width: 100%;
-  margin-top: 1.5rem;
-  background: linear-gradient(90deg, var(--brown) 0%, var(--light-brown) 100%);
-  color: var(--white);
-  padding: 0.9rem 0;
-  border-radius: 1rem;
-  font-weight: 700;
-  font-size: 1.1rem;
-  box-shadow: 0 2px 8px var(--color-shadow);
-  border: none;
-  cursor: pointer;
-  transition: all 0.3s ease;
+    &:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px var(--color-shadow);
+    }
 
-  &:hover {
-    background: linear-gradient(90deg, var(--light-brown) 0%, var(--brown) 100%);
-    box-shadow: 0 6px 18px var(--color-shadow);
-    transform: translateY(-2px);
-  }
-}
-
-// Media queries para responsividad
-@media (max-width: 1200px) {
-  .menu-catalogo-grid {
-    grid-template-columns: repeat(2, 1fr);
-  }
-}
-
-@media (max-width: 768px) {
-  .menu-catalogo-grid {
-    grid-template-columns: 1fr;
+    &:active {
+      transform: translateY(0);
+    }
   }
 } 

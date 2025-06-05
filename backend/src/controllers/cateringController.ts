@@ -2,6 +2,10 @@ import { Request, Response } from 'express';
 import CateringServicio from '../models/CateringServicio_model';
 import Evento from '../models/Evento_model';
 import MenuCatering from '../models/MenuCatering_model';
+import Menu from '../models/Menu_model';
+import PlatoMenu from '../models/PlatoMenu_model';
+import Plato from '../models/Plato_model';
+import Proveedor from '../models/Proveedor_model';
 
 export const createCatering = async (req: Request, res: Response) => {
     try {
@@ -24,9 +28,9 @@ export const createCatering = async (req: Request, res: Response) => {
         const catering = await CateringServicio.create({
             id_evento,
             personas_catering,
-            precioneto_catering: precioneto_catering  || null,
-            itbis_catering: precioneto_catering  || null,
-            total_catering: precioneto_catering  || null
+            precioneto_catering: precioneto_catering || 0,
+            itbis_catering: itbis_catering || 0,
+            total_catering: total_catering || 0
         });
 
         // Si se proporcionaron menús, crearlos
@@ -45,7 +49,29 @@ export const createCatering = async (req: Request, res: Response) => {
             include: [
                 {
                     model: MenuCatering,
-                    as: 'menu_catering'
+                    as: 'menu_catering',
+                    include: [
+                        {
+                            model: Menu,
+                            as: 'menu',
+                            include: [
+                                {
+                                    model: PlatoMenu,
+                                    as: 'platos_menu',
+                                    include: [
+                                        {
+                                            model: Plato,
+                                            as: 'plato'
+                                        }
+                                    ]
+                                },
+                                {
+                                    model: Proveedor,
+                                    as: 'proveedor'
+                                }
+                            ]
+                        }
+                    ]
                 }
             ]
         });
@@ -67,7 +93,29 @@ export const getAllCaterings = async (req: Request, res: Response) => {
                 },
                 {
                     model: MenuCatering,
-                    as: 'menu_catering'
+                    as: 'menu_catering',
+                    include: [
+                        {
+                            model: Menu,
+                            as: 'menu',
+                            include: [
+                                {
+                                    model: PlatoMenu,
+                                    as: 'platos_menu',
+                                    include: [
+                                        {
+                                            model: Plato,
+                                            as: 'plato'
+                                        }
+                                    ]
+                                },
+                                {
+                                    model: Proveedor,
+                                    as: 'proveedor'
+                                }
+                            ]
+                        }
+                    ]
                 }
             ]
         });

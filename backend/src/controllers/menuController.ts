@@ -275,6 +275,7 @@ export const getMenuByCatering = async (req: Request, res: Response) => {
                 {
                     model: Menu,
                     as: 'menu',
+                    attributes: ['id_menu', 'desc_menu', 'precio_menu', 'id_proveedor'],
                     include: [
                         {
                             model: PlatoMenu,
@@ -352,6 +353,7 @@ export const getMenusWithDetails = async (req: Request, res: Response) => {
 export const getMenuCatalog = async (req: Request, res: Response) => {
     try {
         const menus = await Menu.findAll({
+            attributes: ['id_menu', 'desc_menu', 'precio_menu'],
             include: [
                 {
                     model: PlatoMenu,
@@ -375,13 +377,12 @@ export const getMenuCatalog = async (req: Request, res: Response) => {
         const menuCatalog = menus.map(menu => ({
             id_menu: menu.id_menu,
             desc_menu: menu.desc_menu,
+            precio_menu: parseFloat(menu.precio_menu.toString()),
             proveedor: menu.proveedor?.nombre_proveedor || 'Sin proveedor',
             platos: menu.platos_menu?.map(pm => ({
                 id: pm.plato?.id_plato,
-                nombre: pm.plato?.desc_plato,
-                precio: 0 // Default price since Plato model doesn't have precio
-            })) || [],
-            precio_total: 0 // Default total price
+                nombre: pm.plato?.desc_plato
+            })) || []
         }));
 
         res.json(menuCatalog);
