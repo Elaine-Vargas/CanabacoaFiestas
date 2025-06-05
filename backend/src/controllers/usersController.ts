@@ -4,21 +4,27 @@ import { Op } from 'sequelize';
 
 export const getAllUsers = async (req: Request, res: Response) => {
   try {
-    const { rol, search } = req.query;
+    const { rol, search, estados } = req.query;
 
     // Construir la condición de búsqueda
-    let whereCondition: any = {
-      estado_usuario: 'Activo'
-    };
+    const whereClause: any = {};
 
     // Filtrar por rol si se proporciona
     if (rol) {
-      whereCondition.id_rol = rol;
+      whereClause.id_rol = rol;
+    }
+
+    // Filtrar por estados si se proporciona
+    if (estados) {
+      const estadosArray = (estados as string).split(',');
+      whereClause.estado_usuario = {
+        [Op.in]: estadosArray
+      };
     }
 
     // Agregar búsqueda por diferentes campos si se proporciona
     if (search) {
-      whereCondition[Op.or] = [
+      whereClause[Op.or] = [
         { nombre_usuario: { [Op.like]: `%${search}%` } },
         { apellido_usuario: { [Op.like]: `%${search}%` } },
         { cedula_usuario: { [Op.like]: `%${search}%` } },
@@ -28,7 +34,7 @@ export const getAllUsers = async (req: Request, res: Response) => {
     }
 
     const usuarios = await Usuario.findAll({
-      where: whereCondition,
+      where: whereClause,
       attributes: [
         'nombre_usuario',
         'apellido_usuario',
@@ -111,6 +117,52 @@ export const getUsersByRole = async (req: Request, res: Response) => {
   } catch (error) {
     console.error('Error al obtener usuarios por rol:', error);
     res.status(500).json({ error: 'Error al obtener usuarios por rol' });
+  }
+};
+
+export const getUsersByStatus = async (req: Request, res: Response) => {
+  try {
+    const { estado } = req.params;
+
+    const usuarios = await Usuario.findAll({
+      where: {
+        estado_usuario: estado
+      },
+      attributes: [
+        'nombre_usuario',
+        'apellido_usuario',
+        'cedula_usuario',
+        'correo_usuario',
+        'tel_usuario',
+        'usuario_login',
+        'id_rol',
+        'estado_usuario'
+      ],
+      include: [{
+        association: 'rol',
+        attributes: ['nombre_rol']
+      }],
+      order: [['nombre_usuario', 'ASC']]
+    });
+
+    res.json({
+      total: usuarios.length,
+      usuarios: usuarios.map(usuario => ({
+        nombre_usuario: usuario.nombre_usuario,
+        apellido_usuario: usuario.apellido_usuario,
+        cedula_usuario: usuario.cedula_usuario,
+        correo_usuario: usuario.correo_usuario,
+        tel_usuario: usuario.tel_usuario,
+        usuario_login: usuario.usuario_login,
+        id_rol: usuario.id_rol,
+        estado_usuario: usuario.estado_usuario,
+        rol_nombre: usuario.rol?.nombre_rol
+      }))
+    });
+
+  } catch (error) {
+    console.error('Error al obtener usuarios por estado:', error);
+    res.status(500).json({ error: 'Error al obtener usuarios por estado' });
   }
 };
 

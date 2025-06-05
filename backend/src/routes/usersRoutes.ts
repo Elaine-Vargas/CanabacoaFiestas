@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { 
   getAllUsers, 
+  getUsersByStatus,
   getUsersByRole, 
   searchUsers,
   updateUser,
@@ -12,6 +13,14 @@ const router = Router();
 router.get('/', async (req, res, next) => {
   try {
     await getAllUsers(req, res);
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.get('/estado/:estado_usuario', async (req, res, next) => {
+  try {
+    await getUsersByStatus(req, res);
   } catch (error) {
     next(error);
   }
