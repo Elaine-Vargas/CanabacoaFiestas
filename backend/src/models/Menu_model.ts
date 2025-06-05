@@ -12,8 +12,8 @@ export default class Menu extends Model {
   @Column({ type: DataType.TEXT, allowNull: false })
   desc_menu!: string;
 
-  @Column({ type: DataType.DECIMAL(10,2), allowNull: false })
-  precio_menu!: string;
+  @Column({ type: DataType.DECIMAL(10,2), allowNull: false, field: 'precio_menu' })
+  precio_menu!: number;
 
   @ForeignKey(() => Proveedor)
   @Column({ type: DataType.INTEGER })

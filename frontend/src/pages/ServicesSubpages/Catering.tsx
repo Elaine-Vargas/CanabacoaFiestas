@@ -26,6 +26,7 @@ interface Menu {
   id_menu: number;
   desc_menu: string;
   id_proveedor: number;
+  precio_menu: number;
   platos?: Plato[];
   proveedor?: {
     nombre: string;
@@ -57,7 +58,7 @@ interface MenuCatalogo {
   id_menu: number;
   desc_menu: string;
   proveedor: string;
-  precio_total: number | null;
+  precio_menu: number;
   platos: { nombre: string }[];
 }
 
@@ -308,7 +309,7 @@ export default function Catering() {
       // Calcular el precio neto basado en los menús seleccionados
       const precioNeto = newMenus.reduce((total, menu) => {
         const menuCatalogo = menusCatalogo.find(m => m.id_menu === menu.id_menu);
-        return total + (menuCatalogo?.precio_total || 0);
+        return total + (menuCatalogo?.precio_menu || 0);
       }, 0);
       
       const itbis = precioNeto * 0.18;
@@ -570,7 +571,7 @@ export default function Catering() {
                   </div>
                   <div className="menu-catalogo-precio">
                     <span>Precio total:</span>
-                    <span className="precio-total">${menu.precio_total?.toFixed(2) || '0.00'}</span>
+                    <span className="precio-total">${Number(menu.precio_menu).toFixed(2)}</span>
                   </div>
                   <button
                     onClick={() => handleSolicitarMenu(menu.id_menu)}

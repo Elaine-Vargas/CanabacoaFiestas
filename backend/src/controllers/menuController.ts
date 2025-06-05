@@ -275,6 +275,7 @@ export const getMenuByCatering = async (req: Request, res: Response) => {
                 {
                     model: Menu,
                     as: 'menu',
+                    attributes: ['id_menu', 'desc_menu', 'precio_menu', 'id_proveedor'],
                     include: [
                         {
                             model: PlatoMenu,
@@ -376,7 +377,7 @@ export const getMenuCatalog = async (req: Request, res: Response) => {
         const menuCatalog = menus.map(menu => ({
             id_menu: menu.id_menu,
             desc_menu: menu.desc_menu,
-            precio_menu: menu.precio_menu ? menu.precio_menu.toString() : '0.00',
+            precio_menu: parseFloat(menu.precio_menu.toString()),
             proveedor: menu.proveedor?.nombre_proveedor || 'Sin proveedor',
             platos: menu.platos_menu?.map(pm => ({
                 id: pm.plato?.id_plato,
