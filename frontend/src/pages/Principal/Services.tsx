@@ -1,4 +1,4 @@
-import Footer from '../../components/principal/Footer';
+import '../../components/principal/Footer';
 import "../styles/mainPages/Info.scss";
 import alquilerImg from '../assets/servicesPhotos/alquilerServices.webp';
 import decoracionImg from '../assets/servicesPhotos/decorServices.webp';

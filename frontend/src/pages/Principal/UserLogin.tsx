@@ -1,8 +1,8 @@
 import React, { useState } from "react";
 import { Link, useNavigate, Outlet, useLocation } from 'react-router-dom';
-import "../styles/mainPages/Login.scss";
-import LogoBlanco from "../assets/logoVariants/OVALO-CF(titulo blanco).svg";
-import LogoDorado from "../assets/logoVariants/OVALO-CF(titulo dorado osc).svg";
+import "../../styles/mainPages/Login.scss";
+import LogoBlanco from "../../assets/logoVariants/OVALO-CF(titulo blanco).svg";
+import LogoDorado from "../../assets/logoVariants/OVALO-CF(titulo dorado osc).svg";
 import LoginNav from "../../components/Otros/LoginNav";
 import VisibilityOffIcon from '@mui/icons-material/VisibilityOff';
 import VisibilityIcon from '@mui/icons-material/Visibility';

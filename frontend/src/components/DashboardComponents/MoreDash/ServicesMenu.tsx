@@ -11,7 +11,7 @@ import {
 import { IoIosExit } from "react-icons/io";
 import { useState } from "react";
 import ColorTheme from "../../../functions/ColorTheme";
-import "../styles/dashboard/DashboardServices.scss";
+import "../../../styles/dashboard/DashboardServices.scss";
 import { useMediaQuery } from "@mui/material";
 import { Drawer, IconButton, List, ListItem, ListItemButton, ListItemText } from "@mui/material";
 import MenuRoundedIcon from "@mui/icons-material/MenuRounded";

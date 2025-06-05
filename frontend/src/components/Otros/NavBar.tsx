@@ -1,11 +1,11 @@
 import {Drawer, List, ListItem, ListItemButton, ListItemText, Button, IconButton} from "@mui/material";
 import MenuRoundedIcon from "@mui/icons-material/MenuRounded";
-import circuloLogo from "../assets/logoVariants/CIRCULO-CF(blanco).svg";
+import circuloLogo from "../../assets/logoVariants/CIRCULO-CF(blanco).svg";
 import ColorTheme from "../../functions/ColorTheme";
 import { useMediaQuery } from "@mui/material";
 import { useState, lazy, Suspense } from "react";
 import React from "react";
-import "../styles/mainPages/Navbar.scss";
+import "../../styles/mainPages/Navbar.scss";
 const BackIcon = lazy(() => import("@mui/icons-material/ArrowBackRounded"));
 
 const NavBar = React.memo(() => {

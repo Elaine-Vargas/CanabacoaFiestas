@@ -1,4 +1,4 @@
-import '../styles/mainPages/Loading.scss'; 
+import '../../styles/mainPages/Loading.scss'; 
 import Navbar from './NavBar';
 
 

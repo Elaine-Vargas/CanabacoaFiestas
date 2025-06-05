@@ -1,5 +1,5 @@
 import { lazy, Suspense } from "react";
-import "../styles/mainPages/Footer.scss";
+import "../../styles/mainPages/Footer.scss";
 import InstagramIcon from '@mui/icons-material/Instagram';
 import WhatsAppIcon from '@mui/icons-material/WhatsApp';
 import MailIcon from '@mui/icons-material/MailOutlineRounded';
