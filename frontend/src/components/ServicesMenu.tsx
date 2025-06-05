@@ -59,7 +59,7 @@ export default function ServicesMenu({ selectedService }: ServicesMenuProps) {
   const handleLogout = () => {
     localStorage.removeItem('userData');
     localStorage.removeItem('token');
-    navigate("/");
+    navigate("/Login");
   };
 
   const handleNavigation = (path: string) => {

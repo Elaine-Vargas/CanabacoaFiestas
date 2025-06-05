@@ -10,6 +10,9 @@ const PassRecovery = () => {
   const [cargando, setCargando] = useState(false);
   const navigate = useNavigate();
 
+  const apiUrl = import.meta.env.VITE_API_BASE_URL;
+
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setMensaje('');
@@ -17,7 +20,7 @@ const PassRecovery = () => {
     setCargando(true);
 
     try {
-      const res = await axios.post('/api/auth/mail-recovery', 
+      const res = await axios.post(`${apiUrl}/auth/mail-recovery`, 
         { correo_usuario: correo },
         {
           headers: {

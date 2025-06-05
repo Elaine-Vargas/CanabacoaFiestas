@@ -124,10 +124,6 @@ export default class Usuario extends Model {
     validate: {
       notEmpty: {
         msg: 'La contraseña no puede estar vacía'
-      },
-      len: {
-        args: [8, 25],
-        msg: 'La contraseña debe tener entre 8-25 caracteres'
       }
     }
   })
@@ -137,13 +133,30 @@ export default class Usuario extends Model {
   @BeforeUpdate
   static async hashPassword(usuario: Usuario) {
     if (usuario.changed('contrasena_login')) {
-      const passwordRegex = /^(?=.*[A-Z])(?=.*\d)(?=.*[^\w\s])[A-Za-z\d\W]{8,25}$/;
-  
-      if (!passwordRegex.test(usuario.contrasena_login)) {
-        throw new Error('La contraseña debe tener al menos una mayúscula, un número y un carácter especial');
+      const password = usuario.contrasena_login;
+
+      // Validación de longitud
+      if (password.length < 8 || password.length > 25) {
+        throw new Error('La contraseña debe tener entre 8 y 25 caracteres');
       }
-  
-      usuario.contrasena_login = await bcrypt.hash(usuario.contrasena_login, 10);
+
+      // Validación de mayúscula
+      if (!/[A-Z]/.test(password)) {
+        throw new Error('Debe contener al menos una mayúscula');
+      }
+
+      // Validación de número
+      if (!/[0-9]/.test(password)) {
+        throw new Error('Debe contener al menos un número');
+      }
+
+      // Validación de carácter especial
+      if (!/[!@#$%^&*]/.test(password)) {
+        throw new Error('Debe contener al menos un carácter especial (!@#$%^&*)');
+      }
+
+      // Si pasa todas las validaciones, hashear la contraseña
+      usuario.contrasena_login = await bcrypt.hash(password, 10);
     }
   }
 

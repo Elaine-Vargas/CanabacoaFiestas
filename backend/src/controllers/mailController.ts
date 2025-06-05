@@ -124,73 +124,135 @@ export const sendRecoveryEmail = async (req: Request, res: Response) => {
     });
   }
 };
+
 export const resetPassword = async (req: Request, res: Response) => {
-    const { token, password } = req.body;
-  
-    console.log('[Reset] Solicitud recibida con token:', token?.substring(0, 10) + '...');
-  
-    if (!token || !password) {
-      console.log('[Reset] Error: token o contraseña faltante');
-      return res.status(400).json({ 
-        error: 'Token y nueva contraseña son requeridos',
-        details: 'Verifica que ambos campos estén completos'
+  const { nueva_contrasena, token } = req.body;
+  console.log('[ResetPassword] Solicitud recibida');
+
+  if (!nueva_contrasena || !token) {
+    console.log('[ResetPassword] Error: Faltan datos requeridos');
+    return res.status(400).json({ 
+      error: 'Se requieren tanto la nueva contraseña como el token de verificación'
+    });
+  }
+
+  try {
+    // Verificar y decodificar el token
+    console.log('[ResetPassword] Verificando token...');
+    const decoded = jwt.verify(token, process.env.JWT_SECRET!) as {
+      id: string;
+      correo: string;
+      iat: number;
+      exp: number;
+    };
+
+    // Buscar usuario activo
+    console.log('[ResetPassword] Buscando usuario:', decoded.id);
+    const usuario = await Usuario.findOne({
+      where: {
+        cedula_usuario: decoded.id,
+        estado_usuario: 'Activo'
+      }
+    });
+
+    if (!usuario) {
+      console.log('[ResetPassword] Usuario no encontrado o inactivo');
+      return res.status(404).json({ 
+        error: 'Usuario no encontrado o cuenta inactiva',
+        details: 'La cuenta asociada a este token no existe o no está activa'
       });
     }
-  
-    try {
-      // Verifica el token
-      const payload = jwt.verify(
-        token,
-        process.env.JWT_SECRET || 'w3r9Gv!72JkpX%lQs@8bZ&hMfT0^nAy'
-      ) as { id: string, correo: string };
-  
-      console.log('[Reset] Token válido para usuario:', payload.id);
-  
-      // Busca al usuario
-      const usuario = await Usuario.findOne({
-        where: {
-          cedula_usuario: payload.id,
-          correo_usuario: payload.correo,
-          estado_usuario: 'Activo'
-        }
-      });
-  
-      if (!usuario) {
-        console.log('[Reset] Usuario no encontrado o inactivo');
-        return res.status(404).json({ 
-          error: 'Usuario no encontrado o inactivo',
-          details: 'El token puede estar asociado a una cuenta eliminada o desactivada'
-        });
-      }
-  
-      // Asigna la nueva contraseña directamente
-      usuario.contrasena_login = password;
-  
-      // Guarda para que se active el hook `hashPassword`
-      await usuario.save();
-  
-      console.log('[Reset] Contraseña restablecida para usuario:', usuario.cedula_usuario);
-  
-      return res.json({ 
-        success: true,
-        message: 'Contraseña restablecida con éxito'
-      });
-  
-    } catch (error) {
-      console.error('[Reset] Error completo:', error);
-  
-      if (error instanceof jwt.TokenExpiredError) {
-        return res.status(401).json({ error: 'El enlace ha expirado' });
-      }
-  
-      if (error instanceof jwt.JsonWebTokenError) {
-        return res.status(401).json({ error: 'Token inválido' });
-      }
-  
+
+    // Verificar que el correo coincida (seguridad adicional)
+    if (usuario.correo_usuario.toLowerCase() !== decoded.correo.toLowerCase()) {
+      console.log('[ResetPassword] Error: Correo no coincide con el token');
       return res.status(400).json({ 
-        error: 'Error al restablecer la contraseña',
-        details: process.env.NODE_ENV === 'development' ? (error as Error).message : undefined
+        error: 'Token inválido para este usuario',
+        details: 'El correo asociado al token no coincide con el usuario'
       });
     }
-  };
-  
+
+    // Validar la nueva contraseña
+    console.log('[ResetPassword] Validando nueva contraseña...');
+    
+    // Validación de longitud
+    if (nueva_contrasena.length < 8 || nueva_contrasena.length > 25) {
+      console.log('[ResetPassword] Error: Longitud de contraseña inválida');
+      return res.status(400).json({ 
+        error: 'La contraseña no cumple con los requisitos',
+        details: 'La contraseña debe tener entre 8 y 25 caracteres'
+      });
+    }
+
+    // Validación de mayúscula
+    if (!/[A-Z]/.test(nueva_contrasena)) {
+      console.log('[ResetPassword] Error: Falta mayúscula');
+      return res.status(400).json({ 
+        error: 'La contraseña no cumple con los requisitos',
+        details: 'Debe contener al menos una mayúscula'
+      });
+    }
+
+    // Validación de número
+    if (!/[0-9]/.test(nueva_contrasena)) {
+      console.log('[ResetPassword] Error: Falta número');
+      return res.status(400).json({ 
+        error: 'La contraseña no cumple con los requisitos',
+        details: 'Debe contener al menos un número'
+      });
+    }
+
+    // Validación de carácter especial
+    if (!/[!@#$%^&*]/.test(nueva_contrasena)) {
+      console.log('[ResetPassword] Error: Falta carácter especial');
+      return res.status(400).json({ 
+        error: 'La contraseña no cumple con los requisitos',
+        details: 'Debe contener al menos un carácter especial (!@#$%^&*)'
+      });
+    }
+
+    // Verificar que no sea la misma contraseña anterior
+    const isSamePassword = await bcrypt.compare(nueva_contrasena, usuario.contrasena_login);
+    if (isSamePassword) {
+      console.log('[ResetPassword] Error: La nueva contraseña es igual a la anterior');
+      return res.status(400).json({ 
+        error: 'La nueva contraseña no puede ser igual a la anterior'
+      });
+    }
+
+    // Actualizar la contraseña (el hook BeforeUpdate se encargará del hash)
+    console.log('[ResetPassword] Actualizando contraseña...');
+    usuario.contrasena_login = nueva_contrasena;
+    await usuario.save();
+
+    console.log('[ResetPassword] Contraseña actualizada exitosamente');
+    return res.json({ 
+      success: true,
+      message: 'Contraseña actualizada exitosamente',
+      usuario: usuario.usuario_login // Solo para desarrollo, quitar en producción
+    });
+
+  } catch (error) {
+    console.error('[ResetPassword] Error completo:', error);
+    
+    // Manejar diferentes tipos de errores
+    if (error instanceof jwt.TokenExpiredError) {
+      return res.status(401).json({ 
+        error: 'Token expirado',
+        details: 'El enlace de recuperación ha expirado. Por favor solicita uno nuevo.'
+      });
+    }
+
+    if (error instanceof jwt.JsonWebTokenError) {
+      return res.status(401).json({ 
+        error: 'Token inválido',
+        details: 'El token de recuperación no es válido.'
+      });
+    }
+
+    return res.status(500).json({ 
+      error: 'Error al restablecer la contraseña',
+      details: process.env.NODE_ENV === 'development' ? (error as Error).message : undefined
+    });
+  }
+};
