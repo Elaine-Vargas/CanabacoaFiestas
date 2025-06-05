@@ -192,11 +192,21 @@ export default function ServicesMenu({ selectedService }: ServicesMenuProps) {
         }}
       >
         <div className="user-profile">
-          <FaUserCog size={30} className="user-icon"
+          <FaUserCog 
+            size={30} 
+            className={`user-icon ${selectedService === "Ajustes-Usuario" ? "active" : ""}`}
             title="Ajustes de Usuario"
             onClick={() => {
               navigate("/Menu-Servicios/Ajustes-Usuario");
               setDrawerOpen(false);
+            }}
+            style={{
+              color: selectedService === "Ajustes-Usuario" ? "var(--white)" : "var(--color-text)",
+              backgroundColor: selectedService === "Ajustes-Usuario" ? "var(--dark-gold)" : "transparent",
+              padding: "8px",
+              borderRadius: "4px",
+              transition: "all 0.3s ease",
+              cursor: "pointer"
             }}
           />
           <div className="user-info">
@@ -294,9 +304,22 @@ export default function ServicesMenu({ selectedService }: ServicesMenuProps) {
         <div className="sidebar">
           <ColorTheme colorDark="black" colorLight="white" />
           <div className="user-profile">
-            <FaUserCog size={30} className="user-icon"
+            <FaUserCog 
+              size={30} 
+              className={`user-icon ${selectedService === "Ajustes-Usuario" ? "active" : ""}`}
               title="Ajustes de Usuario"
-              onClick={() => navigate("/Menu-Servicios/Ajustes-Usuario")}
+              onClick={() => {
+                navigate("/Menu-Servicios/Ajustes-Usuario");
+                setDrawerOpen(false);
+              }}
+              style={{
+                color: selectedService === "Ajustes-Usuario" ? "var(--white)" : "var(--color-text)",
+                backgroundColor: selectedService === "Ajustes-Usuario" ? "var(--dark-gold)" : "transparent",
+                padding: "8px",
+                borderRadius: "4px",
+                transition: "all 0.3s ease",
+                cursor: "pointer"
+              }}
             />
             <div className="user-info">
               <p className="user-name">
