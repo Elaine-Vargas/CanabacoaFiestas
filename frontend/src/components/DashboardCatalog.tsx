@@ -3,8 +3,7 @@ import axios from 'axios';
 import { 
   Card, CardContent, Typography, Grid, Container, TextField, Select, 
   MenuItem, FormControl, InputLabel, Box, CircularProgress, IconButton, 
-  Badge, Drawer, List, ListItem, ListItemText, Button, Snackbar, Alert, Skeleton, Dialog, DialogTitle, DialogContent, DialogActions, Table, TableBody, TableCell,
-  TableContainer, TableHead, TableRow, Paper
+  Badge, Drawer, List, ListItem, ListItemText, Button, Snackbar, Alert, Skeleton, Dialog, DialogTitle, DialogContent, DialogActions
 } from '@mui/material';
 import type { SelectChangeEvent } from '@mui/material';
 import ShoppingCartIcon from '@mui/icons-material/ShoppingCart';
@@ -498,7 +497,6 @@ const Catalog: React.FC<CatalogProps> = ({ onAddToCart = true, onComprarCarrito 
         overflow: 'hidden'
       }} />
       <Box sx={{ position: 'relative', zIndex: 1 }}>
-
         <Container maxWidth="lg" sx={{ 
           py: { xs: 2, sm: 4 }, 
           mt: { xs: 6, sm: 8 },
@@ -520,7 +518,7 @@ const Catalog: React.FC<CatalogProps> = ({ onAddToCart = true, onComprarCarrito 
                 fontFamily: '"Pinyon Script", sans-serif',
                 fontWeight: 400,
                 color: 'var(--gold)',
-                fontSize: { xs: '2rem', sm: '2.8rem', md: '3.5rem', lg: '6rem' },
+                fontSize: { xs: '2rem', sm: '2.8rem', md: '3.5rem', lg: '4rem' },
                 letterSpacing: '1px',
                 textAlign: { xs: 'center', sm: 'left' }
               }}
@@ -570,337 +568,276 @@ const Catalog: React.FC<CatalogProps> = ({ onAddToCart = true, onComprarCarrito 
               <CircularProgress sx={{ color: 'var(--gold)' }} />
             </Box>
           ) : (
-            <Grid 
-              container 
-              spacing={{ xs: 1, sm: 2 }} 
-              sx={{ 
-                mb: { xs: 2, sm: 4 },
-                justifyContent: { xs: 'center', sm: 'flex-start' }
-              }}
-            >
-              <Grid 
-              //@ts-ignore
-                item 
-                xs={12} 
-                md={3} 
-                component="div"
-                sx={{
-                  display: 'flex',
-                  justifyContent: { xs: 'center', sm: 'flex-start' },
-                  maxWidth: { xs: '100%', sm: 'none' }
-                }}
-              >
-                <TextField
-                  fullWidth
-                  label="Buscar"
-                  name="busqueda"
-                  value={filtros.busqueda}
-                  onChange={(e) => setFiltros(prev => ({ ...prev, busqueda: e.target.value }))}
-                  placeholder="Buscar por nombre del elemento..."
-                  sx={{
-                    maxWidth: { xs: '100%', sm: 'none' },
-                    '& .MuiOutlinedInput-root': {
-                      backgroundColor: 'var(--color-input-bg)',
-                      '& fieldset': {
-                        borderColor: 'var(--color-input-border)',
-                      },
-                      '&:hover fieldset': {
-                        borderColor: 'var(--gold)',
-                      },
-                      '&.Mui-focused fieldset': {
-                        borderColor: 'var(--gold)',
-                      },
-                    },
-                    '& .MuiInputLabel-root': {
-                      color: 'var(--color-text)',
-                      fontFamily: '"Nunito Sans", sans-serif',
-                      fontSize: { xs: '0.9rem', sm: '1rem' },
-                      '&.Mui-focused': {
-                        color: 'var(--gold)',
-                      },
-                    },
-                    '& .MuiInputBase-input': {
-                      fontFamily: '"Nunito Sans", sans-serif',
-                      color: 'var(--color-text)',
-                      fontSize: { xs: '0.9rem', sm: '1rem' }
-                    }
-                  }}
-                />
-              </Grid>
-              
-              <Grid
-              //@ts-ignore
-                item 
-                xs={12} 
-                md={3} 
-                component="div"
-                sx={{
-                  display: 'flex',
-                  justifyContent: { xs: 'center', sm: 'flex-start' },
-                  maxWidth: { xs: '100%', sm: 'none' }
-                }}
-              >
-                <FormControl fullWidth sx={{ maxWidth: { xs: '100%', sm: 'none' } }}>
-                  <InputLabel 
-                    sx={{ 
-                      fontFamily: '"Nunito Sans", sans-serif',
-                      color: 'var(--color-text)',
-                      fontSize: { xs: '0.9rem', sm: '1rem' },
-                      '&.Mui-focused': {
-                        color: 'var(--gold)',
-                      }
-                    }}
-                  >
-                    Categoría
-                  </InputLabel>
-                  <Select
-                    name="categoria"
-                    value={filtros.categoria}
-                    onChange={(e) => setFiltros(prev => ({
-                      ...prev,
-                      categoria: e.target.value,
-                      ...(e.target.value === '' && { subcategoria: '' })
-                    }))}
-                    label="Categoría"
+            <Box sx={{ mb: { xs: 2, sm: 4 } }}>
+              <Grid container spacing={2}>
+                <Grid item xs={12} sm={6} md={3}>
+                  <TextField
+                    fullWidth
+                    label="Buscar"
+                    name="busqueda"
+                    value={filtros.busqueda}
+                    onChange={(e) => setFiltros(prev => ({ ...prev, busqueda: e.target.value }))}
+                    placeholder="Buscar por nombre del elemento..."
                     sx={{
-                      backgroundColor: 'var(--color-input-bg)',
-                      '& .MuiOutlinedInput-notchedOutline': {
-                        borderColor: 'var(--color-input-border)',
-                      },
-                      '&:hover .MuiOutlinedInput-notchedOutline': {
-                        borderColor: 'var(--gold)',
-                      },
-                      '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                        borderColor: 'var(--gold)',
+                      '& .MuiOutlinedInput-root': {
+                        backgroundColor: 'var(--color-input-bg)',
+                        '& fieldset': {
+                          borderColor: 'var(--color-input-border)',
+                        },
+                        '&:hover fieldset': {
+                          borderColor: 'var(--gold)',
+                        },
+                        '&.Mui-focused fieldset': {
+                          borderColor: 'var(--gold)',
+                        },
                       },
                       '& .MuiInputLabel-root': {
                         color: 'var(--color-text)',
                         fontFamily: '"Nunito Sans", sans-serif',
                         fontSize: { xs: '0.9rem', sm: '1rem' },
+                        '&.Mui-focused': {
+                          color: 'var(--gold)',
+                        },
                       },
-                      '& .MuiSelect-select': {
+                      '& .MuiInputBase-input': {
+                        fontFamily: '"Nunito Sans", sans-serif',
+                        color: 'var(--color-text)',
+                        fontSize: { xs: '0.9rem', sm: '1rem' }
+                      }
+                    }}
+                  />
+                </Grid>
+                <Grid item xs={12} sm={6} md={3}>
+                  <FormControl fullWidth>
+                    <InputLabel 
+                      sx={{ 
                         fontFamily: '"Nunito Sans", sans-serif',
                         color: 'var(--color-text)',
                         fontSize: { xs: '0.9rem', sm: '1rem' },
-                        minWidth: { xs: '100px', sm: '120px' }
-                      },
-                      '& .MuiSelect-icon': {
-                        color: 'var(--gold)',
-                      }
-                    }}
-                  >
-                    <MenuItem value="" sx={{ 
-                      fontFamily: '"Nunito Sans", sans-serif',
-                      color: 'var(--color-text)',
-                      backgroundColor: 'var(--color-input-bg)',
-                      '&:hover': {
-                        backgroundColor: 'var(--color-background2)',
-                      }
-                    }}>
-                      Todas las categorías
-                    </MenuItem>
-                    {categorias.map(categoria => (
-                      <MenuItem 
-                        key={categoria.id_categoria} 
-                        value={categoria.id_categoria}
-                        sx={{ 
+                        '&.Mui-focused': {
+                          color: 'var(--gold)',
+                        }
+                      }}
+                    >
+                      Categoría
+                    </InputLabel>
+                    <Select
+                      name="categoria"
+                      value={filtros.categoria}
+                      onChange={(e) => setFiltros(prev => ({
+                        ...prev,
+                        categoria: e.target.value,
+                        ...(e.target.value === '' && { subcategoria: '' })
+                      }))}
+                      label="Categoría"
+                      sx={{
+                        backgroundColor: 'var(--color-input-bg)',
+                        '& .MuiOutlinedInput-notchedOutline': {
+                          borderColor: 'var(--color-input-border)',
+                        },
+                        '&:hover .MuiOutlinedInput-notchedOutline': {
+                          borderColor: 'var(--gold)',
+                        },
+                        '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                          borderColor: 'var(--gold)',
+                        },
+                        '& .MuiInputLabel-root': {
+                          color: 'var(--color-text)',
+                          fontFamily: '"Nunito Sans", sans-serif',
+                          fontSize: { xs: '0.9rem', sm: '1rem' },
+                        },
+                        '& .MuiSelect-select': {
                           fontFamily: '"Nunito Sans", sans-serif',
                           color: 'var(--color-text)',
-                          backgroundColor: 'var(--color-input-bg)',
-                          '&:hover': {
-                            backgroundColor: 'var(--color-background2)',
-                          }
-                        }}
-                      >
-                        {categoria.nombre_categoria}
+                          fontSize: { xs: '0.9rem', sm: '1rem' },
+                          minWidth: { xs: '100px', sm: '120px' }
+                        },
+                        '& .MuiSelect-icon': {
+                          color: 'var(--gold)',
+                        }
+                      }}
+                    >
+                      <MenuItem value="" sx={{ 
+                        fontFamily: '"Nunito Sans", sans-serif',
+                        color: 'var(--color-text)',
+                        backgroundColor: 'var(--color-input-bg)',
+                        '&:hover': {
+                          backgroundColor: 'var(--color-background2)',
+                        }
+                      }}>
+                        Todas las categorías
                       </MenuItem>
-                    ))}
-                  </Select>
-                </FormControl>
-              </Grid>
-              
-              <Grid 
-              //@ts-ignore
-                item 
-                xs={12} 
-                md={3} 
-                component="div"
-                sx={{
-                  display: 'flex',
-                  justifyContent: { xs: 'center', sm: 'flex-start' },
-                  maxWidth: { xs: '100%', sm: 'none' }
-                }}
-              >
-                <FormControl fullWidth sx={{ maxWidth: { xs: '100%', sm: 'none' } }}>
-                  <InputLabel 
-                    sx={{
-                      fontFamily: '"Nunito Sans", sans-serif',
-                      color: 'var(--color-text)',
-                      fontSize: { xs: '0.9rem', sm: '1rem' },
-                      '&.Mui-focused': {
-                        color: 'var(--gold)',
-                      }
-                    }}
-                  >
-                    Color
-                  </InputLabel>
-                  <Select
-                    name="color"
-                    value={filtros.color}
-                    onChange={(e) => setFiltros(prev => ({
-                      ...prev,
-                      color: e.target.value,
-                      ...(e.target.value === '' && { subcategoria: '' })
-                    }))}
-                    label="Color"
-                    sx={{
-                      backgroundColor: 'var(--color-input-bg)',
-                      '& .MuiOutlinedInput-notchedOutline': {
-                        borderColor: 'var(--color-input-border)',
-                      },
-                      '&:hover .MuiOutlinedInput-notchedOutline': {
-                        borderColor: 'var(--gold)',
-                      },
-                      '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                        borderColor: 'var(--gold)',
-                      },
-                      '& .MuiInputLabel-root': {
-                        color: 'var(--color-text)',
-                        fontFamily: '"Nunito Sans", sans-serif',
-                        fontSize: { xs: '0.9rem', sm: '1rem' },
-                      },
-                      '& .MuiSelect-select': {
+                      {categorias.map(categoria => (
+                        <MenuItem 
+                          key={categoria.id_categoria} 
+                          value={categoria.id_categoria}
+                          sx={{ 
+                            fontFamily: '"Nunito Sans", sans-serif',
+                            color: 'var(--color-text)',
+                            backgroundColor: 'var(--color-input-bg)',
+                            '&:hover': {
+                              backgroundColor: 'var(--color-background2)',
+                            }
+                          }}
+                        >
+                          {categoria.nombre_categoria}
+                        </MenuItem>
+                      ))}
+                    </Select>
+                  </FormControl>
+                </Grid>
+                <Grid item xs={12} sm={6} md={3}>
+                  <FormControl fullWidth>
+                    <InputLabel 
+                      sx={{
                         fontFamily: '"Nunito Sans", sans-serif',
                         color: 'var(--color-text)',
                         fontSize: { xs: '0.9rem', sm: '1rem' },
-                        minWidth: { xs: '100px', sm: '120px' }
-                      },
-                      '& .MuiSelect-icon': {
-                        color: 'var(--gold)',
-                      }
-                    }}
-                  >
-                    <MenuItem value="" sx={{ 
-                      fontFamily: '"Nunito Sans", sans-serif',
-                      color: 'var(--color-text)',
-                      backgroundColor: 'var(--color-input-bg)',
-                      '&:hover': {
-                        backgroundColor: 'var(--color-background2)',
-                      }
-                    }}>
-                      Todos los colores
-                    </MenuItem>
-                    {colores.map(color => (
-                      <MenuItem 
-                        key={color.id_color} 
-                        value={color.id_color}
-                        sx={{ 
+                        '&.Mui-focused': {
+                          color: 'var(--gold)',
+                        }
+                      }}
+                    >
+                      Material
+                    </InputLabel>
+                    <Select
+                      name="material"
+                      value={filtros.material}
+                      onChange={(e) => setFiltros(prev => ({ ...prev, material: e.target.value }))}
+                      label="Material"
+                      sx={{
+                        backgroundColor: 'var(--color-input-bg)',
+                        '& .MuiOutlinedInput-notchedOutline': {
+                          borderColor: 'var(--color-input-border)',
+                        },
+                        '&:hover .MuiOutlinedInput-notchedOutline': {
+                          borderColor: 'var(--gold)',
+                        },
+                        '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                          borderColor: 'var(--gold)',
+                        },
+                        '& .MuiInputLabel-root': {
+                          color: 'var(--color-text)',
+                          fontFamily: '"Nunito Sans", sans-serif',
+                          fontSize: { xs: '0.9rem', sm: '1rem' },
+                        },
+                        '& .MuiSelect-select': {
                           fontFamily: '"Nunito Sans", sans-serif',
                           color: 'var(--color-text)',
-                          backgroundColor: 'var(--color-input-bg)',
-                          '&:hover': {
-                            backgroundColor: 'var(--color-background2)',
-                          }
-                        }}
-                      >
-                        {color.nombre_color}
+                          fontSize: { xs: '0.9rem', sm: '1rem' },
+                          minWidth: { xs: '100px', sm: '120px' }
+                        },
+                        '& .MuiSelect-icon': {
+                          color: 'var(--gold)',
+                        }
+                      }}
+                    >
+                      <MenuItem value="" sx={{ 
+                        fontFamily: '"Nunito Sans", sans-serif',
+                        color: 'var(--color-text)',
+                        backgroundColor: 'var(--color-input-bg)',
+                        '&:hover': {
+                          backgroundColor: 'var(--color-background2)',
+                        }
+                      }}>
+                        Todos los materiales
                       </MenuItem>
-                    ))}
-                  </Select>
-                </FormControl>
-              </Grid>
-              
-              <Grid 
-              //@ts-ignore
-                item 
-                xs={12} 
-                md={3} 
-                component="div"
-                sx={{
-                  display: 'flex',
-                  justifyContent: { xs: 'center', sm: 'flex-start' },
-                  maxWidth: { xs: '100%', sm: 'none' }
-                }}
-              >
-                <FormControl fullWidth sx={{ maxWidth: { xs: '100%', sm: 'none' } }}>
-                  <InputLabel 
-                    sx={{
-                      fontFamily: '"Nunito Sans", sans-serif',
-                      color: 'var(--color-text)',
-                      fontSize: { xs: '0.9rem', sm: '1rem' },
-                      '&.Mui-focused': {
-                        color: 'var(--gold)',
-                      }
-                    }}
-                  >
-                    Material
-                  </InputLabel>
-                  <Select
-                    name="material"
-                    value={filtros.material}
-                    onChange={(e) => setFiltros(prev => ({
-                      ...prev,
-                      material: e.target.value,
-                      ...(e.target.value === '' && { subcategoria: '' })
-                    }))}
-                    label="Material"
-                    sx={{
-                      backgroundColor: 'var(--color-input-bg)',
-                      '& .MuiOutlinedInput-notchedOutline': {
-                        borderColor: 'var(--color-input-border)',
-                      },
-                      '&:hover .MuiOutlinedInput-notchedOutline': {
-                        borderColor: 'var(--gold)',
-                      },
-                      '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                        borderColor: 'var(--gold)',
-                      },
-                      '& .MuiInputLabel-root': {
-                        color: 'var(--color-text)',
-                        fontFamily: '"Nunito Sans", sans-serif',
-                        fontSize: { xs: '0.9rem', sm: '1rem' },
-                      },
-                      '& .MuiSelect-select': {
+                      {materiales.map(material => (
+                        <MenuItem 
+                          key={material.id_material} 
+                          value={material.id_material}
+                          sx={{ 
+                            fontFamily: '"Nunito Sans", sans-serif',
+                            color: 'var(--color-text)',
+                            backgroundColor: 'var(--color-input-bg)',
+                            '&:hover': {
+                              backgroundColor: 'var(--color-background2)',
+                            }
+                          }}
+                        >
+                          {material.nombre_material}
+                        </MenuItem>
+                      ))}
+                    </Select>
+                  </FormControl>
+                </Grid>
+                <Grid item xs={12} sm={6} md={3}>
+                  <FormControl fullWidth>
+                    <InputLabel 
+                      sx={{
                         fontFamily: '"Nunito Sans", sans-serif',
                         color: 'var(--color-text)',
                         fontSize: { xs: '0.9rem', sm: '1rem' },
-                        minWidth: { xs: '100px', sm: '120px' }
-                      },
-                      '& .MuiSelect-icon': {
-                        color: 'var(--gold)',
-                      }
-                    }}
-                  >
-                    <MenuItem value="" sx={{ 
-                      fontFamily: '"Nunito Sans", sans-serif',
-                      color: 'var(--color-text)',
-                      backgroundColor: 'var(--color-input-bg)',
-                      '&:hover': {
-                        backgroundColor: 'var(--color-background2)',
-                      }
-                    }}>
-                      Todos los materiales
-                    </MenuItem>
-                    {materiales.map(material => (
-                      <MenuItem 
-                        key={material.id_material} 
-                        value={material.id_material}
-                        sx={{ 
+                        '&.Mui-focused': {
+                          color: 'var(--gold)',
+                        }
+                      }}
+                    >
+                      Color
+                    </InputLabel>
+                    <Select
+                      name="color"
+                      value={filtros.color}
+                      onChange={(e) => setFiltros(prev => ({ ...prev, color: e.target.value }))}
+                      label="Color"
+                      sx={{
+                        backgroundColor: 'var(--color-input-bg)',
+                        '& .MuiOutlinedInput-notchedOutline': {
+                          borderColor: 'var(--color-input-border)',
+                        },
+                        '&:hover .MuiOutlinedInput-notchedOutline': {
+                          borderColor: 'var(--gold)',
+                        },
+                        '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                          borderColor: 'var(--gold)',
+                        },
+                        '& .MuiInputLabel-root': {
+                          color: 'var(--color-text)',
+                          fontFamily: '"Nunito Sans", sans-serif',
+                          fontSize: { xs: '0.9rem', sm: '1rem' },
+                        },
+                        '& .MuiSelect-select': {
                           fontFamily: '"Nunito Sans", sans-serif',
                           color: 'var(--color-text)',
-                          backgroundColor: 'var(--color-input-bg)',
-                          '&:hover': {
-                            backgroundColor: 'var(--color-background2)',
-                          }
-                        }}
-                      >
-                        {material.nombre_material}
+                          fontSize: { xs: '0.9rem', sm: '1rem' },
+                          minWidth: { xs: '100px', sm: '120px' }
+                        },
+                        '& .MuiSelect-icon': {
+                          color: 'var(--gold)',
+                        }
+                      }}
+                    >
+                      <MenuItem value="" sx={{ 
+                        fontFamily: '"Nunito Sans", sans-serif',
+                        color: 'var(--color-text)',
+                        backgroundColor: 'var(--color-input-bg)',
+                        '&:hover': {
+                          backgroundColor: 'var(--color-background2)',
+                        }
+                      }}>
+                        Todos los colores
                       </MenuItem>
-                    ))}
-                  </Select>
-                </FormControl>
+                      {colores.map(color => (
+                        <MenuItem 
+                          key={color.id_color} 
+                          value={color.id_color}
+                          sx={{ 
+                            fontFamily: '"Nunito Sans", sans-serif',
+                            color: 'var(--color-text)',
+                            backgroundColor: 'var(--color-input-bg)',
+                            '&:hover': {
+                              backgroundColor: 'var(--color-background2)',
+                            }
+                          }}
+                        >
+                          {color.nombre_color}
+                        </MenuItem>
+                      ))}
+                    </Select>
+                  </FormControl>
+                </Grid>
               </Grid>
-            </Grid>
+            </Box>
           )}
 
           <Suspense fallback={
