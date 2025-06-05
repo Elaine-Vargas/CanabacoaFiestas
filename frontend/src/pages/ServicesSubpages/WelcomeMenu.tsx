@@ -2,7 +2,17 @@ import React, { useState, useEffect } from 'react';
 import '../../styles/dashboard/ServicesSubpages.scss';
 import { useUser } from '../../contexts/UserContext';
 import { useNavigate } from 'react-router-dom';
-import { validateEmail, validateUsername, validatePhoneNumber, formatPhoneNumber } from '../../utils/validation';
+import { 
+  validatePassword, 
+  validateEmail, 
+  validateUsername, 
+  validatePhoneNumber, 
+  validateCedula,
+  formatPhoneNumber,
+  formatCedula
+} from '../../utils/validation';
+import VisibilityIcon from '@mui/icons-material/Visibility';
+import VisibilityOffIcon from '@mui/icons-material/VisibilityOff';
 export type UserRole = 'admin' | 'client' | 'supervisor' | 'inventory';
 
 export type Permission = {
@@ -260,7 +270,6 @@ const WelcomeMenu: React.FC<WelcomeMenuProps> = () => {
   const [showServicesModal, setShowServicesModal] = useState(false);
   const [showEventsInProcessModal, setShowEventsInProcessModal] = useState(false);
   const [showUsersModal, setShowUsersModal] = useState(false);
-  const [showAddUserModal, setShowAddUserModal] = useState(false);
   const [showQuotationsModal, setShowQuotationsModal] = useState(false);
   const [showSpacesModal, setShowSpacesModal] = useState(false);
   const [showAddSpaceModal, setShowAddSpaceModal] = useState(false);
@@ -308,15 +317,16 @@ const WelcomeMenu: React.FC<WelcomeMenuProps> = () => {
   const [eventosEnProceso, setEventosEnProceso] = useState<EventoEnProceso[]>([]);
   const [usuarios, setUsuarios] = useState<Usuario[]>([]);
   const [nuevoUsuario, setNuevoUsuario] = useState({
-    cedula: '',
-    nombre: '',
-    apellido: '',
-    rol: '',
-    usuario: '',
-    contrasena: '',
-    telefono: '',
-    correo: '',
-    estado: 'Activo'
+    nombre_usuario: '',
+    apellido_usuario: '',
+    cedula_usuario: '',
+    correo_usuario: '',
+    tel_usuario: '',
+    id_rol: '',
+    contrasena_login: '',
+    usuario_login: '',
+    confirmar_contrasena: '',
+    estado_usuario: 'Activo'
   });
   const [showEventosAsignadosModal, setShowEventosAsignadosModal] = useState(false);
   const [showClientesActivosModal, setShowClientesActivosModal] = useState(false);
@@ -342,15 +352,16 @@ const WelcomeMenu: React.FC<WelcomeMenuProps> = () => {
   const [filteredRole, setFilteredRole] = useState<string | null>(null);
   const [showCreateUserModal, setShowCreateUserModal] = useState(false);
   const [newUser, setNewUser] = useState({
-    cedula: '',
-    nombre: '',
-    apellido: '',
-    rol: '',
-    usuario: '',
-    contrasena: '',
-    telefono: '',
-    correo: '',
-    estado: 'Activo'
+    nombre_usuario: '',
+    apellido_usuario: '',
+    cedula_usuario: '',
+    correo_usuario: '',
+    tel_usuario: '',
+    id_rol: '',
+    contrasena_login: '',
+    usuario_login: '',
+    confirmar_contrasena: '',
+    estado_usuario: 'Activo'
   });
   const [showProveedoresModal, setShowProveedoresModal] = useState(false);
   const [proveedores, setProveedores] = useState<Proveedor[]>([]);
@@ -370,6 +381,7 @@ const WelcomeMenu: React.FC<WelcomeMenuProps> = () => {
   });
   const [showProveedorForm, setShowProveedorForm] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [tiposEvento, setTiposEvento] = useState<TipoEvento[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [rolFilter, setRolFilter] = useState('');
@@ -390,6 +402,7 @@ const WelcomeMenu: React.FC<WelcomeMenuProps> = () => {
   const [editSuccess, setEditSuccess] = useState("");
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [userToDelete, setUserToDelete] = useState<string | null>(null);
+  const [validationErrors, setValidationErrors] = useState<{[key: string]: string}>({});
 
 
 
@@ -1761,13 +1774,6 @@ const WelcomeMenu: React.FC<WelcomeMenuProps> = () => {
     </>
   );
 
-  const handleNuevoUsuarioChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-    const { name, value } = e.target;
-    setNuevoUsuario(prev => ({
-      ...prev,
-      [name]: value
-    }));
-  };
 
   const handleNuevoUsuarioSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -1781,17 +1787,18 @@ const WelcomeMenu: React.FC<WelcomeMenuProps> = () => {
       });
 
       if (response.ok) {
-        setShowAddUserModal(false);
+        setShowCreateUserModal(false);
         setNuevoUsuario({
-          cedula: '',
-          nombre: '',
-          apellido: '',
-          rol: '',
-          usuario: '',
-          contrasena: '',
-          telefono: '',
-          correo: '',
-          estado: 'Activo'
+          nombre_usuario: '',
+          apellido_usuario: '',
+          cedula_usuario: '',
+          correo_usuario: '',
+          tel_usuario: '',
+          id_rol: '',
+          contrasena_login: '',
+          usuario_login: '',
+          confirmar_contrasena: '',
+          estado_usuario: 'Activo'
         });
         // Actualizar la lista de usuarios
         const updatedResponse = await fetch('/api/usuario');
@@ -2228,46 +2235,58 @@ const WelcomeMenu: React.FC<WelcomeMenuProps> = () => {
 
   const handleCreateUser = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (newUser.contrasena_login !== newUser.confirmar_contrasena) {
+      setValidationErrors(prev => ({
+        ...prev,
+        confirmar_contrasena: 'Las contraseñas no coinciden'
+      }));
+      return;
+    }
+
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch(`${apiUrl}/usuario`, {
+      if (!token) {
+        throw new Error('No hay sesión activa');
+      }
+
+      const response = await fetch(`${apiUrl}/auth/register-user`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify(newUser)
+        body: JSON.stringify({
+          ...newUser,
+          id_rol: Number(newUser.id_rol)
+        })
       });
 
+      const responseText = await response.text();
+      
       if (!response.ok) {
-        throw new Error('Error al crear usuario');
+        let errorMessage = 'Error al crear usuario';
+        try {
+          const errorData = JSON.parse(responseText);
+          errorMessage = errorData.error || errorMessage;
+        } catch (e) {
+          console.error('Error al parsear la respuesta:', e);
+        }
+        throw new Error(errorMessage);
       }
 
-      setShowCreateUserModal(false);
-      setNewUser({
-        cedula: '',
-        nombre: '',
-        apellido: '',
-        rol: '',
-        usuario: '',
-        contrasena: '',
-        telefono: '',
-        correo: '',
-        estado: 'Activo'
-      });
+      const responseData = JSON.parse(responseText);
       
-      // Recargar la lista de usuarios
-      const updatedResponse = await fetch(`${apiUrl}/usuario`, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        }
-      });
-      const data = await updatedResponse.json();
-      setUsuarios(data);
+      // Show success message
+      alert(responseData.mensaje || 'Usuario creado exitosamente');
+      
+      // Redirigir a la página de bienvenida
+      navigate('/Menu-Servicios/Bienvenida');
+      setShowCreateUserModal(false);
+      
     } catch (error) {
       console.error('Error al crear usuario:', error);
-      alert('Error al crear el usuario. Por favor, intente nuevamente.');
+      alert(error instanceof Error ? error.message : 'Error al crear usuario');
     }
   };
 
@@ -2732,46 +2751,6 @@ const WelcomeMenu: React.FC<WelcomeMenuProps> = () => {
     }
   };
 
-  const handleDeleteUser = async (cedula: string) => {
-    if (window.confirm('¿Está seguro de eliminar este usuario?')) {
-      try {
-        const token = localStorage.getItem('token');
-        if (!token) {
-          throw new Error('No hay sesión activa');
-        }
-
-        const response = await fetch(`${apiUrl}/usuario/${cedula}`, {
-          method: 'DELETE',
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
-          }
-        });
-
-        if (!response.ok) {
-          throw new Error('Error al eliminar usuario');
-        }
-
-        // Actualizar la lista de usuarios
-        const updatedResponse = await fetch(`${apiUrl}/usuario`, {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
-          }
-        });
-        if (!updatedResponse.ok) {
-          throw new Error('Error al actualizar la lista de usuarios');
-        }
-        const data = await updatedResponse.json();
-        setUsuarios(data.usuarios);
-
-      } catch (error) {
-        console.error('Error al eliminar usuario:', error);
-        alert(error instanceof Error ? error.message : 'Error al eliminar usuario');
-      }
-    }
-  };
-
   const handleDeleteClick = (cedula: string) => {
     setUserToDelete(cedula);
     setShowDeleteModal(true);
@@ -2818,6 +2797,102 @@ const WelcomeMenu: React.FC<WelcomeMenuProps> = () => {
       console.error('Error al eliminar usuario:', error);
       alert(error instanceof Error ? error.message : 'Error al eliminar usuario');
     }
+  };
+
+  const handleNewUserChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+    const { name, value } = e.target;
+    let processedValue = value;
+    
+    // Format input based on field type
+    if (name === 'cedula_usuario') {
+      processedValue = formatCedula(value);
+    } else if (name === 'tel_usuario') {
+      processedValue = formatPhoneNumber(value);
+    } else if (name === 'correo_usuario') {
+      processedValue = value.toLowerCase();
+    }
+    
+    setNewUser(prev => ({ ...prev, [name]: processedValue }));
+    
+    // Validate fields as they change
+    if (name === 'cedula_usuario') {
+      const error = validateCedula(processedValue);
+      setValidationErrors(prev => ({ ...prev, cedula_usuario: error || '' }));
+    } else if (name === 'correo_usuario') {
+      const error = validateEmail(processedValue);
+      setValidationErrors(prev => ({ ...prev, correo_usuario: error || '' }));
+    } else if (name === 'usuario_login') {
+      const error = validateUsername(processedValue);
+      setValidationErrors(prev => ({ ...prev, usuario_login: error || '' }));
+    } else if (name === 'tel_usuario') {
+      const error = validatePhoneNumber(processedValue);
+      setValidationErrors(prev => ({ ...prev, tel_usuario: error || '' }));
+    } else if (name === 'contrasena_login') {
+      const hasUpperCase = /[A-Z]/.test(processedValue);
+      const hasNumber = /[0-9]/.test(processedValue);
+      const hasSpecial = /^(?=.*[A-Z])(?=.*\d)(?=.*[!"#$%&'()*+,\-./:;<=>?@\[\\\]^`{|}~])[A-Za-z\d!"#$%&'()*+,\-./:;<=>?@\[\\\]^`{|}~]{8,25}$/.test(processedValue);
+      const isValidLength = processedValue.length >= 8 && processedValue.length <= 25;
+      
+      let errorMsg = [];
+      if (!hasUpperCase) errorMsg.push("una mayúscula");
+      if (!hasNumber) errorMsg.push("un número"); 
+      if (!hasSpecial) errorMsg.push("un carácter especial (! \" # $ % & ' ( ) * + , - . / : ; < = > ? @ [ \\ ] ^ ` { | } ~)");
+      if (!isValidLength) errorMsg.push("entre 8-25 caracteres");
+      
+      setValidationErrors(prev => ({ 
+        ...prev, 
+        contrasena_login: errorMsg.length > 0 ? `La contraseña debe tener ${errorMsg.join(", ")}` : '' 
+      }));
+    }
+  };
+
+  const validateNewUser = () => {
+    const errors: {[key: string]: string} = {};
+    
+    // Required fields
+    if (!newUser.nombre_usuario.trim()) errors.nombre_usuario = 'El nombre es requerido';
+    if (!newUser.apellido_usuario.trim()) errors.apellido_usuario = 'El apellido es requerido';
+    if (!newUser.id_rol) errors.id_rol = 'El rol es requerido';
+    if (!newUser.usuario_login.trim()) errors.usuario_login = 'El usuario es requerido';
+    if (!newUser.contrasena_login) errors.contrasena_login = 'La contraseña es requerida';
+    if (!newUser.confirmar_contrasena) errors.confirmar_contrasena = 'La confirmación de contraseña es requerida';
+    
+    // Validate all fields
+    const cedulaError = validateCedula(newUser.cedula_usuario);
+    if (cedulaError) errors.cedula_usuario = cedulaError;
+    
+    const emailError = validateEmail(newUser.correo_usuario);
+    if (emailError) errors.correo_usuario = emailError;
+    
+    const usernameError = validateUsername(newUser.usuario_login);
+    if (usernameError) errors.usuario_login = usernameError;
+    
+    const phoneError = validatePhoneNumber(newUser.tel_usuario);
+    if (phoneError) errors.tel_usuario = phoneError;
+    
+    // Password validation
+    const hasUpperCase = /[A-Z]/.test(newUser.contrasena_login);
+    const hasNumber = /[0-9]/.test(newUser.contrasena_login);
+    const hasSpecial = /^(?=.*[A-Z])(?=.*\d)(?=.*[!"#$%&'()*+,\-./:;<=>?@\[\\\]^`{|}~])[A-Za-z\d!"#$%&'()*+,\-./:;<=>?@\[\\\]^`{|}~]{8,25}$/.test(newUser.contrasena_login);
+    const isValidLength = newUser.contrasena_login.length >= 8 && newUser.contrasena_login.length <= 25;
+    
+    let errorMsg = [];
+    if (!hasUpperCase) errorMsg.push("una mayúscula");
+    if (!hasNumber) errorMsg.push("un número"); 
+    if (!hasSpecial) errorMsg.push("un carácter especial (! \" # $ % & ' ( ) * + , - . / : ; < = > ? @ [ \\ ] ^ ` { | } ~)");
+    if (!isValidLength) errorMsg.push("entre 8-25 caracteres");
+    
+    if (errorMsg.length > 0) {
+      errors.contrasena_login = `La contraseña debe tener ${errorMsg.join(", ")}`;
+    }
+    
+    // Password confirmation validation
+    if (newUser.contrasena_login !== newUser.confirmar_contrasena) {
+      errors.confirmar_contrasena = 'Las contraseñas no coinciden';
+    }
+    
+    setValidationErrors(errors);
+    return Object.keys(errors).length === 0;
   };
 
   return (
@@ -2942,7 +3017,7 @@ const WelcomeMenu: React.FC<WelcomeMenuProps> = () => {
             <div className="modal-content">
               <div className="modal-header">
                 <h3>Usuarios Registrados</h3>
-                <button 
+                <button  
                   className="add-user-btn"
                   onClick={() => setShowCreateUserModal(true)}
                 >
@@ -3037,119 +3112,124 @@ const WelcomeMenu: React.FC<WelcomeMenuProps> = () => {
       {showCreateUserModal && (
         <div className="modal-overlay">
           <div className="modal-container">
-            <button className="close-btn" onClick={() => setShowCreateUserModal(false)}>×</button>
+            <button className="close-btn" onClick={() => {
+              setShowCreateUserModal(false);
+              setValidationErrors({});
+            }}>×</button>
             <form className="modal-form" onSubmit={handleCreateUser}>
-              <h2>Crear Nuevo Usuario</h2>
-              <div className="form-grid">
-                <label>
-                  Cédula:
-                  <input
-                    type="text"
-                    value={newUser.cedula}
-                    onChange={(e) => setNewUser(prev => ({ ...prev, cedula: e.target.value }))}
-                    required
- 
-                  />
-                </label>
-
-                <label>
-                  Nombre:
-                  <input
-                    type="text"
-                    value={newUser.nombre}
-                    onChange={(e) => setNewUser(prev => ({ ...prev, nombre: e.target.value }))}
-                    required
-                  />
-                </label>
-
-                <label>
-                  Apellido:
-                  <input
-                    type="text"
-                    value={newUser.apellido}
-                    onChange={(e) => setNewUser(prev => ({ ...prev, apellido: e.target.value }))}
-                    required
-                  />
-                </label>
-
-                <label>
-                  Rol:
-                  <select
-                    value={newUser.rol}
-                    onChange={(e) => setNewUser(prev => ({ ...prev, rol: e.target.value }))}
-                    required
-                  >
-                    <option value="">Seleccionar rol</option>
-                    <option value="admin">Administrador</option>
-                    <option value="cliente">Cliente</option>
-                    <option value="organizador">Organizador</option>
-                    <option value="inventario">Encargado de Inventario</option>
-                  </select>
-                </label>
-
-                <label>
-                  Usuario:
-                  <input
-                    type="text"
-                    value={newUser.usuario}
-                    onChange={(e) => setNewUser(prev => ({ ...prev, usuario: e.target.value }))}
-                    required
-                  />
-                </label>
-
-                <label className="password-field">
-                  Contraseña:
-                  <div className="password-input-container">
-                    <input
-                      type={showPassword ? "text" : "password"}
-                      value={newUser.contrasena}
-                      onChange={(e) => setNewUser(prev => ({ ...prev, contrasena: e.target.value }))}
-                      required
-                      minLength={8}
-                    />
-                    <button
-                      type="button"
-                      className="toggle-password"
-                      onClick={() => setShowPassword(!showPassword)}
-                    >
-                      {showPassword ? "👁️" : "👁️‍🗨️"}
-                    </button>
-                  </div>
-                </label>
-
-                <label>
-                  Teléfono:
-                  <input
-                    type="tel"
-                    value={newUser.telefono}
-                    onChange={(e) => setNewUser(prev => ({ ...prev, telefono: e.target.value }))}
-                    required
-                  />
-                </label>
-
-                <label>
-                  Correo:
-                  <input
-                    type="email"
-                    value={newUser.correo}
-                    onChange={(e) => setNewUser(prev => ({ ...prev, correo: e.target.value }))}
-                    required
-                  />
-                </label>
+              <h2>Registrar Usuario</h2>
+              {Object.keys(validationErrors).length > 0 && (
+                <div className="error-message">
+                  {Object.values(validationErrors).map((error, index) => (
+                    <p key={index}>{error}</p>
+                  ))}
+                </div>
+              )}
+              
+              <div className="form-row">
+                <input 
+                  type="text" 
+                  name="nombre_usuario" 
+                  placeholder="Nombre" 
+                  required 
+                  value={newUser.nombre_usuario}
+                  onChange={handleNewUserChange}
+                />
+                <input 
+                  type="text" 
+                  name="apellido_usuario" 
+                  placeholder="Apellido" 
+                  required 
+                  value={newUser.apellido_usuario}
+                  onChange={handleNewUserChange}
+                />
               </div>
-
-              <div className="form-buttons">
-                <button type="submit" className="submit-btn">
-                  Crear Usuario
-                </button>
-                <button
-                  type="button"
-                  className="reset-btn"
-                  onClick={() => setShowCreateUserModal(false)}
-                >
-                  Cancelar
-                </button>
+              
+              <input 
+                type="text" 
+                name="usuario_login" 
+                placeholder="Nombre de usuario" 
+                required 
+                className="full-width"
+                value={newUser.usuario_login}
+                onChange={handleNewUserChange}
+              />
+              
+              <input 
+                type="email" 
+                name="correo_usuario" 
+                placeholder="Email" 
+                required 
+                className="full-width"
+                value={newUser.correo_usuario}
+                onChange={handleNewUserChange}
+              />
+              
+              <div className="form-row">
+                <input 
+                  type="tel" 
+                  name="tel_usuario" 
+                  placeholder="000-000-0000" 
+                  required 
+                  value={newUser.tel_usuario}
+                  onChange={handleNewUserChange}
+                  maxLength={12} 
+                />
+                <input 
+                  type="text" 
+                  name="cedula_usuario" 
+                  placeholder="000-0000000-0" 
+                  required 
+                  value={newUser.cedula_usuario}
+                  onChange={handleNewUserChange}
+                  maxLength={13} 
+                />
               </div>
+              
+              <select
+                name="id_rol"
+                value={newUser.id_rol}
+                onChange={handleNewUserChange}
+                required
+                className="full-width"
+              >
+                <option value="">Seleccionar rol</option>
+                <option value="1">Administrador</option>
+                <option value="2">Cliente</option>
+                <option value="3">Organizador</option>
+                <option value="4">Encargado de Inventario</option>
+              </select>
+              
+              <div className="form-row">
+                <div className="password-input-container">
+                  <input 
+                    type={showPassword ? "text" : "password"} 
+                    name="contrasena_login" 
+                    placeholder="Contraseña" 
+                    required 
+                    value={newUser.contrasena_login}
+                    onChange={handleNewUserChange}
+                  />
+                  <span className="password-toggle" onClick={() => setShowPassword(!showPassword)}>
+                    {showPassword ? <VisibilityOffIcon /> : <VisibilityIcon />}
+                  </span>
+                </div>
+                
+                <div className="password-input-container">
+                  <input 
+                    type={showConfirmPassword ? "text" : "password"} 
+                    name="confirmar_contrasena" 
+                    placeholder="Confirmar contraseña" 
+                    required 
+                    value={newUser.confirmar_contrasena}
+                    onChange={handleNewUserChange}
+                  />
+                  <span className="password-toggle" onClick={() => setShowConfirmPassword(!showConfirmPassword)}>
+                    {showConfirmPassword ? <VisibilityOffIcon /> : <VisibilityIcon />}
+                  </span>
+                </div>
+              </div>              
+              <input type="submit" value="Registrar" />
             </form>
           </div>
         </div>
