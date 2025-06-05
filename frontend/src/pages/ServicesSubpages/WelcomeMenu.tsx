@@ -49,7 +49,7 @@ interface EventoEnProceso {
   nombre_cliente?: string;
   nombre_asesor?: string;
   nombre_espacio?: string;
-  nombre_tipo_evento?: string;
+  tipo_evento?: string;
 }
 
 interface EventoRealizado {
@@ -234,7 +234,7 @@ interface ProveedorFormData {
 
 interface TipoEvento {
   id_tipo_evento: number;
-  nombre_tipo_evento: string;
+  tipo_evento: string;
 }
 
 interface EditFormData {
@@ -383,6 +383,8 @@ const WelcomeMenu: React.FC<WelcomeMenuProps> = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [tiposEvento, setTiposEvento] = useState<TipoEvento[]>([]);
+  const [clientes, setClientes] = useState<Usuario[]>([]);
+  const [asesores, setAsesores] = useState<Usuario[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [rolFilter, setRolFilter] = useState('');
   const [loading, setLoading] = useState(false);
@@ -404,8 +406,25 @@ const WelcomeMenu: React.FC<WelcomeMenuProps> = () => {
   const [userToDelete, setUserToDelete] = useState<string | null>(null);
   const [validationErrors, setValidationErrors] = useState<{[key: string]: string}>({});
 
+  // Función para convertir hora de 24h a 12h para mostrar
+  const formatHora12h = (hora24: string) => {
+    if (!hora24) return '';
+    const [horas, minutos] = hora24.split(':');
+    const hora = parseInt(horas);
+    const ampm = hora >= 12 ? 'PM' : 'AM';
+    const hora12 = hora % 12 || 12;
+    return `${hora12}:${minutos} ${ampm}`;
+  };
 
-
+  // Función para convertir hora de 12h a 24h para guardar
+  const formatHora24h = (hora12: string) => {
+    if (!hora12) return '';
+    const [hora, minutos] = hora12.split(':');
+    const horaNum = parseInt(hora);
+    const ampm = hora12.includes('PM') ? 'PM' : 'AM';
+    const hora24 = ampm === 'PM' ? (horaNum === 12 ? 12 : horaNum + 12) : (horaNum === 12 ? 0 : horaNum);
+    return `${hora24.toString().padStart(2, '0')}:${minutos}`;
+  };
 
   useEffect(() => {
     const fetchEspacios = async () => {
@@ -437,7 +456,7 @@ const WelcomeMenu: React.FC<WelcomeMenuProps> = () => {
   useEffect(() => {
     const fetchEventos = async () => {
       try {
-        const response = await fetch('/api/eventos');
+        const response = await fetch(`${apiUrl}/api/evento`);
         const data = await response.json();
         setEventos(data);
       } catch (error) {
@@ -530,11 +549,11 @@ const WelcomeMenu: React.FC<WelcomeMenuProps> = () => {
   useEffect(() => {
     const fetchEventosAsignados = async () => {
       try {
-        const response = await fetch('/api/eventos/asignados');
+        const response = await fetch('/api/evento/Pendiente');
         const data = await response.json();
         setEventosAsignados(data);
       } catch (error) {
-        console.error('Error al cargar eventos asignados:', error);
+        console.error('Error al cargar eventos pendientes:', error);
       }
     };
 
@@ -610,7 +629,7 @@ const WelcomeMenu: React.FC<WelcomeMenuProps> = () => {
     const fetchTiposEvento = async () => {
       try {
         const token = localStorage.getItem('token');
-        const response = await fetch(`${apiUrl}/evento/tipos-evento`, {
+        const response = await fetch(`${apiUrl}/evento/tipo-eventos/list`, {
           headers: {
             'Authorization': `Bearer ${token}`,
             'Content-Type': 'application/json'
@@ -622,14 +641,49 @@ const WelcomeMenu: React.FC<WelcomeMenuProps> = () => {
         }
         
         const data = await response.json();
+        console.log('Tipos de evento cargados:', data);
         setTiposEvento(data);
       } catch (error) {
         console.error('Error al cargar tipos de evento:', error);
       }
     };
 
-    fetchTiposEvento();
-  }, []);
+    const fetchUsuarios = async () => {
+      try {
+        const token = localStorage.getItem('token');
+        // Fetch clients (role 2)
+        const clientesResponse = await fetch(`${apiUrl}/usuario?rol=2`, {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        });
+        if (clientesResponse.ok) {
+          const clientesData = await clientesResponse.json();
+          setClientes(clientesData.usuarios);
+        }
+
+        // Fetch event organizers (role 3)
+        const asesoresResponse = await fetch(`${apiUrl}/usuario?rol=3`, {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        });
+        if (asesoresResponse.ok) {
+          const asesoresData = await asesoresResponse.json();
+          setAsesores(asesoresData.usuarios);
+        }
+      } catch (error) {
+        console.error('Error al cargar usuarios:', error);
+      }
+    };
+
+    if (showEventModal) {
+      fetchTiposEvento();
+      fetchUsuarios();
+    }
+  }, [showEventModal]);
 
   const fetchProveedores = async () => {
     try {
@@ -729,10 +783,18 @@ const WelcomeMenu: React.FC<WelcomeMenuProps> = () => {
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }));
+    if (name === 'hora_evento') {
+      // Mantener el valor en formato 24h para el estado
+      setFormData(prev => ({
+        ...prev,
+        [name]: value
+      }));
+    } else {
+      setFormData(prev => ({
+        ...prev,
+        [name]: value
+      }));
+    }
   };
 
   const handleSpaceInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
@@ -769,22 +831,58 @@ const WelcomeMenu: React.FC<WelcomeMenuProps> = () => {
     e.preventDefault();
     try {
       const storedUserData = JSON.parse(localStorage.getItem('userData') || '{}');
+      
+      // Validar campos requeridos
+      if (!formData.fecha_evento || !formData.hora_evento || !formData.id_espacio || !formData.id_tipo_evento) {
+        throw new Error('Por favor complete todos los campos requeridos');
+      }
+
+      // Preparar los datos del evento con los tipos correctos según el modelo
       const eventoData = {
-        ...formData,
-        cedula_cliente: Number(storedUserData.rol) === 2 ? storedUserData.cedula_usuario : formData.cedula_cliente,
-        supervision_evento: formData.supervision_evento ? 1 : 0
+        cedula_cliente: Number(storedUserData.rol) === 2 ? storedUserData.cedula_usuario : String(formData.cedula_cliente),
+        cedula_asesor: formData.cedula_asesor ? String(formData.cedula_asesor) : null,
+        fecha_evento: formData.fecha_evento, // Ya viene en formato DATEONLY (YYYY-MM-DD)
+        hora_evento: formData.hora_evento, // Ya viene en formato TIME (HH:mm:ss)
+        id_espacio: Number(formData.id_espacio),
+        id_tipo_evento: Number(formData.id_tipo_evento),
+        desea_supervision: formData.supervision_evento ? 1 : 0, // Convertir a TINYINT (0 o 1)
+        nota_cliente: formData.nota_cliente || null,
+        estado_evento: 'Pendiente',
+        estado_cotizacion: 'Pendiente',
+        subtotal_evento: Number(formData.subtotal_evento || 0),
+        itbis_evento: Number(formData.itbis_evento || 0),
+        total_evento: Number(formData.total_evento || 0)
       };
 
-      const response = await fetch('/api/eventos', {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        throw new Error('No hay sesión activa');
+      }
+
+      console.log('Enviando datos a:', `${apiUrl}/evento`);
+      console.log('Datos del evento:', eventoData);
+
+      const response = await fetch(`${apiUrl}/evento`, {
         method: 'POST',
         headers: {
+          'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify(eventoData),
       });
 
+      // Verificar si la respuesta es JSON
+      const contentType = response.headers.get('content-type');
+      if (!contentType || !contentType.includes('application/json')) {
+        const text = await response.text();
+        console.error('Respuesta no JSON:', text);
+        throw new Error('La respuesta del servidor no es JSON válido');
+      }
+
+      const responseData = await response.json();
+
       if (!response.ok) {
-        throw new Error('Error al crear evento');
+        throw new Error(responseData.message || 'Error al crear evento');
       }
 
       setShowEventModal(false);
@@ -805,7 +903,7 @@ const WelcomeMenu: React.FC<WelcomeMenuProps> = () => {
       });
     } catch (error) {
       console.error('Error al crear evento:', error);
-      alert('Hubo un error al crear el evento. Por favor, intente nuevamente.');
+      alert(error instanceof Error ? error.message : 'Hubo un error al crear el evento. Por favor, intente nuevamente.');
     }
   };
 
@@ -853,7 +951,7 @@ const WelcomeMenu: React.FC<WelcomeMenuProps> = () => {
         <div className="form-grid">
           {Number(userData.rol) === 2 ? (
             <label>
-              <span>Cédula:</span>
+              <span>Cliente:</span>
               <input
                 type="text"
                 name="cedula_cliente"
@@ -864,33 +962,41 @@ const WelcomeMenu: React.FC<WelcomeMenuProps> = () => {
             </label>
           ) : (
             <label>
-              <span>Cédula del Cliente:</span>
-              <input
-                type="text"
+              <span>Cliente:</span>
+              <select
                 name="cedula_cliente"
                 value={formData.cedula_cliente}
                 onChange={handleInputChange}
                 required
-                maxLength={13}
-                pattern="[0-9]{11,13}"
-                title="La cédula debe tener entre 11 y 13 dígitos"
-              />
+                className="form-select"
+              >
+                <option value="">Seleccione un cliente</option>
+                {clientes.map((cliente) => (
+                  <option key={cliente.cedula_usuario} value={cliente.cedula_usuario}>
+                    {`${cliente.nombre_usuario} ${cliente.apellido_usuario} - ${cliente.cedula_usuario}`}
+                  </option>
+                ))}
+              </select>
             </label>
           )}
 
           {(Number(userData.rol) === 1 || Number(userData.rol) === 3) && (
             <label>
-              <span>Cédula del Asesor:</span>
-              <input
-                type="text"
+              <span>Asesor:</span>
+              <select
                 name="cedula_asesor"
                 value={formData.cedula_asesor}
                 onChange={handleInputChange}
                 required
-                maxLength={13}
-                pattern="[0-9]{11,13}"
-                title="La cédula debe tener entre 11 y 13 dígitos"
-              />
+                className="form-select"
+              >
+                <option value="">Seleccione un asesor</option>
+                {asesores.map((asesor) => (
+                  <option key={asesor.cedula_usuario} value={asesor.cedula_usuario}>
+                    {`${asesor.nombre_usuario} ${asesor.apellido_usuario} - ${asesor.cedula_usuario}`}
+                  </option>
+                ))}
+              </select>
             </label>
           )}
 
@@ -902,18 +1008,25 @@ const WelcomeMenu: React.FC<WelcomeMenuProps> = () => {
               value={formData.fecha_evento}
               onChange={handleInputChange}
               required
+              className="form-input"
             />
           </label>
 
           <label>
             <span>Hora del evento:</span>
-            <input
-              type="time"
-              name="hora_evento"
-              value={formData.hora_evento}
-              onChange={handleInputChange}
-              required
-            />
+            <div className="hora-input-container">
+              <input
+                type="time"
+                name="hora_evento"
+                value={formData.hora_evento}
+                onChange={handleInputChange}
+                required
+                className="form-input"
+              />
+              <span className="hora-display">
+                {formData.hora_evento ? formatHora12h(formData.hora_evento) : ''}
+              </span>
+            </div>
           </label>
 
           <label>
@@ -923,6 +1036,7 @@ const WelcomeMenu: React.FC<WelcomeMenuProps> = () => {
               value={formData.id_espacio || ''}
               onChange={handleEspacioChange}
               required
+              className="form-select"
             >
               <option value="">Seleccionar espacio</option>
               {espacios && espacios.length > 0 ? (
@@ -944,16 +1058,24 @@ const WelcomeMenu: React.FC<WelcomeMenuProps> = () => {
             <span>Tipo de evento:</span>
             <select
               name="id_tipo_evento"
-              value={formData.id_tipo_evento}
+              value={formData.id_tipo_evento || ''}
               onChange={handleInputChange}
               required
+              className="form-select"
             >
-              <option value="0">Seleccionar tipo</option>
-              {tiposEvento.map((tipo) => (
-                <option key={tipo.id_tipo_evento} value={tipo.id_tipo_evento}>
-                  {tipo.nombre_tipo_evento}
-                </option>
-              ))}
+              <option value="">Seleccionar tipo</option>
+              {tiposEvento && tiposEvento.length > 0 ? (
+                tiposEvento.map(tipo => (
+                  <option 
+                    key={tipo.id_tipo_evento} 
+                    value={tipo.id_tipo_evento}
+                  >
+                    {tipo.tipo_evento}
+                  </option>
+                ))
+              ) : (
+                <option disabled>No hay tipos de evento disponibles</option>
+              )}
             </select>
           </label>
 
@@ -995,6 +1117,7 @@ const WelcomeMenu: React.FC<WelcomeMenuProps> = () => {
               onChange={handleInputChange}
               rows={4}
               placeholder="Escriba aquí cualquier nota o detalle adicional..."
+              className="form-textarea"
             />
           </label>
         </div>
@@ -1117,7 +1240,7 @@ const WelcomeMenu: React.FC<WelcomeMenuProps> = () => {
                           <td>{evento.fecha_evento}</td>
                           <td>{evento.hora_evento}</td>
                           <td>{evento.nombre_espacio || evento.id_espacio}</td>
-                          <td>{evento.nombre_tipo_evento || evento.id_tipo_evento}</td>
+                          <td>{evento.tipo_evento || evento.id_tipo_evento}</td>
                           <td>{evento.desea_supervision ? 'Sí' : 'No'}</td>
                           <td>
                             <span className={`estado-badge ${evento.estado_evento.toLowerCase()}`}>
@@ -1376,7 +1499,7 @@ const WelcomeMenu: React.FC<WelcomeMenuProps> = () => {
                           <td>{evento.fecha_evento}</td>
                           <td>{evento.hora_evento}</td>
                           <td>{evento.nombre_espacio || evento.id_espacio}</td>
-                          <td>{evento.nombre_tipo_evento || evento.id_tipo_evento}</td>
+                          <td>{evento.tipo_evento || evento.id_tipo_evento}</td>
                           <td>{evento.desea_supervision ? 'Sí' : 'No'}</td>
                           <td>
                             <span className={`estado-badge ${evento.estado_evento.toLowerCase()}`}>
@@ -2017,8 +2140,8 @@ const WelcomeMenu: React.FC<WelcomeMenuProps> = () => {
   const handleDeshabilitarEvento = async (id: number) => {
     if (window.confirm('¿Estás seguro de que deseas deshabilitar este evento?')) {
       try {
-        const response = await fetch(`/api/eventos/${id}/deshabilitar`, {
-          method: 'PUT',
+        const response = await fetch(`/api/evento/${id}`, {
+          method: 'DELETE',
           headers: {
             'Content-Type': 'application/json',
           }
@@ -2897,6 +3020,29 @@ const WelcomeMenu: React.FC<WelcomeMenuProps> = () => {
 
   return (
     <div className="welcome-menu">
+      <style>
+        {`
+          .hora-input-container {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+          }
+
+          .hora-display {
+            color: #666;
+            font-size: 0.9em;
+            padding: 5px 10px;
+            background-color: #f5f5f5;
+            border-radius: 4px;
+            min-width: 80px;
+            text-align: center;
+          }
+
+          .form-input[type="time"] {
+            width: 150px;
+          }
+        `}
+      </style>
       {currentRole === 1 && renderAdminDashboard()}
       {currentRole === 2 && renderClientDashboard()}
       {currentRole === 3 && renderCoordinatorDashboard()}
