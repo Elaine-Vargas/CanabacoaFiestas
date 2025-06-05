@@ -29,7 +29,7 @@ import pagoRoutes from './routes/pagoRoutes';
 import proveedorRoutes from './routes/proveedorRoutes';
 import permissionRoutes from './routes/permissionRoutes';
 import platoRoutes from './routes/platoRoutes';
-
+import reporteRoutes from './routes/reporteRoutes';
 dotenv.config();
 
 const app = express();
@@ -75,6 +75,7 @@ app.use('/api/montajedesmontaje', montajeDesmontajeRoutes);
 app.use('/api/pago', pagoRoutes);
 app.use('/api/proveedor', proveedorRoutes);
 app.use('/api/vehiculo', vehiculoRoutes);
+app.use('/api/reporte', reporteRoutes);
 
 
 

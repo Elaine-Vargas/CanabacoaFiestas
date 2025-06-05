@@ -407,6 +407,7 @@ const WelcomeMenu: React.FC<WelcomeMenuProps> = () => {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [userToDelete, setUserToDelete] = useState<string | null>(null);
   const [validationErrors, setValidationErrors] = useState<{[key: string]: string}>({});
+  const [selectedStates, setSelectedStates] = useState<string[]>([]);
 
   // Función para convertir hora de 24h a 12h para mostrar
   const formatHora12h = (hora24: string) => {
@@ -478,17 +479,27 @@ const WelcomeMenu: React.FC<WelcomeMenuProps> = () => {
     const fetchUsuarios = async () => {
       try {
         setLoading(true);
+        const token = localStorage.getItem('token');
         let url = `${apiUrl}/usuario`;
         
         const params = new URLSearchParams();
         if (searchTerm) params.append('search', searchTerm);
         if (rolFilter) params.append('rol', rolFilter);
+        if (selectedStates.length > 0) {
+          params.append('estados', selectedStates.join(','));
+        }
         
         if (params.toString()) {
           url += `?${params.toString()}`;
         }
 
-        const response = await fetch(url);
+        const response = await fetch(url, {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        });
+
         if (!response.ok) {
           throw new Error('Error al obtener usuarios');
         }
@@ -506,7 +517,55 @@ const WelcomeMenu: React.FC<WelcomeMenuProps> = () => {
     if (showUsersModal) {
       fetchUsuarios();
     }
-  }, [showUsersModal, searchTerm, rolFilter]);
+  }, [showUsersModal, searchTerm, rolFilter, selectedStates]);
+  
+  const abrirReporteUsuarios = async () => {
+    try {
+      const response = await fetch(`${apiUrl}/reporte/usuarios`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/pdf',
+        },
+        credentials: 'include',
+      });
+  
+      if (!response.ok) {
+        throw new Error('No se pudo generar el reporte');
+      }
+  
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+  
+      window.open(url, '_blank'); // abre el PDF en nueva pestaña
+  
+    } catch (error) {
+      console.error('Error al abrir el reporte:', error);
+    }
+  };
+  
+  const abrirReporteEventos = async () => {
+    try {
+      const response = await fetch(`${apiUrl}/reporte/eventos`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/pdf',
+        },
+        credentials: 'include',
+      });
+  
+      if (!response.ok) {
+        throw new Error('No se pudo generar el reporte');
+      }
+  
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+  
+      window.open(url, '_blank'); // abre el PDF en nueva pestaña
+  
+    } catch (error) {
+      console.error('Error al abrir el reporte:', error);
+    }
+  };
   
   useEffect(() => {
     const fetchEventosRealizados = async () => {
@@ -1193,6 +1252,7 @@ const WelcomeMenu: React.FC<WelcomeMenuProps> = () => {
           >
             Ver detalles
           </button>
+          
         </div>
 
         <div className="stat-card">
@@ -1497,6 +1557,12 @@ const WelcomeMenu: React.FC<WelcomeMenuProps> = () => {
                   onClick={() => setShowAllEvents(!showAllEvents)}
                 >
                   {showAllEvents ? 'Ver eventos en proceso' : 'Ver todos los eventos'}
+                </button>
+                
+                <button  
+                  className="create-report-btn add-user-btn"
+                  onClick={abrirReporteEventos}>
+                  Ver Reporte de Eventos
                 </button>
               </div>
               <div className="table-section">
@@ -3195,15 +3261,21 @@ const WelcomeMenu: React.FC<WelcomeMenuProps> = () => {
             <button className="close-btn" onClick={() => setShowUsersModal(false)}>×</button>
             <div className="modal-content">
               <div className="modal-header">
-                <h3>Usuarios Registrados</h3>
+                <h3>Lista de Usuarios</h3>
                 <button  
                   className="add-user-btn"
                   onClick={() => setShowCreateUserModal(true)}
                 >
                   Crear Usuario
                 </button>
+
+                <button  
+                  className="create-report-btn add-user-btn"
+                  onClick={abrirReporteUsuarios}>
+                  Ver Reporte de Usuarios
+                </button>
               </div>
-              
+
               <div className="filters">
                 <input
                   type="text"
@@ -3220,6 +3292,19 @@ const WelcomeMenu: React.FC<WelcomeMenuProps> = () => {
                   <option value="2">Cliente</option>
                   <option value="3">Organizador de eventos</option>
                   <option value="4">Encargado de Inventario</option>
+                </select>
+                <select
+                  multiple
+                  value={selectedStates}
+                  onChange={(e) => {
+                    const options = Array.from(e.target.selectedOptions, option => option.value);
+                    setSelectedStates(options);
+                  }}
+                  className="state-filter"
+                >
+                  <option value="Activo">Activo</option>
+                  <option value="Inactivo">Inactivo</option>
+                  <option value="Eliminado">Eliminado</option>
                 </select>
               </div>
 
