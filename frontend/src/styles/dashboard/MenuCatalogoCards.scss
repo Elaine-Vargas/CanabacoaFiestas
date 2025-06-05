@@ -38,18 +38,18 @@ $search-shadow: 0 4px 16px var(--color-shadow);
   padding: 0.8rem 1rem;
 
   .search-bar {
-    flex: 1;
+  flex: 1;
     max-width: 350px;
-    position: relative;
+  position: relative;
 
     input {
-      width: 100%;
+    width: 100%;
       padding: 10px 16px 10px 40px;
       border: 2px solid $border-color;
       border-radius: $border-radius;
       font-size: 15px;
       background: $search-bg;
-      color: var(--color-text2);
+    color: var(--color-text2);
       box-shadow: $search-shadow;
       transition: $transition;
       outline: none;
@@ -57,7 +57,7 @@ $search-shadow: 0 4px 16px var(--color-shadow);
       font-family: inherit;
 
       &:hover {
-        border-color: var(--gold);
+      border-color: var(--gold);
         background: linear-gradient(90deg, var(--light-beige) 0%, var(--beige) 100%);
       }
 
@@ -65,22 +65,22 @@ $search-shadow: 0 4px 16px var(--color-shadow);
         background: var(--color-background2);
         box-shadow: 0 4px 16px var(--color-shadow);
         border: 2px solid var(--gold);
-      }
+    }
 
-      &::placeholder {
+    &::placeholder {
         color: var(--color-text);
         font-size: 14px;
         letter-spacing: 0.3px;
         opacity: 0.8;
-      }
     }
+  }
 
     &::before {
       content: '';
-      position: absolute;
+    position: absolute;
       left: 12px;
-      top: 50%;
-      transform: translateY(-50%);
+    top: 50%;
+    transform: translateY(-50%);
       width: 16px;
       height: 16px;
       background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%23B8860B'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z'%3E%3C/path%3E%3C/svg%3E");
@@ -106,7 +106,7 @@ $search-shadow: 0 4px 16px var(--color-shadow);
       border-radius: $border-radius;
       font-size: 15px;
       background: $search-bg;
-      color: var(--color-text2);
+  color: var(--color-text2);
       box-shadow: $search-shadow;
       transition: $transition;
       outline: none;
@@ -119,9 +119,9 @@ $search-shadow: 0 4px 16px var(--color-shadow);
       &:hover {
         border-color: var(--gold);
         background: linear-gradient(90deg, var(--light-beige) 0%, var(--beige) 100%);
-      }
+  }
 
-      &:focus {
+  &:focus {
         background: var(--color-background2);
         box-shadow: 0 4px 16px var(--color-shadow);
         border: 2px solid var(--gold);
@@ -145,7 +145,7 @@ $search-shadow: 0 4px 16px var(--color-shadow);
       height: 16px;
       background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%23B8860B'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E");
       background-size: contain;
-      background-repeat: no-repeat;
+  background-repeat: no-repeat;
       pointer-events: none;
       opacity: 0.6;
       transition: $transition;
@@ -318,5 +318,118 @@ $search-shadow: 0 4px 16px var(--color-shadow);
 @media (max-width: 768px) {
   .menu-catalogo-grid {
     grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 400px) {
+  html, body, #root, .App {
+    width: 100% !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+    overflow-x: hidden !important;
+    box-sizing: border-box !important;
+  }
+  .menu-catalogo-container {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    margin: 0 !important;
+    padding: 0.1rem 0.1rem 0.3rem 0.1rem !important;
+    box-sizing: border-box !important;
+    overflow-x: hidden !important;
+  }
+  .menu-catalogo-title {
+    font-size: 1.1rem;
+    margin-bottom: 0.5rem;
+    padding: 0 0.1rem;
+    word-break: break-word;
+    width: 100% !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+  }
+  .menu-catalogo-filters {
+    flex-direction: column;
+    gap: 0.2rem;
+    padding: 0.1rem 0.01rem;
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    box-sizing: border-box !important;
+    overflow-x: hidden !important;
+    .search-bar, .category-filter {
+      width: 100% !important;
+      max-width: 100% !important;
+      min-width: 0 !important;
+      box-sizing: border-box !important;
+      overflow-x: hidden !important;
+    }
+    input, select {
+      font-size: 13px;
+      height: 28px;
+      padding: 4px 8px 4px 28px;
+      width: 100% !important;
+      max-width: 100% !important;
+      min-width: 0 !important;
+      box-sizing: border-box !important;
+      border-width: 1px;
+      overflow-x: hidden !important;
+    }
+  }
+  .menu-catalogo-grid {
+    grid-template-columns: 1fr;
+    gap: 0.4rem;
+    padding: 0.05rem;
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    box-sizing: border-box !important;
+    overflow-x: hidden !important;
+  }
+  .menu-card {
+    padding: 0.7rem 0.5rem;
+    width: 99% !important;
+    max-width: 99% !important;
+    min-width: 0 !important;
+    box-sizing: border-box !important;
+    overflow-x: hidden !important;
+    word-break: break-word;
+    white-space: normal;
+    .menu-card-header h3 {
+      font-size: 1rem;
+      word-break: break-word;
+      white-space: normal;
+      width: 100% !important;
+      max-width: 100% !important;
+    }
+    .menu-price {
+      font-size: 0.9rem;
+    }
+    .menu-description {
+      font-size: 0.95rem;
+      word-break: break-word;
+      white-space: normal;
+      width: 100% !important;
+      max-width: 100% !important;
+    }
+    .menu-dishes h4 {
+      font-size: 0.95rem;
+    }
+    .menu-dishes ul li {
+      font-size: 0.85rem;
+      word-break: break-word;
+      white-space: normal;
+    }
+    .request-button {
+      font-size: 0.95rem;
+      padding: 0.5rem;
+      width: 100% !important;
+      max-width: 100% !important;
+      box-sizing: border-box !important;
+    }
+    svg {
+      max-width: 16px;
+      height: auto;
+      display: inline-block;
+    }
   }
 } 
