@@ -6,17 +6,24 @@ import '../../components/ServiceBase';
 export type UserRole = 'admin' | 'coordinator' | 'inventory' | 'client';
 
 interface Transportation {
-  id_transportacion: number;
+  id_transporte: number;
   id_evento: number;
-  direccion: string;
-  distancia: number;
-  vehiculo: string;
-  conductor: string;
+  id_direccion: number;
+  distancia_km: number;
+  precioneto_transporte: number;
+  itbis_transporte: number;
+  total_transporte: number;
+}
+
+interface DetalleTransporte {
+  id_detalle_transporte: number;
+  id_transporte: number;
+  id_vehiculo: string;
+  id_usuarioconductor: string;
   cantidad_elementos: number;
-  precio_neto: number;
-  estado: string;
-  fecha_creacion: string;
-  fecha_actualizacion: string;
+  precioneto_transporte: number;
+  itbis_transporte: number;
+  total_transporte: number;
 }
 
 interface Evento {
@@ -53,12 +60,17 @@ interface PedidoPendiente {
 }
 
 interface Vehiculo {
-  id_vehiculo: number;
-  matricula: string;
-  marca: string;
-  modelo: string;
-  tipo: 'Automóvil' | 'Remolque' | 'Máquinas pesadas' | 'Montacargas';
-  estado: string;
+  matricula_vehiculo: string;
+  marca_vehiculo: string;
+  modelo_vehiculo: string;
+  tipo_vehiculo: 'Automóvil' | 'Remolque' | 'Máquinas pesadas' | 'Montacargas';
+  estado_vehiculo: 'Activo' | 'Inactivo' | 'Eliminado';
+}
+
+interface Empleado {
+  id_usuario: string;
+  nombre: string;
+  apellido: string;
 }
 
 export default function Transportation() {
@@ -67,23 +79,21 @@ export default function Transportation() {
   const [showModal, setShowModal] = useState(false);
   const [transportations, setTransportations] = useState<Transportation[]>([]);
   const [eventos, setEventos] = useState<Evento[]>([]);
+  const [empleados, setEmpleados] = useState<Empleado[]>([]);
   const [stats, setStats] = useState<TransportationStats>({
     pedidosCompletados: 0,
     pedidosPendientes: 0,
     vehiculos: 0
   });
-  const [formData, setFormData] = useState<Partial<Transportation>>({
-    id_transportacion: 0,
+  const [formData, setFormData] = useState<Partial<Transportation & DetalleTransporte>>({
     id_evento: 0,
-    direccion: '',
-    distancia: 0,
-    vehiculo: '',
-    conductor: '',
-    cantidad_elementos: 0,
-    precio_neto: 0,
-    estado: 'Pendiente',
-    fecha_creacion: new Date().toISOString(),
-    fecha_actualizacion: new Date().toISOString()
+    distancia_km: 0,
+    precioneto_transporte: 0,
+    itbis_transporte: 0,
+    total_transporte: 0,
+    id_vehiculo: '',
+    id_usuarioconductor: '',
+    cantidad_elementos: 0
   });
   const [editId, setEditId] = useState<number | null>(null);
   const [filtroEvento, setFiltroEvento] = useState<string>('');
@@ -95,11 +105,11 @@ export default function Transportation() {
   const [pedidosPendientes, setPedidosPendientes] = useState<PedidoPendiente[]>([]);
   const [vehiculos, setVehiculos] = useState<Vehiculo[]>([]);
   const [nuevoVehiculo, setNuevoVehiculo] = useState<Partial<Vehiculo>>({
-    matricula: '',
-    marca: '',
-    modelo: '',
-    tipo: 'Automóvil',
-    estado: 'Disponible'
+    matricula_vehiculo: '',
+    marca_vehiculo: '',
+    modelo_vehiculo: '',
+    tipo_vehiculo: 'Automóvil',
+    estado_vehiculo: 'Activo'
   });
 
   // Estados y funciones para edición de vehículo
@@ -118,9 +128,9 @@ export default function Transportation() {
 
   const handleUpdateVehiculo = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!editVehiculo || !editVehiculo.id_vehiculo) return;
+    if (!editVehiculo || !editVehiculo.matricula_vehiculo) return;
     try {
-      await fetch(`/api/transportacion/vehiculos/${editVehiculo.id_vehiculo}`, {
+      await fetch(`/api/transportacion/vehiculos/${editVehiculo.matricula_vehiculo}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(editVehiculo),
@@ -144,18 +154,21 @@ export default function Transportation() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [transportationsRes, eventosRes] = await Promise.all([
+        const [transportationsRes, eventosRes, empleadosRes] = await Promise.all([
           fetch('/api/transportation'),
-          fetch('/api/eventos')
+          fetch('/api/eventos'),
+          fetch('/api/empleados')
         ]);
 
-        const [transportationsData, eventosData] = await Promise.all([
+        const [transportationsData, eventosData, empleadosData] = await Promise.all([
           transportationsRes.json(),
-          eventosRes.json()
+          eventosRes.json(),
+          empleadosRes.json()
         ]);
 
         setTransportations(transportationsData);
         setEventos(eventosData);
+        setEmpleados(empleadosData);
       } catch (error) {
         console.error('Error al cargar datos:', error);
       }
@@ -226,10 +239,24 @@ export default function Transportation() {
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }));
+    
+    if (name === 'precioneto_transporte') {
+      const precioNeto = parseFloat(value) || 0;
+      const itbis = precioNeto * 0.18; // 18% de ITBIS
+      const total = precioNeto + itbis;
+      
+      setFormData(prev => ({
+        ...prev,
+        [name]: precioNeto,
+        itbis_transporte: itbis,
+        total_transporte: total
+      }));
+    } else {
+      setFormData(prev => ({
+        ...prev,
+        [name]: value
+      }));
+    }
   };
 
   const handleSelectChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
@@ -243,36 +270,51 @@ export default function Transportation() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      if (editId) {
-        await fetch(`/api/transportation/${editId}`, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(formData)
-        });
-      } else {
-        await fetch('/api/transportation', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(formData)
-        });
-      }
+      // Primero creamos el transporte_servicio
+      const transporteResponse = await fetch('/api/transportation', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id_evento: formData.id_evento,
+          id_direccion: formData.id_direccion,
+          distancia_km: formData.distancia_km,
+          precioneto_transporte: formData.precioneto_transporte,
+          itbis_transporte: formData.itbis_transporte,
+          total_transporte: formData.total_transporte
+        })
+      });
+
+      const transporteData = await transporteResponse.json();
+
+      // Luego creamos el detalle_transporte
+      await fetch('/api/transportation/detalle', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id_transporte: transporteData.id_transporte,
+          id_vehiculo: formData.id_vehiculo,
+          id_usuarioconductor: formData.id_usuarioconductor,
+          cantidad_elementos: formData.cantidad_elementos,
+          precioneto_transporte: formData.precioneto_transporte,
+          itbis_transporte: formData.itbis_transporte,
+          total_transporte: formData.total_transporte
+        })
+      });
 
       const response = await fetch('/api/transportation');
       const data = await response.json();
       setTransportations(data);
       setShowModal(false);
       setFormData({
-        id_transportacion: 0,
         id_evento: 0,
-        direccion: '',
-        distancia: 0,
-        vehiculo: '',
-        conductor: '',
-        cantidad_elementos: 0,
-        precio_neto: 0,
-        estado: 'Pendiente',
-        fecha_creacion: new Date().toISOString(),
-        fecha_actualizacion: new Date().toISOString()
+        id_direccion: 0,
+        distancia_km: 0,
+        precioneto_transporte: 0,
+        itbis_transporte: 0,
+        total_transporte: 0,
+        id_vehiculo: '',
+        id_usuarioconductor: '',
+        cantidad_elementos: 0
       });
       setEditId(null);
     } catch (error) {
@@ -282,14 +324,14 @@ export default function Transportation() {
 
   const handleEdit = (transportation: Transportation) => {
     setFormData(transportation);
-    setEditId(transportation.id_transportacion!);
+    setEditId(transportation.id_transporte!);
     setShowModal(true);
   };
 
   const handleDelete = async (id: number) => {
     try {
       await fetch(`/api/transportation/${id}`, { method: 'DELETE' });
-      setTransportations(prev => prev.filter(t => t.id_transportacion !== id));
+      setTransportations(prev => prev.filter(t => t.id_transporte !== id));
     } catch (error) {
       console.error('Error al eliminar:', error);
     }
@@ -319,11 +361,11 @@ export default function Transportation() {
         setVehiculos(updatedVehiculos);
         setShowAddVehiculoModal(false);
         setNuevoVehiculo({
-          matricula: '',
-          marca: '',
-          modelo: '',
-          tipo: 'Automóvil',
-          estado: 'Disponible'
+          matricula_vehiculo: '',
+          marca_vehiculo: '',
+          modelo_vehiculo: '',
+          tipo_vehiculo: 'Automóvil',
+          estado_vehiculo: 'Activo'
         });
       }
     } catch (error) {
@@ -383,27 +425,15 @@ export default function Transportation() {
                   </label>
 
                   <label>
-                    <span>Dirección:</span>
-                    <input
-                      type="text"
-                      name="direccion"
-                      value={formData.direccion || ''}
-                      onChange={handleInputChange}
-                      required
-                      placeholder="Ingrese la dirección del evento"
-                    />
-                  </label>
-
-                  <label>
                     <span>Distancia (km):</span>
                     <input
                       type="number"
-                      name="distancia"
-                      value={formData.distancia || ''}
+                      name="distancia_km"
+                      value={formData.distancia_km || ''}
                       onChange={handleInputChange}
                       required
                       min="0"
-                      step="0.1"
+                      step="0.01"
                       placeholder="Ingrese la distancia en kilómetros"
                     />
                   </label>
@@ -415,29 +445,35 @@ export default function Transportation() {
                   <label>
                     <span>Vehículo:</span>
                     <select
-                      name="vehiculo"
-                      value={formData.vehiculo || ''}
+                      name="id_vehiculo"
+                      value={formData.id_vehiculo || ''}
                       onChange={handleSelectChange}
                       required
                     >
                       <option value="">Seleccionar vehículo</option>
-                      <option value="Bus">Bus</option>
-                      <option value="Van">Van</option>
-                      <option value="Carro">Carro</option>
-                      <option value="Limousina">Limousina</option>
+                      {vehiculos.map((vehiculo) => (
+                        <option key={vehiculo.matricula_vehiculo} value={vehiculo.matricula_vehiculo}>
+                          {vehiculo.marca_vehiculo} {vehiculo.modelo_vehiculo} - {vehiculo.matricula_vehiculo}
+                        </option>
+                      ))}
                     </select>
                   </label>
 
                   <label>
                     <span>Conductor:</span>
-                    <input
-                      type="text"
-                      name="conductor"
-                      value={formData.conductor || ''}
-                      onChange={handleInputChange}
+                    <select
+                      name="id_usuarioconductor"
+                      value={formData.id_usuarioconductor || ''}
+                      onChange={handleSelectChange}
                       required
-                      placeholder="Nombre del conductor"
-                    />
+                    >
+                      <option value="">Seleccionar conductor</option>
+                      {empleados.map((empleado) => (
+                        <option key={empleado.id_usuario} value={empleado.id_usuario}>
+                          {empleado.nombre} {empleado.apellido} - {empleado.id_usuario}
+                        </option>
+                      ))}
+                    </select>
                   </label>
 
                   <label>
@@ -457,13 +493,37 @@ export default function Transportation() {
                     <span>Precio Neto:</span>
                     <input
                       type="number"
-                      name="precio_neto"
-                      value={formData.precio_neto || ''}
+                      name="precioneto_transporte"
+                      value={formData.precioneto_transporte || ''}
                       onChange={handleInputChange}
                       required
                       min="0"
                       step="0.01"
-                      placeholder="Precio total del servicio"
+                      placeholder="Precio neto del servicio"
+                    />
+                  </label>
+
+                  <label>
+                    <span>ITBIS:</span>
+                    <input
+                      type="number"
+                      name="itbis_transporte"
+                      value={formData.itbis_transporte || ''}
+                      readOnly
+                      className="readonly"
+                      placeholder="ITBIS calculado automáticamente"
+                    />
+                  </label>
+
+                  <label>
+                    <span>Total:</span>
+                    <input
+                      type="number"
+                      name="total_transporte"
+                      value={formData.total_transporte || ''}
+                      readOnly
+                      className="readonly"
+                      placeholder="Total calculado automáticamente"
                     />
                   </label>
                 </div>
@@ -616,12 +676,12 @@ export default function Transportation() {
               </thead>
               <tbody>
                 {vehiculos.map((vehiculo) => (
-                  <tr key={vehiculo.id_vehiculo}>
-                    <td>{vehiculo.matricula}</td>
-                    <td>{vehiculo.marca}</td>
-                    <td>{vehiculo.modelo}</td>
-                    <td>{vehiculo.tipo}</td>
-                    <td>{vehiculo.estado}</td>
+                  <tr key={vehiculo.matricula_vehiculo}>
+                    <td>{vehiculo.matricula_vehiculo}</td>
+                    <td>{vehiculo.marca_vehiculo}</td>
+                    <td>{vehiculo.modelo_vehiculo}</td>
+                    <td>{vehiculo.tipo_vehiculo}</td>
+                    <td>{vehiculo.estado_vehiculo}</td>
                   </tr>
                 ))}
               </tbody>
@@ -644,8 +704,8 @@ export default function Transportation() {
               <span>Matrícula</span>
               <input
                 type="text"
-                name="matricula"
-                value={nuevoVehiculo.matricula}
+                name="matricula_vehiculo"
+                value={nuevoVehiculo.matricula_vehiculo}
                 onChange={handleVehiculoInputChange}
                 required
                 placeholder="Ingrese la matrícula del vehículo"
@@ -656,8 +716,8 @@ export default function Transportation() {
               <span>Marca</span>
               <input
                 type="text"
-                name="marca"
-                value={nuevoVehiculo.marca}
+                name="marca_vehiculo"
+                value={nuevoVehiculo.marca_vehiculo}
                 onChange={handleVehiculoInputChange}
                 required
                 placeholder="Ingrese la marca del vehículo"
@@ -668,8 +728,8 @@ export default function Transportation() {
               <span>Modelo</span>
               <input
                 type="text"
-                name="modelo"
-                value={nuevoVehiculo.modelo}
+                name="modelo_vehiculo"
+                value={nuevoVehiculo.modelo_vehiculo}
                 onChange={handleVehiculoInputChange}
                 required
                 placeholder="Ingrese el modelo del vehículo"
@@ -679,8 +739,8 @@ export default function Transportation() {
             <label>
               <span>Tipo</span>
               <select
-                name="tipo"
-                value={nuevoVehiculo.tipo}
+                name="tipo_vehiculo"
+                value={nuevoVehiculo.tipo_vehiculo}
                 onChange={handleVehiculoInputChange}
                 required
                 className="escri"
@@ -695,15 +755,15 @@ export default function Transportation() {
             <label>
               <span>Estado</span>
               <select
-                name="estado"
-                value={nuevoVehiculo.estado}
+                name="estado_vehiculo"
+                value={nuevoVehiculo.estado_vehiculo}
                 onChange={handleVehiculoInputChange}
                 required
                 className="escri"
               >
-                <option value="Disponible">Disponible</option>
-                <option value="En uso">En uso</option>
-                <option value="Mantenimiento">Mantenimiento</option>
+                <option value="Activo">Activo</option>
+                <option value="Inactivo">Inactivo</option>
+                <option value="Eliminado">Eliminado</option>
               </select>
             </label>
           </div>
@@ -738,8 +798,8 @@ export default function Transportation() {
               <span>Matrícula</span>
               <input
                 type="text"
-                name="matricula"
-                value={editVehiculo?.matricula || ''}
+                name="matricula_vehiculo"
+                value={editVehiculo?.matricula_vehiculo || ''}
                 onChange={handleEditVehiculoInputChange}
                 required
                 placeholder="Ingrese la matrícula del vehículo"
@@ -750,8 +810,8 @@ export default function Transportation() {
               <span>Marca</span>
               <input
                 type="text"
-                name="marca"
-                value={editVehiculo?.marca || ''}
+                name="marca_vehiculo"
+                value={editVehiculo?.marca_vehiculo || ''}
                 onChange={handleEditVehiculoInputChange}
                 required
                 placeholder="Ingrese la marca del vehículo"
@@ -762,8 +822,8 @@ export default function Transportation() {
               <span>Modelo</span>
               <input
                 type="text"
-                name="modelo"
-                value={editVehiculo?.modelo || ''}
+                name="modelo_vehiculo"
+                value={editVehiculo?.modelo_vehiculo || ''}
                 onChange={handleEditVehiculoInputChange}
                 required
                 placeholder="Ingrese el modelo del vehículo"
@@ -773,8 +833,8 @@ export default function Transportation() {
             <label>
               <span>Tipo</span>
               <select
-                name="tipo"
-                value={editVehiculo?.tipo || ''}
+                name="tipo_vehiculo"
+                value={editVehiculo?.tipo_vehiculo || ''}
                 onChange={handleEditVehiculoInputChange}
                 required
                 className="escri"
@@ -789,15 +849,15 @@ export default function Transportation() {
             <label>
               <span>Estado</span>
               <select
-                name="estado"
-                value={editVehiculo?.estado || ''}
+                name="estado_vehiculo"
+                value={editVehiculo?.estado_vehiculo || ''}
                 onChange={handleEditVehiculoInputChange}
                 required
                 className="escri"
               >
-                <option value="Disponible">Disponible</option>
-                <option value="En uso">En uso</option>
-                <option value="Mantenimiento">Mantenimiento</option>
+                <option value="Activo">Activo</option>
+                <option value="Inactivo">Inactivo</option>
+                <option value="Eliminado">Eliminado</option>
               </select>
             </label>
           </div>
@@ -858,12 +918,12 @@ export default function Transportation() {
                     </thead>
                     <tbody>
                       {vehiculos.map((vehiculo) => (
-                        <tr key={vehiculo.id_vehiculo}>
-                          <td>{vehiculo.matricula}</td>
-                          <td>{vehiculo.marca}</td>
-                          <td>{vehiculo.modelo}</td>
-                          <td>{vehiculo.tipo}</td>
-                          <td>{vehiculo.estado}</td>
+                        <tr key={vehiculo.matricula_vehiculo}>
+                          <td>{vehiculo.matricula_vehiculo}</td>
+                          <td>{vehiculo.marca_vehiculo}</td>
+                          <td>{vehiculo.modelo_vehiculo}</td>
+                          <td>{vehiculo.tipo_vehiculo}</td>
+                          <td>{vehiculo.estado_vehiculo}</td>
                           <td>
                             <button className="edit-btn" onClick={() => handleEditVehiculo(vehiculo)}>
                               Editar

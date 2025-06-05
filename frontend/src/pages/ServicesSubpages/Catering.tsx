@@ -110,18 +110,29 @@ export default function Catering() {
           'Content-Type': 'application/json'
         };
 
-        const menusRes = await fetch('/api/menu/catalogo', { headers });
+        const [menusRes, eventosRes] = await Promise.all([
+          fetch('/api/menu/catalogo', { headers }),
+          fetch('/api/eventos', { headers })
+        ]);
         
         if (!menusRes.ok) {
           throw new Error('Error al cargar el catálogo de menús');
         }
 
-        const menusData = await menusRes.json();
-        console.log('Menus data:', menusData); // Debug log
+        if (!eventosRes.ok) {
+          throw new Error('Error al cargar los eventos');
+        }
+
+        const [menusData, eventosData] = await Promise.all([
+          menusRes.json(),
+          eventosRes.json()
+        ]);
+
         setMenusCatalogo(menusData);
+        setEventos(eventosData);
       } catch (error) {
-        console.error('Error al cargar el catálogo:', error);
-        setError(error instanceof Error ? error.message : 'Error al cargar el catálogo');
+        console.error('Error al cargar datos:', error);
+        setError(error instanceof Error ? error.message : 'Error al cargar datos');
       }
     };
 
@@ -263,20 +274,54 @@ export default function Catering() {
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }));
+    
+    if (name === 'precioneto_catering') {
+      const precioNeto = parseFloat(value) || 0;
+      const itbis = precioNeto * 0.18; // 18% de ITBIS
+      const total = precioNeto + itbis;
+      
+      setFormData(prev => ({
+        ...prev,
+        [name]: precioNeto,
+        itbis_catering: itbis,
+        total_catering: total
+      }));
+    } else if (name === 'id_evento') {
+      setFormData(prev => ({
+        ...prev,
+        [name]: parseInt(value)
+      }));
+    } else {
+      setFormData(prev => ({
+        ...prev,
+        [name]: value
+      }));
+    }
   };
 
-
   const handleMenuSelect = (menu: Menu) => {
-    setFormData(prev => ({
-      ...prev,
-      menus: prev.menus?.includes(menu) 
+    setFormData(prev => {
+      const newMenus = prev.menus?.includes(menu) 
         ? prev.menus.filter(m => m.id_menu !== menu.id_menu)
-        : [...(prev.menus || []), menu]
-    }));
+        : [...(prev.menus || []), menu];
+      
+      // Calcular el precio neto basado en los menús seleccionados
+      const precioNeto = newMenus.reduce((total, menu) => {
+        const menuCatalogo = menusCatalogo.find(m => m.id_menu === menu.id_menu);
+        return total + (menuCatalogo?.precio_total || 0);
+      }, 0);
+      
+      const itbis = precioNeto * 0.18;
+      const total = precioNeto + itbis;
+      
+      return {
+        ...prev,
+        menus: newMenus,
+        precioneto_catering: precioNeto,
+        itbis_catering: itbis,
+        total_catering: total
+      };
+    });
   };
 
   const handlePlatoSelect = (plato: Plato) => {
@@ -643,16 +688,14 @@ export default function Catering() {
                   </label>
 
                   <label>
-                    <span>ITBIS:</span>
+                    <span>ITBIS (18%):</span>
                     <input
                       type="number"
                       name="itbis_catering"
                       value={formData.itbis_catering || ''}
-                      onChange={handleInputChange}
-                      required
-                      min="0"
-                      step="0.01"
-                      placeholder="0.00"
+                      readOnly
+                      className="readonly"
+                      placeholder="ITBIS calculado automáticamente"
                     />
                   </label>
 
@@ -662,11 +705,9 @@ export default function Catering() {
                       type="number"
                       name="total_catering"
                       value={formData.total_catering || ''}
-                      onChange={handleInputChange}
-                      required
-                      min="0"
-                      step="0.01"
-                      placeholder="0.00"
+                      readOnly
+                      className="readonly"
+                      placeholder="Total calculado automáticamente"
                     />
                   </label>
 

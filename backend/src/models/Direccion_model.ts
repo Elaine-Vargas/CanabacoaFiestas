@@ -2,7 +2,6 @@ import { Table, Model, Column, PrimaryKey, AutoIncrement, DataType, ForeignKey, 
 import Provincia from './Provincia_model';
 import Espacio from './Espacio_model';
 import Proveedor from './Proveedor_model';
-import TransporteServicio from './TransporteServicio_model';
 
 @Table({ tableName: 'direccion', timestamps: false })
 export default class Direccion extends Model {
@@ -34,6 +33,4 @@ export default class Direccion extends Model {
   @HasMany(() => Proveedor)
   proveedores!: Proveedor[]; 
 
-  @HasMany(() => TransporteServicio)
-  transportesServicio!: TransporteServicio[]; 
 }

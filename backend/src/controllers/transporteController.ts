@@ -2,7 +2,6 @@ import { Request, Response } from 'express';
 import TransporteServicio from '../models/TransporteServicio_model';
 import DetalleTransporte from '../models/DetalleTransporte_model';
 import Evento from '../models/Evento_model';
-import Direccion from '../models/Direccion_model';
 import Vehiculo from '../models/Vehiculo_model';
 import Usuario from '../models/Usuario_model';
 
@@ -11,7 +10,6 @@ export const createTransporte = async (req: Request, res: Response) => {
   try {
     const {
       id_evento,
-      id_direccion,
       distancia_km,
       precioneto_transporte,
       itbis_transporte,
@@ -25,16 +23,9 @@ export const createTransporte = async (req: Request, res: Response) => {
       return res.status(404).json({ error: 'Evento no encontrado' });
     }
 
-    // Verificar que la dirección existe
-    const direccion = await Direccion.findByPk(id_direccion);
-    if (!direccion) {
-      return res.status(404).json({ error: 'Dirección no encontrada' });
-    }
-
     // Crear el servicio de transporte
     const transporte = await TransporteServicio.create({
       id_evento,
-      id_direccion,
       distancia_km,
       precioneto_transporte,
       itbis_transporte,
@@ -88,9 +79,6 @@ export const createTransporte = async (req: Request, res: Response) => {
         },
         {
           model: Evento
-        },
-        {
-          model: Direccion
         }
       ]
     });
@@ -122,9 +110,6 @@ export const getTransportes = async (req: Request, res: Response) => {
         },
         {
           model: Evento
-        },
-        {
-          model: Direccion
         }
       ]
     });
@@ -141,7 +126,6 @@ export const editTransporte = async (req: Request, res: Response) => {
   try {
     const { id_transporte } = req.params;
     const {
-      id_direccion,
       distancia_km,
       precioneto_transporte,
       itbis_transporte,
@@ -154,17 +138,8 @@ export const editTransporte = async (req: Request, res: Response) => {
       return res.status(404).json({ error: 'Servicio de transporte no encontrado' });
     }
 
-    // Verificar que la dirección existe si se proporciona
-    if (id_direccion) {
-      const direccion = await Direccion.findByPk(id_direccion);
-      if (!direccion) {
-        return res.status(404).json({ error: 'Dirección no encontrada' });
-      }
-    }
-
     // Actualizar el servicio
     await transporte.update({
-      id_direccion: id_direccion || transporte.id_direccion,
       distancia_km: distancia_km || transporte.distancia_km,
       precioneto_transporte: precioneto_transporte || transporte.precioneto_transporte,
       itbis_transporte: itbis_transporte || transporte.itbis_transporte,
@@ -226,9 +201,6 @@ export const editTransporte = async (req: Request, res: Response) => {
         },
         {
           model: Evento
-        },
-        {
-          model: Direccion
         }
       ]
     });

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import '../../styles/dashboard/ServicesSubpages.scss';
 import { useUser } from '../../contexts/UserContext';
 import { useNavigate } from 'react-router-dom';
+import { validateEmail, validateUsername, validatePhoneNumber, formatPhoneNumber } from '../../utils/validation';
 export type UserRole = 'admin' | 'client' | 'supervisor' | 'inventory';
 
 export type Permission = {
@@ -226,6 +227,16 @@ interface TipoEvento {
   nombre_tipo_evento: string;
 }
 
+interface EditFormData {
+  nombre_usuario: string;
+  apellido_usuario: string;
+  cedula_usuario: string;
+  correo_usuario: string;
+  tel_usuario: string;
+  usuario_login: string;
+  estado_usuario: 'Activo' | 'Inactivo';
+}
+
 const WelcomeMenu: React.FC<WelcomeMenuProps> = () => {
 
   const apiUrl = import.meta.env.VITE_API_BASE_URL;
@@ -364,6 +375,21 @@ const WelcomeMenu: React.FC<WelcomeMenuProps> = () => {
   const [rolFilter, setRolFilter] = useState('');
   const [loading, setLoading] = useState(false);
   const [tableError, setTableError] = useState<string | null>(null);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editingUser, setEditingUser] = useState<Usuario | null>(null);
+  const [editFormData, setEditFormData] = useState<EditFormData>({
+    nombre_usuario: "",
+    apellido_usuario: "",
+    cedula_usuario: "",
+    correo_usuario: "",
+    tel_usuario: "",
+    usuario_login: "",
+    estado_usuario: "Activo"
+  });
+  const [editError, setEditError] = useState("");
+  const [editSuccess, setEditSuccess] = useState("");
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [userToDelete, setUserToDelete] = useState<string | null>(null);
 
 
 
@@ -2576,6 +2602,224 @@ const WelcomeMenu: React.FC<WelcomeMenuProps> = () => {
     </div>
   );
 
+  const handleEditClick = (usuario: Usuario) => {
+    setEditingUser(usuario);
+    setEditFormData({
+      nombre_usuario: usuario.nombre_usuario,
+      apellido_usuario: usuario.apellido_usuario,
+      cedula_usuario: usuario.cedula_usuario,
+      correo_usuario: usuario.correo_usuario,
+      tel_usuario: usuario.tel_usuario,
+      usuario_login: usuario.usuario_login,
+      estado_usuario: usuario.estado_usuario as 'Activo' | 'Inactivo'
+    });
+    setShowEditModal(true);
+  };
+
+  const handleEditInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { id, value } = e.target;
+    const fieldMap: { [key: string]: string } = {
+      'edit-name': 'nombre_usuario',
+      'edit-lastname': 'apellido_usuario',
+      'edit-cedula': 'cedula_usuario',
+      'edit-username': 'usuario_login',
+      'edit-email': 'correo_usuario',
+      'edit-phone': 'tel_usuario',
+      'edit-state': 'estado_usuario'
+    };
+    
+    const fieldName = fieldMap[id];
+    if (!fieldName) return;
+
+    let processedValue = value;
+    
+    if (id === 'edit-phone') {
+      processedValue = formatPhoneNumber(value);
+    } else if (id === 'edit-email') {
+      processedValue = value.toLowerCase();
+    }
+    
+    setEditFormData(prev => ({
+      ...prev,
+      [fieldName]: processedValue
+    }));
+    
+    // Validaciones
+    if (id === 'edit-email') {
+      const error = validateEmail(processedValue);
+      setEditError(error || "");
+    } else if (id === 'edit-username') {
+      const error = validateUsername(processedValue);
+      setEditError(error || "");
+    } else if (id === 'edit-phone') {
+      const error = validatePhoneNumber(processedValue);
+      setEditError(error || "");
+    }
+  };
+
+  const handleEditSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setEditError("");
+    setEditSuccess("");
+
+    if (!editingUser) return;
+
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        throw new Error('No hay sesión activa');
+      }
+
+      const response = await fetch(`${apiUrl}/usuario/${editingUser.cedula_usuario}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          nombre_usuario: editFormData.nombre_usuario,
+          apellido_usuario: editFormData.apellido_usuario,
+          cedula_usuario: editFormData.cedula_usuario,
+          correo_usuario: editFormData.correo_usuario,
+          tel_usuario: editFormData.tel_usuario,
+          usuario_login: editFormData.usuario_login,
+          estado_usuario: editFormData.estado_usuario
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Error al actualizar usuario');
+      }
+
+      setEditSuccess('Usuario actualizado exitosamente');
+      
+      // Actualizar la lista de usuarios
+      try {
+        const response = await fetch(`${apiUrl}/usuario`, {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        });
+        if (!response.ok) {
+          throw new Error('Error al actualizar la lista de usuarios');
+        }
+        const data = await response.json();
+        setUsuarios(data.usuarios);
+      } catch (error) {
+        console.error('Error al actualizar la lista de usuarios:', error);
+      }
+
+      // Cerrar el modal después de 2 segundos
+      setTimeout(() => {
+        setShowEditModal(false);
+        setEditingUser(null);
+        setEditFormData({
+          nombre_usuario: "",
+          apellido_usuario: "",
+          cedula_usuario: "",
+          correo_usuario: "",
+          tel_usuario: "",
+          usuario_login: "",
+          estado_usuario: "Activo"
+        });
+      }, 2000);
+
+    } catch (error) {
+      setEditError(error instanceof Error ? error.message : 'Error al actualizar usuario');
+    }
+  };
+
+  const handleDeleteUser = async (cedula: string) => {
+    if (window.confirm('¿Está seguro de eliminar este usuario?')) {
+      try {
+        const token = localStorage.getItem('token');
+        if (!token) {
+          throw new Error('No hay sesión activa');
+        }
+
+        const response = await fetch(`${apiUrl}/usuario/${cedula}`, {
+          method: 'DELETE',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        });
+
+        if (!response.ok) {
+          throw new Error('Error al eliminar usuario');
+        }
+
+        // Actualizar la lista de usuarios
+        const updatedResponse = await fetch(`${apiUrl}/usuario`, {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        });
+        if (!updatedResponse.ok) {
+          throw new Error('Error al actualizar la lista de usuarios');
+        }
+        const data = await updatedResponse.json();
+        setUsuarios(data.usuarios);
+
+      } catch (error) {
+        console.error('Error al eliminar usuario:', error);
+        alert(error instanceof Error ? error.message : 'Error al eliminar usuario');
+      }
+    }
+  };
+
+  const handleDeleteClick = (cedula: string) => {
+    setUserToDelete(cedula);
+    setShowDeleteModal(true);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!userToDelete) return;
+
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        throw new Error('No hay sesión activa');
+      }
+
+      const response = await fetch(`${apiUrl}/usuario/${userToDelete}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error('Error al eliminar usuario');
+      }
+
+      // Actualizar la lista de usuarios
+      const updatedResponse = await fetch(`${apiUrl}/usuario`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      if (!updatedResponse.ok) {
+        throw new Error('Error al actualizar la lista de usuarios');
+      }
+      const data = await updatedResponse.json();
+      setUsuarios(data.usuarios);
+
+      setShowDeleteModal(false);
+      setUserToDelete(null);
+
+    } catch (error) {
+      console.error('Error al eliminar usuario:', error);
+      alert(error instanceof Error ? error.message : 'Error al eliminar usuario');
+    }
+  };
+
   return (
     <div className="welcome-menu">
       {currentRole === 1 && renderAdminDashboard()}
@@ -2765,8 +3009,17 @@ const WelcomeMenu: React.FC<WelcomeMenuProps> = () => {
                                 {usuario.estado_usuario}
                               </td>
                               <td className="actions">
-                                <button className="edit-btn">Editar</button>
-                                <button className="delete-btn">Eliminar</button>
+                                <button
+                                  className="edit-btn"
+                                  onClick={() => handleEditClick(usuario)}                                >
+                                  Editar
+                                </button>
+                                <button 
+                                  className="delete-btn"
+                                  onClick={() => handleDeleteClick(usuario.cedula_usuario)}
+                                >
+                                  Eliminar
+                                </button>
                               </td>
                             </tr>
                           ))
@@ -2795,9 +3048,7 @@ const WelcomeMenu: React.FC<WelcomeMenuProps> = () => {
                     value={newUser.cedula}
                     onChange={(e) => setNewUser(prev => ({ ...prev, cedula: e.target.value }))}
                     required
-                    maxLength={13}
-                    pattern="[0-9]{11,13}"
-                    title="La cédula debe tener entre 11 y 13 dígitos"
+ 
                   />
                 </label>
 
@@ -2906,6 +3157,146 @@ const WelcomeMenu: React.FC<WelcomeMenuProps> = () => {
 
       {showProveedoresModal && renderProveedoresModal()}
       {showProveedorForm && renderProveedorForm()}
+
+      {showEditModal && (
+        <div className="modal-overlay">
+          <div className="modal-container">
+            <button className="close-btn" onClick={() => setShowEditModal(false)}>×</button>
+            <form className="modal-form" onSubmit={handleEditSubmit}>
+              <h2>Editar Usuario</h2>
+              {editError && <div className="error-message">{editError}</div>}
+              {editSuccess && <div className="success-message">{editSuccess}</div>}
+              
+              <div className="form-grid">
+                <label>
+                  <span>Nombre</span>
+                  <input 
+                    type="text" 
+                    id="edit-name"
+                    value={editFormData.nombre_usuario}
+                    onChange={handleEditInputChange}
+                    required
+                  />
+                </label>
+
+                <label>
+                  <span>Apellido</span>
+                  <input 
+                    type="text" 
+                    id="edit-lastname"
+                    value={editFormData.apellido_usuario}
+                    onChange={handleEditInputChange}
+                    required
+                  />
+                </label>
+
+                <label>
+                  <span>Cédula</span>
+                  <input 
+                    type="text" 
+                    id="edit-cedula"
+                    value={editFormData.cedula_usuario}
+                    onChange={handleEditInputChange}
+                    required
+                  />
+                </label>
+
+                <label>
+                  <span>Teléfono</span>
+                  <input 
+                    type="tel" 
+                    id="edit-phone"
+                    value={editFormData.tel_usuario}
+                    onChange={handleEditInputChange}
+                    required
+                  />
+                </label>
+
+                <label>
+                  <span>Nombre de Usuario</span>
+                  <input 
+                    type="text" 
+                    id="edit-username"
+                    value={editFormData.usuario_login}
+                    onChange={handleEditInputChange}
+                    required
+                  />
+                </label>
+
+                <label>
+                  <span>Correo Electrónico</span>
+                  <input 
+                    type="email" 
+                    id="edit-email"
+                    value={editFormData.correo_usuario}
+                    onChange={handleEditInputChange}
+                    required
+                  />
+                </label>
+
+                <label>
+                  <span>Estado</span>
+                  <select
+                    id="edit-state"
+                    value={editFormData.estado_usuario}
+                    onChange={(e) => setEditFormData(prev => ({
+                      ...prev,
+                      estado_usuario: e.target.value as 'Activo' | 'Inactivo'
+                    }))}
+                    required
+                  >
+                    <option value="Activo">Activo</option>
+                    <option value="Inactivo">Inactivo</option>
+                  </select>
+                </label>
+              </div>
+
+              <div className="form-buttons">
+                <button 
+                  type="submit" 
+                  className="submit-btn"
+                >
+                  Actualizar Usuario
+                </button>
+                <button
+                  type="button"
+                  className="reset-btn"
+                  onClick={() => {
+                    setShowEditModal(false);
+                    setEditingUser(null);
+                    setEditFormData({
+                      nombre_usuario: "",
+                      apellido_usuario: "",
+                      cedula_usuario: "",
+                      correo_usuario: "",
+                      tel_usuario: "",
+                      usuario_login: "",
+                      estado_usuario: "Activo"
+                    });
+                  }}
+                >
+                  Cancelar
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {showDeleteModal && (
+        <div className="modal-overlay">
+          <div className="modal-content logout-modal">
+            <h4>¿Está seguro que desea eliminar este usuario?</h4>
+            <div className="modal-buttons">
+              <button onClick={handleDeleteConfirm}>Sí</button>
+              <button onClick={() => {
+                setShowDeleteModal(false);
+                setUserToDelete(null);
+              }}>No</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

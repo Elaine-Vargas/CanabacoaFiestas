@@ -1101,31 +1101,50 @@ tr.deshabilitado {
   }
 }
 
-.password-field {
-  .password-input-container {
-    position: relative;
-    display: flex;
-    align-items: center;
+.password-input-container {
+  position: relative;
+  width: 100% !important;
+  display: flex;
+  align-items: center;
 
-    input {
-      width: 100%;
-      padding-right: 40px;
+  input {
+    width: 100%;
+    padding: 1rem 1.2rem;
+    padding-right: 40px;
+    border: 2px solid var(--color-input-border);
+    border-radius: 10px;
+    background-color: var(--color-background2);
+    color: var(--text-color);
+    font-family: "Nunito Sans", sans-serif;
+    font-size: 1rem;
+    transition: $transition-standard;
+    box-sizing: border-box;
+
+    &:focus {
+      border-color: var(--gold);
+      outline: none;
+      box-shadow: 0 0 0 4px rgba(212, 175, 55, 0.1);
     }
 
-    .toggle-password {
-      position: absolute;
-      right: 10px;
-      background: none;
-      border: none;
-      cursor: pointer;
-      padding: 5px;
-      font-size: 1.2rem;
-      color: var(--dark-gold);
-      transition: all 0.3s ease;
+    &::placeholder {
+      color: var(--text-color2);
+      opacity: 0.7;
+    }
+  }
 
-      &:hover {
-        transform: scale(1.1);
-      }
+  .password-toggle {
+    position: absolute;
+    right: 10px;
+    cursor: pointer;
+    color: var(--color-input-border);
+    display: flex;
+    align-items: center;
+    padding: 0.5rem;
+    transition: $transition-standard;
+
+    &:hover {
+      color: var(--gold);
+      transform: scale(1.1);
     }
   }
 }
