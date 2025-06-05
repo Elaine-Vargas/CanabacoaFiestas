@@ -457,22 +457,17 @@ const Catalog: React.FC<CatalogProps> = ({ onAddToCart = true, onComprarCarrito 
 
   // Filtrar y paginar los elementos
   const filteredElementos = useMemo(() => {
-    console.log('Filtrando elementos. Total elementos:', elementos.length);
-    console.log('Filtros actuales:', filtros);
-    
-    const filtered = elementos.filter(elemento => {
+    return elementos.filter(elemento => {
       const matchesCategoria = !filtros.categoria || elemento.subcategoria.categoria.id_categoria === Number(filtros.categoria);
       const matchesSubcategoria = !filtros.subcategoria || elemento.subcategoria.id_subcategoria === Number(filtros.subcategoria);
       const matchesColor = !filtros.color || elemento.color.id_color === Number(filtros.color);
       const matchesMaterial = !filtros.material || elemento.material.id_material === Number(filtros.material);
       const matchesBusqueda = !filtros.busqueda || 
-        elemento.nombre_elemento.toLowerCase().includes(filtros.busqueda.toLowerCase());
+        elemento.nombre_elemento.toLowerCase().includes(filtros.busqueda.toLowerCase()) ||
+        elemento.subcategoria.nombre_subcategoria.toLowerCase().includes(filtros.busqueda.toLowerCase());
 
       return matchesCategoria && matchesSubcategoria && matchesColor && matchesMaterial && matchesBusqueda;
     });
-
-    console.log('Elementos filtrados:', filtered.length);
-    return filtered;
   }, [elementos, filtros]);
 
   const paginatedElementos = useMemo(() => {

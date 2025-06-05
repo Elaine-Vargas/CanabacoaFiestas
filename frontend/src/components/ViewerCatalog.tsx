@@ -181,7 +181,8 @@ const ViewerCatalog: React.FC<CatalogProps> = () => {
       const matchesColor = !filtros.color || elemento.color.id_color === Number(filtros.color);
       const matchesMaterial = !filtros.material || elemento.material.id_material === Number(filtros.material);
       const matchesBusqueda = !filtros.busqueda || 
-        elemento.nombre_elemento.toLowerCase().includes(filtros.busqueda.toLowerCase());
+        elemento.nombre_elemento.toLowerCase().includes(filtros.busqueda.toLowerCase()) ||
+        elemento.subcategoria.nombre_subcategoria.toLowerCase().includes(filtros.busqueda.toLowerCase());
 
       return matchesCategoria && matchesSubcategoria && matchesColor && matchesMaterial && matchesBusqueda;
     });
