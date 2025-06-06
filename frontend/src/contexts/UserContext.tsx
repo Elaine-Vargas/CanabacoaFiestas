@@ -21,6 +21,10 @@ interface UserProviderProps {
 }
 
 export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
+
+  const apiUrl = import.meta.env.VITE_API_BASE_URL;
+
+
   const [userRole, setUserRole] = useState<UserRole>('cliente');
   const [userPermissions, setUserPermissions] = useState<Permission[]>([]);
 
@@ -32,7 +36,7 @@ export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
           throw new Error('No hay token de autenticación');
         }
 
-        const response = await fetch('/api/auth/current', {
+        const response = await fetch(`${apiUrl}/auth/register-client`, {
           headers: {
             'Authorization': `Bearer ${token}`,
             'Content-Type': 'application/json'

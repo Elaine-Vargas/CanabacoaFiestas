@@ -51,31 +51,31 @@ app.use(express.json());
 app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 
 // Rutas
-app.use('/api/auth', authRoutes);
-app.use('/api/permissions', permissionRoutes);
-app.use('/api/elemento', elementoRoutes);
-app.use('/api/comentarios', comentarioRoutes);
-app.use('/api/usuario', usersRoutes);
-app.use('/api/evento', eventoRoutes);
-app.use('/api/alquiler', alquilerRoutes);
-app.use('/api/decoracion', decoracionRoutes);
-app.use('/api/menu', menuRoutes);
-app.use('/api/platos', platoRoutes);
-app.use('/api/direccion', direccionRoutes);
-app.use('/api/provincias', provinciaRoutes);
-app.use('/api/tarjeta', tarjetaRoutes);
-app.use('/api/transporte',transporteRoutes);
-app.use('/api/supervision',supervisionRoutes);
-app.use('/api/banco', bancoRoutes);
-app.use('/api/catering', cateringRoutes);
-app.use('/api/compra', compraRoutes);
-app.use('/api/costo-agregado', costoAgregadoRoutes);  
-app.use('/api/espacio', espacioRoutes);
-app.use('/api/montajedesmontaje', montajeDesmontajeRoutes);
-app.use('/api/pago', pagoRoutes);
-app.use('/api/proveedor', proveedorRoutes);
-app.use('/api/vehiculo', vehiculoRoutes);
-app.use('/api/reporte', reporteRoutes);
+ app.use('/api/auth', authRoutes);
+// app.use('/api/permissions', permissionRoutes);
+// app.use('/api/elemento', elementoRoutes);
+// app.use('/api/comentarios', comentarioRoutes);
+// app.use('/api/usuario', usersRoutes);
+// app.use('/api/evento', eventoRoutes);
+// app.use('/api/alquiler', alquilerRoutes);
+// app.use('/api/decoracion', decoracionRoutes);
+// app.use('/api/menu', menuRoutes);
+// app.use('/api/platos', platoRoutes);
+// app.use('/api/direccion', direccionRoutes);
+// app.use('/api/provincias', provinciaRoutes);
+// app.use('/api/tarjeta', tarjetaRoutes);
+// app.use('/api/transporte',transporteRoutes);
+// app.use('/api/supervision',supervisionRoutes);
+// app.use('/api/banco', bancoRoutes);
+// app.use('/api/catering', cateringRoutes);
+// app.use('/api/compra', compraRoutes);
+// app.use('/api/costo-agregado', costoAgregadoRoutes);  
+// app.use('/api/espacio', espacioRoutes);
+// app.use('/api/montajedesmontaje', montajeDesmontajeRoutes);
+// app.use('/api/pago', pagoRoutes);
+// app.use('/api/proveedor', proveedorRoutes);
+// app.use('/api/vehiculo', vehiculoRoutes);
+// app.use('/api/reporte', reporteRoutes);
 
 
 

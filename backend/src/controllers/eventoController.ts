@@ -11,7 +11,6 @@ export const createEvent = async (req: Request, res: Response) => {
             cedula_asesor,
             fecha_evento,
             hora_evento,
-            id_espacio,
             id_tipo_evento,
             desea_supervision,
             nota_cliente
