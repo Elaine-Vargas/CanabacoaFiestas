@@ -9,12 +9,7 @@ const WelcomeEmployee = lazy(() => import('../../components/DashboardComponents/
 const WelcomeDriver = lazy(() => import('../../components/DashboardComponents/Welcome/WelcomeDriver'));
 
 // Definición de roles
-export type UserRole = 'admin' | 'client' | 'empleado'| 'chofer' ;
-
-interface UserData {
-  rol: string;
-  // Agrega aquí otros campos que necesites
-}
+export type UserRole = 'admin' | 'cliente' | 'empleado'| 'conductor' ;
 
 const Welcome: React.FC = () => {
   const { userRole } = useUser();
@@ -44,11 +39,11 @@ const Welcome: React.FC = () => {
     switch (userRole) {
       case 'admin':
         return <WelcomeAdmin />;
-      case 'client':
+      case 'cliente':
         return <WelcomeClient />;
-      case 'supervisor':
+      case 'empleado':
         return <WelcomeEmployee />;
-      case 'chofer':
+      case 'conductor':
         return <WelcomeDriver />;
       default:
         return <div>Rol no válido: {userRole}</div>;

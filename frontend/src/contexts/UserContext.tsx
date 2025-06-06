@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 
-type UserRole = 'admin' | 'client' | 'supervisor' | 'inventory';
+type UserRole = 'admin' | 'cliente' | 'empleado' | 'conductor' | null;
 
 interface Permission {
   id: string;
@@ -21,7 +21,7 @@ interface UserProviderProps {
 }
 
 export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
-  const [userRole, setUserRole] = useState<UserRole>('client');
+  const [userRole, setUserRole] = useState<UserRole>('cliente');
   const [userPermissions, setUserPermissions] = useState<Permission[]>([]);
 
   useEffect(() => {
@@ -44,7 +44,7 @@ export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
         }
 
         const userData = await response.json();
-        const role = userData.id_rol === 1 ? 'admin' : userData.id_rol === 2 ? 'client' : userData.id_rol === 3 ? 'supervisor' : 'inventory';
+        const role = userData.id_rol === 1 ? 'admin' : userData.id_rol === 2 ? 'cliente' : userData.id_rol === 3 ? 'empleado' : 'conductor';
         setUserRole(role);
         localStorage.setItem('userRole', role);
 
