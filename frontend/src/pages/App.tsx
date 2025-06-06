@@ -1,6 +1,6 @@
 import '../styles/basics/App.scss';
 import { lazy, Suspense } from 'react';
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import ColorTheme from '../functions/ColorTheme';
 import { UserProvider } from '../contexts/UserContext';
 
@@ -15,15 +15,55 @@ const Rent = lazy(() => import('./ServicesSubpages/Rent'));
 const Catering = lazy(() => import('./ServicesSubpages/Catering'));
 const Report = lazy(() => import('./ServicesSubpages/Report'));
 const Catalogo = lazy(() => import('./Principal/Catalog'));
-const Principal = lazy(() => import('./Principal/Principal')); // Ahora puede ser lazy-loaded
+const Principal = lazy(() => import('./Principal/Principal'));
 const PasswordRecovery = lazy(() => import ('./PassRecovery'));
 const PasswordReset = lazy(() => import('./PasswordReset'));
 
-
 import ProtectedRoute from '../components/Otros/ProtectedRoute';
 import PublicRoute from '../components/Otros/PublicRoute';
-import PrincipalLayout from './Principal/PrincipalLayout'; // Importa el nuevo Layout
+import PrincipalLayout from './Principal/PrincipalLayout';
 import { LoadingScreen } from '../components/Otros/LoadingScreen';
+
+// Tipos para el mapeo de rutas
+type RouteMapping = {
+  [key: number]: string;
+};
+
+type RouteMappings = {
+  [key: string]: RouteMapping;
+};
+
+// Componente para manejar redirecciones basadas en roles
+const RoleBasedRedirect = () => {
+  const location = useLocation();
+  const userData = JSON.parse(localStorage.getItem('userData') || '{}');
+  const rolId = Number(userData.rol);
+
+  // Mapeo de rutas según el rol
+  const routeMappings: RouteMappings = {
+    'Alquiler': {
+      1: 'Alquileres-Compras', // Admin
+      2: 'Alquiler', // Cliente
+      3: 'Alquiler', // Empleado
+      4: 'Alquiler' // Conductor
+    },
+    'Facturas': {
+      1: 'Reportes-Facturas', // Admin
+      2: 'Facturas', // Cliente
+      3: 'Reportes-Facturas', // Empleado
+      4: 'Facturas' // Conductor
+    }
+  };
+
+  const path = location.pathname.split('/').pop() || '';
+  const mapping = routeMappings[path];
+
+  if (mapping && mapping[rolId]) {
+    return <Navigate to={`/Menu-Servicios/${mapping[rolId]}`} replace />;
+  }
+
+  return null;
+};
 
 function App() {
   return (
@@ -57,7 +97,6 @@ function App() {
                 </Suspense>
               </PublicRoute>
             } />
-            {/* Nueva ruta para reset con token */}
             <Route path="Recuperar-Contrasena/Restablecer" element={
               <PublicRoute>
                 <Suspense fallback={<LoadingScreen />}>
@@ -67,22 +106,26 @@ function App() {
             } />
           </Route>
 
-        <Route path="/Menu-Servicios/*" element={
+          <Route path="/Menu-Servicios/*" element={
             <ProtectedRoute>
               <Suspense fallback={<LoadingScreen />}>
                 <DashboardLayout />
               </Suspense>
             </ProtectedRoute>
           }>
-              <Route index element={<Navigate to="Bienvenida" replace />} />
-              <Route path="Bienvenida" element={<WelcomeMenu/>} />
-              <Route path="Ajustes-Usuario" element={<UserConfig />} />
-              <Route path="Alquiler" element={<Rent />} />
-              <Route path="Catering" element={<Catering />} />
-              <Route path="Reportes-Facturas" element={<Report />} />
-            </Route>
-          </Routes>
-        </BrowserRouter>
+            <Route index element={<Navigate to="Bienvenida" replace />} />
+            <Route path="Bienvenida" element={<WelcomeMenu/>} />
+            <Route path="Ajustes-Usuario" element={<UserConfig />} />
+            
+            {/* Rutas con redirección basada en roles */}
+            <Route path="Alquiler" element={<RoleBasedRedirect />} />
+            <Route path="Alquileres-Compras" element={<Rent />} />
+            <Route path="Catering" element={<Catering />} />
+            <Route path="Facturas" element={<RoleBasedRedirect />} />
+            <Route path="Reportes-Facturas" element={<Report />} />
+          </Route>
+        </Routes>
+      </BrowserRouter>
     </UserProvider>
   );
 }

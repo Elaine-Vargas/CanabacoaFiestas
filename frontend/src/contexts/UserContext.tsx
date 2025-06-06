@@ -36,7 +36,7 @@ export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
           throw new Error('No hay token de autenticación');
         }
 
-        const response = await fetch(`${apiUrl}/auth/register-client`, {
+        const response = await fetch(`${apiUrl}/auth/current`, {
           headers: {
             'Authorization': `Bearer ${token}`,
             'Content-Type': 'application/json'
@@ -48,13 +48,15 @@ export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
         }
 
         const userData = await response.json();
-        const role = userData.id_rol === 1 ? 'admin' : userData.id_rol === 2 ? 'cliente' : userData.id_rol === 3 ? 'empleado' : 'conductor';
+        const role = userData.id_rol === 1 ? 'admin' : 
+                     userData.id_rol === 2 ? 'cliente' : 
+                     userData.id_rol === 3 ? 'empleado' : 'conductor';
         setUserRole(role);
         localStorage.setItem('userRole', role);
 
         // Fetch permissions after getting user role
         if (userData.id_rol) {
-          const permissionsResponse = await fetch(`/api/permissions/${userData.id_rol}`, {
+          const permissionsResponse = await fetch(`${apiUrl}/permissions/${userData.id_rol}`, {
             headers: {
               'Authorization': `Bearer ${token}`,
               'Content-Type': 'application/json'

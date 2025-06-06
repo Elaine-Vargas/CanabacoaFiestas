@@ -1,22 +1,20 @@
-//import React from 'react';
-import '../../../styles/dashboard/ServicesSubpages.scss';
-import { Card, Button } from 'antd';
-import { PlusOutlined } from '@ant-design/icons';
+import React from "react";
+import { Card, Typography } from "antd";
+import "../../../styles/dashboard/ServicesSubpages.scss";
 
-const WelcomeEmployee = () => {
+const { Title } = Typography;
+
+export default function WelcomeEmployee() {
   return (
     <div className="welcome-container">
-      <Card title="Bienvenido Empleado" className="welcome-card">
-        <div className="welcome-content">
-          <h2>¡Bienvenido a Canabacoa Fiestas!</h2>
-          <p>Aquí podrás gestionar los servicios y reservas.</p>
-          <Button type="primary" icon={<PlusOutlined />}>
-            Gestionar Servicios
-          </Button>
-        </div>
+      <Card className="welcome-card">
+        <Title level={2} className="welcome-title">
+          ¡Te damos la bienvenida a tu panel de Empleado!
+        </Title>
+        <p className="welcome-subtitle">
+          Aquí podrás gestionar tus tareas y servicios asignados
+        </p>
       </Card>
     </div>
   );
-};
-
-export default WelcomeEmployee;
+}

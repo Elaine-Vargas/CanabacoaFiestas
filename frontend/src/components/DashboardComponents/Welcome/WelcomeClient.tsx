@@ -1,22 +1,20 @@
-//import React from 'react';
-import '../../../styles/dashboard/ServicesSubpages.scss';
-import { Card, Button } from 'antd';
-import { PlusOutlined } from '@ant-design/icons';
+import React from "react";
+import { Card, Typography } from "antd";
+import "../../../styles/dashboard/ServicesSubpages.scss";
 
-const WelcomeClient = () => {
+const { Title } = Typography;
+
+export default function WelcomeClient() {
   return (
     <div className="welcome-container">
-      <Card title="Bienvenido Cliente" className="welcome-card">
-        <div className="welcome-content">
-          <h2>¡Bienvenido a Canabacoa Fiestas!</h2>
-          <p>Aquí podrás gestionar tus reservas y servicios</p>
-          <Button type="primary" icon={<PlusOutlined />}>
-            Nueva Reserva
-          </Button>
-        </div>
+      <Card className="welcome-card">
+        <Title level={2} className="welcome-title">
+          ¡Te damos la bienvenida a tu panel de Cliente!
+        </Title>
+        <p className="welcome-subtitle">
+          Aquí podrás gestionar tus eventos y servicios con Canabacoa Fiestas
+        </p>
       </Card>
     </div>
   );
-};
-
-export default WelcomeClient;
+}
