@@ -12,8 +12,15 @@ export const createEvent = async (req: Request, res: Response) => {
             fecha_evento,
             hora_evento,
             id_tipo_evento,
+            id_direccion,
+            espacio_evento,
+            estado_solicitud,
+            estado_evento,
             desea_supervision,
-            nota_cliente
+            nota_cliente,
+            subtotal_evento,
+            itbis_evento,
+            total_evento
         } = req.body;
 
         // Verificar roles
@@ -33,10 +40,16 @@ export const createEvent = async (req: Request, res: Response) => {
             cedula_asesor: cedula_asesor || null,
             fecha_evento,
             hora_evento,
-            id_espacio,
+            id_direccion,
+            espacio_evento,
             id_tipo_evento,
+            estado_solicitud: estado_solicitud || 'Pendiente',
+            estado_evento: estado_evento || 'Pendiente',
             desea_supervision: desea_supervision || false,
-            nota_cliente: nota_cliente || null
+            nota_cliente: nota_cliente || null,
+            subtotal_evento: subtotal_evento || 0.00,
+            itbis_evento: itbis_evento || 0.00,
+            total_evento: total_evento || 0.00
         });
 
         res.status(201).json(evento);
@@ -115,11 +128,16 @@ export const editEvent = async (req: Request, res: Response) => {
             cedula_asesor,
             fecha_evento,
             hora_evento,
-            id_espacio,
+            id_direccion,
+            espacio_evento,
             id_tipo_evento,
             desea_supervision,
             nota_cliente,
-            estado_evento
+            estado_solicitud,
+            estado_evento,
+            subtotal_evento,
+            itbis_evento,
+            total_evento
         } = req.body;
 
         // Verificar roles si se están actualizando
@@ -147,11 +165,16 @@ export const editEvent = async (req: Request, res: Response) => {
             cedula_asesor: cedula_asesor || evento.cedula_asesor,
             fecha_evento: fecha_evento || evento.fecha_evento,
             hora_evento: hora_evento || evento.hora_evento,
-            id_espacio: id_espacio || evento.id_espacio,
+            id_direccion: id_direccion || evento.id_direccion,
+            espacio_evento: espacio_evento || evento.espacio_evento,
             id_tipo_evento: id_tipo_evento || evento.id_tipo_evento,
+            estado_solicitud: estado_solicitud || evento.estado_solicitud,
+            estado_evento: estado_evento || evento.estado_evento,
             desea_supervision: desea_supervision !== undefined ? desea_supervision : evento.desea_supervision,
             nota_cliente: nota_cliente || evento.nota_cliente,
-            estado_evento: estado_evento || evento.estado_evento
+            subtotal_evento: subtotal_evento || evento.subtotal_evento,
+            itbis_evento: itbis_evento || evento.itbis_evento,
+            total_evento: total_evento || evento.total_evento
         });
 
         res.json(evento);

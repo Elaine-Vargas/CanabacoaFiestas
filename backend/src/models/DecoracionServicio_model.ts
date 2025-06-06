@@ -20,10 +20,7 @@ export default class DecoracionServicio extends Model {
 
   @Column({ type: DataType.STRING(100), allowNull: false })
   colores_decoracion!: string;
-
-  @Column({ type: DataType.STRING(100), allowNull: false })
-  tematica_decoracion!: string;
-
+  
   @Column({ type: DataType.DECIMAL(10, 2)})
   precioneto_decoracion!: number;
 

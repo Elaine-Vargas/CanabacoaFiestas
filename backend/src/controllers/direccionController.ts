@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import { Op } from 'sequelize';
 import Direccion from '../models/Direccion_model';
+import Ciudad from '../models/Ciudad_model';
 import Provincia from '../models/Provincia_model';
 
 // Obtener todas las direcciones
@@ -9,8 +10,8 @@ export const getDirecciones = async (req: Request, res: Response) => {
     const direcciones = await Direccion.findAll({
       include: [
         {
-          model: Provincia,
-          attributes: ['id_provincia', 'nombre_provincia']
+          model: Ciudad,
+          attributes: ['id_ciudad', 'nombre_ciudad']
         }
       ]
     });
@@ -40,8 +41,8 @@ export const getDireccionById = async (req: Request, res: Response) => {
     const direccion = await Direccion.findByPk(id_direccion, {
       include: [
         {
-          model: Provincia,
-          attributes: ['id_provincia', 'nombre_provincia']
+          model: Ciudad,
+          attributes: ['id_ciudad', 'nombre_ciudad']
         }
       ]
     });
@@ -66,7 +67,7 @@ export const getDireccionById = async (req: Request, res: Response) => {
 // Buscar direcciones
 export const searchDirecciones = async (req: Request, res: Response) => {
   try {
-    const { sector, calle, provincia } = req.query;
+    const { sector, calle, ciudad } = req.query;
 
     const whereClause: any = {};
 
@@ -82,9 +83,9 @@ export const searchDirecciones = async (req: Request, res: Response) => {
       };
     }
 
-    if (provincia) {
-      whereClause['$provincia.nombre_provincia$'] = {
-        [Op.like]: `%${provincia}%`
+    if (ciudad) {
+      whereClause['$ciudad.nombre_ciudad$'] = {
+        [Op.like]: `%${ciudad}%`
       };
     }
 
@@ -92,8 +93,8 @@ export const searchDirecciones = async (req: Request, res: Response) => {
       where: whereClause,
       include: [
         {
-          model: Provincia,
-          attributes: ['id_provincia', 'nombre_provincia']
+          model: Ciudad,
+          attributes: ['id_ciudad', 'nombre_ciudad']
         }
       ]
     });
@@ -118,17 +119,17 @@ export const searchDirecciones = async (req: Request, res: Response) => {
 // Crear una nueva dirección
 export const createDireccion = async (req: Request, res: Response) => {
   try {
-    const { id_provincia, sector, calle, detalles } = req.body;
+    const { id_ciudad, sector, calle, detalles } = req.body;
 
-    // Verificar que la provincia existe
-    const provincia = await Provincia.findByPk(id_provincia);
-    if (!provincia) {
-      return res.status(404).json({ error: 'Provincia no encontrada' });
+    // Verificar que la ciudad existe
+    const ciudad = await Ciudad.findByPk(id_ciudad);
+    if (!ciudad) {
+      return res.status(404).json({ error: 'Ciudad no encontrada' });
     }
 
     // Crear la dirección
     const direccion = await Direccion.create({
-      id_provincia,
+      id_ciudad,
       sector,
       calle,
       detalles: detalles || null
@@ -138,8 +139,8 @@ export const createDireccion = async (req: Request, res: Response) => {
     const direccionCompleta = await Direccion.findByPk(direccion.id_direccion, {
       include: [
         {
-          model: Provincia,
-          attributes: ['id_provincia', 'nombre_provincia']
+          model: Ciudad,
+          attributes: ['id_ciudad', 'nombre_ciudad']
         }
       ]
     });
@@ -158,24 +159,24 @@ export const createDireccion = async (req: Request, res: Response) => {
 export const editDireccion = async (req: Request, res: Response) => {
   try {
     const { id_direccion } = req.params;
-    const { id_provincia, sector, calle, detalles } = req.body;
+    const { id_ciudad, sector, calle, detalles } = req.body;
 
     const direccion = await Direccion.findByPk(id_direccion);
     if (!direccion) {
       return res.status(404).json({ error: 'Dirección no encontrada' });
     }
 
-    // Verificar que la provincia existe si se proporciona
-    if (id_provincia) {
-      const provincia = await Provincia.findByPk(id_provincia);
-      if (!provincia) {
-        return res.status(404).json({ error: 'Provincia no encontrada' });
+    // Verificar que la ciudad existe si se proporciona
+    if (id_ciudad) {
+      const ciudad = await Ciudad.findByPk(id_ciudad);
+      if (!ciudad) {
+        return res.status(404).json({ error: 'Ciudad no encontrada' });
       }
     }
 
     // Actualizar la dirección
     await direccion.update({
-      id_provincia: id_provincia || direccion.id_provincia,
+      id_ciudad: id_ciudad || direccion.id_ciudad,
       sector: sector || direccion.sector,
       calle: calle || direccion.calle,
       detalles: detalles || direccion.detalles
@@ -185,8 +186,8 @@ export const editDireccion = async (req: Request, res: Response) => {
     const direccionActualizada = await Direccion.findByPk(id_direccion, {
       include: [
         {
-          model: Provincia,
-          attributes: ['id_provincia', 'nombre_provincia']
+          model: Ciudad,
+          attributes: ['id_ciudad', 'nombre_ciudad']
         }
       ]
     });
@@ -220,6 +221,30 @@ export const deleteDireccion = async (req: Request, res: Response) => {
     res.status(500).json({ 
       error: 'Error al eliminar dirección',
       mensaje: 'Ocurrió un error al eliminar la dirección'
+    });
+  }
+}; 
+
+// Obtener todas las provincias
+export const getProvincias = async (req: Request, res: Response) => {
+  try {
+    const provincias = await Provincia.findAll({
+      attributes: ['id_provincia', 'nombre_provincia']
+    });
+
+    if (!provincias || provincias.length === 0) {
+      return res.status(404).json({ 
+        error: 'No se encontraron provincias',
+        mensaje: 'No hay provincias registradas'
+      });
+    }
+
+    res.json(provincias);
+  } catch (error) {
+    console.error('Error al obtener provincias:', error);
+    res.status(500).json({ 
+      error: 'Error al obtener las provincias',
+      mensaje: 'Ocurrió un error al cargar las provincias'
     });
   }
 }; 

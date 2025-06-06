@@ -66,19 +66,10 @@ router.put('/:id_compra', async (req: Request, res: Response, next: NextFunction
   }
 });
 
-// Eliminar lógicamente una compra
+// Eliminar una compra (borrado lógico)
 router.delete('/:id_compra', async (req: Request, res: Response, next: NextFunction) => {
   try {
     await deleteCompra(req, res);
-  } catch (error) {
-    next(error);
-  }
-});
-
-// Eliminar un detalle de compra
-router.delete('/detalle/:id_detalle_compra', async (req: Request, res: Response, next: NextFunction) => {
-  try {
-    await deleteDetalleCompra(req, res);
   } catch (error) {
     next(error);
   }
@@ -88,6 +79,15 @@ router.delete('/detalle/:id_detalle_compra', async (req: Request, res: Response,
 router.post('/detalle', async (req: Request, res: Response, next: NextFunction) => {
   try {
     await createDetalleCompra(req, res);
+  } catch (error) {
+    next(error);
+  }
+});
+
+// Eliminar un detalle de compra
+router.delete('/detalle/:id_detalle_compra', async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    await deleteDetalleCompra(req, res);
   } catch (error) {
     next(error);
   }

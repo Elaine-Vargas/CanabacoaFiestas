@@ -328,7 +328,7 @@ export const createDetalleCompra = async (req: Request, res: Response) => {
     await compra.update({ costo_compra: nuevoCosto });
 
     // Obtener el detalle con sus relaciones
-    const detalleCompleto = await DetalleCompra.findByPk(detalleCompra.id_detalle_compra, {
+    const detalleCompleto = await DetalleCompra.findByPk(detalleCompra.id, {
       include: [
         {
           model: Elemento

@@ -1,10 +1,9 @@
 import { Request, Response } from 'express';
 import SupervisionServicio from '../models/SupervisionServicio_model';
-import DetalleSupervision from '../models/DetalleSupervision_model';
 import Evento from '../models/Evento_model';
 import Usuario from '../models/Usuario_model';
 
-// Crear un nuevo servicio de supervisión con sus detalles
+// Crear un nuevo servicio de supervisión
 export const createSupervision = async (req: Request, res: Response) => {
   try {
     const {
@@ -13,7 +12,7 @@ export const createSupervision = async (req: Request, res: Response) => {
       precioneto_supervision,
       itbis_supervision,
       total_supervision,
-      detalles // Array de detalles de supervisores
+      estado_supervision
     } = req.body;
 
     // Verificar que el evento existe
@@ -28,43 +27,19 @@ export const createSupervision = async (req: Request, res: Response) => {
       tarifa_hora,
       precioneto_supervision,
       itbis_supervision,
-      total_supervision
+      total_supervision,
+      estado_supervision: estado_supervision || 'Aceptado'
     });
 
-    // Crear los detalles de supervisores
-    if (detalles && detalles.length > 0) {
-      const detallesPromises = detalles.map(async (detalle: any) => {
-        // Verificar que el usuario existe
-        const usuario = await Usuario.findByPk(detalle.cedula_usuariopersonal);
-        if (!usuario) {
-          throw new Error(`Usuario con cédula ${detalle.cedula_usuariopersonal} no encontrado`);
-        }
-
-        return DetalleSupervision.create({
-          id_supervision: supervision.id_supervision,
-          cedula_usuariopersonal: detalle.cedula_usuariopersonal,
-          horas_trabajo: detalle.horas_trabajo,
-          precioneto_supervision: detalle.precioneto_supervision
-        });
-      });
-
-      await Promise.all(detallesPromises);
-    }
-
-    // Obtener el servicio con sus detalles
+    // Obtener el servicio con el evento
     const supervisionCompleta = await SupervisionServicio.findByPk(supervision.id_supervision, {
       include: [
         {
-          model: DetalleSupervision,
+          model: Evento,
           include: [
-            {
-              model: Usuario,
-              as: 'supervisor'
-            }
+            { model: Usuario, as: 'cliente' },
+            { model: Usuario, as: 'asesor' }
           ]
-        },
-        {
-          model: Evento
         }
       ]
     });
@@ -82,18 +57,14 @@ export const getSupervisiones = async (req: Request, res: Response) => {
     const supervisiones = await SupervisionServicio.findAll({
       include: [
         {
-          model: DetalleSupervision,
+          model: Evento,
           include: [
-            {
-              model: Usuario,
-              as: 'supervisor'
-            }
+            { model: Usuario, as: 'cliente' },
+            { model: Usuario, as: 'asesor' }
           ]
-        },
-        {
-          model: Evento
         }
-      ]
+      ],
+      order: [['id_supervision', 'DESC']]
     });
 
     res.json(supervisiones);
@@ -112,7 +83,7 @@ export const editSupervision = async (req: Request, res: Response) => {
       precioneto_supervision,
       itbis_supervision,
       total_supervision,
-      detalles // Array de detalles actualizados
+      estado_supervision
     } = req.body;
 
     const supervision = await SupervisionServicio.findByPk(id_supervision);
@@ -125,51 +96,19 @@ export const editSupervision = async (req: Request, res: Response) => {
       tarifa_hora: tarifa_hora || supervision.tarifa_hora,
       precioneto_supervision: precioneto_supervision || supervision.precioneto_supervision,
       itbis_supervision: itbis_supervision || supervision.itbis_supervision,
-      total_supervision: total_supervision || supervision.total_supervision
+      total_supervision: total_supervision || supervision.total_supervision,
+      estado_supervision: estado_supervision || supervision.estado_supervision
     });
 
-    // Si se proporcionaron nuevos detalles, actualizarlos
-    if (detalles) {
-      // Eliminar detalles existentes
-      await DetalleSupervision.destroy({
-        where: { id_supervision }
-      });
-
-      // Crear nuevos detalles
-      if (detalles.length > 0) {
-        const detallesPromises = detalles.map(async (detalle: any) => {
-          // Verificar que el usuario existe
-          const usuario = await Usuario.findByPk(detalle.cedula_usuariopersonal);
-          if (!usuario) {
-            throw new Error(`Usuario con cédula ${detalle.cedula_usuariopersonal} no encontrado`);
-          }
-
-          return DetalleSupervision.create({
-            id_supervision,
-            cedula_usuariopersonal: detalle.cedula_usuariopersonal,
-            horas_trabajo: detalle.horas_trabajo,
-            precioneto_supervision: detalle.precioneto_supervision
-          });
-        });
-
-        await Promise.all(detallesPromises);
-      }
-    }
-
-    // Obtener el servicio actualizado con sus detalles
+    // Obtener el servicio actualizado con el evento
     const supervisionActualizada = await SupervisionServicio.findByPk(id_supervision, {
       include: [
         {
-          model: DetalleSupervision,
+          model: Evento,
           include: [
-            {
-              model: Usuario,
-              as: 'supervisor'
-            }
+            { model: Usuario, as: 'cliente' },
+            { model: Usuario, as: 'asesor' }
           ]
-        },
-        {
-          model: Evento
         }
       ]
     });
@@ -191,15 +130,12 @@ export const deleteSupervision = async (req: Request, res: Response) => {
       return res.status(404).json({ error: 'Servicio de supervisión no encontrado' });
     }
 
-    // Eliminar los detalles asociados
-    await DetalleSupervision.destroy({
-      where: { id_supervision }
+    // Actualizar el estado a Cancelado
+    await supervision.update({
+      estado_supervision: 'Cancelado'
     });
 
-    // Eliminar el servicio
-    await supervision.destroy();
-
-    res.json({ message: 'Servicio de supervisión eliminado correctamente' });
+    res.json({ message: 'Servicio de supervisión cancelado correctamente' });
   } catch (error) {
     console.error('Error al eliminar servicio de supervisión:', error);
     res.status(500).json({ error: 'Error al eliminar servicio de supervisión' });

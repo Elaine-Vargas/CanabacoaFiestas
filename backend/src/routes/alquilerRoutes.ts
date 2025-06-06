@@ -1,4 +1,4 @@
-import { Router, Request, Response, NextFunction, RequestHandler } from 'express';
+import { Router, Request, Response, NextFunction } from 'express';
 import {
     createAlquilerServicio,
     getAllAlquileres,

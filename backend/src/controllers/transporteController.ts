@@ -3,17 +3,19 @@ import TransporteServicio from '../models/TransporteServicio_model';
 import DetalleTransporte from '../models/DetalleTransporte_model';
 import Evento from '../models/Evento_model';
 import Vehiculo from '../models/Vehiculo_model';
-import Usuario from '../models/Usuario_model';
+import AlquilerServicio from '../models/AlquilerServicio_model';
 
 // Crear un nuevo servicio de transporte con sus detalles
 export const createTransporte = async (req: Request, res: Response) => {
   try {
     const {
       id_evento,
+      id_alquiler,
       distancia_km,
       precioneto_transporte,
       itbis_transporte,
       total_transporte,
+      estado_transporte,
       detalles // Array de detalles de transporte
     } = req.body;
 
@@ -23,38 +25,37 @@ export const createTransporte = async (req: Request, res: Response) => {
       return res.status(404).json({ error: 'Evento no encontrado' });
     }
 
+    // Verificar que el alquiler existe
+    const alquiler = await AlquilerServicio.findByPk(id_alquiler);
+    if (!alquiler) {
+      return res.status(404).json({ error: 'Servicio de alquiler no encontrado' });
+    }
+
     // Crear el servicio de transporte
     const transporte = await TransporteServicio.create({
       id_evento,
+      id_alquiler,
       distancia_km,
       precioneto_transporte,
       itbis_transporte,
-      total_transporte
+      total_transporte,
+      estado_transporte: estado_transporte || 'Solicitado'
     });
 
     // Crear los detalles de transporte
     if (detalles && detalles.length > 0) {
       const detallesPromises = detalles.map(async (detalle: any) => {
         // Verificar que el vehículo existe
-        const vehiculo = await Vehiculo.findByPk(detalle.id_vehiculo);
+        const vehiculo = await Vehiculo.findByPk(detalle.matricula_vehiculo);
         if (!vehiculo) {
-          throw new Error(`Vehículo con ID ${detalle.id_vehiculo} no encontrado`);
-        }
-
-        // Verificar que el conductor existe
-        const conductor = await Usuario.findByPk(detalle.id_usuarioconductor);
-        if (!conductor) {
-          throw new Error(`Conductor con cédula ${detalle.id_usuarioconductor} no encontrado`);
+          throw new Error(`Vehículo con matrícula ${detalle.matricula_vehiculo} no encontrado`);
         }
 
         return DetalleTransporte.create({
           id_transporte: transporte.id_transporte,
-          id_vehiculo: detalle.id_vehiculo,
-          id_usuarioconductor: detalle.id_usuarioconductor,
-          cantidad_elementos: detalle.cantidad_elementos,
-          precioneto_transporte: detalle.precioneto_transporte,
-          itbis_transporte: detalle.itbis_transporte,
-          total_transporte: detalle.total_transporte
+          matricula_vehiculo: detalle.matricula_vehiculo,
+          conductor: detalle.conductor,
+          estado_dettransporte: detalle.estado_dettransporte || 'Aceptado'
         });
       });
 
@@ -70,15 +71,15 @@ export const createTransporte = async (req: Request, res: Response) => {
             {
               model: Vehiculo,
               as: 'vehiculo'
-            },
-            {
-              model: Usuario,
-              as: 'conductor'
             }
           ]
         },
         {
           model: Evento
+        },
+        {
+          model: AlquilerServicio,
+          as: 'alquilerServicio'
         }
       ]
     });
@@ -101,17 +102,18 @@ export const getTransportes = async (req: Request, res: Response) => {
             {
               model: Vehiculo,
               as: 'vehiculo'
-            },
-            {
-              model: Usuario,
-              as: 'conductor'
             }
           ]
         },
         {
           model: Evento
+        },
+        {
+          model: AlquilerServicio,
+          as: 'alquilerServicio'
         }
-      ]
+      ],
+      order: [['id_transporte', 'DESC']]
     });
 
     res.json(transportes);
@@ -130,6 +132,7 @@ export const editTransporte = async (req: Request, res: Response) => {
       precioneto_transporte,
       itbis_transporte,
       total_transporte,
+      estado_transporte,
       detalles // Array de detalles actualizados
     } = req.body;
 
@@ -143,7 +146,8 @@ export const editTransporte = async (req: Request, res: Response) => {
       distancia_km: distancia_km || transporte.distancia_km,
       precioneto_transporte: precioneto_transporte || transporte.precioneto_transporte,
       itbis_transporte: itbis_transporte || transporte.itbis_transporte,
-      total_transporte: total_transporte || transporte.total_transporte
+      total_transporte: total_transporte || transporte.total_transporte,
+      estado_transporte: estado_transporte || transporte.estado_transporte
     });
 
     // Si se proporcionaron nuevos detalles, actualizarlos
@@ -157,25 +161,16 @@ export const editTransporte = async (req: Request, res: Response) => {
       if (detalles.length > 0) {
         const detallesPromises = detalles.map(async (detalle: any) => {
           // Verificar que el vehículo existe
-          const vehiculo = await Vehiculo.findByPk(detalle.id_vehiculo);
+          const vehiculo = await Vehiculo.findByPk(detalle.matricula_vehiculo);
           if (!vehiculo) {
-            throw new Error(`Vehículo con ID ${detalle.id_vehiculo} no encontrado`);
-          }
-
-          // Verificar que el conductor existe
-          const conductor = await Usuario.findByPk(detalle.id_usuarioconductor);
-          if (!conductor) {
-            throw new Error(`Conductor con cédula ${detalle.id_usuarioconductor} no encontrado`);
+            throw new Error(`Vehículo con matrícula ${detalle.matricula_vehiculo} no encontrado`);
           }
 
           return DetalleTransporte.create({
             id_transporte,
-            id_vehiculo: detalle.id_vehiculo,
-            id_usuarioconductor: detalle.id_usuarioconductor,
-            cantidad_elementos: detalle.cantidad_elementos,
-            precioneto_transporte: detalle.precioneto_transporte,
-            itbis_transporte: detalle.itbis_transporte,
-            total_transporte: detalle.total_transporte
+            matricula_vehiculo: detalle.matricula_vehiculo,
+            conductor: detalle.conductor,
+            estado_dettransporte: detalle.estado_dettransporte || 'Aceptado'
           });
         });
 
@@ -192,15 +187,15 @@ export const editTransporte = async (req: Request, res: Response) => {
             {
               model: Vehiculo,
               as: 'vehiculo'
-            },
-            {
-              model: Usuario,
-              as: 'conductor'
             }
           ]
         },
         {
           model: Evento
+        },
+        {
+          model: AlquilerServicio,
+          as: 'alquilerServicio'
         }
       ]
     });
@@ -222,15 +217,18 @@ export const deleteTransporte = async (req: Request, res: Response) => {
       return res.status(404).json({ error: 'Servicio de transporte no encontrado' });
     }
 
-    // Eliminar los detalles asociados
-    await DetalleTransporte.destroy({
-      where: { id_transporte }
+    // Actualizar el estado a Cancelado
+    await transporte.update({
+      estado_transporte: 'Cancelado'
     });
 
-    // Eliminar el servicio
-    await transporte.destroy();
+    // Actualizar el estado de los detalles a Cancelado
+    await DetalleTransporte.update(
+      { estado_dettransporte: 'Cancelado' },
+      { where: { id_transporte } }
+    );
 
-    res.json({ message: 'Servicio de transporte eliminado correctamente' });
+    res.json({ message: 'Servicio de transporte cancelado correctamente' });
   } catch (error) {
     console.error('Error al eliminar servicio de transporte:', error);
     res.status(500).json({ error: 'Error al eliminar servicio de transporte' });

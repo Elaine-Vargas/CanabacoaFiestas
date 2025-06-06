@@ -1,32 +1,7 @@
 import { Request, Response } from 'express';
 import { Op } from 'sequelize';
 import Proveedor from '../models/Proveedor_model';
-import TipoProveedor from '../models/TipoProveedor_model';
 import Direccion from '../models/Direccion_model';
-
-// Obtener todos los tipos de proveedor
-export const getTiposProveedor = async (req: Request, res: Response) => {
-  try {
-    const tipos = await TipoProveedor.findAll({
-      order: [['nombre_tipo', 'ASC']]
-    });
-
-    if (!tipos || tipos.length === 0) {
-      return res.status(404).json({ 
-        error: 'No se encontraron tipos de proveedor',
-        mensaje: 'No hay tipos de proveedor registrados'
-      });
-    }
-
-    res.json(tipos);
-  } catch (error) {
-    console.error('Error al obtener tipos de proveedor:', error);
-    res.status(500).json({ 
-      error: 'Error al obtener los tipos de proveedor',
-      mensaje: 'Ocurrió un error al cargar los tipos de proveedor'
-    });
-  }
-};
 
 // Obtener todos los proveedores
 export const getProveedores = async (req: Request, res: Response) => {
@@ -34,12 +9,8 @@ export const getProveedores = async (req: Request, res: Response) => {
     const proveedores = await Proveedor.findAll({
       include: [
         {
-          model: TipoProveedor,
-          attributes: ['id_tipo_proveedor', 'nombre_tipo']
-        },
-        {
           model: Direccion,
-          attributes: ['id_direccion', 'calle', 'numero', 'sector', 'ciudad', 'provincia']
+          attributes: ['id_direccion', 'sector', 'calle', 'detalles']
         }
       ],
       where: {
@@ -70,32 +41,30 @@ export const getProveedores = async (req: Request, res: Response) => {
 // Buscar proveedores por nombre
 export const searchProveedores = async (req: Request, res: Response) => {
   try {
-    const { nombre } = req.query;
+    const { nombre, tipo } = req.query;
 
-    if (!nombre) {
-      return res.status(400).json({ 
-        error: 'Parámetro requerido',
-        mensaje: 'Debe proporcionar un nombre para buscar'
-      });
+    const whereClause: any = {
+      estado_proveedor: {
+        [Op.ne]: 'Eliminado'
+      }
+    };
+
+    if (nombre) {
+      whereClause.nombre_proveedor = {
+        [Op.like]: `%${nombre}%`
+      };
+    }
+
+    if (tipo && ['Catering', 'Elementos'].includes(tipo as string)) {
+      whereClause.tipo_proveedor = tipo;
     }
 
     const proveedores = await Proveedor.findAll({
-      where: {
-        nombre_proveedor: {
-          [Op.like]: `%${nombre}%`
-        },
-        estado_proveedor: {
-          [Op.ne]: 'Eliminado'
-        }
-      },
+      where: whereClause,
       include: [
         {
-          model: TipoProveedor,
-          attributes: ['id_tipo_proveedor', 'nombre_tipo']
-        },
-        {
           model: Direccion,
-          attributes: ['id_direccion', 'calle', 'numero', 'sector', 'ciudad', 'provincia']
+          attributes: ['id_direccion', 'sector', 'calle', 'detalles']
         }
       ],
       order: [['nombre_proveedor', 'ASC']]
@@ -122,17 +91,16 @@ export const searchProveedores = async (req: Request, res: Response) => {
 export const createProveedor = async (req: Request, res: Response) => {
   try {
     const { 
-      id_tipo_proveedor, 
+      tipo_proveedor, 
       nombre_proveedor, 
       tel_proveedor, 
       correo_proveedor, 
       id_direccion 
     } = req.body;
 
-    // Verificar que el tipo de proveedor existe
-    const tipoProveedor = await TipoProveedor.findByPk(id_tipo_proveedor);
-    if (!tipoProveedor) {
-      return res.status(404).json({ error: 'Tipo de proveedor no encontrado' });
+    // Validar tipo de proveedor
+    if (!['Catering', 'Elementos'].includes(tipo_proveedor)) {
+      return res.status(400).json({ error: 'Tipo de proveedor inválido' });
     }
 
     // Verificar que la dirección existe
@@ -143,7 +111,7 @@ export const createProveedor = async (req: Request, res: Response) => {
 
     // Crear el proveedor
     const proveedor = await Proveedor.create({
-      id_tipo_proveedor,
+      tipo_proveedor,
       nombre_proveedor,
       tel_proveedor,
       correo_proveedor,
@@ -155,12 +123,8 @@ export const createProveedor = async (req: Request, res: Response) => {
     const proveedorCompleto = await Proveedor.findByPk(proveedor.id_proveedor, {
       include: [
         {
-          model: TipoProveedor,
-          attributes: ['id_tipo_proveedor', 'nombre_tipo']
-        },
-        {
           model: Direccion,
-          attributes: ['id_direccion', 'calle', 'numero', 'sector', 'ciudad', 'provincia']
+          attributes: ['id_direccion', 'sector', 'calle', 'detalles']
         }
       ]
     });
@@ -180,7 +144,7 @@ export const editProveedor = async (req: Request, res: Response) => {
   try {
     const { id_proveedor } = req.params;
     const { 
-      id_tipo_proveedor, 
+      tipo_proveedor, 
       nombre_proveedor, 
       tel_proveedor, 
       correo_proveedor, 
@@ -193,12 +157,9 @@ export const editProveedor = async (req: Request, res: Response) => {
       return res.status(404).json({ error: 'Proveedor no encontrado' });
     }
 
-    // Verificar que el tipo de proveedor existe si se proporciona
-    if (id_tipo_proveedor) {
-      const tipoProveedor = await TipoProveedor.findByPk(id_tipo_proveedor);
-      if (!tipoProveedor) {
-        return res.status(404).json({ error: 'Tipo de proveedor no encontrado' });
-      }
+    // Validar tipo de proveedor si se proporciona
+    if (tipo_proveedor && !['Catering', 'Elementos'].includes(tipo_proveedor)) {
+      return res.status(400).json({ error: 'Tipo de proveedor inválido' });
     }
 
     // Verificar que la dirección existe si se proporciona
@@ -216,7 +177,7 @@ export const editProveedor = async (req: Request, res: Response) => {
 
     // Actualizar el proveedor
     await proveedor.update({
-      id_tipo_proveedor: id_tipo_proveedor || proveedor.id_tipo_proveedor,
+      tipo_proveedor: tipo_proveedor || proveedor.tipo_proveedor,
       nombre_proveedor: nombre_proveedor || proveedor.nombre_proveedor,
       tel_proveedor: tel_proveedor || proveedor.tel_proveedor,
       correo_proveedor: correo_proveedor || proveedor.correo_proveedor,
@@ -228,12 +189,8 @@ export const editProveedor = async (req: Request, res: Response) => {
     const proveedorActualizado = await Proveedor.findByPk(id_proveedor, {
       include: [
         {
-          model: TipoProveedor,
-          attributes: ['id_tipo_proveedor', 'nombre_tipo']
-        },
-        {
           model: Direccion,
-          attributes: ['id_direccion', 'calle', 'numero', 'sector', 'ciudad', 'provincia']
+          attributes: ['id_direccion', 'sector', 'calle', 'detalles']
         }
       ]
     });
@@ -272,12 +229,8 @@ export const deleteProveedor = async (req: Request, res: Response) => {
     const proveedorActualizado = await Proveedor.findByPk(id_proveedor, {
       include: [
         {
-          model: TipoProveedor,
-          attributes: ['id_tipo_proveedor', 'nombre_tipo']
-        },
-        {
           model: Direccion,
-          attributes: ['id_direccion', 'calle', 'numero', 'sector', 'ciudad', 'provincia']
+          attributes: ['id_direccion', 'sector', 'calle', 'detalles']
         }
       ]
     });

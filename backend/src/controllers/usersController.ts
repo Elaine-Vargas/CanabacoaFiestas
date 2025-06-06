@@ -39,8 +39,8 @@ export const getAllUsers = async (req: Request, res: Response) => {
         'nombre_usuario',
         'apellido_usuario',
         'cedula_usuario',
-        'correo_usuario',
         'tel_usuario',
+        'correo_usuario',
         'usuario_login',
         'id_rol',
         'estado_usuario'

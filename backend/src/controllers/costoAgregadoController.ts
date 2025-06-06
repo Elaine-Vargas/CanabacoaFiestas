@@ -83,10 +83,9 @@ export const editCostoAgregado = async (req: Request, res: Response) => {
 
     // Actualizar el costo agregado
     await costo.update({
-      descripcion: descripcion || costo.descripcion,
+      desc_costo: desc_costo || costo.desc_costo
       monto: monto || costo.monto,
       tipo_costo: tipo_costo || costo.tipo_costo,
-      desc_costo: desc_costo || costo.desc_costo
     });
 
     // Obtener el costo actualizado con su evento

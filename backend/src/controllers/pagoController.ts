@@ -76,7 +76,7 @@ export const getPagoById = async (req: Request, res: Response) => {
 // Buscar pagos
 export const searchPagos = async (req: Request, res: Response) => {
   try {
-    const { estado, tipo, fecha_inicio, fecha_fin, id_evento, id_tarjeta } = req.query;
+    const { estado, tipo, fecha_inicio, fecha_fin, id_evento, id_tarjeta, modo_pago } = req.query;
 
     const whereClause: any = {};
 
@@ -86,6 +86,10 @@ export const searchPagos = async (req: Request, res: Response) => {
 
     if (tipo) {
       whereClause.tipo_pago = tipo;
+    }
+
+    if (modo_pago) {
+      whereClause.modo_pago = modo_pago;
     }
 
     if (fecha_inicio && fecha_fin) {
@@ -137,7 +141,7 @@ export const searchPagos = async (req: Request, res: Response) => {
 // Crear un nuevo pago
 export const createPago = async (req: Request, res: Response) => {
   try {
-    const { id_evento, id_tarjeta, monto, tipo_pago } = req.body;
+    const { id_evento, id_tarjeta, monto, tipo_pago, modo_pago } = req.body;
 
     // Verificar que el evento existe
     const evento = await Evento.findByPk(id_evento);
@@ -145,10 +149,15 @@ export const createPago = async (req: Request, res: Response) => {
       return res.status(404).json({ error: 'Evento no encontrado' });
     }
 
-    // Verificar que la tarjeta existe
-    const tarjeta = await Tarjeta.findByPk(id_tarjeta);
-    if (!tarjeta) {
-      return res.status(404).json({ error: 'Tarjeta no encontrada' });
+    // Verificar que la tarjeta existe si el modo de pago es Tarjeta
+    if (modo_pago === 'Tarjeta') {
+      if (!id_tarjeta) {
+        return res.status(400).json({ error: 'Se requiere una tarjeta para pagos con tarjeta' });
+      }
+      const tarjeta = await Tarjeta.findByPk(id_tarjeta);
+      if (!tarjeta) {
+        return res.status(404).json({ error: 'Tarjeta no encontrada' });
+      }
     }
 
     // Validar tipo de pago
@@ -156,12 +165,18 @@ export const createPago = async (req: Request, res: Response) => {
       return res.status(400).json({ error: 'Tipo de pago inválido' });
     }
 
+    // Validar modo de pago
+    if (!['Efectivo', 'Tarjeta'].includes(modo_pago)) {
+      return res.status(400).json({ error: 'Modo de pago inválido' });
+    }
+
     // Crear el pago
     const pago = await Pago.create({
       id_evento,
-      id_tarjeta,
+      id_tarjeta: modo_pago === 'Tarjeta' ? id_tarjeta : null,
       monto: Number(monto),
       tipo_pago,
+      modo_pago,
       estado_pago: 'Pendiente'
     });
 
@@ -193,7 +208,7 @@ export const createPago = async (req: Request, res: Response) => {
 export const editPago = async (req: Request, res: Response) => {
   try {
     const { id_pago } = req.params;
-    const { id_evento, id_tarjeta, monto, tipo_pago, estado_pago } = req.body;
+    const { id_evento, id_tarjeta, monto, tipo_pago, estado_pago, modo_pago } = req.body;
 
     const pago = await Pago.findByPk(id_pago);
     if (!pago) {
@@ -208,8 +223,11 @@ export const editPago = async (req: Request, res: Response) => {
       }
     }
 
-    // Verificar que la tarjeta existe si se proporciona
-    if (id_tarjeta) {
+    // Verificar que la tarjeta existe si se proporciona y el modo es Tarjeta
+    if (modo_pago === 'Tarjeta' || (pago.modo_pago === 'Tarjeta' && id_tarjeta)) {
+      if (!id_tarjeta) {
+        return res.status(400).json({ error: 'Se requiere una tarjeta para pagos con tarjeta' });
+      }
       const tarjeta = await Tarjeta.findByPk(id_tarjeta);
       if (!tarjeta) {
         return res.status(404).json({ error: 'Tarjeta no encontrada' });
@@ -221,6 +239,11 @@ export const editPago = async (req: Request, res: Response) => {
       return res.status(400).json({ error: 'Tipo de pago inválido' });
     }
 
+    // Validar modo de pago si se proporciona
+    if (modo_pago && !['Efectivo', 'Tarjeta'].includes(modo_pago)) {
+      return res.status(400).json({ error: 'Modo de pago inválido' });
+    }
+
     // Validar estado si se proporciona
     if (estado_pago && !['Pendiente', 'Recibido', 'Rechazado'].includes(estado_pago)) {
       return res.status(400).json({ error: 'Estado de pago inválido' });
@@ -229,10 +252,11 @@ export const editPago = async (req: Request, res: Response) => {
     // Actualizar el pago
     await pago.update({
       id_evento: id_evento || pago.id_evento,
-      id_tarjeta: id_tarjeta || pago.id_tarjeta,
+      id_tarjeta: modo_pago === 'Tarjeta' ? id_tarjeta : null,
       monto: monto ? Number(monto) : pago.monto,
       tipo_pago: tipo_pago || pago.tipo_pago,
-      estado_pago: estado_pago || pago.estado_pago
+      estado_pago: estado_pago || pago.estado_pago,
+      modo_pago: modo_pago || pago.modo_pago
     });
 
     // Obtener el pago actualizado con sus relaciones

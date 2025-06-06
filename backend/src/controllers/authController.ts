@@ -45,7 +45,7 @@ export const Login = async (req: Request, res: Response) => {
         rol: usuario.id_rol
       },
       process.env.JWT_SECRET || 'w3r9Gv!72JkpX%lQs@8bZ&hMfT0^nAy',
-      { expiresIn: '1h' }
+      { expiresIn: '24h' }
     );
 
     // Mostrar token en consola

@@ -34,7 +34,7 @@ export const getVehiculos = async (req: Request, res: Response) => {
 // Buscar vehículos
 export const searchVehiculos = async (req: Request, res: Response) => {
   try {
-    const { matricula, marca, modelo, tipo, estado } = req.query;
+    const { matricula, marca, modelo, tipo, estado, capacidad_min, capacidad_max } = req.query;
 
     const whereClause: any = {
       estado_vehiculo: {
@@ -68,6 +68,16 @@ export const searchVehiculos = async (req: Request, res: Response) => {
       whereClause.estado_vehiculo = estado;
     }
 
+    if (capacidad_min || capacidad_max) {
+      whereClause.capacidad_vehiculo_lb = {};
+      if (capacidad_min) {
+        whereClause.capacidad_vehiculo_lb[Op.gte] = parseFloat(capacidad_min as string);
+      }
+      if (capacidad_max) {
+        whereClause.capacidad_vehiculo_lb[Op.lte] = parseFloat(capacidad_max as string);
+      }
+    }
+
     const vehiculos = await Vehiculo.findAll({
       where: whereClause,
       order: [['marca_vehiculo', 'ASC'], ['modelo_vehiculo', 'ASC']]
@@ -97,12 +107,18 @@ export const createVehiculo = async (req: Request, res: Response) => {
       matricula_vehiculo,
       marca_vehiculo,
       modelo_vehiculo,
-      tipo_vehiculo
+      tipo_vehiculo,
+      capacidad_vehiculo_lb
     } = req.body;
 
     // Validar tipo de vehículo
     if (!['Automóvil', 'Remolque', 'Máquinas pesadas', 'Montacargas'].includes(tipo_vehiculo)) {
       return res.status(400).json({ error: 'Tipo de vehículo inválido' });
+    }
+
+    // Validar capacidad
+    if (!capacidad_vehiculo_lb || capacidad_vehiculo_lb <= 0) {
+      return res.status(400).json({ error: 'La capacidad del vehículo debe ser mayor a 0' });
     }
 
     // Verificar si la matrícula ya existe
@@ -120,6 +136,7 @@ export const createVehiculo = async (req: Request, res: Response) => {
       marca_vehiculo,
       modelo_vehiculo,
       tipo_vehiculo,
+      capacidad_vehiculo_lb,
       estado_vehiculo: 'Activo'
     });
 
@@ -141,7 +158,8 @@ export const editVehiculo = async (req: Request, res: Response) => {
       marca_vehiculo,
       modelo_vehiculo,
       tipo_vehiculo,
-      estado_vehiculo
+      estado_vehiculo,
+      capacidad_vehiculo_lb
     } = req.body;
 
     const vehiculo = await Vehiculo.findByPk(matricula_vehiculo);
@@ -159,12 +177,18 @@ export const editVehiculo = async (req: Request, res: Response) => {
       return res.status(400).json({ error: 'Estado de vehículo inválido' });
     }
 
+    // Validar capacidad si se proporciona
+    if (capacidad_vehiculo_lb && capacidad_vehiculo_lb <= 0) {
+      return res.status(400).json({ error: 'La capacidad del vehículo debe ser mayor a 0' });
+    }
+
     // Actualizar el vehículo
     await vehiculo.update({
       marca_vehiculo: marca_vehiculo || vehiculo.marca_vehiculo,
       modelo_vehiculo: modelo_vehiculo || vehiculo.modelo_vehiculo,
       tipo_vehiculo: tipo_vehiculo || vehiculo.tipo_vehiculo,
-      estado_vehiculo: estado_vehiculo || vehiculo.estado_vehiculo
+      estado_vehiculo: estado_vehiculo || vehiculo.estado_vehiculo,
+      capacidad_vehiculo_lb: capacidad_vehiculo_lb || vehiculo.capacidad_vehiculo_lb
     });
 
     res.json(vehiculo);
