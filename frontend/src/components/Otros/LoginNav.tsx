@@ -1,4 +1,4 @@
-
+import ColorTheme from "../../functions/ColorTheme";
 import Back from '@mui/icons-material/ArrowBackRounded';
 import { useLocalStorage } from 'react-haiku';
 
@@ -18,6 +18,9 @@ export default function LoginNav() {
           <a href="/">
             <Back sx={{ color: arrowColor }} />
           </a>
+        </li>
+        <li className="navColorTheme">
+          <ColorTheme colorDark={colorDark} colorLight={colorLight} />
         </li>
       </ul>
     </nav>

@@ -8,6 +8,7 @@ import {
 } from "react-icons/fa";
 import { IoIosExit } from "react-icons/io";
 import { useState } from "react";
+import ColorTheme from "../../../functions/ColorTheme";
 import "../../../styles/dashboard/DashboardServices.scss";
 import { useMediaQuery } from "@mui/material";
 import { Drawer, IconButton, List, ListItem, ListItemButton, ListItemText } from "@mui/material";
@@ -190,7 +191,7 @@ export default function ServicesMenu({ selectedService }: ServicesMenuProps) {
           </div>
         </div>
 
-    
+        <ColorTheme colorDark="black" colorLight="white" />
 
         <List sx={{ flexGrow: 1 }}>
           {menuItems.map((item) => (
@@ -268,7 +269,7 @@ export default function ServicesMenu({ selectedService }: ServicesMenuProps) {
 
       {!isMobile && (
         <div className="sidebar">
-        
+          <ColorTheme colorDark="black" colorLight="white" />
           <div className="user-profile">
             <FaUserCog 
               size={30} 

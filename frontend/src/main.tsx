@@ -3,14 +3,13 @@ import { createRoot } from 'react-dom/client'
 import './styles/font-faces/Fonts.scss'
 import './styles/basics/Theme.scss';
 import { UserProvider } from './contexts/UserContext.tsx';
-import { ThemeProvider } from 'styled-components';
 
 const App = React.lazy(() => import('./pages/App.tsx'))
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-      <UserProvider>
-        <App />
-      </UserProvider>
+    <UserProvider>
+      <App />
+    </UserProvider>
   </StrictMode>,
 )
