@@ -1,0 +1,48 @@
+// Light Theme Colors
+$primary-color: #1890ff;
+$secondary-color: #52c41a;
+$background-color-light: #ffffff;
+$text-color-light: #000000;
+$border-color-light: #d9d9d9;
+
+// Dark Theme Colors
+$background-color-dark: #141414;
+$text-color-dark: #ffffff;
+$border-color-dark: #434343;
+
+// Common Colors
+$success-color: #52c41a;
+$warning-color: #faad14;
+$error-color: #f5222d;
+$info-color: #1890ff;
+
+// Responsive Breakpoints
+$screen-xs: 320px;
+$screen-sm: 576px;
+$screen-md: 768px;
+$screen-lg: 992px;
+$screen-xl: 1200px;
+
+// Shadows
+$box-shadow-light: 0 4px 8px rgba(0, 0, 0, 0.1);
+$box-shadow-dark: 0 4px 8px rgba(255, 255, 255, 0.1);
+
+// Border Radius
+$border-radius-base: 4px;
+$border-radius-lg: 8px;
+
+:root {
+  --primary-color: #{$primary-color};
+  --secondary-color: #{$secondary-color};
+  --background-color: #{$background-color-light};
+  --text-color: #{$text-color-light};
+  --border-color: #{$border-color-light};
+  --box-shadow: #{$box-shadow-light};
+}
+
+[data-theme='dark'] {
+  --background-color: #{$background-color-dark};
+  --text-color: #{$text-color-dark};
+  --border-color: #{$border-color-dark};
+  --box-shadow: #{$box-shadow-dark};
+} 

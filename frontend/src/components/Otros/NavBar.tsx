@@ -1,7 +1,6 @@
 import {Drawer, List, ListItem, ListItemButton, ListItemText, Button, IconButton} from "@mui/material";
 import MenuRoundedIcon from "@mui/icons-material/MenuRounded";
 import circuloLogo from "../../assets/logoVariants/CIRCULO-CF(blanco).svg";
-import ColorTheme from "../../functions/ColorTheme";
 import { useMediaQuery } from "@mui/material";
 import { useState, lazy, Suspense } from "react";
 import React from "react";
@@ -41,9 +40,6 @@ const NavBar = React.memo(() => {
         <button className="login">
           <a href="/Login">INGRESAR</a>
         </button>
-        <li className="navItem colortheme">
-          <ColorTheme colorDark="white" colorLight="white" />
-        </li>
       </ul>
 
       {isMobile && (

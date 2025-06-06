@@ -1,8 +1,12 @@
-import React from 'react'
+import React from 'react';
+import CateringAdmin from '../../components/DashboardComponents/catering/CateringAdmin';
 
- const Catering = () => {
+const Catering = () => {
   return (
-    <div>Report</div>
-  )
-}
+    <div>
+      <CateringAdmin />
+    </div>
+  );
+};
+
 export default Catering;

@@ -5,6 +5,7 @@ $transition-standard: all 0.3s ease;
 
 * {
   user-select: none;
+  box-sizing: border-box;
 }
 
 /* Contenedor general del dashboard */
@@ -14,8 +15,10 @@ $transition-standard: all 0.3s ease;
   width: 100vw;
   background-color: var(--color-background);
   color: var(--color-text);
-  overflow: hidden;
+  overflow-x: hidden;
   font-family: "Montserrat Alternates", sans-serif;
+  position: relative;
+  max-width: 100%;
 }
 
 /* Sidebar del menú */
@@ -162,8 +165,11 @@ $transition-standard: all 0.3s ease;
   background-color: var(--color-background);
   padding: 2rem;
   overflow-y: auto;
+  overflow-x: hidden;
   position: relative;
   margin-left: 95px; /* Ancho del sidebar */
+  box-sizing: border-box;
+  max-width: 100%;
 
   @media (max-width: 450px) {
     padding: 1rem;
