@@ -158,7 +158,7 @@ $transition-standard: all 0.3s ease;
 .content-area {
   flex-grow: 1;
   height: 100vh;
-  width: 100%;
+  width: calc(100% - 95px);
   background-color: var(--color-background);
   padding: 2rem;
   overflow-y: auto;
@@ -168,6 +168,7 @@ $transition-standard: all 0.3s ease;
   @media (max-width: 450px) {
     padding: 1rem;
     margin-left: 0;
+    width: 100%;
   }
 
   /* Scroll custom */

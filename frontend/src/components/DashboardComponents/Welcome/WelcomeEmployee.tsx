@@ -1,17 +1,17 @@
-import React from 'react';
+//import React from 'react';
 import '../../../styles/dashboard/ServicesSubpages.scss';
 import { Card, Button } from 'antd';
 import { PlusOutlined } from '@ant-design/icons';
 
-const WelcomeDriver = () => {
+const WelcomeEmployee = () => {
   return (
     <div className="welcome-container">
-      <Card title="Bienvenido Conductor" className="welcome-card">
+      <Card title="Bienvenido Empleado" className="welcome-card">
         <div className="welcome-content">
           <h2>¡Bienvenido a Canabacoa Fiestas!</h2>
-          <p>Aquí podrás gestionar tus servicios de transporte.</p>
+          <p>Aquí podrás gestionar los servicios y reservas.</p>
           <Button type="primary" icon={<PlusOutlined />}>
-            Ver Servicios
+            Gestionar Servicios
           </Button>
         </div>
       </Card>
@@ -19,5 +19,4 @@ const WelcomeDriver = () => {
   );
 };
 
-export default WelcomeDriver;
-  
+export default WelcomeEmployee;

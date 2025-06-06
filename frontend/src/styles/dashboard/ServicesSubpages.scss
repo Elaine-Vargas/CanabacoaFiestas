@@ -2,1191 +2,265 @@
 $card-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
 $border-radius-standard: 12px;
 $transition-standard: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-$gold-gradient: linear-gradient(135deg, var(--gold) 0%, var(--dark-gold) 100%);
+@use '../basics/Theme.scss';
+@use '../font-faces/Fonts.scss';
 
 /* Contenedor general de la página */
-.dashboard-container,
-.page-container {
-  width: 100%;
+.dashboard-container {
+  padding: 20px;
   min-height: 100vh;
-  display: flex;
   background-color: var(--color-background);
-  color: var(--color-text);
-  box-sizing: border-box;
+  overflow: hidden;
   position: relative;
-  padding: 2rem;
+  width: 100%;
+  box-sizing: border-box;
+
+  @media screen and (max-width: 768px) {
+    padding: 15px;
+  }
+
+  @media screen and (max-width: 480px) {
+    padding: 10px;
+  }
 }
 
-.welcome-header {
-  text-align: center;
-  margin-bottom: 3rem;
-  position: relative;
-  padding: 2rem 0;
+.dashboard-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  max-width: 1400px;
+  margin: 0 auto;
+  padding-bottom: 40px;
+  height: 100%;
+  overflow-y: auto;
+  overflow-x: hidden;
+  width: 100%;
+  box-sizing: border-box;
 
-  &::after {
-    content: '';
-    position: absolute;
-    bottom: 0;
-    left: 50%;
-    transform: translateX(-50%);
-    width: 100px;
-    height: 3px;
-    background: $gold-gradient;
+  @media screen and (max-width: 768px) {
+    gap: 15px;
+    padding-bottom: 30px;
+  }
+
+  @media screen and (max-width: 480px) {
+    gap: 10px;
+    padding-bottom: 20px;
+  }
+
+  /* Scroll custom */
+  &::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background-color: var(--gold);
     border-radius: 3px;
   }
 
-  h1 {
-    font-family: "Parisienne", cursive;
-    font-size: clamp(2.5rem, 8vw, 5rem);
-    color: var(--dark-gold);
-    margin-bottom: 1rem;
-    font-weight: normal;
-    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
-  }
-
-  p {
-    font-family: "Montserrat Alternates", sans-serif;
-    font-size: clamp(1rem, 2vw, 1.2rem);
-    color: var(--text-color);
-    margin: 0;
-    font-weight: 500;
-    opacity: 0.8;
+  &::-webkit-scrollbar-track {
+    background-color: transparent;
   }
 }
 
-/* Contenedor del contenido principal */
-.content-area {
-  flex: 1;
-  padding: 2rem;
+.dashboard-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+  gap: 20px;
+  width: 100%;
   box-sizing: border-box;
-  background-color: var(--color-background);
-  overflow-y: auto;
+
+  @media screen and (max-width: 1200px) {
+    grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+    gap: 15px;
+  }
+
+  @media screen and (max-width: 768px) {
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 15px;
+  }
+
+  @media screen and (max-width: 480px) {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+}
+
+/* Estilos para tarjetas */
+.dashboard-card {
+  background-color: var(--color-background2);
+  border-radius: 8px;
+  box-shadow: 0 2px 8px var(--color-shadow);
   height: 100%;
-}
-
-/* Dashboard común */
-.dashboard {
-  padding: 2rem;
-  min-height: 100%;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
   box-sizing: border-box;
-  color: var(--color-text);
-  max-width: 1400px;
-  margin: auto;
-  position: relative;
+  
+  &.full-width {
+    grid-column: 1 / -1;
+  }
 
-  &__title {
-    color: var(--dark-gold);
-    margin-bottom: 3rem;
-    text-align: center;
-    font-family: "Parisienne", cursive;
-    font-size: clamp(2.5rem, 5vw, 4rem);
-    font-weight: normal;
-    position: relative;
-    padding-bottom: 1rem;
+  .ant-card-head {
+    border-bottom: 2px solid var(--color-shadow);
+    padding: 12px 16px;
+    background-color: var(--color-background);
+    
+    @media screen and (max-width: 480px) {
+      padding: 10px;
+    }
+    
+    .ant-card-head-title {
+      font-family: "Montserrat Alternates", sans-serif;
+      font-weight: 600;
+      color: var(--color-text);
+      font-size: 1.1rem;
 
-    &::after {
-      content: '';
-      position: absolute;
-      bottom: 0;
-      left: 50%;
-      transform: translateX(-50%);
-      width: 80px;
-      height: 3px;
-      background: $gold-gradient;
-      border-radius: 3px;
+      @media screen and (max-width: 480px) {
+        font-size: 1rem;
+      }
     }
   }
 
-  &__stats {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-    gap: 2rem;
-    margin-bottom: 3rem;
-    position: relative;
-    z-index: 1;
+  .ant-card-body {
+    padding: 16px;
+    flex: 1;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    color: var(--color-text);
+
+    @media screen and (max-width: 480px) {
+      padding: 12px;
+    }
   }
 }
 
-/* Media queries */
-@media (max-width: 1253px) {
-  .dashboard {
-    &__stats {
-      grid-template-columns: 1fr;
-      gap: 5rem;
-      margin: 0;
-      padding-top: 2rem;
-    }
+/* Estilos para tablas */
+.dashboard-table {
+  flex: 1;
+  overflow: hidden;
+  width: 100%;
+  
+  .ant-table {
+    height: 100%;
+    background-color: var(--color-background2);
   }
 
-  .stat-card {
-    padding: 1.2rem;
-    margin: 0;
+  .ant-table-container {
+    height: 100%;
+  }
 
-    &__label {
-      font-size: 1.1rem;
-    }
+  .ant-table-thead > tr > th {
+    background-color: var(--color-background2);
+    color: var(--color-text);
+    font-weight: 600;
+    padding: 12px 8px;
 
-    &__number {
-      font-size: 2rem;
-    }
-
-    &__stars {
-      font-size: 1.3rem;
-    }
-
-    &__seeInfo,
-    &__seeInfo2 {
-      padding: 0.7rem 1.2rem;
+    @media screen and (max-width: 480px) {
+      padding: 8px 4px;
       font-size: 0.9rem;
     }
   }
 
-  .modal-container {
-    width: 95%;
-    padding: 1.5rem;
-  }
-
-  .table-container {
-    table {
-      th, td {
-        padding: 0.8rem;
-        font-size: 0.9rem;
-      }
-    }
-  }
-}
-
-@media (max-width: 768px) {
-  .dashboard {
-    padding: 1rem;
-
-    &__title {
-      font-size: clamp(1.5rem, 4vw, 4rem);
-    }
-
-    &__stats {
-      grid-template-columns: 1fr;
-    }
-  }
-
-  .content-area {
-    padding: 1rem;
-  }
-
-  /* Ajuste para tablas en pantallas pequeñas */
-  .table-container,
-  .table-section {
-    padding: 0.8rem; /* Reducir padding */
-    overflow-x: auto; /* Permitir scroll horizontal si el contenido es demasiado ancho */
-    width: 100%; /* Asegurar que el contenedor ocupe el ancho completo */
-    box-sizing: border-box; /* Incluir padding en el ancho */
-
-    table {
-      width: 100%; /* Asegurar que la tabla ocupe el ancho del contenedor */
-      display: block; /* Cambiar a display block para mejor manejo del scroll */
-
-      th,
-      td {
-        white-space: nowrap; /* Evitar que el texto se divida en varias líneas */
-        padding: 0.6rem 0.8rem; /* Ajustar padding de celdas */
-      }
-    }
-  }
-
-  .modal-container {
-    width: 95%;
-    padding: 1.5rem;
-  }
-
-  .modal-form {
-    .form-buttons {
-      flex-direction: column;
-    }
-  }
-}
-
-/* Tarjetas de estadísticas */
-.stat-card {
-  background-color: var(--color-background2);
-  padding: 2rem;
-  border-radius: $border-radius-standard;
-  box-shadow: $card-shadow;
-  text-align: center;
-  transition: $transition-standard;
-  height: 100%;
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  border: 1px solid rgba(212, 175, 55, 0.1);
-  position: relative;
-  overflow: hidden;
-
-  &::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 4px;
-    background: $gold-gradient;
-    opacity: 0;
-    transition: $transition-standard;
-  }
-
-  &:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
-
-    &::before {
-      opacity: 1;
-    }
-  }
-
-  &__label {
-    color: var(--dark-gold);
-    font-family: "Montserrat Alternates", sans-serif;
-    font-size: 1.2rem;
-    margin-bottom: 1rem;
-    font-weight: 600;
-  }
-
-  &__number {
-    color: var(--dark-gold);
-    font-family: "Montserrat Alternates", sans-serif;
-    font-size: 3rem;
-    margin-bottom: 1rem;
-    font-weight: 700;
-    background: $gold-gradient;
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-  }
-
-  &__stars {
-    color: var(--gold);
-    font-size: 1.8rem;
-    margin-bottom: 1.5rem;
-  }
-
-  &__seeInfo,
-  &__seeInfo2 {
-    background: $gold-gradient;
-    color: var(--white);
-    border: none;
-    padding: 1rem 2rem;
-    border-radius: 8px;
-    cursor: pointer;
-    font-family: "Montserrat Alternates", sans-serif;
-    font-size: 1rem;
-    font-weight: 600;
-    transition: $transition-standard;
-    width: 100%;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-
-    &:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 4px 15px rgba(212, 175, 55, 0.3);
-    }
-  }
-}
-
-/* Contenedor de servicios */
-.service-content {
-  display: flex;
-  flex-direction: column;
-  gap: 2rem;
-  margin-top: 2rem;
-  height: 100%;
-}
-
-/* Modal común */
-.modal-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background-color: rgba(0, 0, 0, 0.8);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  z-index: 1000;
-  backdrop-filter: blur(8px);
-  animation: fadeIn 0.3s ease;
-}
-
-.modal-container {
-  background-color: var(--color-background);
-  width: 100%;
-  margin: 2rem auto;
-  max-width: 1200px;
-  padding: 3rem;
-  position: relative;
-  border-radius: 20px;
-  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
-  height: auto;
-  max-height: 90vh;
-  overflow: auto;
-  border: 1px solid rgba(212, 175, 55, 0.2);
-  animation: slideUp 0.4s ease;
-
-  .close-btn {
-    position: absolute;
-    top: 1.5rem;
-    right: 1.5rem;
-    background: none;
-    border: none;
-    font-size: 1.8rem;
-    color: var(--dark-gold);
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 40px;
-    height: 40px;
-    border-radius: 50%;
-    transition: $transition-standard;
-
-    &:hover {
-      background-color: rgba(212, 175, 55, 0.1);
-      transform: rotate(90deg);
-    }
-  }
-
-  .modal-content {
+  .ant-table-tbody > tr > td {
+    color: var(--color-text);
     background-color: var(--color-background2);
-    padding: 2.5rem;
-    border-radius: 12px;
-    width: fit-content;
-    min-width: 100%;
-    box-sizing: border-box;
+    padding: 12px 8px;
 
-    .modal-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 2.5rem;
-      padding: 0 1.5rem;
-
-      h3 {
-        color: var(--dark-gold);
-        font-size: 2rem;
-        margin: 0;
-        font-weight: normal;
-        font-family: "Parisienne", cursive;
-      }
-
-      .add-user-btn {
-        background-color: var(--gold);
-        color: white;
-        border: none;
-        padding: 1rem 2rem;
-        border-radius: 8px;
-        cursor: pointer;
-        font-size: 1.1rem;
-        transition: all 0.3s ease;
-        font-family: "Montserrat Alternates", sans-serif;
-        font-weight: 600;
-
-        &:hover {
-          background-color: var(--dark-gold);
-          transform: translateY(-2px);
-        }
-      }
-    }
-
-    .table-container {
-      width: 100%;
-      overflow-x: auto;
-      margin-top: 1.5rem;
-      background-color: var(--color-background);
-      border-radius: 12px;
-      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
-      padding: 1.5rem;
-
-      table {
-        width: 100%;
-        border-collapse: separate;
-        border-spacing: 0;
-        margin: 0;
-        background-color: var(--color-background);
-        border-radius: 12px;
-        overflow: hidden;
-
-        th, td {
-          padding: 1rem;
-          text-align: left;
-          border-bottom: 1px solid rgba(212, 175, 55, 0.1);
-          font-family: "Nunito Sans", sans-serif;
-          font-size: 0.95rem;
-          white-space: normal;
-          word-wrap: break-word;
-          min-width: 120px;
-          max-width: 200px;
-        }
-
-        th {
-          background-color: var(--color-background2);
-          color: var(--dark-gold);
-          font-weight: 600;
-          text-transform: uppercase;
-          font-size: 0.85rem;
-          letter-spacing: 0.5px;
-          position: sticky;
-          top: 0;
-          z-index: 1;
-        }
-
-        td {
-          background-color: var(--color-background);
-          color: var(--color-text);
-          vertical-align: middle;
-        }
-
-        tr {
-          transition: $transition-standard;
-          
-          &:hover {
-            background-color: rgba(212, 175, 55, 0.05);
-          }
-
-          &:last-child td {
-            border-bottom: none;
-          }
-        }
-      }
+    @media screen and (max-width: 480px) {
+      padding: 8px 4px;
+      font-size: 0.9rem;
     }
   }
 
-  @media screen and (max-width: 768px) {
-    margin: 1rem;
-    padding: 1.5rem;
-    max-width: calc(100% - 2rem);
-
-    .modal-content {
-      padding: 1.5rem;
-
-      .table-container {
-        padding: 1rem;
-        margin-top: 1rem;
-
-        table {
-          th, td {
-            padding: 0.8rem;
-            font-size: 0.85rem;
-            min-width: 100px;
-          }
-
-          th {
-            font-size: 0.8rem;
-          }
-        }
-      }
-    }
-  }
-}
-
-/* Tablas comunes */
-.table-section {
-  margin: 3rem 0;
-  background-color: var(--color-background2);
-  border-radius: 16px;
-  box-shadow: $card-shadow;
-  padding: 2rem;
-  box-sizing: border-box;
-  width: 100%;
-  border: 1px solid rgba(212, 175, 55, 0.1);
-
-  .table-container {
-    overflow-x: auto;
-    margin-top: 1.5rem;
+  .ant-table-tbody > tr:hover > td {
     background-color: var(--color-background);
-    border-radius: 12px;
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
-    padding: 1.5rem;
-    scrollbar-width: thin;
-    scrollbar-color: var(--color-background2) var(--color-background);
+  }
 
-    table {
-      width: 100%;
-      border-collapse: separate;
-      border-spacing: 0;
-      margin-top: 0;
-      background-color: var(--color-background);
-      border-radius: 12px;
-      overflow: hidden;
+  .ant-table-body {
+    overflow-y: auto !important;
+    max-height: 300px !important;
 
-      th, td {
-        padding: 1.2rem 1.5rem;
-        text-align: left;
-        border-bottom: 1px solid rgba(212, 175, 55, 0.1);
-        font-family: "Nunito Sans", sans-serif;
-        font-size: 1rem;
-      }
+    @media screen and (max-width: 768px) {
+      max-height: 250px !important;
+    }
 
-      th {
-        background-color: var(--color-background2);
-        color: var(--dark-gold);
-        font-weight: 600;
-        text-transform: uppercase;
-        font-size: 0.9rem;
-        letter-spacing: 0.5px;
-        white-space: nowrap;
-        position: sticky;
-        top: 0;
-        z-index: 1;
-      }
-
-      td {
-        background-color: var(--color-background);
-        color: var(--color-text);
-        font-size: 1rem;
-        line-height: 1.5;
-      }
-
-      tr {
-        transition: $transition-standard;
-        
-        &:hover {
-          background-color: rgba(212, 175, 55, 0.05);
-        }
-
-        &:last-child td {
-          border-bottom: none;
-        }
-      }
+    @media screen and (max-width: 480px) {
+      max-height: 200px !important;
     }
   }
 }
 
-/* Formularios en páginas de servicio */
-.modal-form {
-  background: var(--color-background);
-  width: 100%;
-  margin: 0 auto;
-  padding: 2rem;
-  box-sizing: border-box;
-
-  h2, h3 {
-    color: var(--dark-gold);
-    margin: 0 0 2.5rem;
-    text-align: center;
-    font-family: "Parisienne", cursive;
-    font-size: 2.5rem;
-    font-weight: normal;
-    position: relative;
-    padding-bottom: 1rem;
-
-    &::after {
-      content: '';
-      position: absolute;
-      bottom: 0;
-      left: 50%;
-      transform: translateX(-50%);
-      width: 80px;
-      height: 3px;
-      background: $gold-gradient;
-      border-radius: 3px;
-    }
-  }
-
-  .form-grid {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 2rem;
-    margin-bottom: 2.5rem;
-
-    label {
-      display: flex;
-      flex-direction: column;
-      gap: 0.75rem;
-
-      span {
-        color: var(--dark-gold);
-        font-family: "Montserrat Alternates", sans-serif;
-        font-weight: 600;
-        font-size: 1rem;
-        letter-spacing: 0.5px;
-      }
-
-      input, select, textarea {
-        padding: 1rem 1.2rem;
-        border: 2px solid var(--color-input-border);
-        border-radius: 10px;
-        background-color: var(--color-background2);
-        color: var(--text-color);
-        font-family: "Nunito Sans", sans-serif;
-        font-size: 1rem;
-        transition: $transition-standard;
-        width: 100%;
-        box-sizing: border-box;
-
-        &:focus {
-          border-color: var(--gold);
-          outline: none;
-          box-shadow: 0 0 0 4px rgba(212, 175, 55, 0.1);
-        }
-
-        &::placeholder {
-          color: var(--text-color-light);
-          opacity: 0.7;
-        }
-      }
-
-      textarea {
-        min-height: 120px;
-        resize: vertical;
-      }
-
-      &.full-width {
-        grid-column: 1 / -1;
-      }
-    }
-
-    .radio-group {
-      display: flex;
-      gap: 2rem;
-      margin-top: 0.5rem;
-
-      .radio-label {
-        display: flex;
-        align-items: center;
-        gap: 0.5rem;
-        cursor: pointer;
-        padding: 0.5rem 1rem;
-        border-radius: 8px;
-        transition: $transition-standard;
-        background-color: var(--color-background2);
-        border: 2px solid var(--color-input-border);
-
-        &:hover {
-          border-color: var(--gold);
-        }
-
-        input[type="radio"] {
-          width: 18px;
-          height: 18px;
-          margin: 0;
-          cursor: pointer;
-          accent-color: var(--gold);
-          appearance: none;
-          -webkit-appearance: none;
-          border: 2px solid var(--color-input-border);
-          border-radius: 4px;
-          background-color: var(--color-background);
-          transition: $transition-standard;
-
-          &:checked {
-            background-color: var(--gold);
-            border-color: var(--gold);
-            position: relative;
-
-            &::after {
-              content: '✓';
-              position: absolute;
-              top: 50%;
-              left: 50%;
-              transform: translate(-50%, -50%);
-              color: var(--white);
-              font-size: 12px;
-            }
-          }
-        }
-
-        span {
-          font-family: "Montserrat Alternates", sans-serif;
-          font-size: 1rem;
-          color: var(--text-color);
-        }
-
-        &:has(input[type="radio"]:checked) {
-          background-color: var(--gold);
-          border-color: var(--gold);
-
-          span {
-            color: var(--white);
-          }
-        }
-      }
-    }
-  }
-
-  .form-buttons {
-    display: flex;
-    gap: 1rem;
-    margin-top: 2.5rem;
-    justify-content: flex-end;
-    padding: 0.5rem;
-
-    button {
-      padding: 1rem 2rem;
-      border: none;
-      border-radius: 10px;
-      font-size: 1rem;
-      font-weight: 600;
-      font-family: "Montserrat Alternates", sans-serif;
-      cursor: pointer;
-      transition: $transition-standard;
-      min-width: 140px;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-
-      &.submit-btn {
-        background: $gold-gradient;
-        color: var(--white);
-
-        &:hover {
-          transform: translateY(-2px);
-          box-shadow: 0 4px 15px rgba(212, 175, 55, 0.3);
-        }
-      }
-
-      &.reset-btn {
-        background-color: var(--color-background2);
-        color: var(--text-color);
-        border: 2px solid var(--color-border);
-
-        &:hover {
-          background-color: var(--color-border);
-          transform: translateY(-2px);
-        }
-      }
-    }
-  }
-}
-
-/* Responsive para formularios */
-@media screen and (max-width: 768px) {
-  .modal-form {
-    padding: 1.5rem;
-
-    .form-grid {
-      grid-template-columns: 1fr;
-      gap: 1.5rem;
-    }
-
-    .form-buttons {
-      flex-direction: column;
-      
-      button {
-        width: 100%;
-      }
-    }
-  }
-}
-
-/* Animaciones */
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: 1;
-  }
-}
-
-@keyframes slideUp {
-  from {
-    opacity: 0;
-    transform: translateY(20px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-/* Estilos para estados */
-.estado-badge {
-  padding: 0.6rem 1.2rem;
-  border-radius: 30px;
-  font-size: 0.9rem;
-  font-weight: 600;
-  text-transform: capitalize;
-  display: inline-block;
-  text-align: center;
-  min-width: 140px;
-  font-family: "Montserrat Alternates", sans-serif;
-  letter-spacing: 0.5px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-
-  &.completado {
-    background: linear-gradient(135deg, #4CAF50 0%, #388E3C 100%);
-    color: white;
-  }
-
-  &.en-proceso {
-    background: linear-gradient(135deg, #2196F3 0%, #1976D2 100%);
-    color: white;
-  }
-
-  &.cancelado {
-    background: linear-gradient(135deg, #f44336 0%, #d32f2f 100%);
-    color: white;
-  }
-
-  &.pendiente {
-    background: linear-gradient(135deg, #FFC107 0%, #FFA000 100%);
-    color: #000;
-  }
-}
-
-/* Botones de acción */
-.acciones-buttons {
-  display: flex;
-  gap: 0.75rem;
-  justify-content: center;
-  align-items: center;
-
-  button {
-    padding: 0.6rem 1.2rem;
-    border: none;
-    border-radius: 8px;
-    cursor: pointer;
+/* Estilos para botones de acción */
+.action-button {
+  &.primary {
+    background-color: var(--dark-gold) !important;
+    border-color: var(--dark-gold) !important;
+    color: var(--color-button-text) !important;
+    padding: 8px 16px;
+    height: auto;
     font-size: 0.9rem;
-    font-family: "Montserrat Alternates", sans-serif;
-    font-weight: 600;
-    transition: $transition-standard;
-    min-width: 120px;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-
-    &:disabled {
-      opacity: 0.5;
-      cursor: not-allowed;
+    
+    @media screen and (max-width: 480px) {
+      padding: 6px 12px;
+      font-size: 0.8rem;
+    }
+    
+    &:hover, &:focus {
+      background-color: var(--gold) !important;
+      border-color: var(--gold) !important;
+      color: var(--color-button-text) !important;
     }
 
-    &.edit-btn {
-      background: $gold-gradient;
-      color: white;
-
-      &:hover:not(:disabled) {
-        transform: translateY(-2px);
-        box-shadow: 0 4px 15px rgba(212, 175, 55, 0.3);
-      }
-    }
-
-    &.delete-btn {
-      background: linear-gradient(135deg, #f44336 0%, #d32f2f 100%);
-      color: white;
-
-      &:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 4px 15px rgba(244, 67, 54, 0.3);
-      }
-    }
-
-    &.enable-btn {
-      background: linear-gradient(135deg, #4CAF50 0%, #388E3C 100%);
-      color: white;
-
-      &:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 4px 15px rgba(76, 175, 80, 0.3);
-      }
+    &:active {
+      background-color: var(--dark-brown) !important;
+      border-color: var(--dark-brown) !important;
     }
   }
 }
 
-/* Filtros */
-.filter-buttons {
-  display: flex;
-  gap: 1rem;
-  margin: 2rem 0;
-  flex-wrap: wrap;
-  justify-content: center;
-
-  .filter-btn {
-    padding: 0.8rem 1.8rem;
-    border: 2px solid var(--gold);
-    border-radius: 10px;
-    background-color: var(--color-background);
-    color: var(--text-color);
-    cursor: pointer;
-    transition: $transition-standard;
-    min-width: 160px;
-    font-family: "Montserrat Alternates", sans-serif;
-    font-weight: 600;
-    font-size: 0.9rem;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-
-    &:hover {
-      background: $gold-gradient;
-      color: var(--white);
-      transform: translateY(-2px);
-      box-shadow: 0 4px 15px rgba(212, 175, 55, 0.2);
-    }
-
-    &.active {
-      background: $gold-gradient;
-      color: var(--white);
-      box-shadow: 0 4px 15px rgba(212, 175, 55, 0.2);
-    }
-  }
-}
-
-/* Estilos para el select de filtro */
-.escri {
-  padding: 0.8rem 2.5rem 0.8rem 1.5rem;
-  border: 2px solid var(--gold);
-  border-radius: 10px;
-  background-color: var(--color-background);
-  color: var(--text-color);
-  font-family: "Montserrat Alternates", sans-serif;
-  font-weight: 600;
-  font-size: 0.9rem;
-  cursor: pointer;
-  transition: $transition-standard;
-  appearance: none;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%23D4AF37' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
-  background-repeat: no-repeat;
-  background-position: right 1rem center;
-  background-size: 1.2rem;
-  min-width: 200px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-
-  &:hover {
-    border-color: var(--dark-gold);
-    transform: translateY(-2px);
-    box-shadow: 0 4px 15px rgba(212, 175, 55, 0.1);
-  }
-
-  &:focus {
-    outline: none;
-    border-color: var(--dark-gold);
-    box-shadow: 0 0 0 4px rgba(212, 175, 55, 0.1);
-  }
-
-  option {
-    padding: 1rem;
-    font-family: "Montserrat Alternates", sans-serif;
-    font-weight: 500;
-    background-color: var(--color-background);
-    color: var(--text-color);
-  }
-}
-
+/* Responsive adjustments */
 @media screen and (max-width: 768px) {
-  .escri {
-    width: 100%;
-    min-width: unset;
-    font-size: 0.85rem;
-    padding: 0.7rem 2rem 0.7rem 1rem;
-  }
-}
-
-/* Filas deshabilitadas */
-tr.deshabilitado {
-  opacity: 0.7;
-  background-color: var(--color-background2);
-  filter: grayscale(0.5);
-
-  td {
-    color: var(--text-color-light);
-  }
-}
-
-/* Responsive */
-@media screen and (max-width: 768px) {
-  .dashboard {
-    padding: 1rem;
-
-    &__stats {
-      grid-template-columns: 1fr;
-      gap: 1.5rem;
-    }
+  .dashboard-row {
+    grid-template-columns: 1fr;
   }
 
-  .filter-buttons {
-    .filter-btn {
-      width: 100%;
+  .dashboard-container {
+    padding: 10px;
+  }
+
+  .dashboard-table {
+    .ant-table-body {
+      max-height: 250px !important;
     }
   }
 }
 
-/* Clases específicas de páginas */
-.rent-page,
-.decor-page,
-.catering-page,
-.supervision-page,
-.assembly-page,
-.transportation-page {
-  width: 100%;
-  min-height: 100vh;
-  background-color: var(--color-background);
-  color: var(--color-text);
-  padding: 2rem;
-  box-sizing: border-box;
-}
-
-/* Estilos para el menú de servicios */
-.services-menu {
-  background-color: var(--color-background2);
-  padding: 1.5rem;
-  border-radius: $border-radius-standard;
-  box-shadow: $card-shadow;
-  margin-bottom: 2rem;
-
-  ul {
-    list-style: none;
-    padding: 0;
-    margin: 0;
-    display: flex;
-    flex-wrap: wrap;
-    gap: 1rem;
-
-    li {
-      padding: 1rem 1.5rem;
-      background-color: var(--color-background);
-      border-radius: $border-radius-standard;
-      cursor: pointer;
-      transition: $transition-standard;
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
-      color: var(--text-color);
-      font-family: "Montserrat Alternates", sans-serif;
-      font-weight: 500;
-
-      &:hover {
-        background-color: var(--gold);
-        color: var(--white);
-        transform: translateY(-2px);
-      }
-
-      &.active {
-        background-color: var(--dark-gold);
-        color: var(--white);
-      }
-
-      svg {
-        font-size: 1.2rem;
-      }
-    }
-  }
-}
-
-/* Botones de agregar y crear */
-.new-form-btn {
-  background: $gold-gradient;
-  color: var(--white);
-  border: none;
-  padding: 1.2rem 2.5rem;
-  border-radius: 12px;
-  cursor: pointer;
-  font-family: "Montserrat Alternates", sans-serif;
-  font-size: 1.1rem;
-  font-weight: 600;
-  transition: $transition-standard;
-  display: inline-flex;
-  gap: 0.75rem;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  box-shadow: 0 4px 15px rgba(212, 175, 55, 0.2);
-  margin: 3rem auto;
-  position: relative;
-  z-index: 2;
-  width: 50rem;
-
-  &:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 6px 20px rgba(212, 175, 55, 0.3);
+@media screen and (max-width: 480px) {
+  .dashboard-container {
+    padding: 8px;
   }
 
-  &::before {
-    content: '+';
-    font-size: 1.4rem;
-    font-weight: bold;
+  .dashboard-grid {
+    gap: 8px;
   }
-}
 
-.password-input-container {
-  position: relative;
-  width: 100% !important;
-  display: flex;
-  align-items: center;
+  .dashboard-row {
+    gap: 8px;
+  }
 
-  input {
-    width: 100%;
-    padding: 1rem 1.2rem;
-    padding-right: 40px;
-    border: 2px solid var(--color-input-border);
-    border-radius: 10px;
-    background-color: var(--color-background2);
-    color: var(--text-color);
-    font-family: "Nunito Sans", sans-serif;
-    font-size: 1rem;
-    transition: $transition-standard;
-    box-sizing: border-box;
-
-    &:focus {
-      border-color: var(--gold);
-      outline: none;
-      box-shadow: 0 0 0 4px rgba(212, 175, 55, 0.1);
+  .dashboard-card {
+    .ant-card-head {
+      padding: 8px;
     }
 
-    &::placeholder {
-      color: var(--text-color2);
-      opacity: 0.7;
+    .ant-card-body {
+      padding: 8px;
     }
   }
 
-  .password-toggle {
-    position: absolute;
-    right: 10px;
-    cursor: pointer;
-    color: var(--color-input-border);
-    display: flex;
-    align-items: center;
-    padding: 0.5rem;
-    transition: $transition-standard;
-
-    &:hover {
-      color: var(--gold);
-      transform: scale(1.1);
-    }
+  .action-button.primary {
+    padding: 4px 8px;
+    font-size: 0.8rem;
   }
-}
-
-/* Estilos para el sistema de calificación */
-.comment-modal__rating {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 1rem;
-  margin-bottom: 2rem;
-
-  &-label {
-    color: var(--dark-gold);
-    font-family: "Montserrat Alternates", sans-serif;
-    font-weight: 600;
-    font-size: 1.1rem;
-  }
-
-  &-stars {
-    display: flex;
-    gap: 0.5rem;
-
-    .star {
-      font-size: 2rem;
-      color: var(--color-input-border);
-      cursor: pointer;
-      transition: $transition-standard;
-
-      &:hover {
-        transform: scale(1.1);
-      }
-
-      &.active {
-        color: var(--gold);
-      }
-    }
-  }
-}
-
-.readonly {
-  background-color: #f5f5f5;
-  cursor: not-allowed;
-  color: #666;
-}
+} 

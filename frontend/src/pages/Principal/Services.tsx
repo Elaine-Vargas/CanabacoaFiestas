@@ -1,11 +1,11 @@
 import '../../components/principal/Footer';
-import "../styles/mainPages/Info.scss";
-import alquilerImg from '../assets/servicesPhotos/alquilerServices.webp';
-import decoracionImg from '../assets/servicesPhotos/decorServices.webp';
-import cateringImg from '../assets/servicesPhotos/cateringServices.webp';
-import transporteImg from '../assets/servicesPhotos/transportServices.webp';
-import supervisionImg from '../assets/servicesPhotos/supervisionServices.webp';
-import montdesImg from '../assets/servicesPhotos/MonyDesServices.webp';
+import "../../styles/mainPages/Info.scss";
+import alquilerImg from '../../assets/servicesPhotos/alquilerServices.webp';
+import decoracionImg from '../../assets/servicesPhotos/decorServices.webp';
+import cateringImg from '../../assets/servicesPhotos/cateringServices.webp';
+import transporteImg from '../../assets/servicesPhotos/transportServices.webp';
+import supervisionImg from '../../assets/servicesPhotos/supervisionServices.webp';
+import montdesImg from '../../assets/servicesPhotos/MonyDesServices.webp';
 import { Box, Container } from "@mui/material";
 
 const servicesData = [

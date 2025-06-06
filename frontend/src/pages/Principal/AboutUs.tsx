@@ -1,5 +1,5 @@
 import React from "react";
-import "../styles/mainPages/Info.scss";
+import "../../styles/mainPages/Info.scss";
 import "../../components/principal/Footer";
 import { Box, Container } from "@mui/material";
 

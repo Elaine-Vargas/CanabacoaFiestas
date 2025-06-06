@@ -10,10 +10,12 @@
     "concurrently": "^8.2.2"
   },
   "dependencies": {
+    "@ant-design/icons": "^6.0.0",
     "@emotion/react": "^11.14.0",
     "@emotion/styled": "^11.14.0",
     "@mui/icons-material": "^7.1.0",
     "@mui/material": "^7.1.0",
+    "antd": "^5.25.4",
     "leaflet": "^1.9.4",
     "react-modal": "^3.16.3"
   }
