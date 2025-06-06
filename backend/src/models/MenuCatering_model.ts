@@ -1,14 +1,27 @@
-import { Table, Model, DataType, Column, PrimaryKey, ForeignKey } from 'sequelize-typescript';
-import Menu from './Menu_model';
+import { Table, Model, Column, ForeignKey, DataType, BelongsTo } from 'sequelize-typescript';
 import CateringServicio from './CateringServicio_model';
+import Menu from './Menu_model';
 
 @Table({ tableName: 'menu_catering', timestamps: false })
 export default class MenuCatering extends Model {
+  @ForeignKey(() => CateringServicio)
+  @Column({ type: DataType.INTEGER, allowNull: false })
+  id_catering!: number;
+
+  @BelongsTo(() => CateringServicio)
+  cateringServicio!: CateringServicio;
+
   @ForeignKey(() => Menu)
-  @Column({ type: DataType.INTEGER })
+  @Column({ type: DataType.INTEGER, allowNull: false })
   id_menu!: number;
 
-  @ForeignKey(() => CateringServicio)
-  @Column({ type: DataType.INTEGER })
-  id_catering!: number;
+  @BelongsTo(() => Menu)
+  menu!: Menu;
+
+  @Column({
+    type: DataType.ENUM('Aceptado', 'Cancelado'),
+    allowNull: false,
+    defaultValue: 'Aceptado'
+  })
+  estado_menucatering!: string;
 }

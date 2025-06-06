@@ -14,8 +14,6 @@ import * as bcrypt from 'bcryptjs';
 import Rol from './Rol_model';
 import Evento from './Evento_model';
 import DetalleTransporte from './DetalleTransporte_model';
-import DetalleMontajedesmontaje from './DetalleMontajeDesmontaje_model';
-import DetalleSupervision from './DetalleSupervision_model';
 
 @Table({
   tableName: 'usuario',
@@ -97,10 +95,6 @@ export default class Usuario extends Model {
   @BelongsTo(() => Rol)
   rol!: Rol;
 
-  @Index({
-    name: 'usuario_login_idx',
-    unique: true
-  })
   @Column({
     type: DataType.STRING(25),
     allowNull: false,
@@ -234,17 +228,4 @@ export default class Usuario extends Model {
   })
   transportesConducidos!: DetalleTransporte[];
 
-  @HasMany(() => DetalleMontajedesmontaje, {
-    foreignKey: 'cedula_usuariopersonal',
-    sourceKey: 'cedula_usuario',
-    as: 'montajesRealizados'
-  })
-  montajesRealizados!: DetalleMontajedesmontaje[];
-
-  @HasMany(() => DetalleSupervision, {
-    foreignKey: 'cedula_usuariopersonal',
-    sourceKey: 'cedula_usuario',
-    as: 'supervisionesRealizadas'
-  })
-  supervisionesRealizadas!: DetalleSupervision[];
 }

@@ -17,13 +17,18 @@ export default class Vehiculo extends Model {
     type: DataType.ENUM('Automóvil', 'Remolque', 'Máquinas pesadas', 'Montacargas'),
     allowNull: false
   })
-  tipo_vehiculo!: string;
+  tipo_vehiculo!: 'Automóvil'| 'Remolque' | 'Máquinas pesadas' | 'Montacargas';
+
+
+  @Column({ type: DataType.DECIMAL(10,2), allowNull: false })
+  capacidad_vehiculo_lb!: number;
+
 
   @Column({
     type: DataType.ENUM('Activo', 'Inactivo', 'Eliminado'),
     defaultValue: 'Activo'
   })
-  estado_vehiculo!: string;
+  estado_vehiculo!: 'Activo' | 'Inactivo' | 'Eliminado';
 
   @HasMany(() => DetalleTransporte)
   detallestransportes!: DetalleTransporte[];

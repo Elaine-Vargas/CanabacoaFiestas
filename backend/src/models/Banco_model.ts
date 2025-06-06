@@ -8,14 +8,9 @@ export default class Banco extends Model {
   @Column({ type: DataType.INTEGER, field: 'id_banco' })
   id_banco!: number;
 
-  @Column({ 
-    type: DataType.STRING(25),
-    allowNull: false,
-    field: 'banco'
-  })
+  @Column({ type: DataType.STRING(25), allowNull: false })
   banco!: string;
 
-  //Relaciones
   @HasMany(() => Tarjeta)
   tarjetas!: Tarjeta[];
 } 

@@ -17,15 +17,15 @@ export default class Comentario extends Model {
   @Column({ type: DataType.INTEGER, field: 'id_comentario' })
   id_comentario!: number;
 
-  @Column({ type: DataType.TEXT, field: 'comentario', allowNull: false })
-  comentario!: string;
-
   @ForeignKey(() => Evento)
-  @Column({ type: DataType.INTEGER, field: 'id_evento', allowNull: false })
+  @Column({ type: DataType.INTEGER, allowNull: false })
   id_evento!: number;
 
   @BelongsTo(() => Evento)
-  evento?: Evento; // puede venir con include o no
+  evento!: Evento;
+
+  @Column({ type: DataType.TEXT, allowNull: false })
+  comentario!: string;
 
   @Column({
     type: DataType.ENUM('Activo', 'Editado', 'Eliminado'),

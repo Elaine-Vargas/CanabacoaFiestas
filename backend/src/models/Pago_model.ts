@@ -16,27 +16,35 @@ export default class Pago extends Model {
   @BelongsTo(() => Evento)
   evento!: Evento;
 
-  @Column({ 
-    type: DataType.DATEONLY,
-    defaultValue: DataType.NOW
-  })
-  fecha_pago!: Date;
-
   @Column({
-    type: DataType.TIME,
-    defaultValue: DataType.NOW
+    type: DataType.ENUM('Efectivo', 'Tarjeta'),
+    allowNull: false
   })
-  hora_pago!: string;
+  modo_pago!: string;
 
-  @Column({ type: DataType.DECIMAL(10, 2), allowNull: false })
-  monto!: number;
-  
   @ForeignKey(() => Tarjeta)
   @Column({ type: DataType.INTEGER })
   id_tarjeta!: number;
 
   @BelongsTo(() => Tarjeta)
   tarjeta!: Tarjeta;
+
+  @Column({ 
+    type: DataType.DATEONLY, 
+    allowNull: false,
+    defaultValue: DataType.NOW
+  })
+  fecha_pago!: Date;
+
+  @Column({ 
+    type: DataType.TIME, 
+    allowNull: false,
+    defaultValue: DataType.NOW
+  })
+  hora_pago!: Date;
+
+  @Column({ type: DataType.DECIMAL(10, 2), allowNull: false })
+  monto!: number;
 
   @Column({
     type: DataType.ENUM('Inicial', 'Final', 'Adicional'),

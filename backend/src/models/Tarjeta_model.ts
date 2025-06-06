@@ -10,7 +10,7 @@ export default class Tarjeta extends Model {
   id_tarjeta!: number;
 
   @ForeignKey(() => Usuario)
-  @Column({ type: DataType.CHAR(13), allowNull: false, field: 'usuario_creador' })
+  @Column({ type: DataType.CHAR(13), allowNull: false })
   usuario_creador!: string;
 
   @BelongsTo(() => Usuario)
@@ -18,43 +18,40 @@ export default class Tarjeta extends Model {
 
   @Column({
     type: DataType.ENUM('Crédito', 'Débito'),
-    allowNull: false,
-    field: 'tipo_tarjeta'
+    allowNull: false
   })
   tipo_tarjeta!: string;
 
   @ForeignKey(() => Banco)
-  @Column({ type: DataType.INTEGER, allowNull: false, field: 'banco_tarjeta' })
+  @Column({ type: DataType.INTEGER, allowNull: false })
   banco_tarjeta!: number;
 
   @BelongsTo(() => Banco)
   banco!: Banco;
 
-  @Column({ type: DataType.CHAR(16), allowNull: false, field: 'num_tarjeta' })
+  @Column({ type: DataType.CHAR(16), allowNull: false })
   num_tarjeta!: string;
 
-  @Column({ type: DataType.STRING(100), allowNull: false, field: 'titular_tarjeta' })
+  @Column({ type: DataType.STRING(100), allowNull: false })
   titular_tarjeta!: string;
 
-  @Column({ type: DataType.CHAR(5), allowNull: false, field: 'venc_tarjeta' })
+  @Column({ type: DataType.CHAR(5), allowNull: false })
   venc_tarjeta!: string;
 
-  @Column({ type: DataType.CHAR(3), allowNull: false, field: 'cvv_tarjeta' })
+  @Column({ type: DataType.CHAR(3), allowNull: false })
   cvv_tarjeta!: string;
 
   @Column({
     type: DataType.ENUM('Activa', 'Vencida', 'Eliminada'),
     allowNull: false,
-    defaultValue: 'Activa',
-    field: 'estado_tarjeta'
+    defaultValue: 'Activa'
   })
   estado_tarjeta!: string;
 
   @Column({
     type: DataType.DATE,
     allowNull: false,
-    defaultValue: DataType.NOW,
-    field: 'creacion_tarjeta'
+    defaultValue: DataType.NOW
   })
   creacion_tarjeta!: Date;
 } 

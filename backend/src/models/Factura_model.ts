@@ -16,16 +16,18 @@ export default class Factura extends Model {
   evento!: Evento;
 
   @Column({ 
-    type: DataType.DATEONLY,
+    type: DataType.DATEONLY, 
+    allowNull: false,
     defaultValue: DataType.NOW
   })
   fecha_factura!: Date;
 
-  @Column({
-    type: DataType.TIME,
+  @Column({ 
+    type: DataType.TIME, 
+    allowNull: false,
     defaultValue: DataType.NOW
   })
-  hora_factura!: string;
+  hora_factura!: Date;
 
   @Column({ type: DataType.DECIMAL(10, 2), allowNull: false })
   subtotal!: number;
@@ -38,6 +40,7 @@ export default class Factura extends Model {
 
   @Column({
     type: DataType.ENUM('Pendiente', 'Pagada', 'Anulada'),
+    allowNull: false,
     defaultValue: 'Pendiente'
   })
   estado_factura!: string;

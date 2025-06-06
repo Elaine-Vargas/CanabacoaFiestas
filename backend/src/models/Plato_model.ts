@@ -11,6 +11,6 @@ export default class Plato extends Model {
   @Column({ type: DataType.TEXT, allowNull: false })
   desc_plato!: string;
 
-  @HasMany (() => PlatoMenu)
+  @HasMany(() => PlatoMenu)
   platos_menu!: PlatoMenu[];
 }

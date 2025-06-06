@@ -1,5 +1,5 @@
 import { Table, Model, Column, PrimaryKey, AutoIncrement, DataType, HasMany } from 'sequelize-typescript';
-import Direccion from './Direccion_model';
+import Ciudad from './Ciudad_model';
 
 @Table({ tableName: 'provincia', timestamps: false })
 export default class Provincia extends Model {
@@ -16,6 +16,6 @@ export default class Provincia extends Model {
   nombre_provincia!: string;
 
   //Relaciones
-  @HasMany(() => Direccion)
-  direcciones!: Direccion[];
+  @HasMany(() => Ciudad)
+  ciudades!: Ciudad[];
 }

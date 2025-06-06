@@ -1,6 +1,5 @@
-import { Table, Model, Column, PrimaryKey, AutoIncrement, DataType, ForeignKey, BelongsTo, HasMany } from 'sequelize-typescript';
+import { Table, Model, Column, PrimaryKey, AutoIncrement, DataType, ForeignKey, BelongsTo } from 'sequelize-typescript';
 import Evento from './Evento_model';
-import DetalleSupervision from './DetalleSupervision_model';
 
 @Table({ tableName: 'supervision_servicio', timestamps: false })
 export default class SupervisionServicio extends Model {
@@ -28,6 +27,10 @@ export default class SupervisionServicio extends Model {
   @Column({ type: DataType.DECIMAL(10, 2), allowNull: false })
   total_supervision!: number;
 
-  @HasMany (() => DetalleSupervision)
-  detalles_supervision!: DetalleSupervision[];
+  @Column({
+    type: DataType.ENUM('Aceptado', 'Cancelado'),
+    allowNull: false,
+    defaultValue: 'Aceptado'
+  })
+  estado_supervision!: string;
 }

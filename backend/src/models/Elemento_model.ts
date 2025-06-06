@@ -3,6 +3,7 @@ import SubcategoriaElemento from './SubcategoriaElemento_model';
 import ColorElemento from './ColorElemento_model';
 import MaterialElemento from './MaterialElemento_model';
 import DetalleCompra from './DetalleCompra_model';
+import DetalleAlquiler from './DetalleAlquiler_model';
 
 @Table({ tableName: 'elemento', timestamps: false })
 export default class Elemento extends Model {
@@ -52,8 +53,11 @@ export default class Elemento extends Model {
     allowNull: true,
     defaultValue: 'Activo'
   })
-  estado_elemento!: string;
+  estado_elemento!: 'Activo' | 'Inactivo' | 'Eliminado';
 
   @HasMany(() => DetalleCompra)
   detallecompras!: DetalleCompra[];
+  
+  @HasMany(() => DetalleAlquiler)
+  detallealquileres!: DetalleAlquiler[];
 }

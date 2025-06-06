@@ -1,6 +1,16 @@
-import { Table, Model, Column, PrimaryKey, AutoIncrement, DataType, ForeignKey, BelongsTo, HasMany } from 'sequelize-typescript';
-import Provincia from './Provincia_model';
-import Espacio from './Espacio_model';
+import {
+  Table,
+  Model,
+  Column,
+  PrimaryKey,
+  AutoIncrement,
+  DataType,
+  ForeignKey,
+  BelongsTo,
+  HasMany
+} from 'sequelize-typescript';
+import Ciudad from './Ciudad_model';
+import Evento from './Evento_model';
 import Proveedor from './Proveedor_model';
 
 @Table({ tableName: 'direccion', timestamps: false })
@@ -10,27 +20,27 @@ export default class Direccion extends Model {
   @Column({ type: DataType.INTEGER, field: 'id_direccion' })
   id_direccion!: number;
 
-  @ForeignKey(() => Provincia)
-  @Column({ type: DataType.INTEGER, allowNull: false, field: 'id_provincia' })
-  id_provincia!: number;
+  @ForeignKey(() => Ciudad)
+  @Column({ type: DataType.INTEGER, field: 'id_ciudad', allowNull: false })
+  id_ciudad!: number;
 
-  @BelongsTo(() => Provincia)
-  provincia!: Provincia;
+  @BelongsTo(() => Ciudad)
+  ciudad?: Ciudad;
 
-  @Column({ type: DataType.STRING(50), allowNull: false })
+  @Column({ type: DataType.STRING(50), field: 'sector', allowNull: false })
   sector!: string;
 
-  @Column({ type: DataType.STRING(50), allowNull: false })
-  calle!: string;
+  @Column({ type: DataType.STRING(50), field: 'calle', allowNull: false })
+  calle?: string;
 
-  @Column({ type: DataType.TEXT })
+  @Column({ type: DataType.STRING(200), field: 'detalles', allowNull: true })
   detalles!: string;
 
-  // Relación 1:N con Espacio
-  @HasMany(() => Espacio)
-  espacios!: Espacio[]; 
 
+  @HasMany(() => Evento)
+  eventos?: Evento[];
+
+  
   @HasMany(() => Proveedor)
-  proveedores!: Proveedor[]; 
-
+  proveedores?: Proveedor[];
 }

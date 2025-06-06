@@ -4,11 +4,6 @@ import Elemento from './Elemento_model';
 
 @Table({ tableName: 'detalle_compra', timestamps: false })
 export default class DetalleCompra extends Model {
-  @PrimaryKey
-  @AutoIncrement
-  @Column({ type: DataType.INTEGER, field: 'id_detalle_compra' })
-  id_detalle_compra!: number;
-
   @ForeignKey(() => Compra)
   @Column({ type: DataType.INTEGER, allowNull: false })
   id_compra!: number;

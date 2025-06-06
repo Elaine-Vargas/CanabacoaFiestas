@@ -15,19 +15,9 @@ export default class AlquilerServicio extends Model {
 
   @BelongsTo(() => Evento)
   evento!: Evento;
-
-  @ForeignKey(() => Elemento)
-  @Column({ type: DataType.INTEGER, allowNull: false })
-  id_elemento!: number;
-
-  @BelongsTo(() => Elemento)
-  elemento!: Elemento;
-
-  @Column({ type: DataType.DECIMAL(10, 2)})
-  precio_unitario!: number;
-
-  @Column({ type: DataType.INTEGER, allowNull: false })
-  cantidad_alquiler!: number;
+  
+  @Column({ type: DataType.INTEGER})
+  cant_elementos_alquiler!: number;
 
   @Column({ type: DataType.DECIMAL(10, 2)})
   precioneto_alquiler!: number;
@@ -37,4 +27,11 @@ export default class AlquilerServicio extends Model {
 
   @Column({ type: DataType.DECIMAL(10, 2),})
   total_alquiler!: number;
+
+  @Column({
+    type: DataType.ENUM('Solicitado', 'Aceptado', 'Completado', 'Cancelado'),
+    defaultValue: 'Solicitado'
+  })
+  estado_alquiler!: 'Solicitado' | 'Aceptado' | 'Completado' | 'Cancelado';
+
 }

@@ -1,5 +1,4 @@
 import { Table, Model, Column, PrimaryKey, AutoIncrement, DataType, ForeignKey, BelongsTo, HasMany } from 'sequelize-typescript';
-import TipoProveedor from './TipoProveedor_model';
 import Direccion from './Direccion_model';
 import Compra from './Compra_model';
 import Menu from './Menu_model';
@@ -10,13 +9,11 @@ export default class Proveedor extends Model {
   @AutoIncrement
   @Column({ type: DataType.INTEGER, field: 'id_proveedor' })
   id_proveedor!: number;
-
-  @ForeignKey(() => TipoProveedor)
-  @Column({ type: DataType.INTEGER, allowNull: false })
-  id_tipo_proveedor!: number;
-
-  @BelongsTo(() => TipoProveedor)
-  tipo_proveedor!: TipoProveedor;
+  @Column({
+    type: DataType.ENUM('Catering', 'Elementos'),
+    allowNull: false
+  })
+  tipo_proveedor!: 'Catering' | 'Elementos';
 
   @Column({ type: DataType.STRING(50), allowNull: false })
   nombre_proveedor!: string;
@@ -38,7 +35,7 @@ export default class Proveedor extends Model {
     type: DataType.ENUM('Activo', 'Inactivo', 'Eliminado'),
     defaultValue: 'Activo'
   })
-  estado_proveedor!: string;
+  estado_proveedor!: 'Activo'|'Inactivo'|'Eliminado';
 
   //Relaciones
   @HasMany(() => Compra)
