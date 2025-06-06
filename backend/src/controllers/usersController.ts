@@ -52,6 +52,13 @@ export const getAllUsers = async (req: Request, res: Response) => {
       order: [['nombre_usuario', 'ASC']]
     });
 
+    if (!usuarios || usuarios.length === 0) {
+      return res.status(404).json({ 
+        error: 'No se encontraron usuarios',
+        mensaje: 'No hay usuarios registrados en el sistema'
+      });
+    }
+
     res.json({
       total: usuarios.length,
       usuarios: usuarios.map(usuario => ({
@@ -69,7 +76,10 @@ export const getAllUsers = async (req: Request, res: Response) => {
 
   } catch (error) {
     console.error('Error al obtener usuarios:', error);
-    res.status(500).json({ error: 'Error al obtener usuarios' });
+    res.status(500).json({ 
+      error: 'Error al obtener usuarios',
+      mensaje: 'Ocurrió un error al cargar los usuarios'
+    });
   }
 };
 
@@ -99,6 +109,13 @@ export const getUsersByRole = async (req: Request, res: Response) => {
       order: [['nombre_usuario', 'ASC']]
     });
 
+    if (!usuarios || usuarios.length === 0) {
+      return res.status(404).json({ 
+        error: 'No se encontraron usuarios',
+        mensaje: `No hay usuarios activos registrados con el rol: ${id_rol}`
+      });
+    }
+
     res.json({
       total: usuarios.length,
       usuarios: usuarios.map(usuario => ({
@@ -116,7 +133,10 @@ export const getUsersByRole = async (req: Request, res: Response) => {
 
   } catch (error) {
     console.error('Error al obtener usuarios por rol:', error);
-    res.status(500).json({ error: 'Error al obtener usuarios por rol' });
+    res.status(500).json({ 
+      error: 'Error al obtener usuarios por rol',
+      mensaje: 'Ocurrió un error al cargar los usuarios por rol'
+    });
   }
 };
 
@@ -145,6 +165,13 @@ export const getUsersByStatus = async (req: Request, res: Response) => {
       order: [['nombre_usuario', 'ASC']]
     });
 
+    if (!usuarios || usuarios.length === 0) {
+      return res.status(404).json({ 
+        error: 'No se encontraron usuarios',
+        mensaje: `No hay usuarios registrados con el estado: ${estado}`
+      });
+    }
+
     res.json({
       total: usuarios.length,
       usuarios: usuarios.map(usuario => ({
@@ -162,7 +189,10 @@ export const getUsersByStatus = async (req: Request, res: Response) => {
 
   } catch (error) {
     console.error('Error al obtener usuarios por estado:', error);
-    res.status(500).json({ error: 'Error al obtener usuarios por estado' });
+    res.status(500).json({ 
+      error: 'Error al obtener usuarios por estado',
+      mensaje: 'Ocurrió un error al cargar los usuarios por estado'
+    });
   }
 };
 
@@ -171,7 +201,10 @@ export const searchUsers = async (req: Request, res: Response) => {
     const { query } = req.query;
 
     if (!query) {
-      return res.status(400).json({ error: 'Se requiere un término de búsqueda' });
+      return res.status(400).json({ 
+        error: 'Parámetro de búsqueda requerido',
+        mensaje: 'Se requiere un término de búsqueda para realizar la consulta'
+      });
     }
 
     const usuarios = await Usuario.findAll({
@@ -202,6 +235,13 @@ export const searchUsers = async (req: Request, res: Response) => {
       order: [['nombre_usuario', 'ASC']]
     });
 
+    if (!usuarios || usuarios.length === 0) {
+      return res.status(404).json({ 
+        error: 'No se encontraron usuarios',
+        mensaje: `No hay usuarios activos que coincidan con la búsqueda: ${query}`
+      });
+    }
+
     res.json({
       total: usuarios.length,
       usuarios: usuarios.map(usuario => ({
@@ -219,7 +259,10 @@ export const searchUsers = async (req: Request, res: Response) => {
 
   } catch (error) {
     console.error('Error al buscar usuarios:', error);
-    res.status(500).json({ error: 'Error al buscar usuarios' });
+    res.status(500).json({ 
+      error: 'Error al buscar usuarios',
+      mensaje: 'Ocurrió un error al realizar la búsqueda de usuarios'
+    });
   }
 };
 
@@ -232,13 +275,17 @@ export const updateUser = async (req: Request, res: Response) => {
     const { cedula } = req.params;
     const updateData = req.body;
     
+    try {
       // Buscar el usuario
       const usuario = await Usuario.findOne({ 
         where: { cedula_usuario: cedula } 
       });
   
       if (!usuario) {
-        return res.status(404).json({ error: 'Usuario no encontrado' });
+        return res.status(404).json({ 
+          error: 'Usuario no encontrado',
+          mensaje: 'No se encontró el usuario solicitado'
+        });
       }
   
       // Si se está actualizando el correo, verificar que no exista otro usuario con el mismo correo
@@ -251,7 +298,10 @@ export const updateUser = async (req: Request, res: Response) => {
         });
   
         if (usuarioConMismoCorreo) {
-          return res.status(400).json({ error: 'El correo electrónico ya está en uso' });
+          return res.status(400).json({ 
+            error: 'Correo duplicado',
+            mensaje: 'El correo electrónico ya está en uso por otro usuario'
+          });
         }
       }
   
@@ -265,45 +315,52 @@ export const updateUser = async (req: Request, res: Response) => {
       });
   
       res.json({
-        mensaje: 'Usuario actualizado Correctamente',
+        error: null,
+        mensaje: 'Usuario actualizado correctamente',
         usuario: usuarioActualizado
       });
-  
-    } 
-  
-  /**
-   * @description Elimina lógicamente un usuario (cambia estado a "Eliminado")
-   * @route DELETE /api/usuarios/:cedula
-   * @access Privado (Admin)
-   */
-  export const deleteUser = async (req: Request, res: Response) => {
-    const { cedula } = req.params;
-  
-    try {
-      const usuario = await Usuario.findOne({ 
-        where: { cedula_usuario: cedula } 
-      });
-  
-      if (!usuario) {
-        return res.status(404).json({ error: 'Usuario no encontrado' });
-      }
-  
-      // Verificar si el usuario ya está eliminado
-      if (usuario.estado_usuario === 'Eliminado') {
-        return res.status(400).json({ error: 'El usuario ya está eliminado' });
-      }
-  
-      // Eliminación lógica (cambiar estado)
-      await usuario.update({ estado_usuario: 'Eliminado' });
-  
-      res.json({ 
-        mensaje: 'Usuario eliminado correctamente (lógicamente)',
-        cedula_usuario: usuario.cedula_usuario,
-        estado_actual: 'Eliminado'
-      });
-  
     } catch (error) {
-      console.error('Error al eliminar usuario:', error);
-      res.status(500).json({ error: 'Error al eliminar usuario' });
+      console.error('Error al actualizar usuario:', error);
+      res.status(500).json({ 
+        error: 'Error al actualizar usuario',
+        mensaje: 'Ocurrió un error al actualizar los datos del usuario'
+      });
     }
-  };
+};
+
+/**
+ * @description Elimina lógicamente un usuario (cambia estado a "Eliminado")
+ * @route DELETE /api/usuarios/:cedula
+ * @access Privado (Admin)
+ */
+export const deleteUser = async (req: Request, res: Response) => {
+  const { cedula } = req.params;
+
+  try {
+    const usuario = await Usuario.findOne({ 
+      where: { cedula_usuario: cedula } 
+    });
+
+    if (!usuario) {
+      return res.status(404).json({ error: 'Usuario no encontrado' });
+    }
+
+    // Verificar si el usuario ya está eliminado
+    if (usuario.estado_usuario === 'Eliminado') {
+      return res.status(400).json({ error: 'El usuario ya está eliminado' });
+    }
+
+    // Eliminación lógica (cambiar estado)
+    await usuario.update({ estado_usuario: 'Eliminado' });
+
+    res.json({ 
+      mensaje: 'Usuario eliminado correctamente (lógicamente)',
+      cedula_usuario: usuario.cedula_usuario,
+      estado_actual: 'Eliminado'
+    });
+
+  } catch (error) {
+    console.error('Error al eliminar usuario:', error);
+    res.status(500).json({ error: 'Error al eliminar usuario' });
+  }
+};

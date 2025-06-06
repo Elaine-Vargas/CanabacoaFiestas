@@ -96,7 +96,7 @@ export const getCompras = async (req: Request, res: Response) => {
     if (!compras || compras.length === 0) {
       return res.status(404).json({ 
         error: 'No se encontraron compras',
-        mensaje: 'No hay compras registradas'
+        mensaje: 'No hay compras registradas en el sistema'
       });
     }
 

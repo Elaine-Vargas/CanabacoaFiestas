@@ -19,13 +19,19 @@ export const createTarjeta = async (req: Request, res: Response) => {
     // Verificar que el usuario existe
     const usuario = await Usuario.findByPk(usuario_creador);
     if (!usuario) {
-      return res.status(404).json({ error: 'Usuario no encontrado' });
+      return res.status(404).json({ 
+        error: 'Usuario no encontrado',
+        mensaje: 'No se encontró el usuario solicitado'
+      });
     }
 
     // Verificar que el banco existe
     const banco = await Banco.findByPk(banco_tarjeta);
     if (!banco) {
-      return res.status(404).json({ error: 'Banco no encontrado' });
+      return res.status(404).json({ 
+        error: 'Banco no encontrado',
+        mensaje: 'No se encontró el banco solicitado'
+      });
     }
 
     // Crear la tarjeta
@@ -58,7 +64,10 @@ export const createTarjeta = async (req: Request, res: Response) => {
     res.status(201).json(tarjetaCompleta);
   } catch (error) {
     console.error('Error al crear tarjeta:', error);
-    res.status(500).json({ error: 'Error al crear tarjeta' });
+    res.status(500).json({ 
+      error: 'Error al crear tarjeta',
+      mensaje: 'Ocurrió un error al crear la tarjeta'
+    });
   }
 };
 
@@ -82,10 +91,20 @@ export const getTarjetas = async (req: Request, res: Response) => {
       order: [['creacion_tarjeta', 'DESC']]
     });
 
+    if (!tarjetas || tarjetas.length === 0) {
+      return res.status(404).json({ 
+        error: 'No se encontraron tarjetas',
+        mensaje: 'No hay tarjetas activas registradas en el sistema'
+      });
+    }
+
     res.json(tarjetas);
   } catch (error) {
     console.error('Error al obtener tarjetas:', error);
-    res.status(500).json({ error: 'Error al obtener tarjetas' });
+    res.status(500).json({ 
+      error: 'Error al obtener tarjetas',
+      mensaje: 'Ocurrió un error al cargar las tarjetas'
+    });
   }
 };
 
@@ -97,7 +116,10 @@ export const getTarjetasByCliente = async (req: Request, res: Response) => {
     // Verificar que el usuario existe
     const usuario = await Usuario.findByPk(usuario_creador);
     if (!usuario) {
-      return res.status(404).json({ error: 'Usuario no encontrado' });
+      return res.status(404).json({ 
+        error: 'Usuario no encontrado',
+        mensaje: 'No se encontró el usuario solicitado'
+      });
     }
 
     const tarjetas = await Tarjeta.findAll({
@@ -118,12 +140,22 @@ export const getTarjetasByCliente = async (req: Request, res: Response) => {
       order: [['creacion_tarjeta', 'DESC']]
     });
 
+    if (!tarjetas || tarjetas.length === 0) {
+      return res.status(404).json({ 
+        error: 'No se encontraron tarjetas',
+        mensaje: `No hay tarjetas activas registradas para el usuario: ${usuario_creador}`
+      });
+    }
+
     res.json(tarjetas);
   } catch (error) {
     console.error('Error al obtener tarjetas del cliente:', error);
-    res.status(500).json({ error: 'Error al obtener tarjetas del cliente' });
+    res.status(500).json({ 
+      error: 'Error al obtener tarjetas del cliente',
+      mensaje: 'Ocurrió un error al cargar las tarjetas del cliente'
+    });
   }
-}; 
+};
 
 // Obtener todos los bancos
 export const getBancos = async (req: Request, res: Response) => {
@@ -132,9 +164,19 @@ export const getBancos = async (req: Request, res: Response) => {
       order: [['banco', 'ASC']]
     });
 
+    if (!bancos || bancos.length === 0) {
+      return res.status(404).json({ 
+        error: 'No se encontraron bancos',
+        mensaje: 'No hay bancos registrados en el sistema'
+      });
+    }
+
     res.json(bancos);
   } catch (error) {
     console.error('Error al obtener bancos:', error);
-    res.status(500).json({ error: 'Error al obtener bancos' });
+    res.status(500).json({ 
+      error: 'Error al obtener bancos',
+      mensaje: 'Ocurrió un error al cargar los bancos'
+    });
   }
 }; 

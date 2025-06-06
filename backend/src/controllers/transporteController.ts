@@ -22,13 +22,19 @@ export const createTransporte = async (req: Request, res: Response) => {
     // Verificar que el evento existe
     const evento = await Evento.findByPk(id_evento);
     if (!evento) {
-      return res.status(404).json({ error: 'Evento no encontrado' });
+      return res.status(404).json({ 
+        error: 'Evento no encontrado',
+        mensaje: 'No se encontró el evento solicitado'
+      });
     }
 
     // Verificar que el alquiler existe
     const alquiler = await AlquilerServicio.findByPk(id_alquiler);
     if (!alquiler) {
-      return res.status(404).json({ error: 'Servicio de alquiler no encontrado' });
+      return res.status(404).json({ 
+        error: 'Servicio de alquiler no encontrado',
+        mensaje: 'No se encontró el servicio de alquiler solicitado'
+      });
     }
 
     // Crear el servicio de transporte
@@ -87,7 +93,10 @@ export const createTransporte = async (req: Request, res: Response) => {
     res.status(201).json(transporteCompleto);
   } catch (error) {
     console.error('Error al crear servicio de transporte:', error);
-    res.status(500).json({ error: 'Error al crear servicio de transporte' });
+    res.status(500).json({ 
+      error: 'Error al crear servicio de transporte',
+      mensaje: 'Ocurrió un error al crear el servicio de transporte'
+    });
   }
 };
 
@@ -116,10 +125,20 @@ export const getTransportes = async (req: Request, res: Response) => {
       order: [['id_transporte', 'DESC']]
     });
 
+    if (!transportes || transportes.length === 0) {
+      return res.status(404).json({ 
+        error: 'No se encontraron transportes',
+        mensaje: 'No hay servicios de transporte registrados en el sistema'
+      });
+    }
+
     res.json(transportes);
   } catch (error) {
     console.error('Error al obtener servicios de transporte:', error);
-    res.status(500).json({ error: 'Error al obtener servicios de transporte' });
+    res.status(500).json({ 
+      error: 'Error al obtener servicios de transporte',
+      mensaje: 'Ocurrió un error al cargar los servicios de transporte'
+    });
   }
 };
 
@@ -138,7 +157,10 @@ export const editTransporte = async (req: Request, res: Response) => {
 
     const transporte = await TransporteServicio.findByPk(id_transporte);
     if (!transporte) {
-      return res.status(404).json({ error: 'Servicio de transporte no encontrado' });
+      return res.status(404).json({ 
+        error: 'Servicio de transporte no encontrado',
+        mensaje: 'No se encontró el servicio de transporte solicitado'
+      });
     }
 
     // Actualizar el servicio
@@ -203,7 +225,10 @@ export const editTransporte = async (req: Request, res: Response) => {
     res.json(transporteActualizado);
   } catch (error) {
     console.error('Error al editar servicio de transporte:', error);
-    res.status(500).json({ error: 'Error al editar servicio de transporte' });
+    res.status(500).json({ 
+      error: 'Error al editar servicio de transporte',
+      mensaje: 'Ocurrió un error al actualizar el servicio de transporte'
+    });
   }
 };
 
@@ -214,7 +239,10 @@ export const deleteTransporte = async (req: Request, res: Response) => {
 
     const transporte = await TransporteServicio.findByPk(id_transporte);
     if (!transporte) {
-      return res.status(404).json({ error: 'Servicio de transporte no encontrado' });
+      return res.status(404).json({ 
+        error: 'Servicio de transporte no encontrado',
+        mensaje: 'No se encontró el servicio de transporte solicitado'
+      });
     }
 
     // Actualizar el estado a Cancelado
@@ -228,9 +256,15 @@ export const deleteTransporte = async (req: Request, res: Response) => {
       { where: { id_transporte } }
     );
 
-    res.json({ message: 'Servicio de transporte cancelado correctamente' });
+    res.json({ 
+      error: null,
+      mensaje: 'Servicio de transporte cancelado correctamente'
+    });
   } catch (error) {
-    console.error('Error al eliminar servicio de transporte:', error);
-    res.status(500).json({ error: 'Error al eliminar servicio de transporte' });
+    console.error('Error al cancelar servicio de transporte:', error);
+    res.status(500).json({ 
+      error: 'Error al cancelar servicio de transporte',
+      mensaje: 'Ocurrió un error al cancelar el servicio de transporte'
+    });
   }
 }; 

@@ -18,7 +18,10 @@ export const createSupervision = async (req: Request, res: Response) => {
     // Verificar que el evento existe
     const evento = await Evento.findByPk(id_evento);
     if (!evento) {
-      return res.status(404).json({ error: 'Evento no encontrado' });
+      return res.status(404).json({ 
+        error: 'Evento no encontrado',
+        mensaje: 'No se encontró el evento solicitado'
+      });
     }
 
     // Crear el servicio de supervisión
@@ -47,7 +50,10 @@ export const createSupervision = async (req: Request, res: Response) => {
     res.status(201).json(supervisionCompleta);
   } catch (error) {
     console.error('Error al crear servicio de supervisión:', error);
-    res.status(500).json({ error: 'Error al crear servicio de supervisión' });
+    res.status(500).json({ 
+      error: 'Error al crear servicio de supervisión',
+      mensaje: 'Ocurrió un error al crear el servicio de supervisión'
+    });
   }
 };
 
@@ -67,10 +73,20 @@ export const getSupervisiones = async (req: Request, res: Response) => {
       order: [['id_supervision', 'DESC']]
     });
 
+    if (!supervisiones || supervisiones.length === 0) {
+      return res.status(404).json({ 
+        error: 'No se encontraron supervisiones',
+        mensaje: 'No hay servicios de supervisión registrados en el sistema'
+      });
+    }
+
     res.json(supervisiones);
   } catch (error) {
     console.error('Error al obtener servicios de supervisión:', error);
-    res.status(500).json({ error: 'Error al obtener servicios de supervisión' });
+    res.status(500).json({ 
+      error: 'Error al obtener servicios de supervisión',
+      mensaje: 'Ocurrió un error al cargar los servicios de supervisión'
+    });
   }
 };
 
@@ -88,7 +104,10 @@ export const editSupervision = async (req: Request, res: Response) => {
 
     const supervision = await SupervisionServicio.findByPk(id_supervision);
     if (!supervision) {
-      return res.status(404).json({ error: 'Servicio de supervisión no encontrado' });
+      return res.status(404).json({ 
+        error: 'Servicio de supervisión no encontrado',
+        mensaje: 'No se encontró el servicio de supervisión solicitado'
+      });
     }
 
     // Actualizar el servicio
@@ -116,7 +135,10 @@ export const editSupervision = async (req: Request, res: Response) => {
     res.json(supervisionActualizada);
   } catch (error) {
     console.error('Error al editar servicio de supervisión:', error);
-    res.status(500).json({ error: 'Error al editar servicio de supervisión' });
+    res.status(500).json({ 
+      error: 'Error al editar servicio de supervisión',
+      mensaje: 'Ocurrió un error al actualizar el servicio de supervisión'
+    });
   }
 };
 
@@ -127,7 +149,10 @@ export const deleteSupervision = async (req: Request, res: Response) => {
 
     const supervision = await SupervisionServicio.findByPk(id_supervision);
     if (!supervision) {
-      return res.status(404).json({ error: 'Servicio de supervisión no encontrado' });
+      return res.status(404).json({ 
+        error: 'Servicio de supervisión no encontrado',
+        mensaje: 'No se encontró el servicio de supervisión solicitado'
+      });
     }
 
     // Actualizar el estado a Cancelado
@@ -135,9 +160,15 @@ export const deleteSupervision = async (req: Request, res: Response) => {
       estado_supervision: 'Cancelado'
     });
 
-    res.json({ message: 'Servicio de supervisión cancelado correctamente' });
+    res.json({ 
+      error: null,
+      mensaje: 'Servicio de supervisión cancelado correctamente'
+    });
   } catch (error) {
-    console.error('Error al eliminar servicio de supervisión:', error);
-    res.status(500).json({ error: 'Error al eliminar servicio de supervisión' });
+    console.error('Error al cancelar servicio de supervisión:', error);
+    res.status(500).json({ 
+      error: 'Error al cancelar servicio de supervisión',
+      mensaje: 'Ocurrió un error al cancelar el servicio de supervisión'
+    });
   }
 }; 

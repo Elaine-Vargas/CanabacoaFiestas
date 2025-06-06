@@ -28,11 +28,17 @@ export const createEvent = async (req: Request, res: Response) => {
         const asesor = await Usuario.findOne({ where: { cedula_usuario: cedula_asesor, id_rol: 3 } });
 
         if (!cliente) {
-            return res.status(400).json({ message: 'El cliente no existe o no tiene el rol correcto' });
+            return res.status(400).json({ 
+                error: 'Cliente no válido',
+                mensaje: 'El cliente no existe o no tiene el rol correcto'
+            });
         }
 
         if (!asesor) {
-            return res.status(400).json({ message: 'El asesor no existe o no tiene el rol correcto' });
+            return res.status(400).json({ 
+                error: 'Asesor no válido',
+                mensaje: 'El asesor no existe o no tiene el rol correcto'
+            });
         }
 
         const evento = await Evento.create({
@@ -54,7 +60,11 @@ export const createEvent = async (req: Request, res: Response) => {
 
         res.status(201).json(evento);
     } catch (error) {
-        res.status(500).json({ message: 'Error al crear el evento', error });
+        console.error('Error al crear evento:', error);
+        res.status(500).json({ 
+            error: 'Error al crear el evento',
+            mensaje: 'Ocurrió un error al crear el evento'
+        });
     }
 };
 
@@ -66,9 +76,21 @@ export const showAllEvents = async (req: Request, res: Response) => {
                 { model: Usuario, as: 'asesor' }
             ]
         });
+
+        if (!eventos || eventos.length === 0) {
+            return res.status(404).json({ 
+                error: 'No se encontraron eventos',
+                mensaje: 'No hay eventos registrados en el sistema'
+            });
+        }
+
         res.json(eventos);
     } catch (error) {
-        res.status(500).json({ message: 'Error al obtener los eventos', error });
+        console.error('Error al obtener eventos:', error);
+        res.status(500).json({ 
+            error: 'Error al obtener los eventos',
+            mensaje: 'Ocurrió un error al cargar los eventos'
+        });
     }
 };
 
@@ -82,9 +104,21 @@ export const showEventsByStatus = async (req: Request, res: Response) => {
                 { model: Usuario, as: 'asesor' }
             ]
         });
+
+        if (!eventos || eventos.length === 0) {
+            return res.status(404).json({ 
+                error: 'No se encontraron eventos',
+                mensaje: `No hay eventos registrados con el estado: ${estado}`
+            });
+        }
+
         res.json(eventos);
     } catch (error) {
-        res.status(500).json({ message: 'Error al obtener los eventos por estado', error });
+        console.error('Error al obtener eventos por estado:', error);
+        res.status(500).json({ 
+            error: 'Error al obtener los eventos por estado',
+            mensaje: 'Ocurrió un error al cargar los eventos'
+        });
     }
 };
 
@@ -98,9 +132,21 @@ export const showEventsByClient = async (req: Request, res: Response) => {
                 { model: Usuario, as: 'asesor' }
             ]
         });
+
+        if (!eventos || eventos.length === 0) {
+            return res.status(404).json({ 
+                error: 'No se encontraron eventos',
+                mensaje: `No hay eventos registrados para el cliente con cédula: ${cedula_cliente}`
+            });
+        }
+
         res.json(eventos);
     } catch (error) {
-        res.status(500).json({ message: 'Error al obtener los eventos del cliente', error });
+        console.error('Error al obtener eventos del cliente:', error);
+        res.status(500).json({ 
+            error: 'Error al obtener los eventos del cliente',
+            mensaje: 'Ocurrió un error al cargar los eventos'
+        });
     }
 };
 
@@ -114,9 +160,21 @@ export const showEventsByAsesor = async (req: Request, res: Response) => {
                 { model: Usuario, as: 'asesor' }
             ]
         });
+
+        if (!eventos || eventos.length === 0) {
+            return res.status(404).json({ 
+                error: 'No se encontraron eventos',
+                mensaje: `No hay eventos registrados para el asesor con cédula: ${cedula_asesor}`
+            });
+        }
+
         res.json(eventos);
     } catch (error) {
-        res.status(500).json({ message: 'Error al obtener los eventos del asesor', error });
+        console.error('Error al obtener eventos del asesor:', error);
+        res.status(500).json({ 
+            error: 'Error al obtener los eventos del asesor',
+            mensaje: 'Ocurrió un error al cargar los eventos'
+        });
     }
 };
 
@@ -144,20 +202,29 @@ export const editEvent = async (req: Request, res: Response) => {
         if (cedula_cliente) {
             const cliente = await Usuario.findOne({ where: { cedula_usuario: cedula_cliente, id_rol: 2 } });
             if (!cliente) {
-                return res.status(400).json({ message: 'El cliente no existe o no tiene el rol correcto' });
+                return res.status(400).json({ 
+                    error: 'Cliente no válido',
+                    mensaje: 'El cliente no existe o no tiene el rol correcto'
+                });
             }
         }
 
         if (cedula_asesor) {
             const asesor = await Usuario.findOne({ where: { cedula_usuario: cedula_asesor, id_rol: 3 } });
             if (!asesor) {
-                return res.status(400).json({ message: 'El asesor no existe o no tiene el rol correcto' });
+                return res.status(400).json({ 
+                    error: 'Asesor no válido',
+                    mensaje: 'El asesor no existe o no tiene el rol correcto'
+                });
             }
         }
 
         const evento = await Evento.findByPk(id_evento);
         if (!evento) {
-            return res.status(404).json({ message: 'Evento no encontrado' });
+            return res.status(404).json({ 
+                error: 'Evento no encontrado',
+                mensaje: 'No se encontró el evento solicitado'
+            });
         }
 
         await evento.update({
@@ -179,7 +246,11 @@ export const editEvent = async (req: Request, res: Response) => {
 
         res.json(evento);
     } catch (error) {
-        res.status(500).json({ message: 'Error al editar el evento', error });
+        console.error('Error al editar evento:', error);
+        res.status(500).json({ 
+            error: 'Error al editar el evento',
+            mensaje: 'Ocurrió un error al actualizar el evento'
+        });
     }
 };
 
@@ -189,16 +260,26 @@ export const deleteEvent = async (req: Request, res: Response) => {
         const evento = await Evento.findByPk(id_evento);
         
         if (!evento) {
-            return res.status(404).json({ message: 'Evento no encontrado' });
+            return res.status(404).json({ 
+                error: 'Evento no encontrado',
+                mensaje: 'No se encontró el evento solicitado'
+            });
         }
 
         await evento.update({
             estado_evento: 'Cancelado'
         });
 
-        res.json({ message: 'Evento eliminado correctamente' });
+        res.json({ 
+            error: null,
+            mensaje: 'Evento cancelado correctamente'
+        });
     } catch (error) {
-        res.status(500).json({ message: 'Error al eliminar el evento', error });
+        console.error('Error al cancelar evento:', error);
+        res.status(500).json({ 
+            error: 'Error al cancelar el evento',
+            mensaje: 'Ocurrió un error al cancelar el evento'
+        });
     }
 };
 

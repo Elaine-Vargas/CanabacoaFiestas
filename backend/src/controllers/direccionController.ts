@@ -25,7 +25,7 @@ export const getDirecciones = async (req: Request, res: Response) => {
     if (!direcciones || direcciones.length === 0) {
       return res.status(404).json({ 
         error: 'No se encontraron direcciones',
-        mensaje: 'No hay direcciones registradas'
+        mensaje: 'No hay direcciones registradas en el sistema'
       });
     }
 
@@ -265,7 +265,7 @@ export const getProvincias = async (req: Request, res: Response) => {
     if (!provincias || provincias.length === 0) {
       return res.status(404).json({ 
         error: 'No se encontraron provincias',
-        mensaje: 'No hay provincias registradas'
+        mensaje: 'No hay provincias registradas en el sistema'
       });
     }
 
@@ -296,7 +296,7 @@ export const getCiudades = async (req: Request, res: Response) => {
     if (!ciudades || ciudades.length === 0) {
       return res.status(404).json({ 
         error: 'No se encontraron ciudades',
-        mensaje: 'No hay ciudades registradas'
+        mensaje: 'No hay ciudades registradas en el sistema'
       });
     }
 

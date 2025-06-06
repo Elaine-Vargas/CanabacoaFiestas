@@ -45,6 +45,14 @@ export const getAllDecoraciones = async (req: Request, res: Response) => {
                 }
             ]
         });
+
+        if (!decoraciones || decoraciones.length === 0) {
+            return res.status(404).json({ 
+                error: 'No se encontraron decoraciones',
+                mensaje: 'No hay servicios de decoración registrados en el sistema'
+            });
+        }
+
         res.json(decoraciones);
     } catch (error) {
         console.error('Error al obtener servicios de decoración:', error);
@@ -68,6 +76,14 @@ export const getDecoracionesByTema = async (req: Request, res: Response) => {
                 }
             ]
         });
+
+        if (!decoraciones || decoraciones.length === 0) {
+            return res.status(404).json({ 
+                error: 'No se encontraron decoraciones',
+                mensaje: `No hay servicios de decoración registrados con el tema: ${tema}`
+            });
+        }
+
         res.json(decoraciones);
     } catch (error) {
         console.error('Error al buscar servicios de decoración por tema:', error);
