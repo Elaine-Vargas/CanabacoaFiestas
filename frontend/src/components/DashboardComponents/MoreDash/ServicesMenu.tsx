@@ -2,11 +2,9 @@ import { useNavigate } from "react-router-dom";
 import {
   FaUserCog,
   FaBoxOpen,
-  FaBrush,
   FaConciergeBell,
-  FaCar,
   FaTachometerAlt,
-  FaTools,
+  FaFileInvoiceDollar,
 } from "react-icons/fa";
 import { IoIosExit } from "react-icons/io";
 import { useState } from "react";
@@ -16,17 +14,7 @@ import { useMediaQuery } from "@mui/material";
 import { Drawer, IconButton, List, ListItem, ListItemButton, ListItemText } from "@mui/material";
 import MenuRoundedIcon from "@mui/icons-material/MenuRounded";
 
-export type UserRole = 'admin' | 'client' | 'supervisor' | 'inventory';
-
-export type Permission = {
-  id: string;
-  name: string;
-  description: string;
-};
-
-export type RolePermissions = {
-  [key in UserRole]: Permission[];
-};
+export type UserRole = 'admin' | 'client' | 'employee' | 'driver';
 
 interface ServicesMenuProps {
   selectedService: string;
@@ -38,20 +26,17 @@ export default function ServicesMenu({ selectedService }: ServicesMenuProps) {
   const [showLogoutModal, setShowLogoutModal] = useState(false);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const isMobile = useMediaQuery("(max-width:450px)");
-  
-  //console.log('User Data from localStorage:', userData); // Debug log
 
   const toggleDrawer = (open: boolean) => () => {
     setDrawerOpen(open);
   };
 
   const getRolName = (rolId: number) => {
-    //console.log('Rol ID:', rolId); // Debug log
     switch(Number(rolId)) {
       case 1: return 'Admin';
       case 2: return 'Cliente';
-      case 3: return 'Organizador de Eventos';
-      case 4: return 'Encargado de Inventario';
+      case 3: return 'Empleado';
+      case 4: return 'Conductor';
       default: return 'Usuario';
     }
   };
@@ -69,7 +54,22 @@ export default function ServicesMenu({ selectedService }: ServicesMenuProps) {
   const renderMenuItems = () => {
     const rolId = Number(userData.rol);
 
-    if (rolId === 4) { // Empleado de inventario
+    // Menú para conductor (solo bienvenida)
+    if (rolId === 4) {
+      return (
+        <ul>
+          <li
+            className={selectedService === "Bienvenida" ? "active" : ""}
+            onClick={() => handleNavigation("/Menu-Servicios/Bienvenida")}
+          >
+            <FaTachometerAlt /> Bienvenida
+          </li>
+        </ul>
+      );
+    }
+
+    // Menú para empleado
+    if (rolId === 3) {
       return (
         <ul>
           <li
@@ -79,21 +79,16 @@ export default function ServicesMenu({ selectedService }: ServicesMenuProps) {
             <FaTachometerAlt /> Bienvenida
           </li>
           <li
-            className={selectedService === "Alquiler" ? "active" : ""}
-            onClick={() => handleNavigation("/Menu-Servicios/Alquiler")}
+            className={selectedService === "Reportes" ? "active" : ""}
+            onClick={() => handleNavigation("/Menu-Servicios/Reportes")}
           >
-            <FaBoxOpen /> Alquiler
-          </li>
-          <li
-            className={selectedService === "Transporte" ? "active" : ""}
-            onClick={() => handleNavigation("/Menu-Servicios/Transporte")}
-          >
-            <FaCar /> Transporte
+            <FaFileInvoiceDollar /> Reportes y Facturas
           </li>
         </ul>
       );
     }
 
+    // Menú para admin y cliente
     return (
       <ul>
         <li
@@ -106,13 +101,7 @@ export default function ServicesMenu({ selectedService }: ServicesMenuProps) {
           className={selectedService === "Alquiler" ? "active" : ""}
           onClick={() => handleNavigation("/Menu-Servicios/Alquiler")}
         >
-          <FaBoxOpen /> Alquiler
-        </li>
-        <li
-          className={selectedService === "Decoracion" ? "active" : ""}
-          onClick={() => handleNavigation("/Menu-Servicios/Decoracion")}
-        >
-          <FaBrush /> Decoracion
+          <FaBoxOpen /> {rolId === 1 ? 'Alquileres y Compras' : 'Alquiler'}
         </li>
         <li
           className={selectedService === "Catering" ? "active" : ""}
@@ -120,58 +109,41 @@ export default function ServicesMenu({ selectedService }: ServicesMenuProps) {
         >
           <FaConciergeBell /> Catering
         </li>
-        {(rolId === 1 || rolId === 3) && (
-          <>
-            <li
-              className={selectedService === "Supervision" ? "active" : ""}
-              onClick={() => handleNavigation("/Menu-Servicios/Supervision")}
-            >
-              <FaTachometerAlt /> Supervision
-            </li>
-            <li
-              className={selectedService === "Transporte" ? "active" : ""}
-              onClick={() => handleNavigation("/Menu-Servicios/Transporte")}
-            >
-              <FaCar /> Transporte
-            </li>
-            <li
-              className={selectedService === "Montaje-Desmontaje" ? "active" : ""}
-              onClick={() => handleNavigation("/Menu-Servicios/Montaje-Desmontaje")}
-            >
-              <FaTools /> Montaje y Desmontaje
-            </li>
-          </>
-        )}
+        <li
+          className={selectedService === "Facturas" ? "active" : ""}
+          onClick={() => handleNavigation("/Menu-Servicios/Facturas")}
+        >
+          <FaFileInvoiceDollar /> {rolId === 1 ? 'Reportes y Facturas' : 'Facturas'}
+        </li>
       </ul>
     );
   };
 
   const renderMobileMenu = () => {
     const rolId = Number(userData.rol);
-    const menuItems = [
-      { text: "Bienvenida", path: "/Menu-Servicios/Bienvenida", icon: <FaTachometerAlt /> },
-      { text: "Alquiler", path: "/Menu-Servicios/Alquiler", icon: <FaBoxOpen /> },
-    ];
+    let menuItems = [];
 
-    if (rolId !== 4) {
-      menuItems.push(
-        { text: "Decoracion", path: "/Menu-Servicios/Decoracion", icon: <FaBrush /> },
-        { text: "Catering", path: "/Menu-Servicios/Catering", icon: <FaConciergeBell /> }
-      );
-    }
-
-    if (rolId === 1 || rolId === 3) {
-      menuItems.push(
-        { text: "Supervision", path: "/Menu-Servicios/Supervision", icon: <FaTachometerAlt /> },
-        { text: "Transporte", path: "/Menu-Servicios/Transporte", icon: <FaCar /> },
-        { text: "Montaje y Desmontaje", path: "/Menu-Servicios/Montaje-Desmontaje", icon: <FaTools /> }
-      );
-    }
-
+    // Menú para conductor
     if (rolId === 4) {
-      menuItems.push(
-        { text: "Transporte", path: "/Menu-Servicios/Transporte", icon: <FaCar /> }
-      );
+      menuItems = [
+        { text: "Bienvenida", path: "/Menu-Servicios/Bienvenida", icon: <FaTachometerAlt /> }
+      ];
+    }
+    // Menú para empleado
+    else if (rolId === 3) {
+      menuItems = [
+        { text: "Bienvenida", path: "/Menu-Servicios/Bienvenida", icon: <FaTachometerAlt /> },
+        { text: "Reportes y Facturas", path: "/Menu-Servicios/Reportes", icon: <FaFileInvoiceDollar /> }
+      ];
+    }
+    // Menú para admin y cliente
+    else {
+      menuItems = [
+        { text: "Bienvenida", path: "/Menu-Servicios/Bienvenida", icon: <FaTachometerAlt /> },
+        { text: rolId === 1 ? "Alquileres y Compras" : "Alquiler", path: "/Menu-Servicios/Alquiler", icon: <FaBoxOpen /> },
+        { text: "Catering", path: "/Menu-Servicios/Catering", icon: <FaConciergeBell /> },
+        { text: rolId === 1 ? "Reportes y Facturas" : "Facturas", path: "/Menu-Servicios/Facturas", icon: <FaFileInvoiceDollar /> }
+      ];
     }
 
     return (
@@ -234,15 +206,14 @@ export default function ServicesMenu({ selectedService }: ServicesMenuProps) {
                   "&:hover": {
                     color: "var(--gold)",
                   },
-                  
                 }}
               >
                 <span style={{ marginRight: 10 }}>{item.icon}</span>
                 <ListItemText 
                   primary={item.text} 
                   primaryTypographyProps={{ 
-                    fontFamily: 'inherit', // Asegura que herede la fuente
-                    fontWeight: selectedService === item.text ? 'bold' : 'normal' // Opcional: resalta el activo
+                    fontFamily: 'inherit',
+                    fontWeight: selectedService === item.text ? 'bold' : 'normal'
                   }}
                 />
               </ListItemButton>
@@ -253,9 +224,7 @@ export default function ServicesMenu({ selectedService }: ServicesMenuProps) {
         <IoIosExit 
           className="logout-button" 
           title="Cerrar Sesión" 
-          onClick={() => {
-            setShowLogoutModal(true);
-          }} 
+          onClick={() => setShowLogoutModal(true)} 
         />
       </Drawer>
     );
@@ -263,7 +232,6 @@ export default function ServicesMenu({ selectedService }: ServicesMenuProps) {
 
   return (
     <>
-      {/* Modal de cierre de sesión - Renderizado fuera de la lógica responsive */}
       {showLogoutModal && (
         <div className="modal-overlay">
           <div className="modal-content logout-modal">
@@ -299,7 +267,6 @@ export default function ServicesMenu({ selectedService }: ServicesMenuProps) {
       
       {isMobile && renderMobileMenu()}
 
-      {/* Sidebar normal - Renderizado solo en desktop */}
       {!isMobile && (
         <div className="sidebar">
           <ColorTheme colorDark="black" colorLight="white" />

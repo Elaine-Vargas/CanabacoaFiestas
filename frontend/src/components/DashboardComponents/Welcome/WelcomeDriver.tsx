@@ -1,19 +1,19 @@
 import React from 'react';
 import '../../../styles/dashboard/ServicesSubpages.scss';
-import { Card, Button } from 'antd';
-import { PlusOutlined } from '@ant-design/icons';
+import { Card, Typography } from 'antd';
+
+const { Title } = Typography;
 
 const WelcomeDriver = () => {
   return (
     <div className="welcome-container">
-      <Card title="Bienvenido Conductor" className="welcome-card">
-        <div className="welcome-content">
-          <h2>¡Bienvenido a Canabacoa Fiestas!</h2>
-          <p>Aquí podrás gestionar tus servicios de transporte.</p>
-          <Button type="primary" icon={<PlusOutlined />}>
-            Ver Servicios
-          </Button>
-        </div>
+      <Card className="welcome-card">
+        <Title level={2} className="welcome-title">
+          ¡Te damos la bienvenida a tu panel de Conductor!
+        </Title>
+        <p className="welcome-subtitle">
+          Aquí podrás ver tus rutas y servicios de transporte asignados
+        </p>
       </Card>
     </div>
   );

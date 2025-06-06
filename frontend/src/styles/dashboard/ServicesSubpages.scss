@@ -6,21 +6,48 @@ $transition-standard: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 @use '../font-faces/Fonts.scss';
 
 /* Contenedor general de la página */
+.welcome-container {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 120px; /* Ajustado para considerar el menú lateral */
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--gold) transparent;
+  padding-bottom: 400px; /* Espacio adicional al final para asegurar que todo el contenido sea visible */
+
+  &::-webkit-scrollbar {
+    width: 8px;
+  }
+
+  &::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background-color: var(--gold);
+    border-radius: 4px;
+    min-height: 100px; /* Asegura que el thumb sea visible */
+  }
+}
+
 .dashboard-container {
   padding: 20px;
-  min-height: 100vh;
   background-color: var(--color-background);
-  overflow: hidden;
-  position: relative;
   width: 100%;
   box-sizing: border-box;
+  min-height: 100%;
+  margin-bottom: 40px; /* Espacio adicional al final */
 
   @media screen and (max-width: 768px) {
     padding: 15px;
+    margin-bottom: 30px;
   }
 
   @media screen and (max-width: 480px) {
     padding: 10px;
+    margin-bottom: 20px;
   }
 }
 
@@ -31,9 +58,6 @@ $transition-standard: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   max-width: 1400px;
   margin: 0 auto;
   padding-bottom: 40px;
-  height: 100%;
-  overflow-y: auto;
-  overflow-x: hidden;
   width: 100%;
   box-sizing: border-box;
 
@@ -45,20 +69,6 @@ $transition-standard: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   @media screen and (max-width: 480px) {
     gap: 10px;
     padding-bottom: 20px;
-  }
-
-  /* Scroll custom */
-  &::-webkit-scrollbar {
-    width: 6px;
-  }
-
-  &::-webkit-scrollbar-thumb {
-    background-color: var(--gold);
-    border-radius: 3px;
-  }
-
-  &::-webkit-scrollbar-track {
-    background-color: transparent;
   }
 }
 
@@ -137,12 +147,9 @@ $transition-standard: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 
 /* Estilos para tablas */
 .dashboard-table {
-  flex: 1;
-  overflow: hidden;
   width: 100%;
   
   .ant-table {
-    height: 100%;
     background-color: var(--color-background2);
   }
 
@@ -155,6 +162,7 @@ $transition-standard: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     color: var(--color-text);
     font-weight: 600;
     padding: 12px 8px;
+    white-space: nowrap;
 
     @media screen and (max-width: 480px) {
       padding: 8px 4px;
@@ -178,15 +186,18 @@ $transition-standard: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   }
 
   .ant-table-body {
-    overflow-y: auto !important;
-    max-height: 300px !important;
+    overflow: visible !important;
+  }
 
-    @media screen and (max-width: 768px) {
-      max-height: 250px !important;
-    }
+  .ant-table-pagination {
+    margin: 16px 0 0 0 !important;
+    padding: 8px 0;
+    background-color: var(--color-background2);
+    border-top: 1px solid var(--color-shadow);
 
     @media screen and (max-width: 480px) {
-      max-height: 200px !important;
+      margin: 8px 0 0 0 !important;
+      padding: 4px 0;
     }
   }
 }
@@ -219,8 +230,113 @@ $transition-standard: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   }
 }
 
-/* Responsive adjustments */
+/* Estilos para la tarjeta de bienvenida */
+.welcome-card {
+  margin-bottom: 20px;
+  background-color: transparent;
+  border: none;
+  box-shadow: none;
+
+  .ant-card-body {
+    padding: 24px;
+  }
+
+  .welcome-title {
+    text-align: center;
+    color: var(--dark-gold);
+    font-family: "Pinyon Script", cursive;
+    font-weight: 400;
+    font-size: 3.5rem;
+    margin-top: 2rem;
+    margin-bottom: 0.5rem;
+    line-height: 1;
+  }
+
+  .welcome-subtitle {
+    text-align: center;
+    font-size: 1.1rem;
+    color: var(--color-text2);
+    font-family: "Nunito Sans", sans-serif;
+    margin-bottom: 0;
+  }
+
+  @media screen and (max-width: 768px) {
+    margin-bottom: 15px;
+    
+    .ant-card-body {
+      padding: 20px;
+    }
+
+    .welcome-title {
+      font-size: 2.8rem;
+    }
+
+    .welcome-subtitle {
+      font-size: 1rem;
+    }
+  }
+
+  @media screen and (max-width: 480px) {
+    margin-bottom: 10px;
+    
+    .ant-card-body {
+      padding: 16px;
+    }
+
+    .welcome-title {
+      font-size: 2.2rem;
+    }
+
+    .welcome-subtitle {
+      font-size: 0.9rem;
+    }
+  }
+}
+
+/* Estilos para los spinners de carga */
+.ant-spin {
+  .ant-spin-dot {
+    i {
+      background-color: var(--gold) !important;
+    }
+  }
+}
+
+.ant-spin-text {
+  color: var(--gold) !important;
+}
+
+/* Estilos para los tags de estado */
+.ant-tag {
+  border-radius: 4px;
+  padding: 2px 8px;
+  font-weight: 500;
+  margin: 0;
+
+  &.ant-tag-blue {
+    background-color: var(--gold) !important;
+    border-color: var(--gold) !important;
+    color: var(--color-button-text) !important;
+  }
+}
+
+/* Estilos para los botones de acción en la tabla */
+.ant-table-row {
+  .ant-btn {
+    padding: 4px 8px;
+    
+    &:hover {
+      background-color: var(--color-background);
+    }
+  }
+}
+
+/* Ajustes responsivos adicionales */
 @media screen and (max-width: 768px) {
+  .welcome-container {
+    left: 80px; /* Ajustado para el menú colapsado */
+  }
+
   .dashboard-row {
     grid-template-columns: 1fr;
   }
@@ -228,15 +344,13 @@ $transition-standard: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   .dashboard-container {
     padding: 10px;
   }
-
-  .dashboard-table {
-    .ant-table-body {
-      max-height: 250px !important;
-    }
-  }
 }
 
 @media screen and (max-width: 480px) {
+  .welcome-container {
+    left: 0; /* En móviles, el menú se oculta completamente */
+  }
+
   .dashboard-container {
     padding: 8px;
   }
@@ -262,5 +376,38 @@ $transition-standard: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   .action-button.primary {
     padding: 4px 8px;
     font-size: 0.8rem;
+  }
+}
+
+/* Estilos para el formulario de eventos */
+.evento-form {
+  .form-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin-bottom: 16px;
+
+    @media screen and (max-width: 768px) {
+      grid-template-columns: 1fr;
+      gap: 8px;
+    }
+  }
+
+  .ant-form-item {
+    margin-bottom: 16px;
+
+    @media screen and (max-width: 768px) {
+      margin-bottom: 8px;
+    }
+  }
+
+  .ant-input,
+  .ant-picker,
+  .ant-select-selector {
+    border-radius: 4px;
+  }
+
+  .ant-checkbox-wrapper {
+    margin-top: 8px;
   }
 } 

@@ -1,0 +1,1092 @@
+/* Variables específicas de formularios */
+$form-border-radius: 8px;
+$form-transition: all 0.3s ease;
+
+/* Estilos base para todos los formularios del dashboard */
+.dashboard-form {
+  color: var(--color-text);
+
+  .form-section {
+    h3 {
+      color: var(--color-text);
+      font-family: "Montserrat Alternates", sans-serif;
+      font-weight: 600;
+      margin-bottom: 1rem;
+      font-size: 2rem;
+    }
+  }
+
+  .ant-form-item {
+    margin-bottom: 1.5rem;
+
+    .ant-form-item-label {
+      label {
+        color: var(--color-text);
+        font-family: "Nunito Sans", sans-serif;
+        font-weight: 600;
+        font-size: 0.95rem;
+      }
+    }
+
+    .ant-form-item-control-input {
+      .ant-input,
+      .ant-input-number,
+      .ant-select-selector,
+      .ant-picker {
+        border-radius: $form-border-radius;
+        border-color: var(--color-input-border);
+        background-color: var(--color-input-bg);
+        color: var(--color-text);
+        transition: $form-transition;
+
+        &::placeholder {
+          color: var(--color-text2);
+        }
+
+        &:hover {
+          border-color: var(--gold);
+        }
+
+        &:focus,
+        &-focused {
+          border-color: var(--dark-gold);
+          box-shadow: 0 0 0 2px rgba(196, 154, 68, 0.2);
+        }
+      }
+
+      .ant-input-number-handler-wrap {
+        border-radius: 0 $form-border-radius $form-border-radius 0;
+        background-color: var(--color-input-bg);
+        border-color: var(--color-input-border);
+
+        .ant-input-number-handler {
+          border-color: var(--color-input-border);
+          color: var(--color-text);
+
+          &:hover {
+            background-color: var(--color-background);
+          }
+        }
+      }
+    }
+  }
+
+  /* Estilos para los botones del formulario */
+  .ant-form-item-control-input-content {
+    .ant-btn {
+      border-radius: $form-border-radius;
+      font-family: "Nunito Sans", sans-serif;
+      font-weight: 600;
+      height: 40px;
+      padding: 0 20px;
+      transition: $form-transition;
+
+      &.ant-btn-primary {
+        background-color: var(--dark-gold);
+        border-color: var(--dark-gold);
+        color: var(--color-button-text);
+
+        &:hover {
+          background-color: var(--gold);
+          border-color: var(--gold);
+        }
+
+        &:active {
+          background-color: var(--brown);
+          border-color: var(--brown);
+        }
+      }
+
+      &.ant-btn-default {
+        border-color: var(--color-input-border);
+        color: var(--color-text);
+        background-color: var(--color-background2);
+
+        &:hover {
+          border-color: var(--gold);
+          color: var(--dark-gold);
+        }
+      }
+
+      &.ant-btn-text {
+        color: var(--color-text);
+        background-color: transparent;
+
+        &:hover {
+          color: var(--dark-gold);
+          background-color: var(--color-background);
+        }
+      }
+
+      &.ant-btn-dangerous {
+        color: var(--error-text);
+        background-color: transparent;
+
+        &:hover {
+          color: var(--error-text);
+          background-color: var(--error-bg);
+        }
+      }
+    }
+  }
+
+  /* Estilos para los mensajes de error */
+  .ant-form-item-explain-error {
+    color: var(--error-text);
+    font-size: 0.85rem;
+    margin-top: 0.25rem;
+  }
+
+  /* Estilos para los selectores */
+  .ant-select {
+    width: 100%;
+
+    .ant-select-selector {
+      padding: 4px 11px;
+      background-color: var(--color-input-bg) !important;
+      border-color: var(--color-input-border) !important;
+      color: var(--color-text) !important;
+
+      .ant-select-selection-placeholder {
+        color: var(--color-text2);
+      }
+    }
+
+    .ant-select-selection-item {
+      color: var(--color-text);
+    }
+
+    .ant-select-arrow {
+      color: var(--color-text2);
+    }
+
+    &.ant-select-focused .ant-select-selector {
+      border-color: var(--dark-gold) !important;
+      box-shadow: 0 0 0 2px rgba(196, 154, 68, 0.2) !important;
+    }
+
+    .ant-select-dropdown {
+      background-color: var(--color-background2);
+      border: 1px solid var(--color-input-border);
+
+      .ant-select-item {
+        color: var(--color-text);
+
+        &-option-selected {
+          background-color: var(--dark-gold);
+          color: var(--color-button-text);
+        }
+
+        &-option-active {
+          background-color: var(--color-background);
+        }
+      }
+    }
+  }
+
+  /* Estilos para los checkboxes */
+  .ant-checkbox-wrapper {
+    color: var(--color-text);
+    font-family: "Nunito Sans", sans-serif;
+
+    .ant-checkbox-checked .ant-checkbox-inner {
+      background-color: var(--dark-gold);
+      border-color: var(--dark-gold);
+    }
+
+    .ant-checkbox-inner {
+      border-color: var(--color-input-border);
+      background-color: var(--color-input-bg);
+    }
+
+    &:hover .ant-checkbox-inner {
+      border-color: var(--gold);
+    }
+
+    .ant-checkbox-checked::after {
+      border-color: var(--dark-gold);
+    }
+
+    .ant-checkbox-wrapper:hover .ant-checkbox-inner,
+    .ant-checkbox:hover .ant-checkbox-inner,
+    .ant-checkbox-input:focus + .ant-checkbox-inner {
+      border-color: var(--gold);
+    }
+
+    .ant-checkbox-checked .ant-checkbox-inner::after {
+      border-color: var(--color-button-text);
+    }
+
+    /* Eliminar cualquier color azul en estados hover y focus */
+    .ant-checkbox:hover .ant-checkbox-inner,
+    .ant-checkbox-input:focus + .ant-checkbox-inner,
+    .ant-checkbox-checked:hover .ant-checkbox-inner,
+    .ant-checkbox-checked:focus .ant-checkbox-inner {
+      border-color: var(--gold) !important;
+      box-shadow: none !important;
+    }
+
+    /* Asegurar que el checkbox seleccionado mantenga el color dorado en hover */
+    .ant-checkbox-checked:hover .ant-checkbox-inner {
+      background-color: var(--gold) !important;
+      border-color: var(--gold) !important;
+    }
+
+    /* Eliminar el outline azul en focus */
+    .ant-checkbox-input:focus + .ant-checkbox-inner {
+      box-shadow: none !important;
+    }
+  }
+
+  /* Sobrescribir estilos específicos de Ant Design para el checkbox */
+  .ant-checkbox {
+    &:hover .ant-checkbox-inner,
+    &-checked:hover .ant-checkbox-inner {
+      border-color: var(--gold) !important;
+    }
+
+    &-checked .ant-checkbox-inner {
+      background-color: var(--dark-gold) !important;
+      border-color: var(--dark-gold) !important;
+    }
+
+    &-checked:hover .ant-checkbox-inner {
+      background-color: var(--gold) !important;
+      border-color: var(--gold) !important;
+    }
+
+    &-input:focus + .ant-checkbox-inner {
+      box-shadow: none !important;
+    }
+  }
+
+  /* Estilos para los date pickers */
+  .ant-picker {
+    width: 100%;
+    background-color: var(--color-input-bg);
+
+    .ant-picker-input {
+      > input {
+        color: var(--color-text);
+
+        &::placeholder {
+          color: var(--color-text2);
+        }
+      }
+    }
+
+    &:hover {
+      border-color: var(--gold);
+    }
+
+    &.ant-picker-focused {
+      border-color: var(--dark-gold);
+      box-shadow: 0 0 0 2px rgba(196, 154, 68, 0.2);
+    }
+
+    .ant-picker-dropdown {
+      background-color: var(--color-background2);
+      border: 1px solid var(--color-input-border);
+
+      .ant-picker-panel {
+        background-color: var(--color-background2);
+        border-color: var(--color-input-border);
+
+        .ant-picker-header {
+          color: var(--color-text);
+          border-color: var(--color-input-border);
+
+          button {
+            color: var(--color-text);
+          }
+        }
+
+        .ant-picker-content {
+          th {
+            color: var(--color-text);
+          }
+        }
+
+        .ant-picker-cell {
+          color: var(--color-text);
+
+          &-in-view {
+            color: var(--color-text);
+          }
+
+          &-selected .ant-picker-cell-inner {
+            background-color: var(--dark-gold);
+            color: var(--color-button-text);
+          }
+
+          &-today .ant-picker-cell-inner {
+            color: var(--dark-gold);
+          }
+        }
+      }
+    }
+  }
+
+  /* Estilos para los campos de texto multilinea */
+  .ant-input-textarea {
+    .ant-input {
+      min-height: 100px;
+      resize: vertical;
+      background-color: var(--color-input-bg);
+      color: var(--color-text);
+
+      &::placeholder {
+        color: var(--color-text2);
+      }
+    }
+  }
+
+  /* Estilos para los campos numéricos */
+  .ant-input-number {
+    width: 100%;
+    background-color: var(--color-input-bg);
+
+    .ant-input-number-input {
+      height: 38px;
+      color: var(--color-text);
+
+      &::placeholder {
+        color: var(--color-text2);
+      }
+    }
+  }
+
+  /* Estilos para los campos de búsqueda */
+  .ant-input-search {
+    .ant-input {
+      padding-right: 40px;
+      background-color: var(--color-input-bg);
+      color: var(--color-text);
+
+      &::placeholder {
+        color: var(--color-text2);
+      }
+    }
+
+    .ant-input-search-button {
+      border-radius: 0 $form-border-radius $form-border-radius 0;
+      background-color: var(--dark-gold);
+      border-color: var(--dark-gold);
+      color: var(--color-button-text);
+
+      &:hover {
+        background-color: var(--gold);
+        border-color: var(--gold);
+      }
+    }
+  }
+
+  /* Estilos específicos para campos de contraseña */
+  .ant-input-password {
+    background-color: var(--color-input-bg) !important;
+    border-color: var(--color-input-border) !important;
+    color: var(--color-text) !important;
+
+    .ant-input {
+      background-color: transparent !important;
+      color: var(--color-text) !important;
+    }
+
+    .anticon {
+      color: var(--color-text2) !important;
+    }
+
+    &:hover {
+      border-color: var(--gold) !important;
+    }
+
+    &:focus,
+    &-focused {
+      border-color: var(--dark-gold) !important;
+      box-shadow: 0 0 0 2px rgba(196, 154, 68, 0.2) !important;
+    }
+  }
+
+  /* Estilos para los selectores de puesto */
+  .ant-select {
+    &.ant-select-multiple {
+      .ant-select-selector {
+        background-color: var(--color-input-bg) !important;
+        border-color: var(--color-input-border) !important;
+        color: var(--color-text) !important;
+
+        .ant-select-selection-item {
+          background-color: var(--dark-gold) !important;
+          border-color: var(--dark-gold) !important;
+          color: var(--color-button-text) !important;
+        }
+
+        .ant-select-selection-placeholder {
+          color: var(--color-text2) !important;
+        }
+      }
+
+      &:hover .ant-select-selector {
+        border-color: var(--gold) !important;
+      }
+
+      &.ant-select-focused .ant-select-selector {
+        border-color: var(--dark-gold) !important;
+        box-shadow: 0 0 0 2px rgba(196, 154, 68, 0.2) !important;
+      }
+    }
+  }
+
+  /* Estilos para los botones de agregar */
+  .ant-btn {
+    &.ant-btn-primary {
+      background-color: var(--dark-gold) !important;
+      border-color: var(--dark-gold) !important;
+      color: var(--color-button-text) !important;
+
+      &:hover {
+        background-color: var(--gold) !important;
+        border-color: var(--gold) !important;
+      }
+
+      &:active {
+        background-color: var(--brown) !important;
+        border-color: var(--brown) !important;
+      }
+    }
+  }
+
+  /* Estilos para los detalles de decoración */
+  .decoracion-detalle {
+    background-color: var(--color-background2) !important;
+    border-color: var(--color-input-border) !important;
+    color: var(--color-text) !important;
+
+    .ant-form-item {
+      .ant-form-item-label > label {
+        color: var(--color-text) !important;
+      }
+
+      .ant-input,
+      .ant-input-number,
+      .ant-select-selector {
+        background-color: var(--color-input-bg) !important;
+        border-color: var(--color-input-border) !important;
+        color: var(--color-text) !important;
+      }
+    }
+
+    /* Estilos para la tabla de detalles */
+    .ant-table {
+      background-color: var(--color-background2) !important;
+      color: var(--color-text) !important;
+
+      .ant-table-thead > tr > th {
+        background-color: var(--color-background) !important;
+        color: var(--color-text) !important;
+        border-bottom: 1px solid var(--color-input-border) !important;
+      }
+
+      .ant-table-tbody > tr > td {
+        background-color: var(--color-background2) !important;
+        color: var(--color-text) !important;
+        border-bottom: 1px solid var(--color-input-border) !important;
+      }
+
+      .ant-table-tbody > tr:hover > td {
+        background-color: var(--color-background) !important;
+      }
+
+      .ant-table-cell {
+        .ant-input,
+        .ant-input-number,
+        .ant-select-selector {
+          background-color: var(--color-input-bg) !important;
+          border-color: var(--color-input-border) !important;
+          color: var(--color-text) !important;
+        }
+
+        .ant-select-dropdown {
+          background-color: var(--color-background2) !important;
+          border: 1px solid var(--color-input-border) !important;
+
+          .ant-select-item {
+            color: var(--color-text) !important;
+
+            &-option-selected {
+              background-color: var(--dark-gold) !important;
+              color: var(--color-button-text) !important;
+            }
+
+            &-option-active {
+              background-color: var(--color-background) !important;
+            }
+          }
+        }
+      }
+    }
+
+    /* Estilos para el espacio de escritura */
+    .ant-input-textarea {
+      .ant-input {
+        background-color: var(--color-input-bg) !important;
+        border-color: var(--color-input-border) !important;
+        color: var(--color-text) !important;
+        min-height: 100px;
+        resize: vertical;
+
+        &::placeholder {
+          color: var(--color-text2) !important;
+        }
+
+        &:hover {
+          border-color: var(--gold) !important;
+        }
+
+        &:focus {
+          border-color: var(--dark-gold) !important;
+          box-shadow: 0 0 0 2px rgba(196, 154, 68, 0.2) !important;
+        }
+      }
+    }
+
+    /* Estilos para los botones en la tabla */
+    .ant-btn {
+      &.ant-btn-primary {
+        background-color: var(--dark-gold) !important;
+        border-color: var(--dark-gold) !important;
+        color: var(--color-button-text) !important;
+
+        &:hover {
+          background-color: var(--gold) !important;
+          border-color: var(--gold) !important;
+        }
+      }
+
+      &.ant-btn-dangerous {
+        color: var(--error-text) !important;
+        background-color: transparent !important;
+        border-color: var(--error-text) !important;
+
+        &:hover {
+          color: var(--error-text) !important;
+          background-color: var(--error-bg) !important;
+        }
+      }
+    }
+
+    /* Estilos para los mensajes de error en la tabla */
+    .ant-form-item-explain-error {
+      color: var(--error-text) !important;
+      font-size: 0.85rem;
+      margin-top: 0.25rem;
+    }
+  }
+
+  .ant-modal-title {
+    color: var(--dark-gold);
+    font-family: "Pinyon Script", cursive;
+    font-weight: 600;
+    font-size: 3rem;
+  }
+
+  .ant-btn {
+    &.ant-btn-primary {
+      background-color: var(--dark-gold) !important;
+      border-color: var(--dark-gold) !important;
+      color: var(--color-button-text) !important;
+
+      &:hover {
+        background-color: var(--gold) !important;
+        border-color: var(--gold) !important;
+      }
+
+      &:active {
+        background-color: var(--brown) !important;
+        border-color: var(--brown) !important;
+      }
+    }
+
+    &.ant-btn-default {
+      border-color: var(--color-input-border);
+      color: var(--color-text);
+      background-color: var(--color-background2);
+
+      &:hover {
+        border-color: var(--gold);
+        color: var(--dark-gold);
+      }
+    }
+  }
+
+  .ant-form-item-label > label {
+    color: var(--color-text);
+    font-family: "Nunito Sans", sans-serif;
+    font-weight: 600;
+    font-size: 0.95rem;
+  }
+
+  .ant-input,
+  .ant-input-password,
+  .ant-select-selector,
+  .ant-picker,
+  .ant-input-number {
+    border-radius: $form-border-radius;
+    border-color: var(--color-input-border);
+    background-color: var(--color-input-bg);
+    color: var(--color-text);
+    transition: $form-transition;
+
+    &:hover {
+      border-color: var(--gold);
+    }
+
+    &:focus,
+    &-focused {
+      border-color: var(--dark-gold);
+      box-shadow: 0 0 0 2px rgba(196, 154, 68, 0.2);
+    }
+  }
+
+  .ant-select-selection-item {
+    color: var(--color-text);
+  }
+
+  .ant-table {
+    .ant-table-thead > tr > th {
+      background-color: var(--color-background) !important;
+      color: var(--color-text) !important;
+      border-bottom: 1px solid var(--color-input-border) !important;
+    }
+  }
+
+  .ant-modal-header {
+    border-bottom: 2px solid var(--color-shadow);
+  }
+
+  .ant-modal-footer {
+    border-top: 2px solid var(--color-shadow);
+  }
+}
+
+/* Estilos para los modales de formularios */
+.ant-modal {
+  .ant-modal-content {
+    background-color: var(--color-background2);
+    border-radius: 12px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+
+    .ant-modal-close {
+      color: var(--color-text2) !important;
+      transition: color 0.3s ease;
+
+      &:hover {
+        color: var(--gold) !important;
+      }
+
+      .ant-modal-close-x {
+        color: inherit;
+        font-size: 16px;
+        line-height: 1;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        height: 56px;
+        width: 56px;
+      }
+    }
+
+    .ant-modal-header {
+      background-color: var(--color-background2);
+      border-bottom: 2px solid var(--color-shadow);
+      padding: 16px 24px;
+
+      .ant-modal-title {
+        color: var(--dark-gold);
+        font-family: "Pinyon Script", cursive;
+        font-weight: 600;
+        font-size: 3rem;
+      }
+    }
+
+    .ant-modal-body {
+      padding: 24px;
+      color: var(--color-text);
+    }
+
+    .ant-modal-footer {
+      border-top: 2px solid var(--color-shadow);
+      padding: 16px 24px;
+      background-color: var(--color-background2);
+
+      .ant-btn {
+        border-radius: $form-border-radius;
+        font-family: "Nunito Sans", sans-serif;
+        font-weight: 600;
+        height: 40px;
+        padding: 0 20px;
+        transition: $form-transition;
+
+        &.ant-btn-primary {
+          background-color: var(--dark-gold);
+          border-color: var(--dark-gold);
+          color: var(--color-button-text);
+
+          &:hover {
+            background-color: var(--gold);
+            border-color: var(--gold);
+          }
+
+          &:active {
+            background-color: var(--brown);
+            border-color: var(--brown);
+          }
+        }
+
+        &.ant-btn-default {
+          border-color: var(--color-input-border);
+          color: var(--color-text);
+          background-color: var(--color-background2);
+
+          &:hover {
+            border-color: var(--gold);
+            color: var(--dark-gold);
+          }
+        }
+      }
+    }
+  }
+}
+
+/* Estilos para los íconos de cierre en otros elementos */
+.ant-select-clear,
+.ant-picker-clear {
+  color: var(--color-text2) !important;
+  background-color: transparent !important;
+
+  &:hover {
+    color: var(--gold) !important;
+  }
+}
+
+.ant-input-clear-icon {
+  color: var(--color-text2) !important;
+
+  &:hover {
+    color: var(--gold) !important;
+  }
+}
+
+/* Estilos para los íconos de cierre en tags y chips */
+.ant-tag-close-icon {
+  color: var(--color-text2) !important;
+
+  &:hover {
+    color: var(--gold) !important;
+  }
+}
+
+/* Estilos para los íconos de cierre en mensajes y notificaciones */
+.ant-message-notice-content {
+  .anticon-close {
+    color: var(--color-text2) !important;
+
+    &:hover {
+      color: var(--gold) !important;
+    }
+  }
+}
+
+.ant-notification-notice-close {
+  color: var(--color-text2) !important;
+
+  &:hover {
+    color: var(--gold) !important;
+  }
+}
+
+/* Estilos responsivos */
+@media screen and (max-width: 768px) {
+  .dashboard-form {
+    .ant-form-item {
+      margin-bottom: 1rem;
+    }
+
+    .ant-form-item-control-input-content {
+      .ant-btn {
+        height: 36px;
+        padding: 0 16px;
+      }
+    }
+  }
+
+  .ant-modal {
+    .ant-modal-content {
+      .ant-modal-header {
+        padding: 12px 20px;
+      }
+
+      .ant-modal-body {
+        padding: 20px;
+      }
+
+      .ant-modal-footer {
+        padding: 12px 20px;
+      }
+    }
+  }
+}
+
+@media screen and (max-width: 480px) {
+  .dashboard-form {
+    .ant-form-item {
+      margin-bottom: 0.75rem;
+    }
+
+    .ant-form-item-control-input-content {
+      .ant-btn {
+        height: 32px;
+        padding: 0 12px;
+        font-size: 0.9rem;
+      }
+    }
+  }
+
+  .ant-modal {
+    .ant-modal-content {
+      .ant-modal-header {
+        padding: 10px 16px;
+      }
+
+      .ant-modal-body {
+        padding: 16px;
+      }
+
+      .ant-modal-footer {
+        padding: 10px 16px;
+      }
+    }
+  }
+}
+
+/* Estilos para los dropdowns */
+.ant-select-dropdown {
+  background-color: var(--color-background2) !important;
+  border: 1px solid var(--color-input-border) !important;
+
+  .ant-select-item {
+    color: var(--color-text) !important;
+
+    &-option-selected {
+      background-color: var(--dark-gold) !important;
+      color: var(--color-button-text) !important;
+    }
+
+    &-option-active {
+      background-color: var(--color-background) !important;
+    }
+  }
+}
+
+/* Estilos para los tooltips y popovers */
+.ant-tooltip,
+.ant-popover {
+  .ant-tooltip-inner,
+  .ant-popover-inner {
+    background-color: var(--color-background2) !important;
+    color: var(--color-text) !important;
+  }
+
+  .ant-tooltip-arrow-content,
+  .ant-popover-arrow-content {
+    background-color: var(--color-background2) !important;
+  }
+}
+
+/* Estilos para elementos de carga */
+.ant-spin-dot-item {
+  background-color: var(--gold) !important;
+}
+
+.ant-spin {
+  color: var(--gold) !important;
+}
+
+.ant-spin-text {
+  color: var(--gold) !important;
+}
+
+.ant-spin-container {
+  position: relative;
+}
+
+.ant-spin-blur {
+  opacity: 0.5;
+  pointer-events: none;
+  user-select: none;
+  filter: blur(1px);
+}
+
+.ant-spin-blur::after {
+  opacity: 0.4;
+  background: var(--color-bg);
+  pointer-events: auto;
+}
+
+.ant-spin-nested-loading {
+  position: relative;
+}
+
+.ant-spin-nested-loading > div > .ant-spin {
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 4;
+  display: block;
+  width: 100%;
+  height: 100%;
+  max-height: 400px;
+}
+
+.ant-spin-nested-loading > div > .ant-spin .ant-spin-dot {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  margin: -10px;
+}
+
+.ant-spin-nested-loading > div > .ant-spin .ant-spin-text {
+  position: absolute;
+  top: 50%;
+  width: 100%;
+  padding-top: 5px;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+.ant-spin-nested-loading > div > .ant-spin.ant-spin-show-text .ant-spin-dot {
+  margin-top: -20px;
+}
+
+.ant-spin-nested-loading > div > .ant-spin-lg .ant-spin-dot {
+  margin: -20px;
+}
+
+.ant-spin-nested-loading > div > .ant-spin-lg .ant-spin-text {
+  padding-top: 8px;
+}
+
+.ant-spin-nested-loading > div > .ant-spin-lg.ant-spin-show-text .ant-spin-dot {
+  margin-top: -30px;
+}
+
+.ant-spin-nested-loading > div > .ant-spin-sm .ant-spin-dot {
+  margin: -7px;
+}
+
+.ant-spin-nested-loading > div > .ant-spin-sm .ant-spin-text {
+  padding-top: 2px;
+}
+
+.ant-spin-nested-loading > div > .ant-spin-sm.ant-spin-show-text .ant-spin-dot {
+  margin-top: -17px;
+}
+
+.ant-spin-nested-loading > div > .ant-spin-spinning {
+  position: static;
+  display: inline-block;
+  opacity: 1;
+}
+
+.dashboard-modal {
+  .ant-modal-content {
+    background-color: var(--color-background2);
+    border-radius: 12px;
+    overflow: hidden;
+  }
+
+  .ant-modal-header {
+    background-color: var(--color-background2);
+    border-bottom: 2px solid var(--color-shadow);
+    padding: 16px 24px;
+
+    .ant-modal-title {
+      color: var(--dark-gold);
+      font-family: "Pinyon Script", cursive;
+      font-weight: 600;
+      font-size: 3rem;
+    }
+  }
+
+  .ant-modal-footer {
+    border-top: 2px solid var(--color-shadow);
+    padding: 16px 24px;
+    background-color: var(--color-background2);
+
+    .cancel-button {
+      border-color: var(--color-input-border);
+      color: var(--color-text);
+      background-color: var(--color-background2);
+
+      &:hover {
+        border-color: var(--gold);
+        color: var(--dark-gold);
+      }
+    }
+
+    .submit-button {
+      background-color: var(--dark-gold) !important;
+      border-color: var(--dark-gold) !important;
+      color: var(--color-button-text) !important;
+      font-family: "Nunito Sans", sans-serif;
+      font-weight: 600;
+      padding: 0 24px;
+      height: 40px;
+      border-radius: 8px;
+
+      &:hover {
+        background-color: var(--gold) !important;
+        border-color: var(--gold) !important;
+      }
+
+      &:active {
+        background-color: var(--brown) !important;
+        border-color: var(--brown) !important;
+      }
+    }
+  }
+}
+
+.dashboard-form {
+  .ant-form-item-label > label {
+    color: var(--color-text);
+    font-family: "Nunito Sans", sans-serif;
+    font-weight: 600;
+    font-size: 0.95rem;
+  }
+
+  .ant-input,
+  .ant-input-password,
+  .ant-select-selector,
+  .ant-picker,
+  .ant-input-number {
+    border-radius: $form-border-radius;
+    border-color: var(--color-input-border);
+    background-color: var(--color-input-bg);
+    color: var(--color-text);
+    transition: $form-transition;
+
+    &:hover {
+      border-color: var(--gold);
+    }
+
+    &:focus,
+    &-focused {
+      border-color: var(--dark-gold);
+      box-shadow: 0 0 0 2px rgba(196, 154, 68, 0.2);
+    }
+  }
+
+  .ant-select-selection-item {
+    color: var(--color-text);
+  }
+} 
