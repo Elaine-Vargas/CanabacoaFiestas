@@ -93,10 +93,20 @@ export const getCompras = async (req: Request, res: Response) => {
       order: [['fecha_compra', 'DESC'], ['hora_compra', 'DESC']]
     });
 
+    if (!compras || compras.length === 0) {
+      return res.status(404).json({ 
+        error: 'No se encontraron compras',
+        mensaje: 'No hay compras registradas'
+      });
+    }
+
     res.json(compras);
   } catch (error) {
     console.error('Error al obtener compras:', error);
-    res.status(500).json({ error: 'Error al obtener compras' });
+    res.status(500).json({ 
+      error: 'Error al obtener las compras',
+      mensaje: 'Ocurrió un error al cargar las compras'
+    });
   }
 };
 
@@ -115,13 +125,19 @@ export const getDetallesByCompra = async (req: Request, res: Response) => {
     });
 
     if (!detalles || detalles.length === 0) {
-      return res.status(404).json({ error: 'No se encontraron detalles para esta compra' });
+      return res.status(404).json({ 
+        error: 'No se encontraron detalles',
+        mensaje: 'No hay detalles registrados para esta compra'
+      });
     }
 
     res.json(detalles);
   } catch (error) {
     console.error('Error al obtener detalles de la compra:', error);
-    res.status(500).json({ error: 'Error al obtener detalles de la compra' });
+    res.status(500).json({ 
+      error: 'Error al obtener los detalles de la compra',
+      mensaje: 'Ocurrió un error al cargar los detalles de la compra'
+    });
   }
 };
 
@@ -153,13 +169,19 @@ export const getComprasByElemento = async (req: Request, res: Response) => {
     });
 
     if (!detalles || detalles.length === 0) {
-      return res.status(404).json({ error: 'No se encontraron compras para este elemento' });
+      return res.status(404).json({ 
+        error: 'No se encontraron compras',
+        mensaje: 'No hay compras registradas para este elemento'
+      });
     }
 
     res.json(detalles);
   } catch (error) {
     console.error('Error al obtener compras del elemento:', error);
-    res.status(500).json({ error: 'Error al obtener compras del elemento' });
+    res.status(500).json({ 
+      error: 'Error al obtener las compras del elemento',
+      mensaje: 'Ocurrió un error al cargar las compras del elemento'
+    });
   }
 };
 

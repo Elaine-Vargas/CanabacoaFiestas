@@ -1,10 +1,10 @@
 // routes/reporte.routes.ts
-import { Router } from 'express';
+import { Router, RequestHandler } from 'express';
 import { generarReporteEventos, generarReporteUsuarios } from '../controllers/reportesController';
 
 const router = Router();
 
-router.get('/usuarios', generarReporteUsuarios);
-router.get('/eventos', generarReporteEventos);
+router.get('/usuarios', generarReporteUsuarios as RequestHandler);
+router.get('/eventos', generarReporteEventos as RequestHandler);
 
 export default router;

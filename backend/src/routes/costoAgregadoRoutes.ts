@@ -3,7 +3,8 @@ import {
   createCostoAgregado,
   getCostosByEvento,
   editCostoAgregado,
-  deleteCostoAgregado
+  deleteCostoAgregado,
+  getAllCostosAgregados
 } from '../controllers/costoAgregadoController';
 import { verificarToken } from '../middlewares/authMiddleware';
 
@@ -16,6 +17,15 @@ const authMiddleware = (req: Request, res: Response, next: NextFunction) => {
 
 // Aplicar autenticación a todas las rutas
 router.use(authMiddleware);
+
+// Obtener todos los costos agregados
+router.get('/', async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    await getAllCostosAgregados(req, res);
+  } catch (error) {
+    next(error);
+  }
+});
 
 // Crear un nuevo costo agregado
 router.post('/', async (req: Request, res: Response, next: NextFunction) => {

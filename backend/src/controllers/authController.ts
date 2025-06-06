@@ -203,7 +203,7 @@ export const RegisterUser = async (req: Request, res: Response) => {
   }
 };
 
-export const GetUserData = async (req: Request, res: Response) => {
+export const getCurrentUser = async (req: Request, res: Response) => {
   try {
     const token = req.headers.authorization?.split(' ')[1];
     if (!token) {
@@ -243,7 +243,6 @@ export const GetUserData = async (req: Request, res: Response) => {
       return res.status(404).json({ error: 'Usuario no encontrado' });
     }
 
-    // Enviar datos del usuario
     res.json({
       nombre_usuario: usuario.nombre_usuario,
       apellido_usuario: usuario.apellido_usuario,
@@ -340,64 +339,6 @@ export const UpdateUserData = async (req: Request, res: Response) => {
   } catch (error) {
     console.error('Error al actualizar datos del usuario:', error);
     res.status(500).json({ error: 'Error al actualizar datos del usuario' });
-  }
-};
-
-export const getCurrentUser = async (req: Request, res: Response) => {
-  try {
-    const token = req.headers.authorization?.split(' ')[1];
-    if (!token) {
-      return res.status(401).json({ error: 'No token provided' });
-    }
-
-    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'w3r9Gv!72JkpX%lQs@8bZ&hMfT0^nAy') as { usuario_login?: string, cedula_usuario?: string };
-    
-    if (!decoded.usuario_login && !decoded.cedula_usuario) {
-      return res.status(400).json({ error: 'Token inválido' });
-    }
-
-    const usuario = await Usuario.findOne({
-      attributes: [
-        'nombre_usuario',
-        'apellido_usuario',
-        'cedula_usuario',
-        'correo_usuario',
-        'tel_usuario',
-        'usuario_login',
-        'id_rol',
-        'estado_usuario'
-      ],
-      where: {
-        [Op.or]: [
-          { usuario_login: decoded.usuario_login },
-          { cedula_usuario: decoded.cedula_usuario }
-        ]
-      },
-      include: [{
-        association: 'rol',
-        attributes: ['nombre_rol']
-      }]
-    });
-
-    if (!usuario) {
-      return res.status(404).json({ error: 'Usuario no encontrado' });
-    }
-
-    res.json({
-      nombre_usuario: usuario.nombre_usuario,
-      apellido_usuario: usuario.apellido_usuario,
-      cedula_usuario: usuario.cedula_usuario,
-      correo_usuario: usuario.correo_usuario,
-      tel_usuario: usuario.tel_usuario,
-      usuario_login: usuario.usuario_login,
-      id_rol: usuario.id_rol,
-      estado_usuario: usuario.estado_usuario,
-      rol_nombre: usuario.rol?.nombre_rol
-    });
-
-  } catch (error) {
-    console.error('Error al obtener datos del usuario:', error);
-    res.status(500).json({ error: 'Error al obtener datos del usuario' });
   }
 };
 

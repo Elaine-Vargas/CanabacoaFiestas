@@ -1,6 +1,5 @@
 import { Router, RequestHandler } from 'express';
-import { 
-  getTiposProveedor,
+import {
   getProveedores, 
   searchProveedores,
   createProveedor,
@@ -13,9 +12,6 @@ const router = Router();
 
 // Middleware de autenticación para todas las rutas
 router.use(verificarToken as RequestHandler);
-
-// Rutas para tipos de proveedor
-router.get('/tipos', getTiposProveedor as RequestHandler);
 
 // Rutas para proveedores
 router.get('/', getProveedores as RequestHandler);

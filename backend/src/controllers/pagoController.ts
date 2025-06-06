@@ -11,11 +11,11 @@ export const getPagos = async (req: Request, res: Response) => {
       include: [
         {
           model: Evento,
-          attributes: ['id_evento', 'nombre_evento', 'fecha_evento']
+          attributes: ['id_evento','fecha_evento']
         },
         {
           model: Tarjeta,
-          attributes: ['id_tarjeta', 'numero_tarjeta', 'tipo_tarjeta']
+          attributes: ['id_tarjeta', 'num_tarjeta', 'tipo_tarjeta']
         }
       ],
       order: [['fecha_pago', 'DESC'], ['hora_pago', 'DESC']]
@@ -47,11 +47,11 @@ export const getPagoById = async (req: Request, res: Response) => {
       include: [
         {
           model: Evento,
-          attributes: ['id_evento', 'nombre_evento', 'fecha_evento']
+          attributes: ['id_evento', 'fecha_evento']
         },
         {
           model: Tarjeta,
-          attributes: ['id_tarjeta', 'numero_tarjeta', 'tipo_tarjeta']
+          attributes: ['id_tarjeta', 'num_tarjeta', 'tipo_tarjeta']
         }
       ]
     });
@@ -111,11 +111,11 @@ export const searchPagos = async (req: Request, res: Response) => {
       include: [
         {
           model: Evento,
-          attributes: ['id_evento', 'nombre_evento', 'fecha_evento']
+          attributes: ['id_evento', 'fecha_evento']
         },
         {
           model: Tarjeta,
-          attributes: ['id_tarjeta', 'numero_tarjeta', 'tipo_tarjeta']
+          attributes: ['id_tarjeta', 'num_tarjeta', 'tipo_tarjeta']
         }
       ],
       order: [['fecha_pago', 'DESC'], ['hora_pago', 'DESC']]
@@ -185,11 +185,11 @@ export const createPago = async (req: Request, res: Response) => {
       include: [
         {
           model: Evento,
-          attributes: ['id_evento', 'nombre_evento', 'fecha_evento']
+          attributes: ['id_evento', 'fecha_evento']
         },
         {
           model: Tarjeta,
-          attributes: ['id_tarjeta', 'numero_tarjeta', 'tipo_tarjeta']
+          attributes: ['id_tarjeta', 'num_tarjeta', 'tipo_tarjeta']
         }
       ]
     });
@@ -264,11 +264,11 @@ export const editPago = async (req: Request, res: Response) => {
       include: [
         {
           model: Evento,
-          attributes: ['id_evento', 'nombre_evento', 'fecha_evento']
+          attributes: ['id_evento', 'fecha_evento']
         },
         {
           model: Tarjeta,
-          attributes: ['id_tarjeta', 'numero_tarjeta', 'tipo_tarjeta']
+          attributes: ['id_tarjeta', 'num_tarjeta', 'tipo_tarjeta']
         }
       ]
     });
@@ -304,11 +304,11 @@ export const cambiarEstadoPago = async (req: Request, res: Response) => {
       include: [
         {
           model: Evento,
-          attributes: ['id_evento', 'nombre_evento', 'fecha_evento']
+          attributes: ['id_evento',  'fecha_evento']
         },
         {
           model: Tarjeta,
-          attributes: ['id_tarjeta', 'numero_tarjeta', 'tipo_tarjeta']
+          attributes: ['id_tarjeta', 'num_tarjeta', 'tipo_tarjeta']
         }
       ]
     });
@@ -348,11 +348,11 @@ export const deletePago = async (req: Request, res: Response) => {
       include: [
         {
           model: Evento,
-          attributes: ['id_evento', 'nombre_evento', 'fecha_evento']
+          attributes: ['id_evento', 'fecha_evento']
         },
         {
           model: Tarjeta,
-          attributes: ['id_tarjeta', 'numero_tarjeta', 'tipo_tarjeta']
+          attributes: ['id_tarjeta', 'num_tarjeta', 'tipo_tarjeta']
         }
       ]
     });

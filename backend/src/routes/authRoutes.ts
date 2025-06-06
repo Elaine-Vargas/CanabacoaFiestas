@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { 
-  Login, RegisterClient, RegisterUser, GetUserData, UpdateUserData, getCurrentUser 
+  Login, RegisterClient, RegisterUser, UpdateUserData, getCurrentUser 
 } from '../controllers/authController';
 import { sendRecoveryEmail, resetPassword, sendWelcomeEmail } from '../controllers/mailController';
 
@@ -25,14 +25,6 @@ router.post('/register-client', async (req, res, next) => {
 router.post('/register-user', async (req, res, next) => {
   try {
     await RegisterUser(req, res);
-  } catch (error) {
-    next(error);
-  }
-});
-
-router.get('/user-data', async (req, res, next) => {
-  try {
-    await GetUserData(req, res);
   } catch (error) {
     next(error);
   }

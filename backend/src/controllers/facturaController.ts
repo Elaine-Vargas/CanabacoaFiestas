@@ -10,7 +10,7 @@ export const getFacturas = async (req: Request, res: Response) => {
       include: [
         {
           model: Evento,
-          attributes: ['id_evento', 'nombre_evento', 'fecha_evento']
+          attributes: ['id_evento',  'fecha_evento']
         }
       ],
       order: [['fecha_factura', 'DESC'], ['hora_factura', 'DESC']]
@@ -42,7 +42,7 @@ export const getFacturaById = async (req: Request, res: Response) => {
       include: [
         {
           model: Evento,
-          attributes: ['id_evento', 'nombre_evento', 'fecha_evento']
+          attributes: ['id_evento',  'fecha_evento']
         }
       ]
     });
@@ -90,7 +90,7 @@ export const searchFacturas = async (req: Request, res: Response) => {
       include: [
         {
           model: Evento,
-          attributes: ['id_evento', 'nombre_evento', 'fecha_evento']
+          attributes: ['id_evento', 'fecha_evento']
         }
       ],
       order: [['fecha_factura', 'DESC'], ['hora_factura', 'DESC']]
@@ -138,7 +138,7 @@ export const createFactura = async (req: Request, res: Response) => {
       include: [
         {
           model: Evento,
-          attributes: ['id_evento', 'nombre_evento', 'fecha_evento']
+          attributes: ['id_evento', 'fecha_evento']
         }
       ]
     });
@@ -191,7 +191,7 @@ export const editFactura = async (req: Request, res: Response) => {
       include: [
         {
           model: Evento,
-          attributes: ['id_evento', 'nombre_evento', 'fecha_evento']
+          attributes: ['id_evento',  'fecha_evento']
         }
       ]
     });
@@ -227,7 +227,7 @@ export const cambiarEstadoFactura = async (req: Request, res: Response) => {
       include: [
         {
           model: Evento,
-          attributes: ['id_evento', 'nombre_evento', 'fecha_evento']
+          attributes: ['id_evento', 'fecha_evento']
         }
       ]
     });
@@ -267,7 +267,7 @@ export const deleteFactura = async (req: Request, res: Response) => {
       include: [
         {
           model: Evento,
-          attributes: ['id_evento', 'nombre_evento', 'fecha_evento']
+          attributes: ['id_evento', 'fecha_evento']
         }
       ]
     });

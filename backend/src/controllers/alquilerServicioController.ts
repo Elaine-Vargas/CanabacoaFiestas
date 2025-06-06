@@ -74,7 +74,6 @@ export const getAlquileresByEvento = async (req: Request, res: Response) => {
     res.status(500).json({ error: 'Error al obtener alquileres' });
   }
 };
-
 export const getAlquileresByElemento = async (req: Request, res: Response) => {
   try {
     const { id_elemento } = req.params;
@@ -87,10 +86,21 @@ export const getAlquileresByElemento = async (req: Request, res: Response) => {
         }
       ]
     });
+
+    if (!alquileres || alquileres.length === 0) {
+      return res.status(404).json({ 
+        error: 'No se encontraron alquileres',
+        mensaje: 'No hay alquileres registrados para este elemento'
+      });
+    }
+
     res.json(alquileres);
   } catch (error) {
     console.error('Error al obtener alquileres:', error);
-    res.status(500).json({ error: 'Error al obtener alquileres' });
+    res.status(500).json({ 
+      error: 'Error al obtener los alquileres',
+      mensaje: 'Ocurrió un error al cargar los alquileres'
+    });
   }
 };
 
