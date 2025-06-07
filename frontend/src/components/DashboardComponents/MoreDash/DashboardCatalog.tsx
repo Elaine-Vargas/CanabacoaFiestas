@@ -261,7 +261,7 @@ const Catalog: React.FC<CatalogProps> = ({ onAddToCart = true, onComprarCarrito 
   useEffect(() => {
     const fetchEventos = async () => {
       try {
-        const response = await axios.get(`${apiUrl}/eventos`);
+        const response = await axios.get(`${apiUrl}/evento`);
         setEventos(response.data);
       } catch (error) {
         console.error('Error al cargar eventos:', error);
@@ -417,7 +417,7 @@ const Catalog: React.FC<CatalogProps> = ({ onAddToCart = true, onComprarCarrito 
 
   const handleNuevoEvento = async () => {
     try {
-      await axios.post(`${apiUrl}/eventos`, nuevoEvento);
+      await axios.post(`${apiUrl}/evento`, nuevoEvento);
       setShowNuevoEventoModal(false);
       setNotificacion({
         abierta: true,
@@ -425,7 +425,7 @@ const Catalog: React.FC<CatalogProps> = ({ onAddToCart = true, onComprarCarrito 
         tipo: 'success'
       });
       // Recargar eventos
-      const response = await axios.get(`${apiUrl}/eventos`);
+      const response = await axios.get(`${apiUrl}/evento`);
       setEventos(response.data);
     } catch (error) {
       console.error('Error al crear evento:', error);

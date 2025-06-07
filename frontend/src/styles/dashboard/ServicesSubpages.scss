@@ -6,16 +6,11 @@ $transition-standard: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 @use '../font-faces/Fonts.scss';
 
 /* Contenedor general de la página */
+
 .welcome-container {
-  position: fixed;
-  top: 0;
-  right: 0;
-  bottom: 0;
-  left: 120px; /* Ajustado para considerar el menú lateral */
-  overflow-y: auto;
-  scrollbar-width: thin;
-  scrollbar-color: var(--gold) transparent;
-  padding-bottom: 400px; /* Espacio adicional al final para asegurar que todo el contenido sea visible */
+  position: relative;
+  padding-bottom: 40px;
+  overflow-y: visible; 
 
   &::-webkit-scrollbar {
     width: 8px;
@@ -338,7 +333,8 @@ $transition-standard: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   }
 
   .dashboard-row {
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 15px;
   }
 
   .dashboard-container {
@@ -360,6 +356,7 @@ $transition-standard: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   }
 
   .dashboard-row {
+    grid-template-columns: 1fr;
     gap: 8px;
   }
 

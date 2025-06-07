@@ -70,7 +70,12 @@ const EventoForm: React.FC<EventoFormProps> = ({
   const fetchClientes = async () => {
     try {
       setLoadingClientes(true);
-      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/clientes`);
+      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/usuario/rol/2`, {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+          'Content-Type': 'application/json'
+        }
+      });
       if (!response.ok) {
         throw new Error('Error al cargar los clientes');
       }
@@ -86,7 +91,12 @@ const EventoForm: React.FC<EventoFormProps> = ({
   const fetchAsesores = async () => {
     try {
       setLoadingAsesores(true);
-      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/usuarios/asesores`);
+      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/usuario/rol/3`, {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+          'Content-Type': 'application/json'
+        }
+      });
       if (!response.ok) {
         throw new Error('Error al cargar los asesores');
       }
@@ -102,7 +112,12 @@ const EventoForm: React.FC<EventoFormProps> = ({
   const fetchTiposEvento = async () => {
     try {
       setLoadingTipos(true);
-      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/tipos-evento`);
+      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/evento/tipo-eventos/list`, {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+          'Content-Type': 'application/json'
+        }
+      });
       if (!response.ok) {
         throw new Error('Error al cargar los tipos de evento');
       }
@@ -118,7 +133,12 @@ const EventoForm: React.FC<EventoFormProps> = ({
   const fetchProvincias = async () => {
     try {
       setLoadingProvincias(true);
-      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/provincias`);
+      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/direccion/provincias`, {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+          'Content-Type': 'application/json'
+        }
+      });
       if (!response.ok) {
         throw new Error('Error al cargar las provincias');
       }
@@ -134,7 +154,12 @@ const EventoForm: React.FC<EventoFormProps> = ({
   const fetchCiudades = async () => {
     try {
       setLoadingCiudades(true);
-      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/ciudades`);
+      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/direccion/ciudades`, {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+          'Content-Type': 'application/json'
+        }
+      });
       if (!response.ok) {
         throw new Error('Error al cargar las ciudades');
       }
@@ -201,6 +226,12 @@ const EventoForm: React.FC<EventoFormProps> = ({
             loading={loadingClientes}
             showSearch
             optionFilterProp="children"
+            filterOption={(input, option) => {
+              if (typeof option?.children === 'string') {
+                return (option.children as string).toLowerCase().includes(input.toLowerCase());
+              }
+              return false;
+            }}
           >
             {clientes.map(cliente => (
               <Select.Option key={cliente.cedula_cliente} value={cliente.cedula_cliente}>
@@ -220,6 +251,12 @@ const EventoForm: React.FC<EventoFormProps> = ({
             showSearch
             optionFilterProp="children"
             allowClear
+            filterOption={(input, option) => {
+              if (typeof option?.children === 'string') {
+                return (option.children as string).toLowerCase().includes(input.toLowerCase());
+              }
+              return false;
+            }}
           >
             {asesores.map(asesor => (
               <Select.Option key={asesor.cedula_usuario} value={asesor.cedula_usuario}>
@@ -234,7 +271,7 @@ const EventoForm: React.FC<EventoFormProps> = ({
           label="Fecha del Evento"
           rules={[{ required: true, message: 'Por favor seleccione la fecha del evento' }]}
         >
-          <DatePicker style={{ width: '100%' }} />
+          <DatePicker style={{ width: '100%' }} format="YYYY-MM-DD" />
         </Form.Item>
 
         <Form.Item
@@ -253,6 +290,14 @@ const EventoForm: React.FC<EventoFormProps> = ({
           <Select
             placeholder="Seleccione el tipo de evento"
             loading={loadingTipos}
+            showSearch
+            optionFilterProp="children"
+            filterOption={(input, option) => {
+              if (typeof option?.children === 'string') {
+                return (option.children as string).toLowerCase().includes(input.toLowerCase());
+              }
+              return false;
+            }}
           >
             {tiposEvento.map(tipo => (
               <Select.Option key={tipo.id_tipo_evento} value={tipo.id_tipo_evento}>
@@ -271,6 +316,14 @@ const EventoForm: React.FC<EventoFormProps> = ({
             placeholder="Seleccione la provincia"
             loading={loadingProvincias}
             onChange={handleProvinciaChange}
+            showSearch
+            optionFilterProp="children"
+            filterOption={(input, option) => {
+              if (typeof option?.children === 'string') {
+                return (option.children as string).toLowerCase().includes(input.toLowerCase());
+              }
+              return false;
+            }}
           >
             {provincias.map(provincia => (
               <Select.Option key={provincia.id_provincia} value={provincia.id_provincia}>
@@ -289,6 +342,14 @@ const EventoForm: React.FC<EventoFormProps> = ({
             placeholder="Seleccione la ciudad"
             loading={loadingCiudades}
             disabled={!form.getFieldValue('id_provincia')}
+            showSearch
+            optionFilterProp="children"
+            filterOption={(input, option) => {
+              if (typeof option?.children === 'string') {
+                return (option.children as string).toLowerCase().includes(input.toLowerCase());
+              }
+              return false;
+            }}
           >
             {ciudadesFiltradas.map(ciudad => (
               <Select.Option key={ciudad.id_ciudad} value={ciudad.id_ciudad}>

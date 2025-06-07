@@ -13,6 +13,7 @@ import "../../../styles/dashboard/DashboardServices.scss";
 import { useMediaQuery } from "@mui/material";
 import { Drawer, IconButton, List, ListItem, ListItemButton, ListItemText } from "@mui/material";
 import MenuRoundedIcon from "@mui/icons-material/MenuRounded";
+import { useUser } from '../../../contexts/UserContext';
 
 export type UserRole = 'admin' | 'client' | 'employee' | 'driver';
 
@@ -22,6 +23,7 @@ interface ServicesMenuProps {
 
 export default function ServicesMenu({ selectedService }: ServicesMenuProps) {
   const navigate = useNavigate();
+  const { setUserRole } = useUser();
   const userData = JSON.parse(localStorage.getItem('userData') || '{}');
   const [showLogoutModal, setShowLogoutModal] = useState(false);
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -44,6 +46,7 @@ export default function ServicesMenu({ selectedService }: ServicesMenuProps) {
   const handleLogout = () => {
     localStorage.removeItem('userData');
     localStorage.removeItem('token');
+    setUserRole(null);
     navigate("/Login");
   };
 

@@ -9,7 +9,7 @@ const WelcomeEmployee = lazy(() => import('../../components/DashboardComponents/
 const WelcomeDriver = lazy(() => import('../../components/DashboardComponents/Welcome/WelcomeDriver'));
 
 // Definición de roles
-export type UserRole = 'admin' | 'cliente' | 'empleado'| 'conductor' ;
+export type UserRole = 'admin' | 'cliente' | 'empleado'| 'conductor'  ;
 
 const Welcome: React.FC = () => {
   const { userRole } = useUser();

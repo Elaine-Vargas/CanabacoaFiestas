@@ -73,7 +73,8 @@ export const showAllEvents = async (req: Request, res: Response) => {
         const eventos = await Evento.findAll({
             include: [
                 { model: Usuario, as: 'cliente' },
-                { model: Usuario, as: 'asesor' }
+                { model: Usuario, as: 'asesor' },
+                { model: TipoEvento, as: 'tipo_evento' }
             ]
         });
 
@@ -101,7 +102,8 @@ export const showEventsByStatus = async (req: Request, res: Response) => {
             where: { estado_evento: estado },
             include: [
                 { model: Usuario, as: 'cliente' },
-                { model: Usuario, as: 'asesor' }
+                { model: Usuario, as: 'asesor' },
+                { model: TipoEvento, as: 'tipo_evento' }
             ]
         });
 
@@ -129,7 +131,8 @@ export const showEventsByClient = async (req: Request, res: Response) => {
             where: { cedula_cliente },
             include: [
                 { model: Usuario, as: 'cliente' },
-                { model: Usuario, as: 'asesor' }
+                { model: Usuario, as: 'asesor' },
+                { model: TipoEvento, as: 'tipo_evento' }
             ]
         });
 
@@ -157,7 +160,8 @@ export const showEventsByAsesor = async (req: Request, res: Response) => {
             where: { cedula_asesor },
             include: [
                 { model: Usuario, as: 'cliente' },
-                { model: Usuario, as: 'asesor' }
+                { model: Usuario, as: 'asesor' },
+                { model: TipoEvento, as: 'tipo_evento' }
             ]
         });
 

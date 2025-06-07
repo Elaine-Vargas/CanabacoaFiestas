@@ -24,6 +24,8 @@ interface Evento {
   estado_evento: EstadoEvento;
   total_evento: number;
   nombre_asesor: string | null;
+  cliente?: Usuario;  
+  asesor?: Usuario;   
 }
 
 interface Usuario {
@@ -66,7 +68,6 @@ interface Decoracion {
   fecha_evento: string;
   tema_decoracion: string;
   colores_decoracion: string;
-  tematica_decoracion: string;
   tipo_decoracion: string;
   total_decoracion: number;
   estado_decoracion: string;
@@ -76,6 +77,7 @@ const { Title } = Typography;
 
 const WelcomeAdmin: React.FC = () => {
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [eventos, setEventos] = useState<Evento[]>([]);
   const [usuarios, setUsuarios] = useState<Usuario[]>([]);
   const [proveedores, setProveedores] = useState<Proveedor[]>([]);
@@ -99,47 +101,110 @@ const WelcomeAdmin: React.FC = () => {
   const [selectedEvento, setSelectedEvento] = useState<string | undefined>();
   const [selectedCargo, setSelectedCargo] = useState<string | undefined>();
 
+  const [clientes, setClientes] = useState<Usuario[]>([]);
+  const [asesores, setAsesores] = useState<Usuario[]>([]);
+
+
+  const fetchClientesYAsesores = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const headers = {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      };
+  
+      // Clientes (rol 2)
+      const resClientes = await fetch(`${import.meta.env.VITE_API_BASE_URL}/usuario?rol=2`, { headers });
+      if (resClientes.ok) {
+        const data = await resClientes.json();
+        setClientes(data.usuarios);
+      }
+  
+      // Asesores (rol 3)
+      const resAsesores = await fetch(`${import.meta.env.VITE_API_BASE_URL}/usuario?rol=3`, { headers });
+      if (resAsesores.ok) {
+        const data = await resAsesores.json();
+        setAsesores(data.usuarios);
+      }
+    } catch (error) {
+      console.error("Error al cargar clientes o asesores", error);
+    }
+  };
+  
+  useEffect(() => {
+    fetchClientesYAsesores();
+  }, []);
+  
+
   // Función para cargar los datos
   const fetchData = async () => {
     try {
       setLoading(true);
+      setError(null);
+      
+      const token = localStorage.getItem('token');
+      if (!token) {
+        throw new Error('No hay token de autenticación');
+      }
+
+      const headers = {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      };
       
       // Cargar eventos
-      const eventosResponse = await fetch(`${import.meta.env.VITE_API_BASE_URL}/eventos`);
-      if (eventosResponse.ok) {
-        const eventosData = await eventosResponse.json();
-        setEventos(eventosData);
+      const eventosResponse = await fetch(`${import.meta.env.VITE_API_BASE_URL}/evento`, {
+        method: 'GET',
+        headers
+      });
+      
+      if (!eventosResponse.ok) {
+        throw new Error('Error al cargar eventos');
       }
+      
+      const eventosData = await eventosResponse.json();
+      setEventos(eventosData);
 
       // Cargar usuarios
-      const usuariosResponse = await fetch(`${import.meta.env.VITE_API_BASE_URL}/usuarios`);
-      if (usuariosResponse.ok) {
-        const usuariosData = await usuariosResponse.json();
-        setUsuarios(usuariosData);
+      const usuariosResponse = await fetch(`${import.meta.env.VITE_API_BASE_URL}/usuario`, {
+        method: 'GET',
+        headers
+      });
+      
+      if (!usuariosResponse.ok) {
+        throw new Error('Error al cargar usuarios');
       }
+      
+      const usuariosData = await usuariosResponse.json();
+      setUsuarios(usuariosData);
 
       // Cargar proveedores
-      const proveedoresResponse = await fetch(`${import.meta.env.VITE_API_BASE_URL}/proveedores`);
-      if (proveedoresResponse.ok) {
-        const proveedoresData = await proveedoresResponse.json();
-        setProveedores(proveedoresData);
+      const proveedoresResponse = await fetch(`${import.meta.env.VITE_API_BASE_URL}/proveedor`, {
+        headers
+      });
+      
+      if (!proveedoresResponse.ok) {
+        throw new Error('Error al cargar proveedores');
       }
-
-      // Cargar asignaciones
-      const asignacionesResponse = await fetch(`${import.meta.env.VITE_API_BASE_URL}/asignaciones`);
-      if (asignacionesResponse.ok) {
-        const asignacionesData = await asignacionesResponse.json();
-        setAsignaciones(asignacionesData);
-      }
+      
+      const proveedoresData = await proveedoresResponse.json();
+      setProveedores(proveedoresData);
 
       // Cargar decoraciones
-      const decoracionesResponse = await fetch(`${import.meta.env.VITE_API_BASE_URL}/decoraciones`);
-      if (decoracionesResponse.ok) {
-        const decoracionesData = await decoracionesResponse.json();
-        setDecoraciones(decoracionesData);
+      const decoracionesResponse = await fetch(`${import.meta.env.VITE_API_BASE_URL}/decoracion`, {
+        headers
+      });
+      
+      if (!decoracionesResponse.ok) {
+        throw new Error('Error al cargar decoraciones');
       }
+      
+      const decoracionesData = await decoracionesResponse.json();
+      setDecoraciones(decoracionesData);
+
     } catch (error) {
       console.error('Error al cargar los datos:', error);
+      setError(error instanceof Error ? error.message : 'Error al cargar los datos');
     } finally {
       setLoading(false);
     }
@@ -147,16 +212,23 @@ const WelcomeAdmin: React.FC = () => {
 
   // Cargar datos al montar el componente
   useEffect(() => {
-    fetchData();
+    const token = localStorage.getItem('token');
+    if (token) {
+      fetchData();
+    } else {
+      setError('No hay token de autenticación');
+      setLoading(false);
+    }
   }, []);
 
   const handleCreateEvento = async (values: any) => {
     try {
       setLoading(true);
-      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/eventos`, {
+      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/evento`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
         },
         body: JSON.stringify(values),
       });
@@ -181,6 +253,7 @@ const WelcomeAdmin: React.FC = () => {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
         },
         body: JSON.stringify(values),
       });
@@ -205,6 +278,7 @@ const WelcomeAdmin: React.FC = () => {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
         },
         body: JSON.stringify(values),
       });
@@ -225,10 +299,11 @@ const WelcomeAdmin: React.FC = () => {
   const handleCreateUsuario = async (values: any) => {
     try {
       setLoading(true);
-      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/usuarios`, {
+      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/usuario`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
         },
         body: JSON.stringify(values),
       });
@@ -249,10 +324,11 @@ const WelcomeAdmin: React.FC = () => {
   const handleCreateProveedor = async (values: any) => {
     try {
       setLoading(true);
-      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/proveedores`, {
+      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/proveedor`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
         },
         body: JSON.stringify(values),
       });
@@ -314,16 +390,18 @@ const WelcomeAdmin: React.FC = () => {
         evento.estado_evento === selectedEstado;
       
       const matchesCliente = !selectedCliente || 
-        evento.nombre_cliente === selectedCliente;
+        `${evento.cliente?.nombre_usuario || ''} ${evento.cliente?.apellido_usuario || ''}` === selectedCliente;
       
       const matchesAsesor = !selectedAsesor || 
-        evento.nombre_asesor === selectedAsesor;
+        `${evento.asesor?.nombre_usuario || ''} ${evento.asesor?.apellido_usuario || ''}` === selectedAsesor;
 
       return matchesSearch && matchesEstado && matchesCliente && matchesAsesor;
     });
   };
 
   const getFilteredUsuarios = () => {
+    if (!Array.isArray(usuarios)) return [];
+    
     return usuarios.filter(usuario => {
       const matchesSearch = searchText === '' || 
         usuario.nombre_usuario.toLowerCase().includes(searchText.toLowerCase()) ||
@@ -404,6 +482,7 @@ const WelcomeAdmin: React.FC = () => {
               placeholder="Filtrar por estado"
               style={{ width: 150 }}
               onChange={handleEstadoChange}
+              value={selectedEstado}
               options={[
                 { value: 'todos', label: 'Todos' },
                 { value: 'Pendiente', label: 'Pendiente' },
@@ -414,23 +493,29 @@ const WelcomeAdmin: React.FC = () => {
             />
             <Select
               placeholder="Filtrar por cliente"
-              style={{ width: 150 }}
+              style={{ width: 200 }}
               onChange={handleClienteChange}
-              options={eventos.map(evento => ({
-                value: evento.nombre_cliente,
-                label: evento.nombre_cliente
-              }))}
+              value={selectedCliente}
+              options={[
+                { value: undefined, label: 'Todos' },
+                ...clientes.map(cliente => ({
+                  value: `${cliente.nombre_usuario} ${cliente.apellido_usuario}`,
+                  label: `${cliente.nombre_usuario} ${cliente.apellido_usuario}`
+                }))
+              ]}
             />
             <Select
               placeholder="Filtrar por asesor"
-              style={{ width: 150 }}
+              style={{ width: 200 }}
               onChange={handleAsesorChange}
-              options={eventos
-                .filter(evento => evento.nombre_asesor !== null)
-                .map(evento => ({
-                  value: evento.nombre_asesor!,
-                  label: evento.nombre_asesor!
-                }))}
+              value={selectedAsesor}
+              options={[
+                { value: undefined, label: 'Todos' },
+                ...asesores.map(asesor => ({
+                  value: `${asesor.nombre_usuario} ${asesor.apellido_usuario}`,
+                  label: `${asesor.nombre_usuario} ${asesor.apellido_usuario}`
+                }))
+              ]}
             />
           </Space>
         );
@@ -447,6 +532,7 @@ const WelcomeAdmin: React.FC = () => {
               placeholder="Filtrar por estado"
               style={{ width: 150 }}
               onChange={handleEstadoChange}
+              value={selectedEstado}
               options={[
                 { value: 'todos', label: 'Todos' },
                 { value: 'Activo', label: 'Activo' },
@@ -458,7 +544,9 @@ const WelcomeAdmin: React.FC = () => {
               placeholder="Filtrar por rol"
               style={{ width: 150 }}
               onChange={handleRolChange}
+              value={selectedRol}
               options={[
+                { value: undefined, label: 'Todos' },
                 { value: 'admin', label: 'Administrador' },
                 { value: 'client', label: 'Cliente' },
                 { value: 'employee', label: 'Empleado' },
@@ -480,6 +568,7 @@ const WelcomeAdmin: React.FC = () => {
               placeholder="Filtrar por estado"
               style={{ width: 150 }}
               onChange={handleEstadoChange}
+              value={selectedEstado}
               options={[
                 { value: 'todos', label: 'Todos' },
                 { value: 'Activo', label: 'Activo' },
@@ -491,12 +580,11 @@ const WelcomeAdmin: React.FC = () => {
               placeholder="Filtrar por tipo"
               style={{ width: 150 }}
               onChange={handleTipoChange}
+              value={selectedTipo}
               options={[
+                { value: undefined, label: 'Todos' },
                 { value: 'Catering', label: 'Catering' },
-                { value: 'Decoración', label: 'Decoración' },
-                { value: 'Música', label: 'Música' },
-                { value: 'Fotografía', label: 'Fotografía' },
-                { value: 'Otro', label: 'Otro' }
+                { value: 'Elementos', label: 'Elementos' }
               ]}
             />
           </Space>
@@ -514,16 +602,22 @@ const WelcomeAdmin: React.FC = () => {
               placeholder="Filtrar por evento"
               style={{ width: 150 }}
               onChange={handleEventoChange}
-              options={eventos.map(evento => ({
-                value: evento.id_evento,
-                label: `${evento.nombre_cliente} - ${new Date(evento.fecha_evento).toLocaleDateString()}`
-              }))}
+              value={selectedEvento}
+              options={[
+                { value: undefined, label: 'Todos' },
+                ...eventos.map(evento => ({
+                  value: evento.id_evento,
+                  label: `${evento.nombre_cliente} - ${new Date(evento.fecha_evento).toLocaleDateString()}`
+                }))
+              ]}
             />
             <Select
               placeholder="Filtrar por cargo"
               style={{ width: 150 }}
               onChange={handleCargoChange}
+              value={selectedCargo}
               options={[
+                { value: undefined, label: 'Todos' },
                 { value: 'Mesero', label: 'Mesero' },
                 { value: 'Cocinero', label: 'Cocinero' },
                 { value: 'Bartender', label: 'Bartender' },
@@ -546,6 +640,7 @@ const WelcomeAdmin: React.FC = () => {
               placeholder="Filtrar por estado"
               style={{ width: 150 }}
               onChange={handleEstadoChange}
+              value={selectedEstado}
               options={[
                 { value: 'todos', label: 'Todos' },
                 { value: 'Solicitado', label: 'Solicitado' },
@@ -558,7 +653,9 @@ const WelcomeAdmin: React.FC = () => {
               placeholder="Filtrar por tipo"
               style={{ width: 150 }}
               onChange={handleTipoChange}
+              value={selectedTipo}
               options={[
+                { value: undefined, label: 'Todos' },
                 { value: 'Boda', label: 'Boda' },
                 { value: 'Quinceañera', label: 'Quinceañera' },
                 { value: 'Cumpleaños', label: 'Cumpleaños' },
@@ -576,8 +673,17 @@ const WelcomeAdmin: React.FC = () => {
   const columns = [
     {
       title: 'Cliente',
-      dataIndex: 'nombre_cliente',
+      dataIndex: ['cliente', 'nombre_usuario'],
       key: 'nombre_cliente',
+      render: (_: any, record: any) => 
+        `${record.cliente?.nombre_usuario || ''} ${record.cliente?.apellido_usuario || ''}`
+    },
+     {
+      title: 'Asesor',
+      dataIndex: ['asesor', 'nombre_usuario'],
+      key: 'nombre_asesor',
+      render: (_: any, record: any) => 
+        `${record.asesor?.nombre_usuario || ''} ${record.asesor?.apellido_usuario || ''}`
     },
     {
       title: 'Fecha',
@@ -593,7 +699,9 @@ const WelcomeAdmin: React.FC = () => {
       title: 'Tipo',
       dataIndex: 'tipo_evento',
       key: 'tipo_evento',
-    },
+      render: (_: any, record: any) => record.tipo_evento?.tipo_evento || ''
+    }
+    ,
     {
       title: 'Espacio',
       dataIndex: 'espacio_evento',
@@ -834,11 +942,6 @@ const WelcomeAdmin: React.FC = () => {
       title: 'Colores',
       dataIndex: 'colores_decoracion',
       key: 'colores_decoracion'
-    },
-    {
-      title: 'Temática',
-      dataIndex: 'tematica_decoracion',
-      key: 'tematica_decoracion'
     },
     {
       title: 'Total',

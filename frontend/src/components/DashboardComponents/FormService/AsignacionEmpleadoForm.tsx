@@ -43,7 +43,7 @@ const AsignacionEmpleadoForm: React.FC<AsignacionEmpleadoFormProps> = ({
   const fetchEventos = async () => {
     try {
       setLoadingEventos(true);
-      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/eventos`);
+      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/evento`);
       if (!response.ok) {
         throw new Error('Error al cargar los eventos');
       }

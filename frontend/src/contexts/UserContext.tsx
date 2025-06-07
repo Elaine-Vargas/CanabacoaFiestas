@@ -2,15 +2,8 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 
 type UserRole = 'admin' | 'cliente' | 'empleado' | 'conductor' | null;
 
-interface Permission {
-  id: string;
-  name: string;
-}
-
 interface UserContextType {
   userRole: UserRole;
-  hasPermission: (permissionId: string) => boolean;
-  userPermissions: Permission[];
   setUserRole: (role: UserRole) => void;
 }
 
@@ -21,12 +14,8 @@ interface UserProviderProps {
 }
 
 export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
-
   const apiUrl = import.meta.env.VITE_API_BASE_URL;
-
-
   const [userRole, setUserRole] = useState<UserRole>('cliente');
-  const [userPermissions, setUserPermissions] = useState<Permission[]>([]);
 
   useEffect(() => {
     const fetchUserData = async () => {
@@ -53,40 +42,16 @@ export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
                      userData.id_rol === 3 ? 'empleado' : 'conductor';
         setUserRole(role);
         localStorage.setItem('userRole', role);
-
-        // Fetch permissions after getting user role
-        if (userData.id_rol) {
-          const permissionsResponse = await fetch(`${apiUrl}/permissions/${userData.id_rol}`, {
-            headers: {
-              'Authorization': `Bearer ${token}`,
-              'Content-Type': 'application/json'
-            }
-          });
-
-          if (!permissionsResponse.ok) {
-            console.error('Error al obtener permisos:', await permissionsResponse.text());
-            setUserPermissions([]);
-          } else {
-            const permissionsData = await permissionsResponse.json();
-            setUserPermissions(permissionsData);
-          }
-        }
       } catch (error) {
         console.error('Error al cargar datos del usuario:', error);
         setUserRole(null);
-        setUserPermissions([]);
       }
     };
     fetchUserData();
   }, []);
 
-  const hasPermission = (permissionId: string) => {
-    if (userRole === 'admin') return true;
-    return userPermissions.some((permission: Permission) => permission.id === permissionId);
-  };
-
   return (
-    <UserContext.Provider value={{ userRole, hasPermission, userPermissions, setUserRole }}>
+    <UserContext.Provider value={{ userRole, setUserRole }}>
       {children}
     </UserContext.Provider>
   );
