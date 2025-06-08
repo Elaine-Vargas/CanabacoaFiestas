@@ -113,7 +113,7 @@ const ReportAdmin = () => {
       >
         <Space direction="vertical" size="large" style={{ width: '100%' }}>
           <div>
-            <h3>Reporte General de Usuarios</h3>
+            <h4 className='reportTitle'>Reporte General de Usuarios</h4>
             <Button 
               type="primary" 
               icon={<DownloadOutlined />}
@@ -125,7 +125,7 @@ const ReportAdmin = () => {
           </div>
 
           <div>
-            <h3>Reporte de Usuarios por Rol</h3>
+            <h4 className='reportTitle'>Reporte de Usuarios por Rol</h4>
             <Space>
               <Select
                 style={{ width: 200 }}
