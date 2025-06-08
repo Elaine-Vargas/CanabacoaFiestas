@@ -5,6 +5,26 @@ import jwt from 'jsonwebtoken';
 import bcrypt from 'bcryptjs';
 import { Op } from 'sequelize';
 
+// Definir tipos para el almacenamiento de códigos de verificación
+export interface PendingRegistration {
+  data: {
+    nombre_usuario: string;
+    apellido_usuario: string;
+    cedula_usuario: string;
+    correo_usuario: string;
+    tel_usuario: string;
+    contrasena_login: string;
+    usuario_login: string;
+    id_rol: 2;
+  };
+  verificationCode: string;
+  timestamp: number;
+}
+
+declare global {
+  var pendingRegistrations: Map<string, PendingRegistration>;
+}
+
 // Validación de variables de entorno al iniciar
 const requiredEnvVars = ['JWT_SECRET', 'EMAIL_USER', 'EMAIL_PASS', 'FRONTEND_URL'];
 for (const envVar of requiredEnvVars) {
@@ -351,6 +371,172 @@ export const sendWelcomeEmail = async (req: Request, res: Response) => {
     console.error('[Welcome] Error completo:', error);
     return res.status(500).json({ 
       error: 'Ocurrió un error al intentar enviar el correo de bienvenida',
+      details: process.env.NODE_ENV === 'development' ? (error as Error).message : undefined
+    });
+  }
+};
+
+export const sendVerificationEmail = async (req: Request, res: Response) => {
+  const { correo_usuario, nombre_usuario, userData } = req.body;
+  console.log('[Verification] Solicitud de verificación para:', correo_usuario);
+
+  if (!correo_usuario || !nombre_usuario) {
+    console.log('[Verification] Error: Datos incompletos');
+    return res.status(400).json({ error: 'Se requiere correo y nombre de usuario' });
+  }
+
+  try {
+    // Generar código de verificación (6 dígitos)
+    const verificationCode = Math.floor(100000 + Math.random() * 900000).toString();
+    
+    // Guardar los datos pendientes de registro
+    global.pendingRegistrations = global.pendingRegistrations || new Map();
+    
+    // Preparar los datos del usuario
+    const registrationData = userData || {
+      nombre_usuario,
+      apellido_usuario: '',
+      cedula_usuario: '',
+      correo_usuario,
+      tel_usuario: '',
+      contrasena_login: '',
+      usuario_login: '',
+      id_rol: 2 // Asegurar que id_rol esté establecido
+    };
+
+    // Si ya existe un registro pendiente, actualizarlo
+    const existingRegistration = global.pendingRegistrations.get(correo_usuario);
+    if (existingRegistration) {
+      existingRegistration.verificationCode = verificationCode;
+      existingRegistration.timestamp = Date.now();
+      existingRegistration.data = { ...existingRegistration.data, ...registrationData };
+      global.pendingRegistrations.set(correo_usuario, existingRegistration);
+    } else {
+      // Si no existe, crear uno nuevo
+      global.pendingRegistrations.set(correo_usuario, {
+        data: registrationData,
+        verificationCode,
+        timestamp: Date.now()
+      });
+    }
+
+    // Configurar transporte de nodemailer
+    const transporter = nodemailer.createTransport({
+      service: 'gmail',
+      auth: {
+        user: process.env.EMAIL_USER,
+        pass: process.env.EMAIL_PASS
+      },
+      tls: {
+        rejectUnauthorized: false // Solo para desarrollo, quitar en producción
+      }
+    });
+
+    // Verificar conexión con el servicio de correo
+    try {
+      await transporter.verify();
+      console.log('[Verification] Servicio de correo verificado correctamente');
+    } catch (mailError) {
+      console.error('[Verification] Error al verificar servicio de correo:', mailError);
+      throw new Error('Error al conectar con el servicio de correo');
+    }
+
+    // Configurar el correo
+    const mailOptions = {
+      from: `"Canabacoa Fiestas" <${process.env.EMAIL_USER}>`,
+      to: correo_usuario,
+      subject: 'Verificación de correo electrónico',
+      html: `
+        <div style="font-family: 'Century Gothic', sans-serif; max-width: 600px; margin: 0 auto;">
+          <h2 style="color: #c49a44;">¡Hola, ${nombre_usuario}!</h2>
+          <p>Gracias por registrarte en Canabacoa Fiestas.</p>
+          <p>Para completar tu registro, por favor ingresa el siguiente código de verificación:</p>
+          <div style="background-color: #f5f5f5; padding: 20px; text-align: center; margin: 20px 0;">
+            <h1 style="color: #c49a44; margin: 0; font-size: 32px;">${verificationCode}</h1>
+          </div>
+          <p><small>Este código expirará en 15 minutos.</small></p>
+          <p style="color:rgb(100, 100, 100); font-size: 0.9em;">
+            Si no solicitaste este registro, por favor ignora este mensaje.
+          </p>
+        </div>
+      `
+    };
+
+    // Enviar el correo
+    const info = await transporter.sendMail(mailOptions);
+    console.log('[Verification] Correo enviado con ID:', info.messageId);
+
+    return res.json({ 
+      success: true,
+      message: 'Correo de verificación enviado con éxito',
+      requiresVerification: true
+    });
+
+  } catch (error) {
+    console.error('[Verification] Error completo:', error);
+    return res.status(500).json({ 
+      error: 'Ocurrió un error al intentar enviar el correo de verificación',
+      details: process.env.NODE_ENV === 'development' ? (error as Error).message : undefined
+    });
+  }
+};
+
+export const verifyEmailCode = async (req: Request, res: Response) => {
+  const { correo_usuario, codigo } = req.body;
+  console.log('[VerifyCode] Solicitud de verificación de código para:', correo_usuario);
+
+  if (!correo_usuario || !codigo) {
+    console.log('[VerifyCode] Error: Datos incompletos');
+    return res.status(400).json({ error: 'Se requiere correo y código de verificación' });
+  }
+
+  try {
+    // Obtener el código almacenado
+    const storedData = global.pendingRegistrations?.get(correo_usuario);
+    
+    if (!storedData) {
+      console.log('[VerifyCode] Error: No hay código de verificación para este correo');
+      return res.status(400).json({ 
+        error: 'Código de verificación no encontrado',
+        details: 'Por favor solicita un nuevo código de verificación'
+      });
+    }
+
+    // Verificar si el código ha expirado (15 minutos)
+    const now = Date.now();
+    const codeAge = now - storedData.timestamp;
+    if (codeAge > 15 * 60 * 1000) { // 15 minutos en milisegundos
+      console.log('[VerifyCode] Error: Código expirado');
+      global.pendingRegistrations.delete(correo_usuario);
+      return res.status(400).json({ 
+        error: 'Código de verificación expirado',
+        details: 'Por favor solicita un nuevo código de verificación'
+      });
+    }
+
+    // Verificar el código
+    if (storedData.verificationCode !== codigo) {
+      console.log('[VerifyCode] Error: Código incorrecto');
+      return res.status(400).json({ 
+        error: 'Código de verificación incorrecto',
+        details: 'Por favor verifica el código e intenta nuevamente'
+      });
+    }
+
+    // Código verificado correctamente
+    console.log('[VerifyCode] Código verificado exitosamente');
+    global.pendingRegistrations.delete(correo_usuario);
+
+    return res.json({ 
+      success: true,
+      message: 'Correo verificado exitosamente',
+      nombre_usuario: storedData.data.nombre_usuario
+    });
+
+  } catch (error) {
+    console.error('[VerifyCode] Error completo:', error);
+    return res.status(500).json({ 
+      error: 'Error al verificar el código',
       details: process.env.NODE_ENV === 'development' ? (error as Error).message : undefined
     });
   }

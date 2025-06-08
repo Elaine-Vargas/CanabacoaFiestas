@@ -8,7 +8,6 @@ const PassRecovery = () => {
   const [mensaje, setMensaje] = useState('');
   const [error, setError] = useState('');
   const [cargando, setCargando] = useState(false);
-  const navigate = useNavigate();
 
   const apiUrl = import.meta.env.VITE_API_BASE_URL;
 

@@ -2,6 +2,13 @@ import { Request, Response } from 'express';
 import Usuario from '../models/Usuario_model';
 import jwt from 'jsonwebtoken';
 import { Op } from 'sequelize';
+import { sendVerificationEmail } from '../controllers/mailController';
+import { PendingRegistration } from '../controllers/mailController';
+
+// Variable global para almacenar datos de registro pendientes
+declare global {
+  var pendingRegistrations: Map<string, PendingRegistration>;
+}
 
 export const Login = async (req: Request, res: Response) => {
   const { usuario_login, contrasena } = req.body;
@@ -11,7 +18,9 @@ export const Login = async (req: Request, res: Response) => {
     let usuario = await Usuario.findOne({
       where: {
         usuario_login,
-        estado_usuario: 'Activo'
+        estado_usuario: {
+          [Op.in]: ['Activo', 'Pendiente'] // Permitir login si está activo o pendiente
+        }
       },
       include: [{ association: 'rol' }]
     });
@@ -21,7 +30,9 @@ export const Login = async (req: Request, res: Response) => {
       usuario = await Usuario.findOne({
         where: {
           cedula_usuario: usuario_login,
-          estado_usuario: 'Activo'
+          estado_usuario: {
+            [Op.in]: ['Activo', 'Pendiente'] // Permitir login si está activo o pendiente
+          }
         },
         include: [{ association: 'rol' }]
       });
@@ -35,6 +46,19 @@ export const Login = async (req: Request, res: Response) => {
     const valido = await usuario.compararContrasena(contrasena);
     if (!valido) {
       return res.status(404).json({ error: 'Usuario o contraseña inválidos' });
+    }
+
+    // Verificar si el correo está verificado
+    if (!usuario.estado_usuario) {
+      return res.status(403).json({ 
+        error: 'Correo no verificado',
+        message: 'Por favor verifica tu correo electrónico antes de iniciar sesión'
+      });
+    }
+
+    // Si el usuario está pendiente, actualizar a activo
+    if (usuario.estado_usuario === 'Pendiente') {
+      await usuario.update({ estado_usuario: 'Activo' });
     }
 
     // Generar token
@@ -76,7 +100,6 @@ export const RegisterClient = async (req: Request, res: Response) => {
     tel_usuario,
     contrasena_login,
     usuario_login,
-    
   } = req.body;
 
   try {
@@ -103,40 +126,42 @@ export const RegisterClient = async (req: Request, res: Response) => {
       return res.status(400).json({ error: errorMessage });
     }
 
-    // Crear nuevo cliente
-    const nuevoCliente = await Usuario.create({
-      nombre_usuario,
-      apellido_usuario,
-      cedula_usuario,
-      correo_usuario,
-      tel_usuario,
-      contrasena_login,
-      usuario_login,
-      id_rol: 2, // Rol de cliente
-      estado_usuario: 'Activo'
-    });
+    // Enviar correo de verificación
+    try {
+      await sendVerificationEmail(req, res);
+      
+      // Almacenar datos de registro pendientes
+      global.pendingRegistrations = global.pendingRegistrations || new Map();
+      global.pendingRegistrations.set(correo_usuario, {
+        data: {
+          nombre_usuario,
+          apellido_usuario,
+          cedula_usuario,
+          correo_usuario,
+          tel_usuario,
+          contrasena_login,
+          usuario_login,
+          id_rol: 2 // Rol de cliente
+        },
+        verificationCode: '', // This will be set by sendVerificationEmail
+        timestamp: Date.now()
+      });
 
-    // Generar token
-    const token = jwt.sign(
-      {
-        usuario_login: nuevoCliente.usuario_login,
-        cedula_usuario: nuevoCliente.cedula_usuario,
-        rol: nuevoCliente.id_rol
-      },
-      process.env.JWT_SECRET || 'w3r9Gv!72JkpX%lQs@8bZ&hMfT0^nAy',
-      { expiresIn: '1h' }
-    );
-
-    res.status(201).json({
-      mensaje: `¡Registro exitoso! Bienvenido/a ${nombre_usuario} ${apellido_usuario}`,
-      token
-    });
+      res.status(200).json({
+        mensaje: 'Por favor verifica tu correo electrónico para completar el registro.',
+        correo_usuario
+      });
+    } catch (error) {
+      console.error('Error al enviar correo de verificación:', error);
+      res.status(500).json({ error: 'Error al enviar correo de verificación' });
+    }
 
   } catch (error) {
     console.error('Error en registro de cliente:', error);
     res.status(500).json({ error: 'Error al registrar cliente' });
   }
 };
+
 
 export const RegisterUser = async (req: Request, res: Response) => {
   const {
@@ -203,7 +228,7 @@ export const RegisterUser = async (req: Request, res: Response) => {
   }
 };
 
-export const getCurrentUser = async (req: Request, res: Response) => {
+export const GetUserData = async (req: Request, res: Response) => {
   try {
     const token = req.headers.authorization?.split(' ')[1];
     if (!token) {
@@ -243,6 +268,7 @@ export const getCurrentUser = async (req: Request, res: Response) => {
       return res.status(404).json({ error: 'Usuario no encontrado' });
     }
 
+    // Enviar datos del usuario
     res.json({
       nombre_usuario: usuario.nombre_usuario,
       apellido_usuario: usuario.apellido_usuario,
@@ -342,4 +368,143 @@ export const UpdateUserData = async (req: Request, res: Response) => {
   }
 };
 
+export const getCurrentUser = async (req: Request, res: Response) => {
+  try {
+    const token = req.headers.authorization?.split(' ')[1];
+    if (!token) {
+      return res.status(401).json({ error: 'No token provided' });
+    }
+
+    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'w3r9Gv!72JkpX%lQs@8bZ&hMfT0^nAy') as { usuario_login?: string, cedula_usuario?: string };
+    
+    if (!decoded.usuario_login && !decoded.cedula_usuario) {
+      return res.status(400).json({ error: 'Token inválido' });
+    }
+
+    const usuario = await Usuario.findOne({
+      attributes: [
+        'nombre_usuario',
+        'apellido_usuario',
+        'cedula_usuario',
+        'correo_usuario',
+        'tel_usuario',
+        'usuario_login',
+        'id_rol',
+        'estado_usuario'
+      ],
+      where: {
+        [Op.or]: [
+          { usuario_login: decoded.usuario_login },
+          { cedula_usuario: decoded.cedula_usuario }
+        ]
+      },
+      include: [{
+        association: 'rol',
+        attributes: ['nombre_rol']
+      }]
+    });
+
+    if (!usuario) {
+      return res.status(404).json({ error: 'Usuario no encontrado' });
+    }
+
+    res.json({
+      nombre_usuario: usuario.nombre_usuario,
+      apellido_usuario: usuario.apellido_usuario,
+      cedula_usuario: usuario.cedula_usuario,
+      correo_usuario: usuario.correo_usuario,
+      tel_usuario: usuario.tel_usuario,
+      usuario_login: usuario.usuario_login,
+      id_rol: usuario.id_rol,
+      estado_usuario: usuario.estado_usuario,
+      rol_nombre: usuario.rol?.nombre_rol
+    });
+
+  } catch (error) {
+    console.error('Error al obtener datos del usuario:', error);
+    res.status(500).json({ error: 'Error al obtener datos del usuario' });
+  }
+};
+
+export const completeRegistration = async (req: Request, res: Response) => {
+  const { correo_usuario, codigo } = req.body;
+  console.log('[CompleteRegistration] Completando registro para:', correo_usuario);
+
+  try {
+    // Verificar que exista un registro pendiente
+    const pendingRegistration = global.pendingRegistrations?.get(correo_usuario);
+    
+    if (!pendingRegistration) {
+      return res.status(400).json({ 
+        error: 'No hay registro pendiente para este correo',
+        details: 'Por favor comienza el proceso de registro nuevamente'
+      });
+    }
+
+    // Verificar el código
+    if (pendingRegistration.verificationCode !== codigo) {
+      return res.status(400).json({ 
+        error: 'Código de verificación incorrecto',
+        details: 'Por favor verifica el código e intenta nuevamente'
+      });
+    }
+
+    // Verificar si el código ha expirado (15 minutos)
+    const now = Date.now();
+    if ((now - pendingRegistration.timestamp) > 15 * 60 * 1000) {
+      global.pendingRegistrations.delete(correo_usuario);
+      return res.status(400).json({ 
+        error: 'Código de verificación expirado',
+        details: 'Por favor solicita un nuevo código'
+      });
+    }
+
+    // Asegurarse de que id_rol esté presente
+    if (!pendingRegistration.data.id_rol) {
+      pendingRegistration.data.id_rol = 2; // Establecer rol de cliente por defecto
+    }
+
+    // Crear el usuario con los datos guardados
+    const usuario = await Usuario.create({
+      ...pendingRegistration.data,
+      estado_usuario: 'Activo'
+    });
+
+    // Eliminar el registro pendiente
+    global.pendingRegistrations.delete(correo_usuario);
+
+    // Generar token JWT
+    const token = jwt.sign(
+      {
+        id: usuario.cedula_usuario,
+        correo: usuario.correo_usuario,
+        rol: usuario.id_rol
+      },
+      process.env.JWT_SECRET!,
+      { expiresIn: '1d' }
+    );
+
+    return res.json({
+      success: true,
+      message: 'Registro completado exitosamente',
+      token,
+      usuario: {
+        nombre_usuario: usuario.nombre_usuario,
+        apellido_usuario: usuario.apellido_usuario,
+        usuario_login: usuario.usuario_login,
+        rol: usuario.id_rol,
+        cedula_usuario: usuario.cedula_usuario,
+        correo_usuario: usuario.correo_usuario,
+        tel_usuario: usuario.tel_usuario
+      }
+    });
+
+  } catch (error) {
+    console.error('[CompleteRegistration] Error:', error);
+    return res.status(500).json({ 
+      error: 'Error al completar el registro',
+      details: process.env.NODE_ENV === 'development' ? (error as Error).message : undefined
+    });
+  }
+};
 export default Login;

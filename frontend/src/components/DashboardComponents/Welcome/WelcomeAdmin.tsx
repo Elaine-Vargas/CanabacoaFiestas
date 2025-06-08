@@ -100,10 +100,16 @@ const WelcomeAdmin: React.FC = () => {
   const [selectedTipo, setSelectedTipo] = useState<string | undefined>();
   const [selectedEvento, setSelectedEvento] = useState<string | undefined>();
   const [selectedCargo, setSelectedCargo] = useState<string | undefined>();
+  const searchInputRef = React.useRef<any>(null);
 
   const [clientes, setClientes] = useState<Usuario[]>([]);
   const [asesores, setAsesores] = useState<Usuario[]>([]);
 
+  useEffect(() => {
+    if (searchInputRef.current) {
+      searchInputRef.current.focus();
+    }
+  }, [searchText]);
 
   const fetchClientesYAsesores = async () => {
     try {
@@ -347,7 +353,8 @@ const WelcomeAdmin: React.FC = () => {
   };
 
   // Funciones para manejar los filtros
-  const handleSearch = (value: string) => {
+  const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
     setSearchText(value);
   };
 
@@ -382,17 +389,22 @@ const WelcomeAdmin: React.FC = () => {
   // Funciones de filtrado
   const getFilteredEventos = () => {
     return eventos.filter(evento => {
+      const searchLower = searchText.toLowerCase();
       const matchesSearch = searchText === '' || 
-        evento.nombre_cliente.toLowerCase().includes(searchText.toLowerCase()) ||
-        evento.tipo_evento.toLowerCase().includes(searchText.toLowerCase());
+        (evento.cliente?.nombre_usuario || '').toLowerCase().includes(searchLower) ||
+        (evento.cliente?.apellido_usuario || '').toLowerCase().includes(searchLower) ||
+        (evento.asesor?.nombre_usuario || '').toLowerCase().includes(searchLower) ||
+        (evento.asesor?.apellido_usuario || '').toLowerCase().includes(searchLower) ||
+        (evento.tipo_evento || '').toLowerCase().includes(searchLower) ||
+        (evento.espacio_evento || '').toLowerCase().includes(searchLower);
       
       const matchesEstado = selectedEstado === 'todos' || 
         evento.estado_evento === selectedEstado;
       
-      const matchesCliente = !selectedCliente || 
+      const matchesCliente = !selectedCliente || selectedCliente === '' || 
         `${evento.cliente?.nombre_usuario || ''} ${evento.cliente?.apellido_usuario || ''}` === selectedCliente;
       
-      const matchesAsesor = !selectedAsesor || 
+      const matchesAsesor = !selectedAsesor || selectedAsesor === '' || 
         `${evento.asesor?.nombre_usuario || ''} ${evento.asesor?.apellido_usuario || ''}` === selectedAsesor;
 
       return matchesSearch && matchesEstado && matchesCliente && matchesAsesor;
@@ -473,10 +485,13 @@ const WelcomeAdmin: React.FC = () => {
         return (
           <Space style={{ marginBottom: 16 }}>
             <Input
+              ref={searchInputRef}
               placeholder="Buscar eventos..."
               prefix={<SearchOutlined />}
-              onChange={(e) => handleSearch(e.target.value)}
+              onChange={handleSearch}
               style={{ width: 200 }}
+              value={searchText}
+              allowClear
             />
             <Select
               placeholder="Filtrar por estado"
@@ -497,7 +512,7 @@ const WelcomeAdmin: React.FC = () => {
               onChange={handleClienteChange}
               value={selectedCliente}
               options={[
-                { value: undefined, label: 'Todos' },
+                { value: '', label: 'Todos' },
                 ...clientes.map(cliente => ({
                   value: `${cliente.nombre_usuario} ${cliente.apellido_usuario}`,
                   label: `${cliente.nombre_usuario} ${cliente.apellido_usuario}`
@@ -510,7 +525,7 @@ const WelcomeAdmin: React.FC = () => {
               onChange={handleAsesorChange}
               value={selectedAsesor}
               options={[
-                { value: undefined, label: 'Todos' },
+                { value: '', label: 'Todos' },
                 ...asesores.map(asesor => ({
                   value: `${asesor.nombre_usuario} ${asesor.apellido_usuario}`,
                   label: `${asesor.nombre_usuario} ${asesor.apellido_usuario}`
@@ -525,7 +540,7 @@ const WelcomeAdmin: React.FC = () => {
             <Input
               placeholder="Buscar usuarios..."
               prefix={<SearchOutlined />}
-              onChange={(e) => handleSearch(e.target.value)}
+              onChange={(e) => handleSearch(e)}
               style={{ width: 200 }}
             />
             <Select
@@ -561,7 +576,7 @@ const WelcomeAdmin: React.FC = () => {
             <Input
               placeholder="Buscar proveedores..."
               prefix={<SearchOutlined />}
-              onChange={(e) => handleSearch(e.target.value)}
+              onChange={(e) => handleSearch(e)}
               style={{ width: 200 }}
             />
             <Select
@@ -595,7 +610,7 @@ const WelcomeAdmin: React.FC = () => {
             <Input
               placeholder="Buscar asignaciones..."
               prefix={<SearchOutlined />}
-              onChange={(e) => handleSearch(e.target.value)}
+              onChange={(e) => handleSearch(e)}
               style={{ width: 200 }}
             />
             <Select
@@ -633,7 +648,7 @@ const WelcomeAdmin: React.FC = () => {
             <Input
               placeholder="Buscar decoraciones..."
               prefix={<SearchOutlined />}
-              onChange={(e) => handleSearch(e.target.value)}
+              onChange={(e) => handleSearch(e)}
               style={{ width: 200 }}
             />
             <Select

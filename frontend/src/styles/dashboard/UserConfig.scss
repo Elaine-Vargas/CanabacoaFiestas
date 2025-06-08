@@ -120,11 +120,12 @@
   }
 
   .success-message {
-    color: #28a745;
+    color: var(--success-text);
+    background-color: var(--success-bg);
     margin-bottom: 15px;
     padding: 10px;
-    background-color:var(--color-background2);
     border-radius: 4px;
+    text-align: center;
   }
 
   .update-button {

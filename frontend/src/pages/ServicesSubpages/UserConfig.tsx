@@ -6,6 +6,8 @@ import "../../styles/dashboard/UserConfig.scss";
 import { validateEmail, validateUsername, validatePhoneNumber, formatPhoneNumber} from "../../utils/validation";
 
 export default function UserConfig() {
+
+  const apiUrl = import.meta.env.VITE_API_BASE_URL;
   const [userData, setUserData] = useState({
     nombre_usuario: "",
     apellido_usuario: "",
@@ -41,6 +43,7 @@ export default function UserConfig() {
     cedula_usuario: ""
   });
   const [hasChanges, setHasChanges] = useState(false);
+  const [isUpdating, setIsUpdating] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -51,7 +54,7 @@ export default function UserConfig() {
           throw new Error('No hay sesión activa');
         }
 
-        const response = await fetch('/api/auth/user-data', {
+        const response = await fetch(`${apiUrl}/auth/user-data`, {
           headers: {
             'Authorization': `Bearer ${token}`
           }
@@ -110,6 +113,16 @@ export default function UserConfig() {
     });
   }, []);
 
+  useEffect(() => {
+    if (success) {
+      const timer = setTimeout(() => {
+        setSuccess("");
+      }, 10000); // 10 seconds
+
+      return () => clearTimeout(timer);
+    }
+  }, [success]);
+
   const togglePasswordVisibility = () => {
     setShowPassword(!showPassword);
   };
@@ -135,6 +148,9 @@ export default function UserConfig() {
     
     const fieldName = fieldMap[id];
     if (!fieldName) return;
+
+    // Clear success message when any input changes
+    setSuccess("");
 
     let processedValue = value;
     
@@ -201,6 +217,8 @@ export default function UserConfig() {
     setError("");
     setSuccess("");
 
+    if (isUpdating) return; // Prevent double submission
+
     if (userData.contrasena_login || hasChanges) {
       if (!userData.contrasena_actual) {
         setError('Debe ingresar su contraseña actual para realizar cambios');
@@ -233,6 +251,7 @@ export default function UserConfig() {
     }
 
     try {
+      setIsUpdating(true); // Set updating state to true before request
       const token = localStorage.getItem('token');
       if (!token) {
         throw new Error('No hay sesión activa');
@@ -290,6 +309,8 @@ export default function UserConfig() {
 
     } catch (error) {
       setError(error instanceof Error ? error.message : 'Error al actualizar datos');
+    } finally {
+      setIsUpdating(false); // Reset updating state after request completes
     }
   };
 
@@ -440,13 +461,13 @@ export default function UserConfig() {
           <button 
             type="submit" 
             className="update-button" 
-            disabled={!hasChanges && !userData.contrasena_login}
+            disabled={(!hasChanges && !userData.contrasena_login) || isUpdating}
             style={{ 
-              opacity: (hasChanges || userData.contrasena_login) ? 1 : 0.6,
-              cursor: (hasChanges || userData.contrasena_login) ? 'pointer' : 'not-allowed'
+              opacity: ((hasChanges || userData.contrasena_login) && !isUpdating) ? 1 : 0.6,
+              cursor: ((hasChanges || userData.contrasena_login) && !isUpdating) ? 'pointer' : 'not-allowed'
             }}
           >
-            Actualizar Datos
+            {isUpdating ? 'Actualizando...' : 'Actualizar Datos'}
           </button>
         </form>
       </div>
