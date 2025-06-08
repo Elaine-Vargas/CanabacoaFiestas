@@ -134,8 +134,8 @@ const ReportAdmin = () => {
                 onChange={setSelectedRole}
               >
                 <Option value="1">Administrador</Option>
-                <Option value="2">Usuario</Option>
-                <Option value="3">Invitado</Option>
+                <Option value="3">Empleado</Option>
+                <Option value="2">Cliente</Option>
               </Select>
               <Button 
                 type="primary" 
