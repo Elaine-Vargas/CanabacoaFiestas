@@ -141,6 +141,7 @@ export const generarReporteEventos = async (_req: Request, res: Response) => {
          );
     }
 
+    // Finalizar el documento
     doc.end();
   } catch (error) {
     console.error('Error al generar reporte general de eventos:', error);
@@ -176,7 +177,7 @@ export const generarReporteEventosCliente = async (req: Request, res: Response) 
     }
 
     const eventos = await Evento.findAll({
-      where: { cedula_cliente },
+      where: { cedula_cliente: cedula_cliente },
       attributes: [
         'id_evento',
         'fecha_evento',
@@ -262,7 +263,7 @@ export const generarReporteEventosCliente = async (req: Request, res: Response) 
 
     eventos.forEach((evento: any, i: number) => {
       if (y > 500) {
-        doc.addPage();
+        doc.addPage({ layout: 'landscape' });
         y = 100;
         drawRow(y, ['#', 'Cliente', 'Asesor', 'Tipo Evento', 'Espacio', 'Fecha', 'Estado', 'Total'], true);
         y += 35;
@@ -302,19 +303,6 @@ export const generarReporteEventosCliente = async (req: Request, res: Response) 
     doc.font('Helvetica-Bold')
        .fontSize(12)
        .text(`Total General: RD$ ${totalGeneral.toFixed(2)}`, { align: 'right' });
-
-    // Agregar pie de página
-    const pageCount = doc.bufferedPageRange().count;
-    for (let i = 0; i < pageCount; i++) {
-      doc.switchToPage(i);
-      doc.fontSize(8)
-         .text(
-           `Página ${i + 1} de ${pageCount}`,
-           doc.page.width - doc.page.margins.right - 100,
-           doc.page.height - doc.page.margins.bottom,
-           { align: 'right' }
-         );
-    }
 
     doc.end();
   } catch (error) {
@@ -466,6 +454,7 @@ export const generarReporteEventosAsesor = async (req: Request, res: Response) =
          );
     }
 
+    // Finalizar el documento
     doc.end();
   } catch (error) {
     console.error('Error al generar reporte de eventos por asesor:', error);
@@ -616,6 +605,7 @@ export const generarReporteEventosPersonal = async (req: Request, res: Response)
          );
     }
 
+    // Finalizar el documento
     doc.end();
   } catch (error) {
     console.error('Error al generar reporte de eventos por personal:', error);
