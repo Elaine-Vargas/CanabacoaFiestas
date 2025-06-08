@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import RentAdmin from '../../components/DashboardComponents/Rent/RentAdmin';
 import { message, Spin, Result } from 'antd';

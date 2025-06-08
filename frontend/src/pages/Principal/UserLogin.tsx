@@ -173,6 +173,9 @@ const UserLogin = () => {
       };
       localStorage.setItem('userData', JSON.stringify(userData));
       
+      // Disparar un evento de storage para actualizar el contexto
+      window.dispatchEvent(new Event('storage'));
+      
       showModal('¡Bienvenido!', data.mensaje, 'success');
       setTimeout(() => {
         navigate('/Menu-Servicios/Bienvenida');

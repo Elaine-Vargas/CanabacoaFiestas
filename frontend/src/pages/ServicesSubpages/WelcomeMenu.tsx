@@ -1,4 +1,4 @@
-import React, { lazy, Suspense, useEffect, useState } from 'react';
+import React, { lazy, Suspense } from 'react';
 import { Spin } from 'antd';
 import { useUser } from '../../contexts/UserContext';
 
@@ -9,33 +9,26 @@ const WelcomeEmployee = lazy(() => import('../../components/DashboardComponents/
 const WelcomeDriver = lazy(() => import('../../components/DashboardComponents/Welcome/WelcomeDriver'));
 
 // Definición de roles
-export type UserRole = 'admin' | 'cliente' | 'empleado'| 'conductor'  ;
+export type UserRole = 'admin' | 'cliente' | 'empleado' | 'conductor';
 
 const Welcome: React.FC = () => {
-  const { userRole } = useUser();
-  const [isLoading, setIsLoading] = useState(true);
+  const { userRole, isUserLoading } = useUser();
 
-  useEffect(() => {
-    if (userRole) {
-      setIsLoading(false);
-    }
-  }, [userRole]);
+  if (isUserLoading) {
+    return (
+      <div style={{ 
+        display: 'flex', 
+        justifyContent: 'center', 
+        alignItems: 'center', 
+        height: '100vh',
+        width: '100%'
+      }}>
+        <Spin size="large" />
+      </div>
+    );
+  }
 
   const renderComponentByRole = () => {
-    if (isLoading) {
-      return (
-        <div style={{ 
-          display: 'flex', 
-          justifyContent: 'center', 
-          alignItems: 'center', 
-          height: '100vh',
-          width: '100%'
-        }}>
-          <Spin size="large" />
-        </div>
-      );
-    }
-
     switch (userRole) {
       case 'admin':
         return <WelcomeAdmin />;
@@ -43,8 +36,6 @@ const Welcome: React.FC = () => {
         return <WelcomeClient />;
       case 'empleado':
         return <WelcomeEmployee />;
-      case 'conductor':
-        return <WelcomeDriver />;
       default:
         return <div>Rol no válido: {userRole}</div>;
     }
