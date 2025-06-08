@@ -374,7 +374,7 @@ export const deleteUser = async (req: Request, res: Response) => {
 export const getAllRoles = async (req: Request, res: Response) => {
   try {
     const roles = await Rol.findAll({
-      attributes: ['id_rol', 'nombre_rol', 'permisos'],
+      attributes: ['id_rol', 'nombre_rol'],
       order: [['nombre_rol', 'ASC']]
     });
 
@@ -389,9 +389,8 @@ export const getAllRoles = async (req: Request, res: Response) => {
       total: roles.length,
       roles: roles.map(rol => ({
         id_rol: rol.id_rol,
-        nombre_rol: rol.nombre_rol,
-        permisos: rol.permisos
-      }))
+        nombre_rol: rol.nombre_rol
+            }))
     });
 
   } catch (error) {
