@@ -6,10 +6,9 @@ import { useUser } from '../../contexts/UserContext';
 const WelcomeAdmin = lazy(() => import('../../components/DashboardComponents/Welcome/WelcomeAdmin'));
 const WelcomeClient = lazy(() => import('../../components/DashboardComponents/Welcome/WelcomeClient'));
 const WelcomeEmployee = lazy(() => import('../../components/DashboardComponents/Welcome/WelcomeEmployee'));
-const WelcomeDriver = lazy(() => import('../../components/DashboardComponents/Welcome/WelcomeDriver'));
 
 // Definición de roles
-export type UserRole = 'admin' | 'cliente' | 'empleado' | 'conductor';
+export type UserRole = 'admin' | 'cliente' | 'empleado';
 
 const Welcome: React.FC = () => {
   const { userRole, isUserLoading } = useUser();

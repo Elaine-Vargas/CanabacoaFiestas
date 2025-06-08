@@ -1,6 +1,6 @@
 import React from 'react'
 
-const ReportClient = () => {
+const ReportEmployee = () => {
   return (
     <div>
       
@@ -8,4 +8,4 @@ const ReportClient = () => {
   )
 }
 
-export default ReportClient
+export default ReportEmployee

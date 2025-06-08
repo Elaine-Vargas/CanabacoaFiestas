@@ -15,7 +15,7 @@ import { Drawer, IconButton, List, ListItem, ListItemButton, ListItemText } from
 import MenuRoundedIcon from "@mui/icons-material/MenuRounded";
 import { useUser } from '../../../contexts/UserContext';
 
-export type UserRole = 'admin' | 'client' | 'employee' | 'driver';
+export type UserRole = 'admin' | 'client' | 'employee' ;
 
 interface ServicesMenuProps {
   selectedService: string;
@@ -38,7 +38,6 @@ export default function ServicesMenu({ selectedService }: ServicesMenuProps) {
       case 1: return 'Admin';
       case 2: return 'Cliente';
       case 3: return 'Empleado';
-      case 4: return 'Conductor';
       default: return 'Usuario';
     }
   };
@@ -56,20 +55,6 @@ export default function ServicesMenu({ selectedService }: ServicesMenuProps) {
 
   const renderMenuItems = () => {
     const rolId = Number(userData.rol);
-
-    // Menú para conductor (solo bienvenida)
-    if (rolId === 4) {
-      return (
-        <ul>
-          <li
-            className={selectedService === "Bienvenida" ? "active" : ""}
-            onClick={() => handleNavigation("/Menu-Servicios/Bienvenida")}
-          >
-            <FaTachometerAlt /> Bienvenida
-          </li>
-        </ul>
-      );
-    }
 
     // Menú para empleado
     if (rolId === 3) {
@@ -126,14 +111,9 @@ export default function ServicesMenu({ selectedService }: ServicesMenuProps) {
     const rolId = Number(userData.rol);
     let menuItems = [];
 
-    // Menú para conductor
-    if (rolId === 4) {
-      menuItems = [
-        { text: "Bienvenida", path: "/Menu-Servicios/Bienvenida", icon: <FaTachometerAlt /> }
-      ];
-    }
+  
     // Menú para empleado
-    else if (rolId === 3) {
+    if (rolId === 3) {
       menuItems = [
         { text: "Bienvenida", path: "/Menu-Servicios/Bienvenida", icon: <FaTachometerAlt /> },
         { text: "Reportes y Facturas", path: "/Menu-Servicios/Reportes", icon: <FaFileInvoiceDollar /> }

@@ -1,77 +1,8 @@
 import { Request, Response } from 'express';
 import PDFDocument from 'pdfkit';
-import Usuario from '../models/Usuario_model';
-import Rol from '../models/Rol_model';
-import Evento from '../models/Evento_model';
-import TipoEvento from '../models/TipoEvento_model';
-
-export const generarReporteUsuarios = async (_req: Request, res: Response) => {
-  try {
-    const usuarios = await Usuario.findAll({ 
-      include: [Rol],
-      order: [['nombre_usuario', 'ASC']]
-    });
-
-    if (!usuarios || usuarios.length === 0) {
-      return res.status(404).json({ message: 'No se encontraron usuarios para generar el reporte' });
-    }
-
-    const doc = new PDFDocument({ size: 'A4', margin: 40 });
-
-    res.setHeader('Content-Disposition', 'inline; filename=reporte_usuarios.pdf');
-    res.setHeader('Content-Type', 'application/pdf');
-
-    doc.pipe(res);
-
-    // Título
-    doc.fontSize(18).text('Reporte de Usuarios', { align: 'center' });
-    doc.moveDown(1);
-
-    // Encabezado de tabla
-    const tableTop = 100;
-    const colWidths = [30, 100, 100, 100, 150, 80];
-    const startX = doc.page.margins.left;
-
-    const drawRow = (y: number, values: string[], bold = false) => {
-      const font = bold ? 'Helvetica-Bold' : 'Helvetica';
-      doc.font(font).fontSize(10);
-      let x = startX;
-      values.forEach((text, i) => {
-        doc.text(text, x, y, { width: colWidths[i], align: 'left' });
-        x += colWidths[i];
-      });
-    };
-
-    // Dibujar encabezado
-    drawRow(tableTop, ['#', 'Cédula', 'Nombre', 'Rol', 'Correo', 'Estado'], true);
-
-    // Dibujar filas
-    let y = tableTop + 20;
-    usuarios.forEach((usuario, i) => {
-      if (y > 720) {
-        doc.addPage();
-        y = 100;
-        drawRow(y, ['#', 'Cédula', 'Nombre', 'Rol', 'Correo', 'Estado'], true);
-        y += 20;
-      }
-
-      drawRow(y, [
-        (i + 1).toString(),
-        usuario.cedula_usuario,
-        `${usuario.nombre_usuario} ${usuario.apellido_usuario}`,
-        usuario.rol?.nombre_rol || 'Sin rol',
-        usuario.correo_usuario,
-        usuario.estado_usuario
-      ]);
-      y += 20;
-    });
-
-    doc.end();
-  } catch (error) {
-    console.error('Error al generar reporte de usuarios:', error);
-    res.status(500).json({ message: 'Error al generar el reporte de usuarios' });
-  }
-};
+import Usuario from '../../models/Usuario_model';
+import Evento from '../../models/Evento_model';
+import TipoEvento from '../../models/TipoEvento_model';
 
 export const generarReporteEventos = async (_req: Request, res: Response) => {
   try {

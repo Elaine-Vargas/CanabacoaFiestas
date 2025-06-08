@@ -45,13 +45,11 @@ const RoleBasedRedirect = () => {
       1: 'Alquileres-Compras', // Admin
       2: 'Alquiler', // Cliente
       3: 'Alquiler', // Empleado
-      4: 'Alquiler' // Conductor
     },
     'Facturas': {
       1: 'Reportes-Facturas', // Admin
       2: 'Facturas', // Cliente
       3: 'Reportes-Facturas', // Empleado
-      4: 'Facturas' // Conductor
     }
   };
 

@@ -565,7 +565,6 @@ const WelcomeAdmin: React.FC = () => {
                 { value: 'admin', label: 'Administrador' },
                 { value: 'client', label: 'Cliente' },
                 { value: 'employee', label: 'Empleado' },
-                { value: 'driver', label: 'Conductor' }
               ]}
             />
           </Space>
