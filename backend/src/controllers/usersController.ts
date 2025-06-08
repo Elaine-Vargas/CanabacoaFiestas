@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import Usuario from '../models/Usuario_model';
 import { Op } from 'sequelize';
+import Rol from '../models/Rol_model';
 
 export const getAllUsers = async (req: Request, res: Response) => {
   try {
@@ -362,5 +363,42 @@ export const deleteUser = async (req: Request, res: Response) => {
   } catch (error) {
     console.error('Error al eliminar usuario:', error);
     res.status(500).json({ error: 'Error al eliminar usuario' });
+  }
+};
+
+/**
+ * @description Obtiene todos los roles disponibles
+ * @route GET /api/usuarios/roles
+ * @access Privado (Admin)
+ */
+export const getAllRoles = async (req: Request, res: Response) => {
+  try {
+    const roles = await Rol.findAll({
+      attributes: ['id_rol', 'nombre_rol', 'permisos'],
+      order: [['nombre_rol', 'ASC']]
+    });
+
+    if (!roles || roles.length === 0) {
+      return res.status(404).json({ 
+        error: 'No se encontraron roles',
+        mensaje: 'No hay roles registrados en el sistema'
+      });
+    }
+
+    res.json({
+      total: roles.length,
+      roles: roles.map(rol => ({
+        id_rol: rol.id_rol,
+        nombre_rol: rol.nombre_rol,
+        permisos: rol.permisos
+      }))
+    });
+
+  } catch (error) {
+    console.error('Error al obtener roles:', error);
+    res.status(500).json({ 
+      error: 'Error al obtener roles',
+      mensaje: 'Ocurrió un error al cargar los roles'
+    });
   }
 };

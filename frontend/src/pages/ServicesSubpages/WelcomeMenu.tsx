@@ -1,5 +1,5 @@
 import React, { lazy, Suspense } from 'react';
-import { Spin } from 'antd';
+import { Modal, Spin } from 'antd';
 import { useUser } from '../../contexts/UserContext';
 
 // Lazy loading de componentes
@@ -35,9 +35,20 @@ const Welcome: React.FC = () => {
         return <WelcomeClient />;
       case 'empleado':
         return <WelcomeEmployee />;
-      default:
-        return <div>Rol no válido: {userRole}</div>;
-    }
+        default:
+          Modal.confirm({
+            title: 'Sesión inválida',
+            content: 'Su sesión no es válida o ha expirado. Será redirigido al inicio de sesión.',
+            okText: 'Entendido',
+            cancelButtonProps: { style: { display: 'none' } },
+            onOk: () => {
+              localStorage.removeItem('userData');
+              localStorage.removeItem('token');
+              window.location.href = '/Login';
+            }
+          });
+          return null;
+      }
   };
 
   return (

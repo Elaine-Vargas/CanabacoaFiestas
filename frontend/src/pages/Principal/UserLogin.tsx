@@ -454,6 +454,12 @@ const UserLogin = () => {
               {verificationStep === 'register' ? (
                 <form onSubmit={handleSignup}>
                   <h2>Registrar</h2>
+                  <p className="signup">
+                    ¿Ya tienes una cuenta?{" "}
+                    <span onClick={toggleForm} className="link">
+                      <strong>Inicia sesión.</strong>
+                    </span>
+                  </p>
                   {error && <div className="error-message">{error}</div>}
                   <div className="form-row">
                     <div className="input-group">
@@ -600,12 +606,7 @@ const UserLogin = () => {
                       cursor: isRegistering ? 'not-allowed' : 'pointer'
                     }}
                   />
-                  <p className="signup">
-                    ¿Ya tienes una cuenta?{" "}
-                    <span onClick={toggleForm} className="link">
-                      <strong>Inicia sesión.</strong>
-                    </span>
-                  </p>
+                  
                 </form>
               ) : (
                 <form onSubmit={handleVerification}>

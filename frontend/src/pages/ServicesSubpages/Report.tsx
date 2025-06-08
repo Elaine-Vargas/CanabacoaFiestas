@@ -1,6 +1,7 @@
 import React, { lazy, Suspense, useEffect, useState } from 'react';
 import { Spin } from 'antd';
 import { useUser } from '../../contexts/UserContext';
+import '../../styles/dashboard/ServicesSubpages.scss'
 
 // Lazy loading de componentes
 const ReportAdmin = lazy(() => import('../../components/DashboardComponents/Report/ReportAdmin'));
@@ -43,7 +44,10 @@ const Report: React.FC = () => {
       case 'empleado':
         return <ReportEmployee />;
       default:
-        return <div>Rol no válido: {userRole}</div>;
+        localStorage.removeItem('userData');
+        localStorage.removeItem('token');
+        window.location.href = '/Login';
+        return null;
     }
   };
 

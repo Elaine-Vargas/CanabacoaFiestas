@@ -5,7 +5,8 @@ import {
   getUsersByRole, 
   searchUsers,
   updateUser,
-  deleteUser 
+  deleteUser,
+  getAllRoles
 } from '../controllers/usersController';
 
 const router = Router();
@@ -37,6 +38,14 @@ router.get('/rol/:id_rol', async (req, res, next) => {
 router.get('/buscar', async (req, res, next) => {
   try {
     await searchUsers(req, res);
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.get('/roles', async (req, res, next) => {
+  try {
+    await getAllRoles(req, res);
   } catch (error) {
     next(error);
   }

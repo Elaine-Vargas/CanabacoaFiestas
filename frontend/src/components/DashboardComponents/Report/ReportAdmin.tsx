@@ -105,7 +105,7 @@ const ReportAdmin = () => {
         </Col>
       </Row>
 
-      <Modal
+      <Modal className='ReportsModal'
         title="Reportes de Usuarios"
         open={isUserModalVisible}
         onCancel={handleCancel}
