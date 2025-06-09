@@ -410,7 +410,7 @@ export const assignEmployeeToEvent = async (req: Request, res: Response) => {
 
         // Verificar que el empleado existe y tiene rol de empleado (id_rol: 4)
         const empleado = await Usuario.findOne({
-            where: { cedula_usuario: empleado_evento, id_rol: 4 }
+            where: { cedula_usuario: empleado_evento, id_rol: 3 }
         });
         if (!empleado) {
             return res.status(404).json({

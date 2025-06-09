@@ -92,7 +92,7 @@ router.get('/tipo-eventos/list', getTiposEventos as RequestHandler);
 
 // Rutas para empleado-evento
 // Asignar empleado a un evento
-router.post('/:id_evento/empleados', async (req: Request, res: Response, next: NextFunction) => {
+router.post('/asignar-empleados', async (req: Request, res: Response, next: NextFunction) => {
     try {
         await assignEmployeeToEvent(req, res);
     } catch (error) {
