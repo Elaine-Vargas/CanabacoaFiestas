@@ -7,7 +7,11 @@ import {
     showEventsByAsesor,
     editEvent,
     deleteEvent,
-    getTiposEventos
+    getTiposEventos,
+    assignEmployeeToEvent,
+    getEventEmployees,
+    updateEmployeeRole,
+    removeEmployeeFromEvent
 } from '../controllers/eventoController';
 import { verificarToken } from '../middlewares/authMiddleware';
 
@@ -86,5 +90,41 @@ router.delete('/:id_evento', async (req: Request, res: Response, next: NextFunct
 
 router.get('/tipo-eventos/list', getTiposEventos as RequestHandler);
 
+// Rutas para empleado-evento
+// Asignar empleado a un evento
+router.post('/:id_evento/empleados', async (req: Request, res: Response, next: NextFunction) => {
+    try {
+        await assignEmployeeToEvent(req, res);
+    } catch (error) {
+        next(error);
+    }
+});
+
+// Obtener empleados de un evento
+router.get('/:id_evento/empleados', async (req: Request, res: Response, next: NextFunction) => {
+    try {
+        await getEventEmployees(req, res);
+    } catch (error) {
+        next(error);
+    }
+});
+
+// Actualizar rol de empleado en un evento
+router.put('/:id_evento/empleados/:empleado_evento', async (req: Request, res: Response, next: NextFunction) => {
+    try {
+        await updateEmployeeRole(req, res);
+    } catch (error) {
+        next(error);
+    }
+});
+
+// Remover empleado de un evento
+router.delete('/:id_evento/empleados/:empleado_evento', async (req: Request, res: Response, next: NextFunction) => {
+    try {
+        await removeEmployeeFromEvent(req, res);
+    } catch (error) {
+        next(error);
+    }
+});
 
 export default router;
