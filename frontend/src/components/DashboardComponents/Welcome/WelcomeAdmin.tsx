@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import '../../../styles/dashboard/ServicesSubpages.scss';
-import { Card, Button, Table, Tag, Space, Typography, Input, Select } from 'antd';
-import { PlusOutlined, EditOutlined, DeleteOutlined, EyeOutlined, SearchOutlined } from '@ant-design/icons';
+import { Card, Button, Table, Tag, Space, Typography, Input, Select, Dropdown } from 'antd';
+import type { ColumnsType } from 'antd/es/table';
+import { PlusOutlined, EditOutlined, DeleteOutlined, EyeOutlined, SearchOutlined, FilterOutlined } from '@ant-design/icons';
 import EventoForm from '../FormService/EventoForm';
 import UsuarioForm from '../FormService/UsuarioForm';
 import ProveedorForm from '../FormService/ProveedorForm';
@@ -500,265 +501,379 @@ const WelcomeAdmin: React.FC = () => {
 
   // Componente de filtros para las tablas
   const TableFilters = ({ type }: { type: string }) => {
-    switch (type) {
-      case 'eventos':
-        return (
-          <Space direction="vertical" style={{ width: '100%', marginBottom: 16 }}>
-            <Space>
-              <Input
-                ref={searchInputRef}
-                placeholder="Buscar eventos..."
-                prefix={<SearchOutlined />}
-                onChange={handleSearch}
-                style={{ width: 200 }}
-                value={searchText}
-                allowClear
-              />
-              <div>
-                <div style={{ marginBottom: 4 }}>Estado del evento:</div>
-                <Select
-                  placeholder="Filtrar por estado"
-                  style={{ width: 150 }}
-                  onChange={handleEstadoEventosChange}
-                  value={selectedEstadoEventos}
-                  options={[
-                    { value: 'todos', label: 'Todos' },
-                    { value: 'Pendiente', label: 'Pendiente' },
-                    { value: 'Confirmado', label: 'Confirmado' },
-                    { value: 'Cancelado', label: 'Cancelado' },
-                    { value: 'Completado', label: 'Completado' }
-                  ]}
-                />
-              </div>
-              <div>
-                <div style={{ marginBottom: 4 }}>Cliente:</div>
-                <Select
-                  placeholder="Filtrar por cliente"
-                  style={{ width: 200 }}
-                  onChange={handleClienteChange}
-                  value={selectedCliente}
-                  options={[
-                    { value: '', label: 'Todos' },
-                    ...clientes.map(cliente => ({
-                      value: `${cliente.nombre_usuario} ${cliente.apellido_usuario}`,
-                      label: `${cliente.nombre_usuario} ${cliente.apellido_usuario}`
-                    }))
-                  ]}
-                />
-              </div>
-              <div>
-                <div style={{ marginBottom: 4 }}>Asesor:</div>
-                <Select
-                  placeholder="Filtrar por asesor"
-                  style={{ width: 200 }}
-                  onChange={handleAsesorChange}
-                  value={selectedAsesor}
-                  options={[
-                    { value: '', label: 'Todos' },
-                    ...asesores.map(asesor => ({
-                      value: `${asesor.nombre_usuario} ${asesor.apellido_usuario}`,
-                      label: `${asesor.nombre_usuario} ${asesor.apellido_usuario}`
-                    }))
-                  ]}
-                />
-              </div>
-            </Space>
-          </Space>
-        );
-      case 'usuarios':
-        return (
-          <Space direction="vertical" style={{ width: '100%', marginBottom: 16 }}>
-            <Space>
-              <Input
-                placeholder="Buscar usuarios..."
-                prefix={<SearchOutlined />}
-                onChange={(e) => handleSearch(e)}
-                style={{ width: 200 }}
-              />
-              <div>
-                <div style={{ marginBottom: 4 }}>Estado del usuario:</div>
-                <Select
-                  placeholder="Filtrar por estado"
-                  style={{ width: 150 }}
-                  onChange={handleEstadoUsuariosChange}
-                  value={selectedEstadoUsuarios}
-                  options={[
-                    { value: 'todos', label: 'Todos' },
-                    { value: 'Activo', label: 'Activo' },
-                    { value: 'Inactivo', label: 'Inactivo' },
-                    { value: 'Eliminado', label: 'Eliminado' }
-                  ]}
-                />
-              </div>
-              <div>
-                <div style={{ marginBottom: 4 }}>Rol del usuario:</div>
-                <Select
-                  placeholder="Filtrar por rol"
-                  style={{ width: 150 }}
-                  onChange={handleRolChange}
-                  value={selectedRol}
-                  options={[
-                    { value: '', label: 'Todos' },
-                    { value: 'Administrador', label: 'Administrador' },
-                    { value: 'Cliente', label: 'Cliente' },
-                    { value: 'Empleado', label: 'Empleado' },
-                  ]}
-                />
-              </div>
-            </Space>
-          </Space>
-        );
-      case 'proveedores':
-        return (
-          <Space direction="vertical" style={{ width: '100%', marginBottom: 16 }}>
-            <Space>
-              <Input
-                placeholder="Buscar proveedores..."
-                prefix={<SearchOutlined />}
-                onChange={(e) => handleSearch(e)}
-                style={{ width: 200 }}
-              />
-              <div>
-                <div style={{ marginBottom: 4 }}>Estado del proveedor:</div>
-                <Select
-                  placeholder="Filtrar por estado"
-                  style={{ width: 150 }}
-                  onChange={handleEstadoProveedoresChange}
-                  value={selectedEstadoProveedores}
-                  options={[
-                    { value: 'todos', label: 'Todos' },
-                    { value: 'Activo', label: 'Activo' },
-                    { value: 'Inactivo', label: 'Inactivo' },
-                    { value: 'Eliminado', label: 'Eliminado' }
-                  ]}
-                />
-              </div>
-              <div>
-                <div style={{ marginBottom: 4 }}>Tipo de proveedor:</div>
-                <Select
-                  placeholder="Filtrar por tipo"
-                  style={{ width: 150 }}
-                  onChange={handleTipoChange}
-                  value={selectedTipo}
-                  options={[
-                    { value: '', label: 'Todos' },
-                    { value: 'Catering', label: 'Catering' },
-                    { value: 'Elementos', label: 'Elementos' }
-                  ]}
-                />
-              </div>
-            </Space>
-          </Space>
-        );
-      case 'asignaciones':
-        return (
-          <Space direction="vertical" style={{ width: '100%', marginBottom: 16 }}>
-            <Space>
-              <Input
-                placeholder="Buscar asignaciones..."
-                prefix={<SearchOutlined />}
-                onChange={(e) => handleSearch(e)}
-                style={{ width: 200 }}
-              />
-              <div>
-                <div style={{ marginBottom: 4 }}>Evento:</div>
-                <Select
-                  placeholder="Filtrar por evento"
-                  style={{ width: 300 }}
-                  onChange={handleEventoChange}
-                  value={selectedEvento}
-                  options={[
-                    { value: '', label: 'Todos' },
-                    ...eventos.map(evento => ({
-                      value: evento.id_evento,
-                      label: `${evento.cliente?.nombre_usuario || ''} ${evento.cliente?.apellido_usuario || ''} - ${new Date(evento.fecha_evento).toLocaleDateString()}`
-                    }))
-                  ]}
-                />
-              </div>
-              <div>
-                <div style={{ marginBottom: 4 }}>Cargo del empleado:</div>
-                <Select
-                  placeholder="Filtrar por cargo"
-                  style={{ width: 200 }}
-                  onChange={handleCargoChange}
-                  value={selectedCargo}
-                  options={[
-                    { value: '', label: 'Todos' },
-                    { value: 'Decorador', label: 'Decorador' },
-                    { value: 'Camarero', label: 'Camarero' },
-                    { value: 'Conductor', label: 'Conductor' },
-                    { value: 'Supervisor', label: 'Supervisor' },
-                    { value: 'Encargado de Logística', label: 'Encargado de Logística' },
-                    { value: 'Encargado de Limpieza', label: 'Encargado de Limpieza' }
-                  ]}
-                />
-              </div>
-            </Space>
-          </Space>
-        );
-      case 'decoraciones':
-        return (
-          <Space direction="vertical" style={{ width: '100%', marginBottom: 16 }}>
-            <Space>
-              <Input
-                placeholder="Buscar decoraciones..."
-                prefix={<SearchOutlined />}
-                onChange={(e) => handleSearch(e)}
-                style={{ width: 200 }}
-              />
-              <div>
-                <div style={{ marginBottom: 4 }}>Estado de la decoración:</div>
-                <Select
-                  placeholder="Filtrar por estado"
-                  style={{ width: 150 }}
-                  onChange={handleEstadoDecoracionesChange}
-                  value={selectedEstadoDecoraciones}
-                  options={[
-                    { value: 'todos', label: 'Todos' },
-                    { value: 'Solicitado', label: 'Solicitado' },
-                    { value: 'Aceptado', label: 'Aceptado' },
-                    { value: 'Completado', label: 'Completado' },
-                    { value: 'Cancelado', label: 'Cancelado' }
-                  ]}
-                />
-              </div>
-              <div>
-                <div style={{ marginBottom: 4 }}>Tipo de decoración:</div>
-                <Select
-                  placeholder="Filtrar por tipo"
-                  style={{ width: 150 }}
-                  onChange={handleTipoChange}
-                  value={selectedTipo}
-                  options={[
-                    { value: '', label: 'Todos' },
-                    { value: 'Boda', label: 'Boda' },
-                    { value: 'Cumpleaños', label: 'Cumpleaños' },
-                    { value: 'Graduación', label: 'Graduación' },
-                    { value: 'Otro', label: 'Otro' }
-                  ]}
-                />
-              </div>
-            </Space>
-          </Space>
-        );
-      default:
-        return null;
-    }
+    const clearAllFilters = () => {
+      switch (type) {
+        case 'eventos':
+          setSelectedEstadoEventos('todos');
+          setSelectedCliente('');
+          setSelectedAsesor('');
+          break;
+        case 'usuarios':
+          setSelectedEstadoUsuarios('todos');
+          setSelectedRol('');
+          break;
+        case 'proveedores':
+          setSelectedEstadoProveedores('todos');
+          setSelectedTipo('');
+          break;
+        case 'asignaciones':
+          setSelectedEvento('');
+          setSelectedCargo('');
+          break;
+        case 'decoraciones':
+          setSelectedEstadoDecoraciones('todos');
+          setSelectedTipo('');
+          break;
+      }
+    };
+
+    const getActiveFiltersCount = () => {
+      let count = 0;
+      switch (type) {
+        case 'eventos':
+          if (selectedEstadoEventos !== 'todos') count++;
+          if (selectedCliente) count++;
+          if (selectedAsesor) count++;
+          break;
+        case 'usuarios':
+          if (selectedEstadoUsuarios !== 'todos') count++;
+          if (selectedRol) count++;
+          break;
+        case 'proveedores':
+          if (selectedEstadoProveedores !== 'todos') count++;
+          if (selectedTipo) count++;
+          break;
+        case 'asignaciones':
+          if (selectedEvento) count++;
+          if (selectedCargo) count++;
+          break;
+        case 'decoraciones':
+          if (selectedEstadoDecoraciones !== 'todos') count++;
+          if (selectedTipo) count++;
+          break;
+      }
+      return count;
+    };
+
+    const getFilterContent = () => {
+      switch (type) {
+        case 'eventos':
+          return (
+            <div style={{ padding: '8px', minWidth: '300px', backgroundColor: '#f5f5f5', borderRadius: '4px' }}>
+              <Space direction="vertical" style={{ width: '100%' }}>
+                <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '8px' }}>
+                  <Button 
+                    type="link" 
+                    onClick={clearAllFilters}
+                    disabled={getActiveFiltersCount() === 0}
+                  >
+                    Limpiar filtros
+                  </Button>
+                </div>
+                <div>
+                  <div style={{ marginBottom: 4 }}>Estado del evento:</div>
+                  <Select
+                    placeholder="Filtrar por estado"
+                    style={{ width: '100%' }}
+                    onChange={handleEstadoEventosChange}
+                    value={selectedEstadoEventos}
+                    options={[
+                      { value: 'todos', label: 'Todos' },
+                      { value: 'Pendiente', label: 'Pendiente' },
+                      { value: 'Confirmado', label: 'Confirmado' },
+                      { value: 'Cancelado', label: 'Cancelado' },
+                      { value: 'Completado', label: 'Completado' }
+                    ]}
+                  />
+                </div>
+                <div>
+                  <div style={{ marginBottom: 4 }}>Cliente:</div>
+                  <Select
+                    placeholder="Filtrar por cliente"
+                    style={{ width: '100%' }}
+                    onChange={handleClienteChange}
+                    value={selectedCliente}
+                    options={[
+                      { value: '', label: 'Todos' },
+                      ...clientes.map(cliente => ({
+                        value: `${cliente.nombre_usuario} ${cliente.apellido_usuario}`,
+                        label: `${cliente.nombre_usuario} ${cliente.apellido_usuario}`
+                      }))
+                    ]}
+                  />
+                </div>
+                <div>
+                  <div style={{ marginBottom: 4 }}>Asesor:</div>
+                  <Select
+                    placeholder="Filtrar por asesor"
+                    style={{ width: '100%' }}
+                    onChange={handleAsesorChange}
+                    value={selectedAsesor}
+                    options={[
+                      { value: '', label: 'Todos' },
+                      ...asesores.map(asesor => ({
+                        value: `${asesor.nombre_usuario} ${asesor.apellido_usuario}`,
+                        label: `${asesor.nombre_usuario} ${asesor.apellido_usuario}`
+                      }))
+                    ]}
+                  />
+                </div>
+              </Space>
+            </div>
+          );
+        case 'usuarios':
+          return (
+            <div style={{ padding: '8px', minWidth: '300px', backgroundColor: '#f5f5f5', borderRadius: '4px' }}>
+              <Space direction="vertical" style={{ width: '100%' }}>
+                <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '8px' }}>
+                  <Button 
+                    type="link" 
+                    onClick={clearAllFilters}
+                    disabled={getActiveFiltersCount() === 0}
+                  >
+                    Limpiar filtros
+                  </Button>
+                </div>
+                <div>
+                  <div style={{ marginBottom: 4 }}>Estado del usuario:</div>
+                  <Select
+                    placeholder="Filtrar por estado"
+                    style={{ width: '100%' }}
+                    onChange={handleEstadoUsuariosChange}
+                    value={selectedEstadoUsuarios}
+                    options={[
+                      { value: 'todos', label: 'Todos' },
+                      { value: 'Activo', label: 'Activo' },
+                      { value: 'Inactivo', label: 'Inactivo' },
+                      { value: 'Eliminado', label: 'Eliminado' }
+                    ]}
+                  />
+                </div>
+                <div>
+                  <div style={{ marginBottom: 4 }}>Rol del usuario:</div>
+                  <Select
+                    placeholder="Filtrar por rol"
+                    style={{ width: '100%' }}
+                    onChange={handleRolChange}
+                    value={selectedRol}
+                    options={[
+                      { value: '', label: 'Todos' },
+                      { value: 'Administrador', label: 'Administrador' },
+                      { value: 'Cliente', label: 'Cliente' },
+                      { value: 'Empleado', label: 'Empleado' },
+                    ]}
+                  />
+                </div>
+              </Space>
+            </div>
+          );
+        case 'proveedores':
+          return (
+            <div style={{ padding: '8px', minWidth: '300px', backgroundColor: '#f5f5f5', borderRadius: '4px' }}>
+              <Space direction="vertical" style={{ width: '100%' }}>
+                <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '8px' }}>
+                  <Button 
+                    type="link" 
+                    onClick={clearAllFilters}
+                    disabled={getActiveFiltersCount() === 0}
+                  >
+                    Limpiar filtros
+                  </Button>
+                </div>
+                <div>
+                  <div style={{ marginBottom: 4 }}>Estado del proveedor:</div>
+                  <Select
+                    placeholder="Filtrar por estado"
+                    style={{ width: '100%' }}
+                    onChange={handleEstadoProveedoresChange}
+                    value={selectedEstadoProveedores}
+                    options={[
+                      { value: 'todos', label: 'Todos' },
+                      { value: 'Activo', label: 'Activo' },
+                      { value: 'Inactivo', label: 'Inactivo' },
+                      { value: 'Eliminado', label: 'Eliminado' }
+                    ]}
+                  />
+                </div>
+                <div>
+                  <div style={{ marginBottom: 4 }}>Tipo de proveedor:</div>
+                  <Select
+                    placeholder="Filtrar por tipo"
+                    style={{ width: '100%' }}
+                    onChange={handleTipoChange}
+                    value={selectedTipo}
+                    options={[
+                      { value: '', label: 'Todos' },
+                      { value: 'Catering', label: 'Catering' },
+                      { value: 'Elementos', label: 'Elementos' }
+                    ]}
+                  />
+                </div>
+              </Space>
+            </div>
+          );
+        case 'asignaciones':
+          return (
+            <div style={{ padding: '8px', minWidth: '300px', backgroundColor: '#f5f5f5', borderRadius: '4px' }}>
+              <Space direction="vertical" style={{ width: '100%' }}>
+                <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '8px' }}>
+                  <Button 
+                    type="link" 
+                    onClick={clearAllFilters}
+                    disabled={getActiveFiltersCount() === 0}
+                  >
+                    Limpiar filtros
+                  </Button>
+                </div>
+                <div>
+                  <div style={{ marginBottom: 4 }}>Evento:</div>
+                  <Select
+                    placeholder="Filtrar por evento"
+                    style={{ width: '100%' }}
+                    onChange={handleEventoChange}
+                    value={selectedEvento}
+                    options={[
+                      { value: '', label: 'Todos' },
+                      ...eventos.map(evento => ({
+                        value: evento.id_evento,
+                        label: `${evento.cliente?.nombre_usuario || ''} ${evento.cliente?.apellido_usuario || ''} - ${new Date(evento.fecha_evento).toLocaleDateString()}`
+                      }))
+                    ]}
+                  />
+                </div>
+                <div>
+                  <div style={{ marginBottom: 4 }}>Cargo del empleado:</div>
+                  <Select
+                    placeholder="Filtrar por cargo"
+                    style={{ width: '100%' }}
+                    onChange={handleCargoChange}
+                    value={selectedCargo}
+                    options={[
+                      { value: '', label: 'Todos' },
+                      { value: 'Decorador', label: 'Decorador' },
+                      { value: 'Camarero', label: 'Camarero' },
+                      { value: 'Conductor', label: 'Conductor' },
+                      { value: 'Supervisor', label: 'Supervisor' },
+                      { value: 'Encargado de Logística', label: 'Encargado de Logística' },
+                      { value: 'Encargado de Limpieza', label: 'Encargado de Limpieza' }
+                    ]}
+                  />
+                </div>
+              </Space>
+            </div>
+          );
+        case 'decoraciones':
+          return (
+            <div style={{ padding: '8px', minWidth: '300px', backgroundColor: '#f5f5f5', borderRadius: '4px' }}>
+              <Space direction="vertical" style={{ width: '100%' }}>
+                <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '8px' }}>
+                  <Button 
+                    type="link" 
+                    onClick={clearAllFilters}
+                    disabled={getActiveFiltersCount() === 0}
+                  >
+                    Limpiar filtros
+                  </Button>
+                </div>
+                <div>
+                  <div style={{ marginBottom: 4 }}>Estado de la decoración:</div>
+                  <Select
+                    placeholder="Filtrar por estado"
+                    style={{ width: '100%' }}
+                    onChange={handleEstadoDecoracionesChange}
+                    value={selectedEstadoDecoraciones}
+                    options={[
+                      { value: 'todos', label: 'Todos' },
+                      { value: 'Solicitado', label: 'Solicitado' },
+                      { value: 'Aceptado', label: 'Aceptado' },
+                      { value: 'Completado', label: 'Completado' },
+                      { value: 'Cancelado', label: 'Cancelado' }
+                    ]}
+                  />
+                </div>
+                <div>
+                  <div style={{ marginBottom: 4 }}>Tipo de decoración:</div>
+                  <Select
+                    placeholder="Filtrar por tipo"
+                    style={{ width: '100%' }}
+                    onChange={handleTipoChange}
+                    value={selectedTipo}
+                    options={[
+                      { value: '', label: 'Todos' },
+                      { value: 'Boda', label: 'Boda' },
+                      { value: 'Cumpleaños', label: 'Cumpleaños' },
+                      { value: 'Graduación', label: 'Graduación' },
+                      { value: 'Otro', label: 'Otro' }
+                    ]}
+                  />
+                </div>
+              </Space>
+            </div>
+          );
+        default:
+          return <div style={{ padding: '8px', backgroundColor: '#f5f5f5', borderRadius: '4px' }}>No hay filtros disponibles</div>;
+      }
+    };
+
+    const getSearchPlaceholder = () => {
+      switch (type) {
+        case 'eventos':
+          return 'Buscar eventos...';
+        case 'usuarios':
+          return 'Buscar usuarios...';
+        case 'proveedores':
+          return 'Buscar proveedores...';
+        case 'asignaciones':
+          return 'Buscar asignaciones...';
+        case 'decoraciones':
+          return 'Buscar decoraciones...';
+        default:
+          return 'Buscar...';
+      }
+    };
+
+    const activeFiltersCount = getActiveFiltersCount();
+
+    return (
+      <div style={{ marginBottom: 16 }}>
+        <Space>
+          <Input
+            ref={searchInputRef}
+            placeholder={getSearchPlaceholder()}
+            prefix={<SearchOutlined />}
+            onChange={handleSearch}
+            value={searchText}
+            allowClear
+            style={{ width: 200 }}
+          />
+          <Dropdown
+            overlay={getFilterContent()}
+            trigger={['click']}
+            placement="bottomRight"
+          >
+            <Button icon={<FilterOutlined />}>
+              Filtros {activeFiltersCount > 0 && `(${activeFiltersCount})`}
+            </Button>
+          </Dropdown>
+        </Space>
+      </div>
+    );
   };
 
-  const columns = [
+  const columns: ColumnsType<Evento> = [
     {
       title: 'Cliente',
       dataIndex: ['cliente', 'nombre_usuario'],
       key: 'nombre_cliente',
+      width: 'fit-content',
       render: (_: any, record: any) => 
         `${record.cliente?.nombre_usuario || ''} ${record.cliente?.apellido_usuario || ''}`
     },
-     {
+    {
       title: 'Asesor',
       dataIndex: ['asesor', 'nombre_usuario'],
       key: 'nombre_asesor',
+      width: 'fit-content',
       render: (_: any, record: any) => 
         `${record.asesor?.nombre_usuario || ''} ${record.asesor?.apellido_usuario || ''}`
     },
@@ -766,28 +881,32 @@ const WelcomeAdmin: React.FC = () => {
       title: 'Fecha',
       dataIndex: 'fecha_evento',
       key: 'fecha_evento',
+      width: 'fit-content',
     },
     {
       title: 'Hora',
       dataIndex: 'hora_evento',
       key: 'hora_evento',
+      width: 'fit-content',
     },
     {
       title: 'Tipo',
       dataIndex: 'tipo_evento',
       key: 'tipo_evento',
+      width: 'fit-content',
       render: (_: any, record: any) => record.tipo_evento?.tipo_evento || ''
-    }
-    ,
+    },
     {
       title: 'Espacio',
       dataIndex: 'espacio_evento',
       key: 'espacio_evento',
+      width: 'fit-content',
     },
     {
       title: 'Supervisión',
       dataIndex: 'desea_supervision',
       key: 'desea_supervision',
+      width: 'fit-content',
       render: (desea_supervision: boolean) => (
         <Tag color={desea_supervision ? 'green' : 'default'}>
           {desea_supervision ? 'Sí' : 'No'}
@@ -798,6 +917,7 @@ const WelcomeAdmin: React.FC = () => {
       title: 'Estado Solicitud',
       dataIndex: 'estado_solicitud',
       key: 'estado_solicitud',
+      width: 'fit-content',
       render: (estado: EstadoSolicitud) => {
         const colors: Record<EstadoSolicitud, string> = {
           'Pendiente': 'gold',
@@ -813,6 +933,7 @@ const WelcomeAdmin: React.FC = () => {
       title: 'Estado Evento',
       dataIndex: 'estado_solicitud',
       key: 'estado_solicitud',
+      width: 'fit-content',
       render: (estado: EstadoEvento) => {
         const colors: Record<EstadoEvento, string> = {
           'Pendiente': 'gold',
@@ -826,11 +947,14 @@ const WelcomeAdmin: React.FC = () => {
       title: 'Total',
       dataIndex: 'total_evento',
       key: 'total_evento',
+      width: 'fit-content',
       render: (total: number) => `RD$ ${total.toLocaleString('es-DO', { minimumFractionDigits: 2 })}`
     },
     {
       title: 'Acciones',
       key: 'acciones',
+      width: 'fit-content',
+      fixed: 'right' as const,
       render: (_: unknown, record: Evento) => (
         <Space>
           <Button type="text" icon={<EyeOutlined />} onClick={() => console.log('Ver', record)} />
@@ -841,41 +965,48 @@ const WelcomeAdmin: React.FC = () => {
     },
   ];
 
-  const usuarioColumns = [
+  const usuarioColumns: ColumnsType<Usuario> = [
     {
       title: 'Cédula',
       dataIndex: 'cedula_usuario',
       key: 'cedula_usuario',
+      width: 'fit-content',
     },
     {
       title: 'Nombre',
       dataIndex: 'nombre_usuario',
       key: 'nombre_usuario',
+      width: 'fit-content',
     },
     {
       title: 'Apellido',
       dataIndex: 'apellido_usuario',
       key: 'apellido_usuario',
+      width: 'fit-content',
     },
     {
       title: 'Usuario',
       dataIndex: 'usuario_login',
       key: 'usuario_login',
+      width: 'fit-content',
     },
     {
       title: 'Correo',
       dataIndex: 'correo_usuario',
       key: 'correo_usuario',
+      width: 'fit-content',
     },
     {
       title: 'Teléfono',
       dataIndex: 'tel_usuario',
       key: 'tel_usuario',
+      width: 'fit-content',
     },
     {
       title: 'Estado',
       dataIndex: 'estado_usuario',
       key: 'estado_usuario',
+      width: 'fit-content',
       render: (estado: string) => {
         const colors: Record<string, string> = {
           'Activo': 'green',
@@ -888,8 +1019,11 @@ const WelcomeAdmin: React.FC = () => {
     {
       title: 'Acciones',
       key: 'acciones',
+      width: 'fit-content',
+      fixed: 'right' as const,
       render: (_: unknown, record: any) => (
         <Space>
+          <Button type="text" icon={<EyeOutlined />} onClick={() => console.log('Ver', record)} />
           <Button type="text" icon={<EditOutlined />} onClick={() => console.log('Editar', record)} />
           <Button type="text" danger icon={<DeleteOutlined />} onClick={() => console.log('Eliminar', record)} />
         </Space>
@@ -897,30 +1031,35 @@ const WelcomeAdmin: React.FC = () => {
     },
   ];
 
-  const proveedorColumns = [
+  const proveedorColumns: ColumnsType<Proveedor> = [
     {
       title: 'Nombre',
       dataIndex: 'nombre_proveedor',
       key: 'nombre_proveedor',
+      width: 'fit-content',
     },
     {
       title: 'Tipo',
       dataIndex: 'tipo_proveedor',
       key: 'tipo_proveedor',
+      width: 'fit-content',
     },
     {
       title: 'Teléfono',
       dataIndex: 'tel_proveedor',
       key: 'tel_proveedor',
+      width: 'fit-content',
     },
     {
       title: 'Correo',
       dataIndex: 'correo_proveedor',
       key: 'correo_proveedor',
+      width: 'fit-content',
     },
     {
       title: 'Dirección',
       key: 'direccion',
+      width: 'fit-content',
       render: (_: unknown, record: any) => (
         <span>
           {record.direccion?.calle}, {record.direccion?.sector}
@@ -931,6 +1070,7 @@ const WelcomeAdmin: React.FC = () => {
       title: 'Estado',
       dataIndex: 'estado_proveedor',
       key: 'estado_proveedor',
+      width: 'fit-content',
       render: (estado: string) => {
         const colors: Record<string, string> = {
           'Activo': 'green',
@@ -943,8 +1083,11 @@ const WelcomeAdmin: React.FC = () => {
     {
       title: 'Acciones',
       key: 'acciones',
+      width: 'fit-content',
+      fixed: 'right' as const,
       render: (_: unknown, record: any) => (
         <Space>
+          <Button type="text" icon={<EyeOutlined />} onClick={() => console.log('Ver', record)} />
           <Button type="text" icon={<EditOutlined />} onClick={() => console.log('Editar', record)} />
           <Button type="text" danger icon={<DeleteOutlined />} onClick={() => console.log('Eliminar', record)} />
         </Space>
@@ -952,10 +1095,11 @@ const WelcomeAdmin: React.FC = () => {
     },
   ];
 
-  const asignacionColumns = [
+  const asignacionColumns: ColumnsType<AsignacionEmpleado> = [
     {
       title: 'Evento',
       key: 'evento',
+      width: 'fit-content',
       render: (_: unknown, record: any) => (
         <span>
           {record.evento?.id_evento}, {record.cliente?.cedula_usuario}
@@ -965,6 +1109,7 @@ const WelcomeAdmin: React.FC = () => {
     {
       title: 'Empleado',
       key: 'empleado_evento',
+      width: 'fit-content',
       render: (_: unknown, record: any) => (
         <span>
           {record.empleado?.nombre_usuario}, {record.empleado?.apellido_empleado}
@@ -975,6 +1120,7 @@ const WelcomeAdmin: React.FC = () => {
       title: 'Puesto',
       dataIndex: 'puesto_evento',
       key: 'puesto_evento',
+      width: 'fit-content',
       render: (puesto: string) => (
         <Tag color="blue">{puesto}</Tag>
       )
@@ -982,6 +1128,8 @@ const WelcomeAdmin: React.FC = () => {
     {
       title: 'Acciones',
       key: 'acciones',
+      width: 'fit-content',
+      fixed: 'right' as const,
       render: (_: unknown, record: AsignacionEmpleado) => (
         <Space>
           <Button type="text" icon={<EditOutlined />} onClick={() => console.log('Editar', record)} />
@@ -991,11 +1139,12 @@ const WelcomeAdmin: React.FC = () => {
     },
   ];
 
-  const decoracionColumns = [
+  const decoracionColumns: ColumnsType<Decoracion> = [
     {
       title: 'Evento',
       dataIndex: 'nombre_cliente',
       key: 'nombre_cliente',
+      width: 'fit-content',
       render: (_: string, record: Decoracion) => (
         <span>
           {record.nombre_cliente} - {new Date(record.fecha_evento!).toLocaleDateString()}
@@ -1006,23 +1155,27 @@ const WelcomeAdmin: React.FC = () => {
       title: 'Tema',
       dataIndex: 'tema_decoracion',
       key: 'tema_decoracion',
+      width: 'fit-content',
       ellipsis: true
     },
     {
       title: 'Colores',
       dataIndex: 'colores_decoracion',
-      key: 'colores_decoracion'
+      key: 'colores_decoracion',
+      width: 'fit-content'
     },
     {
       title: 'Total',
       dataIndex: 'total_decoracion',
       key: 'total_decoracion',
+      width: 'fit-content',
       render: (total: number) => `RD$ ${total.toLocaleString('es-DO', { minimumFractionDigits: 2 })}`
     },
     {
       title: 'Estado',
       dataIndex: 'estado_decoracion',
       key: 'estado_decoracion',
+      width: 'fit-content',
       render: (estado: string) => {
         const colors: Record<string, string> = {
           'Solicitado': 'gold',
@@ -1036,6 +1189,8 @@ const WelcomeAdmin: React.FC = () => {
     {
       title: 'Acciones',
       key: 'acciones',
+      width: 'fit-content',
+      fixed: 'right' as const,
       render: (_: unknown, record: Decoracion) => (
         <Space>
           <Button type="text" icon={<EyeOutlined />} onClick={() => console.log('Ver', record)} />
@@ -1083,6 +1238,7 @@ const WelcomeAdmin: React.FC = () => {
                 loading={loading}
                 pagination={{ pageSize: 3 }}
                 rowKey="id_evento"
+                scroll={{ x: 'max-content' }}
               />
             </Card>
           </div>
@@ -1111,6 +1267,7 @@ const WelcomeAdmin: React.FC = () => {
                 loading={loading}
                 pagination={{ pageSize: 3 }}
                 rowKey="cedula_usuario"
+                scroll={{ x: 'max-content' }}
               />
             </Card>
 
@@ -1136,6 +1293,7 @@ const WelcomeAdmin: React.FC = () => {
                 loading={loading}
                 pagination={{ pageSize: 3 }}
                 rowKey="id_proveedor"
+                scroll={{ x: 'max-content' }}
               />
             </Card>
           </div>
@@ -1164,6 +1322,7 @@ const WelcomeAdmin: React.FC = () => {
                 loading={loading}
                 pagination={{ pageSize: 3 }}
                 rowKey="id"
+                scroll={{ x: 'max-content' }}
               />
             </Card>
 
@@ -1189,6 +1348,7 @@ const WelcomeAdmin: React.FC = () => {
                 loading={loading}
                 pagination={{ pageSize: 3 }}
                 rowKey="id_decoracion"
+                scroll={{ x: 'max-content' }}
               />
             </Card>
           </div>
