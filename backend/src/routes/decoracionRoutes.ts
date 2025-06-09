@@ -36,15 +36,6 @@ router.get('/', async (req: Request, res: Response, next: NextFunction) => {
     }
 });
 
-// Buscar servicios de decoración por tema
-router.get('/tema/:tema', async (req: Request, res: Response, next: NextFunction) => {
-    try {
-        await getDecoracionesByTema(req, res);
-    } catch (error) {
-        next(error);
-    }
-});
-
 // Editar un servicio de decoración
 router.put('/:id_decoracion', async (req: Request, res: Response, next: NextFunction) => {
     try {

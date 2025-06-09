@@ -876,4 +876,240 @@ export const generarReporteEventosPersonal = async (req: Request, res: Response)
       mensaje: 'Ocurrió un error al generar el reporte de eventos por personal'
     });
   }
+};
+
+export const generarReporteEquipos = async (req: Request, res: Response) => {
+  try {
+    const { evento_id, empleado_id, puesto } = req.query;
+
+    const whereClause: any = {};
+    const conditions: any[] = [];
+
+    if (evento_id && evento_id !== 'todos') {
+      conditions.push({ id_evento: evento_id });
+    }
+
+    if (empleado_id && empleado_id !== 'todos') {
+      conditions.push({ empleado_evento: empleado_id });
+    }
+
+    if (puesto && puesto !== 'todos') {
+      conditions.push({ puesto_evento: puesto });
+    }
+
+    if (conditions.length > 0) {
+      whereClause[Op.and] = conditions;
+    }
+
+    console.log('Filtros aplicados:', whereClause);
+
+    // Obtener los empleados con sus eventos
+    const empleadosEventos = await EmpleadoEvento.findAll({
+      where: whereClause,
+      include: [
+        {
+          model: Evento,
+          include: [
+            {
+              model: Usuario,
+              as: 'cliente',
+              attributes: ['nombre_usuario', 'apellido_usuario']
+            },
+            {
+              model: Usuario,
+              as: 'asesor',
+              attributes: ['nombre_usuario', 'apellido_usuario']
+            }
+          ],
+          // Si se especifica un evento, asegurarse de que solo se incluya ese evento
+          ...(evento_id && evento_id !== 'todos' ? {
+            where: {
+              id_evento: evento_id
+            }
+          } : {})
+        },
+        {
+          model: Usuario,
+          as: 'empleado',
+          attributes: ['nombre_usuario', 'apellido_usuario', 'cedula_usuario'],
+          where: {
+            id_rol: 3, // Solo incluir usuarios con rol de empleado (id_rol = 3)
+            ...(empleado_id && empleado_id !== 'todos' ? { cedula_usuario: empleado_id } : {})
+          },
+          required: true
+        }
+      ],
+      order: [
+        ['id_evento', 'ASC'],
+        ['puesto_evento', 'ASC']
+      ]
+    });
+
+    if (!empleadosEventos || empleadosEventos.length === 0) {
+      let mensaje = 'No se encontraron registros de equipos para los criterios especificados.';
+      
+      if (evento_id && evento_id !== 'todos') {
+        mensaje = `No se encontraron empleados asignados al evento ${evento_id}`;
+      }
+      if (empleado_id && empleado_id !== 'todos') {
+        if (puesto && puesto !== 'todos') {
+          mensaje = `No se encontró el empleado con ID ${empleado_id} en el puesto ${puesto} para los eventos.`;
+        } else {
+          mensaje = `No se encontraron eventos asignados al empleado ${empleado_id}`;
+        }
+      }
+      if (puesto && puesto !== 'todos' && !empleado_id) {
+        mensaje = `No se encontraron empleados con el puesto ${puesto}`;
+      }
+      
+      return res.status(404).json({ 
+        mensaje: mensaje
+      });
+    }
+
+    // Crear el documento PDF en formato horizontal
+    const doc = new PDFDocument({ 
+      size: 'A4', 
+      layout: 'landscape',
+      margin: 50
+    });
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', 'attachment; filename=reporte_equipos.pdf');
+    doc.pipe(res);
+
+    // Título del reporte
+    doc.fontSize(20).text('Reporte de Equipos', { align: 'center' });
+    doc.moveDown();
+
+    // Fecha de generación
+    doc.fontSize(12).text(`Fecha de generación: ${new Date().toLocaleDateString()}`, { align: 'right' });
+    doc.moveDown();
+
+    // Información específica del evento si se seleccionó uno
+    if (evento_id && evento_id !== 'todos' && empleadosEventos.length > 0) {
+      const evento = empleadosEventos[0].evento;
+      if (evento) {
+        doc.fontSize(14).text('Información del Evento:', { underline: true });
+        doc.fontSize(12);
+        doc.text(`ID del Evento: ${evento.id_evento}`);
+        doc.text(`Fecha: ${new Date(evento.fecha_evento).toLocaleDateString()}`);
+        doc.text(`Cliente: ${evento.cliente?.nombre_usuario} ${evento.cliente?.apellido_usuario}`);
+        doc.text(`Asesor: ${evento.asesor?.nombre_usuario} ${evento.asesor?.apellido_usuario}`);
+        doc.moveDown();
+      }
+    }
+
+    // Información específica del empleado si se seleccionó uno
+    if (empleado_id && empleado_id !== 'todos' && empleadosEventos.length > 0) {
+      const empleado = empleadosEventos[0].empleado;
+      if (empleado) {
+        doc.fontSize(14).text('Información del Empleado:', { underline: true });
+        doc.fontSize(12);
+        doc.text(`Nombre: ${empleado.nombre_usuario} ${empleado.apellido_usuario}`);
+        doc.text(`Cédula: ${empleado.cedula_usuario}`);
+        doc.moveDown();
+      }
+    }
+
+    // Filtros aplicados (solo si hay filtros adicionales)
+    const hasFilters = (puesto && puesto !== 'todos');
+
+    if (hasFilters) {
+      doc.fontSize(12).text('Filtros aplicados:', { underline: true });
+      if (puesto && puesto !== 'todos') {
+        doc.text(`Puesto: ${puesto}`);
+      }
+      doc.moveDown();
+    }
+
+    // Tabla de empleados
+    const tableTop = doc.y + 20;
+    const tableLeft = 50;
+    const rowHeight = 30;
+    
+    // Determinar las columnas basadas en los filtros
+    let headers: string[] = [];
+    let colWidths: number[] = [];
+    
+    if (evento_id && evento_id !== 'todos') {
+      // Si hay un evento específico, solo mostrar empleado y puesto
+      headers = ['Empleado', 'Puesto'];
+      colWidths = [300, 300];
+    } else if (empleado_id && empleado_id !== 'todos') {
+      // Si hay un empleado específico, mostrar evento y puesto
+      headers = ['Evento', 'Fecha', 'Puesto'];
+      colWidths = [200, 150, 250];
+    } else {
+      // Si no hay filtros específicos, mostrar todas las columnas
+      headers = ['ID Evento', 'Fecha Evento', 'Cliente', 'Asesor', 'Empleado', 'Puesto'];
+      colWidths = [80, 120, 120, 120, 120, 120];
+    }
+
+    let currentY = tableTop;
+
+    // Encabezados de la tabla
+    doc.fontSize(12);
+    headers.forEach((header, i) => {
+      doc.text(header, tableLeft + colWidths.slice(0, i).reduce((a, b) => a + b, 0), currentY);
+    });
+    currentY += rowHeight;
+
+    // Línea separadora
+    doc.moveTo(tableLeft, currentY).lineTo(tableLeft + colWidths.reduce((a, b) => a + b, 0), currentY).stroke();
+    currentY += 10;
+
+    // Datos de la tabla
+    doc.fontSize(10);
+    empleadosEventos.forEach((empleadoEvento) => {
+      // Verificar si necesitamos una nueva página
+      if (currentY > 500) {
+        doc.addPage({ layout: 'landscape' });
+        currentY = 50;
+      }
+
+      const evento = empleadoEvento.evento;
+      const empleado = empleadoEvento.empleado;
+      const cliente = evento?.cliente;
+      const asesor = evento?.asesor;
+
+      let rowData: string[] = [];
+      
+      if (evento_id && evento_id !== 'todos') {
+        // Si hay un evento específico
+        rowData = [
+          empleado ? `${empleado.nombre_usuario} ${empleado.apellido_usuario}` : '',
+          empleadoEvento.puesto_evento
+        ];
+      } else if (empleado_id && empleado_id !== 'todos') {
+        // Si hay un empleado específico
+        rowData = [
+          evento ? `Evento #${evento.id_evento}` : '',
+          evento?.fecha_evento ? new Date(evento.fecha_evento).toLocaleDateString() : '',
+          empleadoEvento.puesto_evento
+        ];
+      } else {
+        // Si no hay filtros específicos
+        rowData = [
+          evento?.id_evento.toString() || '',
+          evento?.fecha_evento ? new Date(evento.fecha_evento).toLocaleDateString() : '',
+          cliente ? `${cliente.nombre_usuario} ${cliente.apellido_usuario}` : '',
+          asesor ? `${asesor.nombre_usuario} ${asesor.apellido_usuario}` : '',
+          empleado ? `${empleado.nombre_usuario} ${empleado.apellido_usuario}` : '',
+          empleadoEvento.puesto_evento
+        ];
+      }
+
+      rowData.forEach((text, i) => {
+        doc.text(text, tableLeft + colWidths.slice(0, i).reduce((a, b) => a + b, 0), currentY);
+      });
+
+      currentY += rowHeight;
+    });
+
+    // Finalizar el documento
+    doc.end();
+  } catch (error) {
+    console.error('Error al generar el reporte de equipos:', error);
+    res.status(500).json({ mensaje: 'Error al generar el reporte de equipos' });
+  }
 }; 
