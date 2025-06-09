@@ -192,7 +192,21 @@ export default class Usuario extends Model {
   correo_usuario!: string;
 
   @Column({
-    type: DataType.ENUM('Activo', 'Inactivo', 'Eliminado'),
+    type: DataType.STRING(6),
+    allowNull: true,
+    field: 'codigo_recuperacion'
+  })
+  codigo_recuperacion?: string;
+
+  @Column({
+    type: DataType.BIGINT,
+    allowNull: true,
+    field: 'expiracion_codigo'
+  })
+  expiracion_codigo?: number;
+
+  @Column({
+    type: DataType.ENUM('Activo', 'Inactivo', 'Eliminado', 'Pendiente'),
     allowNull: false,
     defaultValue: 'Activo',
     field: 'estado_usuario'

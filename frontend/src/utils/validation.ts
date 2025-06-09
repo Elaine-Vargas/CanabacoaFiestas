@@ -25,10 +25,19 @@ export const validateEmail = (email: string): string | null => {
 };
 
 export const validateUsername = (username: string): string | null => {
-  const usernameRegex = /^[a-zA-Z0-9_]{4,20}$/;
-  return usernameRegex.test(username) 
-    ? null 
-    : "El usuario debe tener entre 4-20 caracteres (solo letras, números y _)";
+  // Verificar longitud
+  if (username.length < 4 || username.length > 20) {
+    return "El usuario debe tener entre 4-20 caracteres";
+  }
+
+  // Verificar si contiene caracteres no permitidos
+  const invalidChars = username.match(/[^a-zA-Z0-9_]/g);
+  if (invalidChars) {
+    const uniqueInvalidChars = [...new Set(invalidChars)];
+    return `Solo se permiten letras, números y guión bajo (_)`;
+  }
+
+  return null;
 };
 
 export const formatPhoneNumber = (input: string): string => {

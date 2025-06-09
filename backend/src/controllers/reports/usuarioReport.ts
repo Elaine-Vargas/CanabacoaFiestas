@@ -24,9 +24,15 @@ export const ReporteUsuariosPorRolYEstado = async (req: Request, res: Response) 
     });
 
     if (!usuarios || usuarios.length === 0) {
+      let rolNombre = 'seleccionado';
+      if (id_rol !== 'todos') {
+        const rol = await Rol.findByPk(id_rol);
+        rolNombre = rol ? rol.nombre_rol : 'desconocido';
+      }
+
       return res.status(404).json({
         error: 'No se encontraron usuarios',
-        mensaje: 'No se encontraron usuarios con el rol y estado especificados'
+        mensaje: `No se encontraron usuarios con el rol ${rolNombre} y estado ${estado_usuario === 'todos' ? 'seleccionado' : estado_usuario}`
       });
     }
 
@@ -49,7 +55,7 @@ export const ReporteUsuariosPorRolYEstado = async (req: Request, res: Response) 
 
     // Encabezado de tabla
     const tableTop = 100;
-    const colWidths = [30, 100, 100, 100, 100, 180, 80];
+    const colWidths = [30, 100, 100, 100, 100, 160, 60, 120];
     const startX = doc.page.margins.left;
     const endX = doc.page.width - doc.page.margins.right;
 
@@ -64,7 +70,7 @@ export const ReporteUsuariosPorRolYEstado = async (req: Request, res: Response) 
     };
 
     // Dibujar encabezado
-    drawRow(tableTop, ['#', 'Cédula', 'Nombre', 'Usuario', 'Teléfono', 'Correo', 'Estado'], true);
+    drawRow(tableTop, ['#', 'Cédula', 'Nombre', 'Usuario', 'Teléfono', 'Correo', 'Estado', 'Creación'], true);
     
     // Línea horizontal después del encabezado
     doc.moveTo(startX, tableTop + 15)
@@ -77,7 +83,7 @@ export const ReporteUsuariosPorRolYEstado = async (req: Request, res: Response) 
       if (y > 520) {
         doc.addPage({ layout: 'landscape' });
         y = 100;
-        drawRow(y, ['#', 'Cédula', 'Nombre', 'Usuario', 'Teléfono', 'Correo', 'Estado'], true);
+        drawRow(y, ['#', 'Cédula', 'Nombre', 'Usuario', 'Teléfono', 'Correo', 'Estado', 'Fecha y Hora Creación'], true);
         y += 20;
       }
 
@@ -88,7 +94,8 @@ export const ReporteUsuariosPorRolYEstado = async (req: Request, res: Response) 
         usuario.usuario_login,
         usuario.tel_usuario,
         usuario.correo_usuario,
-        usuario.estado_usuario
+        usuario.estado_usuario,
+        usuario.creacion_usuario.toLocaleString()
       ];
 
       drawRow(y, content);

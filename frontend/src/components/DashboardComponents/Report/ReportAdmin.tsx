@@ -1,9 +1,11 @@
 import React, { useEffect, useState } from 'react';
-import { Button, Select, Space, message, Card, Modal, Row, Col, Input } from 'antd';
+import { Button, Select, Space, message, Card, Modal, Row, Col, Input, DatePicker } from 'antd';
 import { DownloadOutlined, UserOutlined, TeamOutlined, CalendarOutlined, BarChartOutlined } from '@ant-design/icons';
 import axios from 'axios';
+import dayjs from 'dayjs';
 
 const { Option } = Select;
+const { RangePicker } = DatePicker;
 
 interface Usuario {
   cedula_usuario: string;
@@ -28,6 +30,11 @@ interface Asesor {
   apellido_usuario: string;
 }
 
+interface TipoEvento {
+  id_tipo_evento: number;
+  tipo_evento: string;
+}
+
 const ReportAdmin = () => {
   const apiUrl = import.meta.env.VITE_API_BASE_URL;
   const [loading, setLoading] = useState<boolean>(false);
@@ -37,10 +44,14 @@ const ReportAdmin = () => {
   const [cedula, setCedula] = useState<string>('');
   const [clientes, setClientes] = useState<Cliente[]>([]);
   const [asesores, setAsesores] = useState<Asesor[]>([]);
+  const [tiposEvento, setTiposEvento] = useState<TipoEvento[]>([]);
   const [loadingClientes, setLoadingClientes] = useState(false);
   const [loadingAsesores, setLoadingAsesores] = useState(false);
+  const [loadingTiposEvento, setLoadingTiposEvento] = useState(false);
   const [selectedRoleForCombinedReport, setSelectedRoleForCombinedReport] = useState<string>('todos');
   const [selectedStatusForCombinedReport, setSelectedStatusForCombinedReport] = useState<string>('todos');
+  const [selectedTipoEvento, setSelectedTipoEvento] = useState<string>('todos');
+  const [dateRange, setDateRange] = useState<[dayjs.Dayjs | null, dayjs.Dayjs | null]>([null, null]);
 
   const handleRoleAndStatusReport = async () => {
     try {
@@ -53,7 +64,39 @@ const ReportAdmin = () => {
       const fileURL = window.URL.createObjectURL(file);
       window.open(fileURL);
     } catch (error) {
-      message.error('Error al generar el reporte de usuarios por rol y estado');
+      if (axios.isAxiosError(error)) {
+        const { response } = error;
+        if (response && response.data instanceof Blob) {
+          try {
+            const blobText = await new Promise<string>((resolve, reject) => {
+              const reader = new FileReader();
+              reader.onloadend = () => {
+                if (reader.result) {
+                  resolve(reader.result as string);
+                } else {
+                  reject(new Error('Failed to read blob as text.'));
+                }
+              };
+              reader.onerror = reject;
+              reader.readAsText(response.data);
+            });
+
+            const errorData = JSON.parse(blobText);
+            if (errorData.mensaje) {
+              message.error(errorData.mensaje);
+            } else {
+              message.error('Error al generar el reporte de usuarios por rol y estado');
+            }
+          } catch (parseError) {
+            console.error('Error parsing error response:', parseError);
+            message.error('Error al generar el reporte de usuarios por rol y estado');
+          }
+        } else {
+          message.error('Error al generar el reporte de usuarios por rol y estado');
+        }
+      } else {
+        message.error('Error al generar el reporte de usuarios por rol y estado');
+      }
     } finally {
       setLoading(false);
     }
@@ -140,57 +183,73 @@ const ReportAdmin = () => {
     }
   };
 
+  const fetchTiposEvento = async () => {
+    try {
+      setLoadingTiposEvento(true);
+      const response = await fetch(`${apiUrl}/evento/tipo-eventos/list`, {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      if (!response.ok) {
+        throw new Error('Error al cargar los tipos de evento');
+      }
+      const data = await response.json();
+      if (Array.isArray(data)) {
+        setTiposEvento(data);
+      } else {
+        throw new Error('Formato de datos inválido');
+      }
+    } catch (error) {
+      console.error('Error al cargar tipos de evento:', error);
+      message.error('Error al cargar los tipos de evento');
+      setTiposEvento([]);
+    } finally {
+      setLoadingTiposEvento(false);
+    }
+  };
+
   useEffect(() => {
     if (isEventModalVisible) {
       fetchClientes();
       fetchAsesores();
+      fetchTiposEvento();
     }
   }, [isEventModalVisible]);
 
   const handleGeneralEventReport = async () => {
     try {
       setLoading(true);
-      const response = await axios.get(`${apiUrl}/reporte/eventos`, {
-        responseType: 'blob'
-      });
-      
-      const file = new Blob([response.data], { type: 'application/pdf' });
-      const fileURL = window.URL.createObjectURL(file);
-      window.open(fileURL);
-    } catch (error) {
-      message.error('Error al generar el reporte general de eventos');
-    } finally {
-      setLoading(false);
-    }
-  };
+      let url = `${apiUrl}/reporte/eventos`;
+      const params = new URLSearchParams();
 
-  const handleSpecificEventReport = async () => {
-    if (!selectedEventType || !cedula) {
-      message.warning('Por favor complete todos los campos');
-      return;
-    }
-
-    try {
-      setLoading(true);
-      let endpoint;
-      if (selectedEventType === 'cliente') {
-        endpoint = `/reporte/eventos/cliente/${cedula}`;
-      } else {
-        endpoint = `/reporte/eventos/${selectedEventType}/${cedula}`;
+      if (selectedTipoEvento && selectedTipoEvento !== 'todos') {
+        params.append('tipo_evento', selectedTipoEvento);
       }
-      const response = await axios.get(`${apiUrl}${endpoint}`, {
-        responseType: 'blob'
+
+      if (dateRange[0] && dateRange[1]) {
+        params.append('fecha_inicio', dateRange[0].format('YYYY-MM-DD'));
+        params.append('fecha_fin', dateRange[1].format('YYYY-MM-DD'));
+      }
+
+      if (params.toString()) {
+        url += `?${params.toString()}`;
+      }
+
+      const response = await axios.get(url, {
+        responseType: 'blob',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        }
       });
       
       const file = new Blob([response.data], { type: 'application/pdf' });
       const fileURL = window.URL.createObjectURL(file);
       window.open(fileURL);
     } catch (error) {
-      let errorMessage = 'Error al generar el reporte específico de eventos';
-
       if (axios.isAxiosError(error)) {
         const { response } = error;
-
         if (response && response.data instanceof Blob) {
           try {
             const blobText = await new Promise<string>((resolve, reject) => {
@@ -210,19 +269,96 @@ const ReportAdmin = () => {
             if (errorData.mensaje) {
               message.error(errorData.mensaje);
             } else {
-              message.error(errorMessage + ': ' + blobText); 
+              message.error('Error al generar el reporte general de eventos');
             }
           } catch (parseError) {
             console.error('Error parsing error response:', parseError);
-            message.error(errorMessage + ': El servidor respondió con un formato inesperado.');
+            message.error('Error al generar el reporte general de eventos');
           }
         } else {
-          console.error('Axios error without blob data:', error);
-          message.error(errorMessage + ': El servidor respondió con un formato inesperado o no hubo respuesta.');
+          message.error('Error al generar el reporte general de eventos');
         }
       } else {
-        console.error('Non-Axios error:', error);
-        message.error(errorMessage + ': Ocurrió un error inesperado.');
+        message.error('Error al generar el reporte general de eventos');
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSpecificEventReport = async () => {
+    if (!selectedEventType || !cedula) {
+      message.warning('Por favor complete todos los campos');
+      return;
+    }
+
+    try {
+      setLoading(true);
+      let endpoint;
+      if (selectedEventType === 'cliente') {
+        endpoint = `/reporte/eventos/cliente/${cedula}`;
+      } else if (selectedEventType === 'asesor') {
+        endpoint = `/reporte/eventos/asesor/${cedula}`;
+      } else if (selectedEventType === 'personal') {
+        endpoint = `/reporte/eventos/personal/${cedula}`;
+      }
+
+      const params = new URLSearchParams();
+
+      if (selectedTipoEvento && selectedTipoEvento !== 'todos') {
+        params.append('tipo_evento', selectedTipoEvento);
+      }
+
+      if (dateRange[0] && dateRange[1]) {
+        params.append('fecha_inicio', dateRange[0].format('YYYY-MM-DD'));
+        params.append('fecha_fin', dateRange[1].format('YYYY-MM-DD'));
+      }
+
+      const url = `${apiUrl}${endpoint}${params.toString() ? `?${params.toString()}` : ''}`;
+
+      const response = await axios.get(url, {
+        responseType: 'blob',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        }
+      });
+      
+      const file = new Blob([response.data], { type: 'application/pdf' });
+      const fileURL = window.URL.createObjectURL(file);
+      window.open(fileURL);
+    } catch (error) {
+      if (axios.isAxiosError(error)) {
+        const { response } = error;
+        if (response && response.data instanceof Blob) {
+          try {
+            const blobText = await new Promise<string>((resolve, reject) => {
+              const reader = new FileReader();
+              reader.onloadend = () => {
+                if (reader.result) {
+                  resolve(reader.result as string);
+                } else {
+                  reject(new Error('Failed to read blob as text.'));
+                }
+              };
+              reader.onerror = reject;
+              reader.readAsText(response.data);
+            });
+
+            const errorData = JSON.parse(blobText);
+            if (errorData.mensaje) {
+              message.error(errorData.mensaje);
+            } else {
+              message.error('Error al generar el reporte específico de eventos');
+            }
+          } catch (parseError) {
+            console.error('Error parsing error response:', parseError);
+            message.error('Error al generar el reporte específico de eventos');
+          }
+        } else {
+          message.error('Error al generar el reporte específico de eventos');
+        }
+      } else {
+        message.error('Error al generar el reporte específico de eventos');
       }
     } finally {
       setLoading(false);
@@ -335,6 +471,33 @@ const ReportAdmin = () => {
       >
         <Space direction="vertical" size="large" style={{ width: '100%' }}>
           <div>
+            <h4 className='reportTitle'>Filtros Generales</h4>
+            <Space direction="vertical" style={{ width: '100%' }}>
+              <Select
+                style={{ width: '100%' }}
+                placeholder="Seleccione el tipo de evento"
+                value={selectedTipoEvento}
+                onChange={setSelectedTipoEvento}
+                loading={loadingTiposEvento}
+              >
+                <Option value="todos">Todos los Tipos de Evento</Option>
+                {tiposEvento.map(tipo => (
+                  <Option key={tipo.id_tipo_evento} value={tipo.id_tipo_evento.toString()}>
+                    {tipo.tipo_evento}
+                  </Option>
+                ))}
+              </Select>
+
+              <RangePicker
+                style={{ width: '100%' }}
+                placeholder={['Fecha Inicio', 'Fecha Fin']}
+                value={dateRange}
+                onChange={(dates) => setDateRange(dates as [dayjs.Dayjs | null, dayjs.Dayjs | null])}
+              />
+            </Space>
+          </div>
+
+          <div>
             <h4 className='reportTitle'>Reporte General de Eventos</h4>
             <Button 
               type="primary" 
@@ -378,9 +541,9 @@ const ReportAdmin = () => {
                 >
                   <Option value="todos">Todos los Clientes</Option>
                   {clientes.map(cliente => (
-                    <Select.Option key={cliente.cedula_usuario} value={cliente.cedula_usuario}>
+                    <Option key={cliente.cedula_usuario} value={cliente.cedula_usuario}>
                       {`${cliente.nombre_usuario} ${cliente.apellido_usuario} (${cliente.cedula_usuario})`}
-                    </Select.Option>
+                    </Option>
                   ))}
                 </Select>
               )}
@@ -403,19 +566,36 @@ const ReportAdmin = () => {
                 >
                   <Option value="todos">Todos los Asesores</Option>
                   {asesores.map(asesor => (
-                    <Select.Option key={asesor.cedula_usuario} value={asesor.cedula_usuario}>
+                    <Option key={asesor.cedula_usuario} value={asesor.cedula_usuario}>
                       {`${asesor.nombre_usuario} ${asesor.apellido_usuario} (${asesor.cedula_usuario})`}
-                    </Select.Option>
+                    </Option>
                   ))}
                 </Select>
               )}
 
               {selectedEventType === 'personal' && (
-                <Input
-                  placeholder="Ingrese el ID del personal o 'todos' para todos"
+                <Select
+                  style={{ width: '100%' }}
+                  placeholder="Seleccione un personal"
+                  loading={loadingAsesores}
                   value={cedula}
-                  onChange={(e) => setCedula(e.target.value)}
-                />
+                  onChange={setCedula}
+                  showSearch
+                  optionFilterProp="children"
+                  filterOption={(input, option) => {
+                    if (typeof option?.children === 'string') {
+                      return (option.children as string).toLowerCase().includes(input.toLowerCase());
+                    }
+                    return false;
+                  }}
+                >
+                  <Option value="todos">Todos los Personal</Option>
+                  {asesores.map(personal => (
+                    <Option key={personal.cedula_usuario} value={personal.cedula_usuario}>
+                      {`${personal.nombre_usuario} ${personal.apellido_usuario} (${personal.cedula_usuario})`}
+                    </Option>
+                  ))}
+                </Select>
               )}
 
               <Button 

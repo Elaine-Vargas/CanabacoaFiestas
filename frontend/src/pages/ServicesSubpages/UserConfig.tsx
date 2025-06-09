@@ -44,6 +44,9 @@ export default function UserConfig() {
   });
   const [hasChanges, setHasChanges] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
+  const [showEmailVerification, setShowEmailVerification] = useState(false);
+  const [verificationCode, setVerificationCode] = useState("");
+  const [isVerifying, setIsVerifying] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -212,12 +215,120 @@ export default function UserConfig() {
     }
   };
 
+  const handleEmailChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { value } = e.target;
+    const processedValue = value.toLowerCase();
+    
+    setUserData(prev => ({
+      ...prev,
+      correo_usuario: processedValue
+    }));
+
+    const error = validateEmail(processedValue);
+    setError(error || "");
+
+    if (!error && processedValue !== initialData.correo_usuario) {
+      setHasChanges(true);
+    } else {
+      setHasChanges(false);
+    }
+  };
+
+  const handleSendVerification = async () => {
+    try {
+      setError("");
+      const token = localStorage.getItem('token');
+      if (!token) {
+        throw new Error('No hay sesión activa');
+      }
+
+      const response = await fetch(`${apiUrl}/auth/send-update-email-verification`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          correo_usuario: userData.correo_usuario
+        })
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Error al enviar verificación');
+      }
+
+      setShowEmailVerification(true);
+      setSuccess('Se ha enviado un código de verificación a tu nuevo correo electrónico');
+    } catch (error) {
+      setError(error instanceof Error ? error.message : 'Error al enviar verificación');
+    }
+  };
+
+  const handleVerifyEmail = async () => {
+    try {
+      setIsVerifying(true);
+      setError("");
+      const token = localStorage.getItem('token');
+      if (!token) {
+        throw new Error('No hay sesión activa');
+      }
+
+      const response = await fetch(`${apiUrl}/auth/verify-update-email`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          correo_usuario: userData.correo_usuario,
+          codigo: verificationCode
+        })
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Error al verificar correo');
+      }
+
+      setSuccess('Correo electrónico actualizado exitosamente');
+      setShowEmailVerification(false);
+      setVerificationCode("");
+      
+      // Actualizar initialData para reflejar el nuevo correo
+      setInitialData(prev => ({
+        ...prev,
+        correo_usuario: userData.correo_usuario
+      }));
+
+      // Actualizar localStorage
+      const storedUserData = JSON.parse(localStorage.getItem('userData') || '{}');
+      localStorage.setItem('userData', JSON.stringify({
+        ...storedUserData,
+        correo_usuario: userData.correo_usuario
+      }));
+
+    } catch (error) {
+      setError(error instanceof Error ? error.message : 'Error al verificar correo');
+    } finally {
+      setIsVerifying(false);
+    }
+  };
+
   const handleUpdate = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
     setSuccess("");
 
-    if (isUpdating) return; // Prevent double submission
+    if (isUpdating) return;
+
+    // Si el correo ha cambiado, mostrar verificación
+    if (userData.correo_usuario !== initialData.correo_usuario) {
+      await handleSendVerification();
+      return;
+    }
 
     if (userData.contrasena_login || hasChanges) {
       if (!userData.contrasena_actual) {
@@ -390,10 +501,34 @@ export default function UserConfig() {
               type="email" 
               id="config-email" 
               value={userData.correo_usuario}
-              onChange={handleInputChange}
+              onChange={handleEmailChange}
               required
             />
           </div>
+
+          {showEmailVerification && (
+            <div className="form-group">
+              <label htmlFor="verification-code">Código de Verificación</label>
+              <div className="verification-container">
+                <input 
+                  type="text" 
+                  id="verification-code" 
+                  value={verificationCode}
+                  onChange={(e) => setVerificationCode(e.target.value)}
+                  placeholder="Ingrese el código de verificación"
+                  required
+                />
+                <button 
+                  type="button" 
+                  onClick={handleVerifyEmail}
+                  disabled={isVerifying}
+                  className="verify-button"
+                >
+                  {isVerifying ? 'Verificando...' : 'Verificar'}
+                </button>
+              </div>
+            </div>
+          )}
 
           <div className="form-group">
             <label htmlFor="config-current-password">Contraseña Actual</label>

@@ -3,11 +3,26 @@ import Usuario from '../models/Usuario_model';
 import jwt from 'jsonwebtoken';
 import { Op } from 'sequelize';
 import { sendVerificationEmail } from '../controllers/mailController';
-import { PendingRegistration } from '../controllers/mailController';
 
 // Variable global para almacenar datos de registro pendientes
 declare global {
   var pendingRegistrations: Map<string, PendingRegistration>;
+}
+
+// Definir el tipo para los datos de registro pendientes
+interface PendingRegistration {
+  data: {
+    nombre_usuario?: string;
+    apellido_usuario?: string;
+    cedula_usuario: string;
+    correo_usuario: string;
+    tel_usuario?: string;
+    contrasena_login?: string;
+    usuario_login: string;
+    id_rol?: number;
+  };
+  verificationCode: string;
+  timestamp: number;
 }
 
 export const Login = async (req: Request, res: Response) => {
@@ -103,6 +118,16 @@ export const RegisterClient = async (req: Request, res: Response) => {
   } = req.body;
 
   try {
+    // Limpiar registros pendientes expirados (más de 15 minutos)
+    if (global.pendingRegistrations) {
+      const now = Date.now();
+      for (const [email, registration] of global.pendingRegistrations.entries()) {
+        if ((now - registration.timestamp) > 15 * 60 * 1000) { // 15 minutos en milisegundos
+          global.pendingRegistrations.delete(email);
+        }
+      }
+    }
+
     // Verificar si el usuario ya existe
     const usuarioExistente = await Usuario.findOne({
       where: {
@@ -128,14 +153,44 @@ export const RegisterClient = async (req: Request, res: Response) => {
 
     // Verificar si ya existe un registro pendiente para este correo
     if (global.pendingRegistrations?.has(correo_usuario)) {
-      return res.status(400).json({ 
-        error: 'Ya existe un registro pendiente para este correo',
-        details: 'Por favor verifica tu correo electrónico o espera 15 minutos para intentar nuevamente'
-      });
+      const pendingRegistration = global.pendingRegistrations.get(correo_usuario);
+      const now = Date.now();
+      
+      // Si el registro pendiente ha expirado, eliminarlo
+      if (pendingRegistration && (now - pendingRegistration.timestamp) > 15 * 60 * 1000) {
+        global.pendingRegistrations.delete(correo_usuario);
+      } else {
+        return res.status(400).json({ 
+          error: 'Ya existe un registro pendiente para este correo',
+          details: 'Por favor verifica tu correo electrónico o espera 15 minutos para intentar nuevamente'
+        });
+      }
     }
 
+    // Verificar si hay registros pendientes con los mismos datos únicos
+    for (const [email, registration] of global.pendingRegistrations?.entries() || []) {
+      // Verificar si el registro pendiente ha expirado
+      const now = Date.now();
+      if ((now - registration.timestamp) > 15 * 60 * 1000) {
+        global.pendingRegistrations.delete(email);
+        continue;
+      }
+
+      if (registration.data.usuario_login === usuario_login) {
+        return res.status(400).json({ error: 'Ya existe un registro pendiente con ese nombre de usuario' });
+      }
+      if (registration.data.cedula_usuario === cedula_usuario) {
+        return res.status(400).json({ error: 'Ya existe un registro pendiente con esa cédula' });
+      }
+      if (registration.data.correo_usuario === correo_usuario) {
+        return res.status(400).json({ error: 'Ya existe un registro pendiente con ese correo electrónico' });
+      }
+    }
+
+    // Si todas las validaciones pasan, proceder con el registro
     // Almacenar datos de registro pendientes antes de enviar el correo
     global.pendingRegistrations = global.pendingRegistrations || new Map();
+    const verificationCode = Math.floor(100000 + Math.random() * 900000).toString(); // Generate code here
     global.pendingRegistrations.set(correo_usuario, {
       data: {
         nombre_usuario,
@@ -147,13 +202,13 @@ export const RegisterClient = async (req: Request, res: Response) => {
         usuario_login,
         id_rol: 2 // Rol de cliente
       },
-      verificationCode: '', // This will be set by sendVerificationEmail
+      verificationCode: verificationCode, // Set the generated code
       timestamp: Date.now()
     });
 
     // Enviar correo de verificación
     try {
-      await sendVerificationEmail(req, res);
+      await sendVerificationEmail(correo_usuario, verificationCode);
       
       res.status(200).json({
         mensaje: 'Por favor verifica tu correo electrónico para completar el registro.',
@@ -171,7 +226,6 @@ export const RegisterClient = async (req: Request, res: Response) => {
     res.status(500).json({ error: 'Error al registrar cliente' });
   }
 };
-
 
 export const RegisterUser = async (req: Request, res: Response) => {
   const {
@@ -306,6 +360,159 @@ export const GetUserData = async (req: Request, res: Response) => {
   }
 };
 
+export const sendUpdateEmailVerification = async (req: Request, res: Response) => {
+  const { correo_usuario } = req.body;
+  const token = req.headers.authorization?.split(' ')[1];
+
+  try {
+    if (!token) {
+      return res.status(401).json({ error: 'No token provided' });
+    }
+
+    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'w3r9Gv!72JkpX%lQs@8bZ&hMfT0^nAy') as { usuario_login: string, cedula_usuario: string };
+    
+    if (!decoded.usuario_login && !decoded.cedula_usuario) {
+      return res.status(400).json({ error: 'Token inválido' });
+    }
+
+    // Limpiar registros pendientes expirados para este correo
+    if (global.pendingRegistrations?.has(correo_usuario)) {
+      const pendingRegistration = global.pendingRegistrations.get(correo_usuario);
+      const now = Date.now();
+      if (pendingRegistration && (now - pendingRegistration.timestamp) > 15 * 60 * 1000) { // 15 minutos en milisegundos
+        global.pendingRegistrations.delete(correo_usuario);
+      }
+    }
+
+    // Verificar si el nuevo correo ya existe en la base de datos
+    const correoExistente = await Usuario.findOne({
+      where: { correo_usuario }
+    });
+
+    if (correoExistente) {
+      return res.status(400).json({ error: 'El correo electrónico ya está en uso' });
+    }
+
+    // Generar código de verificación
+    const verificationCode = Math.floor(100000 + Math.random() * 900000).toString();
+
+    // Almacenar datos de actualización pendientes
+    global.pendingRegistrations = global.pendingRegistrations || new Map();
+    global.pendingRegistrations.set(correo_usuario, {
+      data: {
+        correo_usuario,
+        usuario_login: decoded.usuario_login || '',
+        cedula_usuario: decoded.cedula_usuario || '',
+        nombre_usuario: '', // Placeholder
+        apellido_usuario: '', // Placeholder
+        tel_usuario: '', // Placeholder
+        contrasena_login: '', // Placeholder
+        id_rol: 2 // Default rol for pending updates
+      },
+      verificationCode,
+      timestamp: Date.now()
+    });
+
+    // Enviar correo de verificación (la función sendVerificationEmail ya no maneja res directamente)
+    try {
+      await sendVerificationEmail(correo_usuario, verificationCode);
+      
+      res.status(200).json({
+        mensaje: 'Por favor verifica tu nuevo correo electrónico para completar la actualización.',
+        correo_usuario
+      });
+    } catch (emailError) {
+      global.pendingRegistrations.delete(correo_usuario); // Eliminar el registro pendiente si falla el envío
+      console.error('Error al enviar correo de verificación:', emailError);
+      res.status(500).json({ error: 'Error al enviar correo de verificación' });
+    }
+
+  } catch (error) {
+    console.error('Error en verificación de correo:', error);
+    res.status(500).json({ error: 'Error al verificar correo' });
+  }
+};
+
+export const verifyUpdateEmail = async (req: Request, res: Response) => {
+  const { correo_usuario, codigo } = req.body;
+  const token = req.headers.authorization?.split(' ')[1];
+
+  try {
+    if (!token) {
+      return res.status(401).json({ error: 'No token provided' });
+    }
+
+    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'w3r9Gv!72JkpX%lQs@8bZ&hMfT0^nAy') as { usuario_login?: string, cedula_usuario?: string };
+    
+    if (!decoded.usuario_login && !decoded.cedula_usuario) {
+      return res.status(400).json({ error: 'Token inválido' });
+    }
+
+    // Verificar que exista un registro pendiente
+    const pendingRegistration = global.pendingRegistrations?.get(correo_usuario);
+    
+    if (!pendingRegistration) {
+      return res.status(400).json({ 
+        error: 'No hay actualización pendiente para este correo',
+        details: 'Por favor solicita una nueva verificación'
+      });
+    }
+
+    // Verificar el código
+    if (pendingRegistration.verificationCode !== codigo) {
+      return res.status(400).json({ 
+        error: 'Código de verificación incorrecto',
+        details: 'Por favor verifica el código e intenta nuevamente'
+      });
+    }
+
+    // Verificar si el código ha expirado (15 minutos)
+    const now = Date.now();
+    if ((now - pendingRegistration.timestamp) > 15 * 60 * 1000) {
+      global.pendingRegistrations.delete(correo_usuario);
+      return res.status(400).json({ 
+        error: 'Código de verificación expirado',
+        details: 'Por favor solicita un nuevo código'
+      });
+    }
+
+    // Buscar usuario (usando los datos del token original para asegurar que el usuario que inició la solicitud es quien actualiza)
+    const usuario = await Usuario.findOne({
+      where: {
+        [Op.or]: [
+          { usuario_login: decoded.usuario_login },
+          { cedula_usuario: decoded.cedula_usuario }
+        ]
+      }
+    });
+
+    if (!usuario) {
+      return res.status(404).json({ error: 'Usuario no encontrado' });
+    }
+
+    // Actualizar correo
+    await usuario.update({ correo_usuario });
+
+    // Eliminar el registro pendiente
+    global.pendingRegistrations.delete(correo_usuario);
+
+    return res.json({
+      success: true,
+      message: 'Correo electrónico actualizado exitosamente',
+      usuario: {
+        correo_usuario: usuario.correo_usuario
+      }
+    });
+
+  } catch (error) {
+    console.error('Error al verificar actualización de correo:', error);
+    return res.status(500).json({ 
+      error: 'Error al verificar actualización de correo',
+      details: process.env.NODE_ENV === 'development' ? (error as Error).message : undefined
+    });
+  }
+};
+
 export const UpdateUserData = async (req: Request, res: Response) => {
   try {
     const token = req.headers.authorization?.split(' ')[1];
@@ -319,7 +526,7 @@ export const UpdateUserData = async (req: Request, res: Response) => {
       return res.status(400).json({ error: 'Token inválido' });
     }
 
-    const { correo_usuario, tel_usuario, usuario_login, contrasena_login, contrasena_actual } = req.body;
+    const { tel_usuario, usuario_login, contrasena_login, contrasena_actual } = req.body;
 
     // Buscar usuario
     const usuario = await Usuario.findOne({
@@ -351,19 +558,8 @@ export const UpdateUserData = async (req: Request, res: Response) => {
       }
     }
 
-    // Verificar si el nuevo correo ya existe (si se está cambiando)
-    if (correo_usuario && correo_usuario !== usuario.correo_usuario) {
-      const correoExistente = await Usuario.findOne({
-        where: { correo_usuario }
-      });
-      if (correoExistente) {
-        return res.status(400).json({ error: 'El correo electrónico ya está en uso' });
-      }
-    }
-
     // Actualizar datos
     const updateData: any = {};
-    if (correo_usuario) updateData.correo_usuario = correo_usuario;
     if (tel_usuario) updateData.tel_usuario = tel_usuario;
     if (usuario_login) updateData.usuario_login = usuario_login;
     if (contrasena_login) updateData.contrasena_login = contrasena_login;
@@ -552,4 +748,62 @@ export const completeRegistration = async (req: Request, res: Response) => {
     });
   }
 };
+
+export const validateRegistration = async (req: Request, res: Response) => {
+  const { usuario_login, cedula_usuario, correo_usuario } = req.body;
+
+  try {
+    // Verificar si el usuario ya existe
+    const usuarioExistente = await Usuario.findOne({
+      where: {
+        [Op.or]: [
+          { usuario_login },
+          { cedula_usuario },
+          { correo_usuario }
+        ]
+      }
+    });
+
+    if (usuarioExistente) {
+      let errorMessage = 'Ya existe un usuario con ';
+      if (usuarioExistente.usuario_login === usuario_login) {
+        errorMessage += 'ese nombre de usuario';
+      } else if (usuarioExistente.cedula_usuario === cedula_usuario) {
+        errorMessage += 'esa cédula';
+      } else if (usuarioExistente.correo_usuario === correo_usuario) {
+        errorMessage += 'ese correo electrónico';
+      }
+      return res.status(400).json({ error: errorMessage });
+    }
+
+    // Verificar si ya existe un registro pendiente para este correo
+    if (global.pendingRegistrations?.has(correo_usuario)) {
+      return res.status(400).json({ 
+        error: 'Ya existe un registro pendiente para este correo',
+        details: 'Por favor verifica tu correo electrónico o espera 15 minutos para intentar nuevamente'
+      });
+    }
+
+    // Verificar si hay registros pendientes con los mismos datos únicos
+    for (const [email, registration] of global.pendingRegistrations?.entries() || []) {
+      if (registration.data.usuario_login === usuario_login) {
+        return res.status(400).json({ error: 'Ya existe un registro pendiente con ese nombre de usuario' });
+      }
+      if (registration.data.cedula_usuario === cedula_usuario) {
+        return res.status(400).json({ error: 'Ya existe un registro pendiente con esa cédula' });
+      }
+      if (registration.data.correo_usuario === correo_usuario) {
+        return res.status(400).json({ error: 'Ya existe un registro pendiente con ese correo electrónico' });
+      }
+    }
+
+    // Si todas las validaciones pasan
+    res.status(200).json({ message: 'Datos válidos para registro' });
+
+  } catch (error) {
+    console.error('Error en validación de registro:', error);
+    res.status(500).json({ error: 'Error al validar datos de registro' });
+  }
+};
+
 export default Login;

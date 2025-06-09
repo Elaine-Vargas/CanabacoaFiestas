@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
-import jwt from 'jsonwebtoken';
+import jwt, { JwtPayload } from 'jsonwebtoken';
 import Usuario from '../models/Usuario_model';
 import Rol from '../models/Rol_model';
 
@@ -7,7 +7,8 @@ import Rol from '../models/Rol_model';
 declare global {
   namespace Express {
     interface Request {
-      usuario?: Usuario;
+      usuario?: typeof Usuario.prototype;
+      user?: JwtPayload;
     }
   }
 }
@@ -18,50 +19,40 @@ export const verificarToken = async (req: Request, res: Response, next: NextFunc
     const token = req.headers.authorization?.split(' ')[1];
     
     if (!token) {
-      res.status(401).json({ 
-        error: 'No se proporcionó token de autenticación',
-        mensaje: 'Se requiere un token de autenticación para acceder a este recurso'
-      });
+      res.status(401).json({ error: 'No token provided' });
       return;
     }
 
-    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'w3r9Gv!72JkpX%lQs@8bZ&hMfT0^nAy') as { cedula_usuario: string };
-    const usuario = await Usuario.findByPk(decoded.cedula_usuario, {
-      include: [{ 
-        model: Rol,
-        as: 'rol'
-      }]
-    });
+    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'w3r9Gv!72JkpX%lQs@8bZ&hMfT0^nAy') as JwtPayload;
+    
+    // Check if decoded token has the cedula_usuario property
+    if (typeof decoded === 'string' || !decoded.cedula_usuario) {
+        res.status(400).json({ error: 'Invalid token payload: cedula_usuario missing' });
+        return;
+    }
+
+    // Fetch the user from the database using cedula_usuario from the token
+    const usuario = await Usuario.findByPk(decoded.cedula_usuario);
 
     if (!usuario) {
-      res.status(401).json({ 
-        error: 'Usuario no encontrado',
-        mensaje: 'El usuario asociado al token no existe en el sistema'
-      });
+      res.status(404).json({ error: 'User not found' });
       return;
     }
 
-    if (usuario.estado_usuario !== 'Activo') {
-      res.status(401).json({ 
-        error: 'Usuario inactivo',
-        mensaje: 'El usuario se encuentra inactivo o eliminado'
-      });
-      return;
-    }
-
+    req.user = decoded;
     req.usuario = usuario;
     next();
   } catch (error) {
-    if (error instanceof jwt.JsonWebTokenError) {
-      res.status(401).json({ 
-        error: 'Token inválido',
-        mensaje: 'El token proporcionado no es válido o ha expirado'
-      });
-    } else {
-      res.status(500).json({ 
-        error: 'Error de autenticación',
-        mensaje: 'Ocurrió un error al procesar la autenticación'
-      });
+    if (error instanceof jwt.TokenExpiredError) {
+      res.status(401).json({ error: 'Token expired' });
+      return;
     }
+    if (error instanceof jwt.JsonWebTokenError) {
+      res.status(401).json({ error: 'Invalid token' });
+      return;
+    }
+    console.error('Authentication error:', error);
+    res.status(500).json({ error: 'Authentication error' });
+    return;
   }
 };

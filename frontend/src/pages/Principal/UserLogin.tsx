@@ -7,7 +7,17 @@ import LoginNav from "../../components/Otros/LoginNav";
 import CustomModal from "../../components/Otros/CustomModal";
 import VisibilityOffIcon from '@mui/icons-material/VisibilityOff';
 import VisibilityIcon from '@mui/icons-material/Visibility';
-import { formatPhoneNumber, formatCedula, validateEmail, validateCedula, validateUsername, validatePhoneNumber } from "../../utils/validation";
+import { 
+  formatPhoneNumber, 
+  formatCedula, 
+  validateEmail, 
+  validateCedula, 
+  validateUsername, 
+  validatePhoneNumber,
+  validatePassword,
+  validatePasswordMatch
+} from "../../utils/validation";
+import { useUser } from "../../contexts/UserContext";
 
 const UserLogin = () => {
 
@@ -50,6 +60,8 @@ const UserLogin = () => {
     message: '',
     type: 'info' as 'success' | 'error' | 'info'
   });
+
+  const { setUserRole } = useUser();
 
   const toggleForm = () => {
     setIsActive(!isActive);
@@ -103,17 +115,38 @@ const UserLogin = () => {
         [fieldMap[id]]: processedValue
       }));
       
+      // Validaciones específicas para cada campo
       if (id === 'signup-email') {
         const error = validateEmail(processedValue);
         setError(error || "");
       } else if (id === 'signup-username') {
         const error = validateUsername(processedValue);
-        setError(error || "");
+        if (error) {
+          setError(error);
+          // Agregar clase de error al input
+          const inputElement = document.getElementById(id);
+          if (inputElement) {
+            inputElement.classList.add('error-input');
+          }
+        } else {
+          setError("");
+          // Remover clase de error del input
+          const inputElement = document.getElementById(id);
+          if (inputElement) {
+            inputElement.classList.remove('error-input');
+          }
+        }
       } else if (id === 'signup-phone') {
         const error = validatePhoneNumber(processedValue);
         setError(error || "");
       } else if (id === 'signup-id') {
         const error = validateCedula(processedValue);
+        setError(error || "");
+      } else if (id === 'signup-password') {
+        const error = validatePassword(processedValue);
+        setError(error || "");
+      } else if (id === 'signup-password-confirm') {
+        const error = validatePasswordMatch(signupData.contrasena_login, processedValue);
         setError(error || "");
       }
     }
@@ -194,8 +227,18 @@ const UserLogin = () => {
     
     if (isRegistering) return;
     
+    // Validar que las contraseñas coincidan
     if (signupData.contrasena_login !== signupData.confirmar_contrasena) {
       showModal('Error', 'Las contraseñas no coinciden', 'error');
+      return;
+    }
+
+    // Validar que todos los campos requeridos estén llenos
+    const requiredFields = ['nombre_usuario', 'apellido_usuario', 'cedula_usuario', 'correo_usuario', 'tel_usuario', 'contrasena_login', 'usuario_login'];
+    const emptyFields = requiredFields.filter(field => !signupData[field as keyof typeof signupData]);
+    
+    if (emptyFields.length > 0) {
+      showModal('Error', 'Por favor completa todos los campos requeridos', 'error');
       return;
     }
   
@@ -203,6 +246,27 @@ const UserLogin = () => {
       setIsRegistering(true);
       const { confirmar_contrasena, ...userData } = signupData;
       
+      // Primero validar si el usuario ya existe
+      const validateResponse = await fetch(`${apiUrl}/auth/validate-registration`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          usuario_login: signupData.usuario_login,
+          cedula_usuario: signupData.cedula_usuario,
+          correo_usuario: signupData.correo_usuario
+        }),
+        credentials: 'include'
+      });
+
+      const validateData = await validateResponse.json();
+
+      if (!validateResponse.ok) {
+        throw new Error(validateData.error || 'Error al validar los datos de registro');
+      }
+
+      // Si la validación es exitosa, proceder con el envío del código de verificación
       const verifyResponse = await fetch(`${apiUrl}/auth/send-verification`, {
         method: 'POST',
         headers: {
@@ -249,7 +313,13 @@ const UserLogin = () => {
         tel_usuario: signupData.tel_usuario
       };
       localStorage.setItem('userData', JSON.stringify(userInfo));
-  
+      
+      // Establecer el rol de usuario como cliente
+      setUserRole('cliente');
+      
+      // Disparar un evento de storage para actualizar el contexto
+      window.dispatchEvent(new Event('storage'));
+
       try {
         await fetch(`${apiUrl}/auth/welcome-mail`, {
           method: 'POST',
@@ -263,7 +333,7 @@ const UserLogin = () => {
       } catch (welcomeError) {
         console.error('Error al enviar correo de bienvenida:', welcomeError);
       }
-  
+
       showModal('¡Registro Exitoso!', '¡Tu cuenta ha sido creada exitosamente!', 'success');
       setTimeout(() => {
         navigate('/Menu-Servicios/Bienvenida');
@@ -319,6 +389,12 @@ const UserLogin = () => {
         tel_usuario: signupData.tel_usuario
       };
       localStorage.setItem('userData', JSON.stringify(userInfo));
+      
+      // Establecer el rol de usuario como cliente
+      setUserRole('cliente');
+      
+      // Disparar un evento de storage para actualizar el contexto
+      window.dispatchEvent(new Event('storage'));
 
       try {
         const welcomeResponse = await fetch(`${apiUrl}/auth/welcome-mail`, {

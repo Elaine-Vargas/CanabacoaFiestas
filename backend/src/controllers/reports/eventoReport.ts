@@ -4,16 +4,37 @@ import Usuario from '../../models/Usuario_model';
 import Evento from '../../models/Evento_model';
 import TipoEvento from '../../models/TipoEvento_model';
 import EmpleadoEvento from '../../models/EmpleadoEvento_model';
+import { Op } from 'sequelize';
 
-export const generarReporteEventos = async (_req: Request, res: Response) => {
+export const generarReporteEventos = async (req: Request, res: Response) => {
   try {
+    const { tipo_evento, fecha_inicio, fecha_fin } = req.query;
+    
+    let whereClause: any = {};
+
+    // Aplicar filtro de tipo de evento si está presente
+    if (tipo_evento && tipo_evento !== 'todos' && tipo_evento !== '') {
+      const tipoEventoId = parseInt(String(tipo_evento), 10);
+      if (!isNaN(tipoEventoId)) {
+        whereClause.id_tipo_evento = tipoEventoId;
+      }
+    }
+
+    // Aplicar filtro de rango de fechas si está presente
+    if (fecha_inicio && fecha_fin) {
+      whereClause.fecha_evento = {
+        [Op.between]: [String(fecha_inicio), String(fecha_fin)]
+      };
+    }
+
     const eventos = await Evento.findAll({
+      where: whereClause,
       attributes: [
         'id_evento',
         'fecha_evento',
         'hora_evento',
         'espacio_evento',
-        'estado_evento',
+        'estado_solicitud',
         'total_evento'
       ],
       include: [
@@ -36,9 +57,20 @@ export const generarReporteEventos = async (_req: Request, res: Response) => {
     });
 
     if (!eventos || eventos.length === 0) {
+      let mensaje = 'No hay eventos registrados';
+      
+      if (tipo_evento && tipo_evento !== 'todos' && tipo_evento !== '') {
+        const tipoEventoInfo = await TipoEvento.findByPk(Number(tipo_evento));
+        mensaje += ` del tipo "${tipoEventoInfo?.tipo_evento || tipo_evento}"`;
+      }
+      
+      if (fecha_inicio && fecha_fin && fecha_inicio !== '' && fecha_fin !== '') {
+        mensaje += ` en el período del ${fecha_inicio} al ${fecha_fin}`;
+      }
+      
       return res.status(404).json({ 
         error: 'No se encontraron eventos',
-        mensaje: 'No hay eventos registrados para generar el reporte'
+        mensaje: mensaje
       });
     }
 
@@ -56,6 +88,17 @@ export const generarReporteEventos = async (_req: Request, res: Response) => {
     // Título y fecha del reporte
     doc.fontSize(18).text('Reporte General de Eventos', { align: 'center' });
     doc.fontSize(10).text(`Generado el ${new Date().toLocaleDateString()}`, { align: 'center' });
+    
+    // Agregar información de filtros aplicados
+    if (tipo_evento && tipo_evento !== 'todos') {
+      const tipoEventoInfo = await TipoEvento.findByPk(Number(tipo_evento));
+      doc.fontSize(10).text(`Tipo de Evento: ${tipoEventoInfo?.tipo_evento || tipo_evento}`, { align: 'center' });
+    }
+    
+    if (fecha_inicio && fecha_fin) {
+      doc.fontSize(10).text(`Período: ${fecha_inicio} al ${fecha_fin}`, { align: 'center' });
+    }
+    
     doc.moveDown(1);
 
     // Encabezado de tabla
@@ -105,7 +148,7 @@ export const generarReporteEventos = async (_req: Request, res: Response) => {
         evento.tipo_evento?.tipo_evento || 'No especificado',
         evento.espacio_evento || 'No especificado',
         fechaFormateada,
-        evento.estado_evento,
+        evento.estado_solicitud,
         `RD$ ${parseFloat(evento.total_evento.toString()).toFixed(2)}`
       ];
 
@@ -129,18 +172,6 @@ export const generarReporteEventos = async (_req: Request, res: Response) => {
        .fontSize(12)
        .text(`Total General: RD$ ${totalGeneral.toFixed(2)}`, { align: 'right' });
 
-    // Agregar pie de página
-    const pageCount = doc.bufferedPageRange().count;
-    for (let i = 0; i < pageCount; i++) {
-      doc.switchToPage(i);
-      doc.fontSize(8)
-         .text(
-           `Página ${i + 1} de ${pageCount}`,
-           doc.page.width - doc.page.margins.right - 100,
-           doc.page.height - doc.page.margins.bottom,
-           { align: 'right' }
-         );
-    }
 
     // Finalizar el documento
     doc.end();
@@ -156,6 +187,7 @@ export const generarReporteEventos = async (_req: Request, res: Response) => {
 export const generarReporteEventosCliente = async (req: Request, res: Response) => {
   try {
     const { cedula_cliente } = req.params;
+    const { tipo_evento, fecha_inicio, fecha_fin } = req.query;
 
     let clienteInfo = null;
     let whereClause: any = {};
@@ -187,10 +219,25 @@ export const generarReporteEventosCliente = async (req: Request, res: Response) 
       reportTitle = 'Reporte General de Eventos por Cliente';
     }
 
+    // Aplicar filtro de tipo de evento si está presente
+    if (tipo_evento && tipo_evento !== 'todos' && tipo_evento !== '') {
+      const tipoEventoId = parseInt(String(tipo_evento), 10);
+      if (!isNaN(tipoEventoId)) {
+        whereClause.id_tipo_evento = tipoEventoId;
+      }
+    }
+
+    // Aplicar filtro de rango de fechas si está presente
+    if (fecha_inicio && fecha_fin) {
+      whereClause.fecha_evento = {
+        [Op.between]: [String(fecha_inicio), String(fecha_fin)]
+      };
+    }
+
     const eventos = await Evento.findAll({
       where: whereClause,
       attributes: [
-        'id_evento', 'fecha_evento', 'hora_evento', 'espacio_evento', 'estado_evento', 'total_evento', 'cedula_cliente', 'cedula_asesor'
+        'id_evento', 'fecha_evento', 'hora_evento', 'espacio_evento', 'estado_solicitud', 'total_evento', 'cedula_cliente', 'cedula_asesor', 'id_tipo_evento'
       ],
       include: [
         { model: Usuario, as: 'cliente', attributes: ['nombre_usuario', 'apellido_usuario', 'cedula_usuario'] },
@@ -201,9 +248,20 @@ export const generarReporteEventosCliente = async (req: Request, res: Response) 
     });
 
     if (!eventos || eventos.length === 0) {
+      let mensaje = cedula_cliente === 'todos' ? 'No hay eventos registrados en general' : 'No hay eventos registrados para este cliente';
+      
+      if (tipo_evento && tipo_evento !== 'todos' && tipo_evento !== '') {
+        const tipoEventoInfo = await TipoEvento.findByPk(Number(tipo_evento));
+        mensaje += ` del tipo "${tipoEventoInfo?.tipo_evento || tipo_evento}"`;
+      }
+      
+      if (fecha_inicio && fecha_fin && fecha_inicio !== '' && fecha_fin !== '') {
+        mensaje += ` en el período del ${fecha_inicio} al ${fecha_fin}`;
+      }
+      
       return res.status(404).json({
         error: 'No se encontraron eventos',
-        mensaje: cedula_cliente === 'todos' ? 'No hay eventos registrados en general' : 'No hay eventos registrados para este cliente'
+        mensaje: mensaje
       });
     }
 
@@ -284,7 +342,7 @@ export const generarReporteEventosCliente = async (req: Request, res: Response) 
           evento.tipo_evento?.tipo_evento || 'No especificado',
           evento.espacio_evento || 'No especificado',
           fechaFormateada,
-          evento.estado_evento,
+          evento.estado_solicitud,
           `RD$ ${eventoTotal.toFixed(2)}`
         ];
       } else {
@@ -295,7 +353,7 @@ export const generarReporteEventosCliente = async (req: Request, res: Response) 
           evento.tipo_evento?.tipo_evento || 'No especificado',
           evento.espacio_evento || 'No especificado',
           fechaFormateada,
-          evento.estado_evento,
+          evento.estado_solicitud,
           `RD$ ${eventoTotal.toFixed(2)}`
         ];
       }
@@ -332,11 +390,14 @@ export const generarReporteEventosCliente = async (req: Request, res: Response) 
        .fontSize(12)
        .text(`Total General: RD$ ${totalGeneral.toFixed(2)}`, { align: 'right' });
 
-    // Agregar pie de página
-    const pageCount = doc.bufferedPageRange().count;
-    for (let i = 0; i < pageCount; i++) {
-      doc.switchToPage(i);
-      doc.fontSize(8).text(`Página ${i + 1} de ${pageCount}`, doc.page.width - doc.page.margins.right - 100, doc.page.height - doc.page.margins.bottom, { align: 'right' });
+    // Agregar información de filtros aplicados
+    if (tipo_evento && tipo_evento !== 'todos') {
+      const tipoEventoInfo = await TipoEvento.findByPk(Number(tipo_evento));
+      doc.fontSize(10).text(`Tipo de Evento: ${tipoEventoInfo?.tipo_evento || tipo_evento}`, { align: 'center' });
+    }
+    
+    if (fecha_inicio && fecha_fin) {
+      doc.fontSize(10).text(`Período: ${fecha_inicio} al ${fecha_fin}`, { align: 'center' });
     }
 
     doc.end();
@@ -352,6 +413,7 @@ export const generarReporteEventosCliente = async (req: Request, res: Response) 
 export const generarReporteEventosAsesor = async (req: Request, res: Response) => {
   try {
     const { cedula_asesor } = req.params;
+    const { tipo_evento, fecha_inicio, fecha_fin } = req.query;
 
     let asesorInfo = null;
     let whereClause: any = {};
@@ -383,10 +445,25 @@ export const generarReporteEventosAsesor = async (req: Request, res: Response) =
       reportTitle = 'Reporte General de Eventos por Asesor';
     }
 
+    // Aplicar filtro de tipo de evento si está presente
+    if (tipo_evento && tipo_evento !== 'todos' && tipo_evento !== '') {
+      const tipoEventoId = parseInt(String(tipo_evento), 10);
+      if (!isNaN(tipoEventoId)) {
+        whereClause.id_tipo_evento = tipoEventoId;
+      }
+    }
+
+    // Aplicar filtro de rango de fechas si está presente
+    if (fecha_inicio && fecha_fin) {
+      whereClause.fecha_evento = {
+        [Op.between]: [String(fecha_inicio), String(fecha_fin)]
+      };
+    }
+
     const eventos = await Evento.findAll({
       where: whereClause,
       attributes: [
-        'id_evento', 'fecha_evento', 'hora_evento', 'espacio_evento', 'estado_evento', 'total_evento', 'cedula_cliente', 'cedula_asesor'
+        'id_evento', 'fecha_evento', 'hora_evento', 'espacio_evento', 'estado_solicitud', 'total_evento', 'cedula_cliente', 'cedula_asesor', 'id_tipo_evento'
       ],
       include: [
         { model: Usuario, as: 'cliente', attributes: ['nombre_usuario', 'apellido_usuario', 'cedula_usuario'] },
@@ -397,9 +474,20 @@ export const generarReporteEventosAsesor = async (req: Request, res: Response) =
     });
 
     if (!eventos || eventos.length === 0) {
+      let mensaje = cedula_asesor === 'todos' ? 'No hay eventos registrados en general' : 'No hay eventos registrados para este asesor';
+      
+      if (tipo_evento && tipo_evento !== 'todos' && tipo_evento !== '') {
+        const tipoEventoInfo = await TipoEvento.findByPk(Number(tipo_evento));
+        mensaje += ` del tipo "${tipoEventoInfo?.tipo_evento || tipo_evento}"`;
+      }
+      
+      if (fecha_inicio && fecha_fin && fecha_inicio !== '' && fecha_fin !== '') {
+        mensaje += ` en el período del ${fecha_inicio} al ${fecha_fin}`;
+      }
+      
       return res.status(404).json({ 
         error: 'No se encontraron eventos',
-        mensaje: cedula_asesor === 'todos' ? 'No hay eventos registrados en general' : 'No hay eventos registrados para este asesor'
+        mensaje: mensaje
       });
     }
 
@@ -480,7 +568,7 @@ export const generarReporteEventosAsesor = async (req: Request, res: Response) =
           evento.tipo_evento?.tipo_evento || 'No especificado',
           evento.espacio_evento || 'No especificado',
           fechaFormateada,
-          evento.estado_evento,
+          evento.estado_solicitud,
           `RD$ ${eventoTotal.toFixed(2)}`
         ];
       } else {
@@ -491,7 +579,7 @@ export const generarReporteEventosAsesor = async (req: Request, res: Response) =
           evento.tipo_evento?.tipo_evento || 'No especificado',
           evento.espacio_evento || 'No especificado',
           fechaFormateada,
-          evento.estado_evento,
+          evento.estado_solicitud,
           `RD$ ${eventoTotal.toFixed(2)}`
         ];
       }
@@ -528,10 +616,14 @@ export const generarReporteEventosAsesor = async (req: Request, res: Response) =
        .fontSize(12)
        .text(`Total General: RD$ ${totalGeneral.toFixed(2)}`, { align: 'right' });
 
-    const pageCount = doc.bufferedPageRange().count;
-    for (let i = 0; i < pageCount; i++) {
-      doc.switchToPage(i);
-      doc.fontSize(8).text(`Página ${i + 1} de ${pageCount}`, doc.page.width - doc.page.margins.right - 100, doc.page.height - doc.page.margins.bottom, { align: 'right' });
+    // Agregar información de filtros aplicados
+    if (tipo_evento && tipo_evento !== 'todos') {
+      const tipoEventoInfo = await TipoEvento.findByPk(Number(tipo_evento));
+      doc.fontSize(10).text(`Tipo de Evento: ${tipoEventoInfo?.tipo_evento || tipo_evento}`, { align: 'center' });
+    }
+    
+    if (fecha_inicio && fecha_fin) {
+      doc.fontSize(10).text(`Período: ${fecha_inicio} al ${fecha_fin}`, { align: 'center' });
     }
 
     doc.end();
@@ -547,6 +639,7 @@ export const generarReporteEventosAsesor = async (req: Request, res: Response) =
 export const generarReporteEventosPersonal = async (req: Request, res: Response) => {
   try {
     const { id_personal } = req.params;
+    const { tipo_evento, fecha_inicio, fecha_fin } = req.query;
 
     let personalInfo = null;
     let whereClause: any = {};
@@ -578,9 +671,24 @@ export const generarReporteEventosPersonal = async (req: Request, res: Response)
       reportTitle = 'Reporte General de Eventos por Personal';
     }
 
+    // Aplicar filtro de tipo de evento si está presente
+    if (tipo_evento && tipo_evento !== 'todos' && tipo_evento !== '') {
+      const tipoEventoId = parseInt(String(tipo_evento), 10);
+      if (!isNaN(tipoEventoId)) {
+        whereClause.id_tipo_evento = tipoEventoId;
+      }
+    }
+
+    // Aplicar filtro de rango de fechas si está presente
+    if (fecha_inicio && fecha_fin) {
+      whereClause.fecha_evento = {
+        [Op.between]: [String(fecha_inicio), String(fecha_fin)]
+      };
+    }
+
     const eventos = await Evento.findAll({
       attributes: [
-        'id_evento', 'fecha_evento', 'hora_evento', 'espacio_evento', 'estado_evento', 'total_evento', 'cedula_cliente', 'cedula_asesor'
+        'id_evento', 'fecha_evento', 'hora_evento', 'espacio_evento', 'estado_solicitud', 'total_evento', 'cedula_cliente', 'cedula_asesor', 'id_tipo_evento'
       ],
       include: [
         { model: Usuario, as: 'cliente', attributes: ['nombre_usuario', 'apellido_usuario', 'cedula_usuario'] },
@@ -601,13 +709,25 @@ export const generarReporteEventosPersonal = async (req: Request, res: Response)
           } : {}
         }
       ],
+      where: whereClause,
       order: [['fecha_evento', 'DESC']] 
     });
 
     if (!eventos || eventos.length === 0) {
+      let mensaje = id_personal === 'todos' ? 'No hay eventos registrados en general' : 'No hay eventos registrados para este personal';
+      
+      if (tipo_evento && tipo_evento !== 'todos' && tipo_evento !== '') {
+        const tipoEventoInfo = await TipoEvento.findByPk(Number(tipo_evento));
+        mensaje += ` del tipo "${tipoEventoInfo?.tipo_evento || tipo_evento}"`;
+      }
+      
+      if (fecha_inicio && fecha_fin && fecha_inicio !== '' && fecha_fin !== '') {
+        mensaje += ` en el período del ${fecha_inicio} al ${fecha_fin}`;
+      }
+      
       return res.status(404).json({ 
         error: 'No se encontraron eventos',
-        mensaje: id_personal === 'todos' ? 'No hay eventos registrados en general' : 'No hay eventos registrados para este personal'
+        mensaje: mensaje
       });
     }
 
@@ -689,7 +809,7 @@ export const generarReporteEventosPersonal = async (req: Request, res: Response)
           evento.tipo_evento?.tipo_evento || 'No especificado',
           evento.espacio_evento || 'No especificado',
           fechaFormateada,
-          evento.estado_evento,
+          evento.estado_solicitud,
           `RD$ ${eventoTotal.toFixed(2)}`
         ];
       } else {
@@ -701,7 +821,7 @@ export const generarReporteEventosPersonal = async (req: Request, res: Response)
           evento.tipo_evento?.tipo_evento || 'No especificado',
           evento.espacio_evento || 'No especificado',
           fechaFormateada,
-          evento.estado_evento,
+          evento.estado_solicitud,
           `RD$ ${eventoTotal.toFixed(2)}`
         ];
       }
@@ -738,11 +858,14 @@ export const generarReporteEventosPersonal = async (req: Request, res: Response)
        .fontSize(12)
        .text(`Total General: RD$ ${totalGeneral.toFixed(2)}`, { align: 'right' });
 
-    // Agregar pie de página
-    const pageCount = doc.bufferedPageRange().count;
-    for (let i = 0; i < pageCount; i++) {
-      doc.switchToPage(i);
-      doc.fontSize(8).text(`Página ${i + 1} de ${pageCount}`, doc.page.width - doc.page.margins.right - 100, doc.page.height - doc.page.margins.bottom, { align: 'right' });
+    // Agregar información de filtros aplicados
+    if (tipo_evento && tipo_evento !== 'todos') {
+      const tipoEventoInfo = await TipoEvento.findByPk(Number(tipo_evento));
+      doc.fontSize(10).text(`Tipo de Evento: ${tipoEventoInfo?.tipo_evento || tipo_evento}`, { align: 'center' });
+    }
+    
+    if (fecha_inicio && fecha_fin) {
+      doc.fontSize(10).text(`Período: ${fecha_inicio} al ${fecha_fin}`, { align: 'center' });
     }
 
     doc.end();

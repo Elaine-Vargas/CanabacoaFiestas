@@ -6,7 +6,10 @@ import {
   GetUserData, 
   UpdateUserData, 
   getCurrentUser,
-  completeRegistration 
+  completeRegistration,
+  validateRegistration,
+  sendUpdateEmailVerification,
+  verifyUpdateEmail
 } from '../controllers/authController';
 import { 
   sendRecoveryEmail, 
@@ -15,24 +18,18 @@ import {
   sendVerificationEmail,
   verifyEmailCode 
 } from '../controllers/mailController';
+import { verificarToken } from '../middlewares/authMiddleware';
 
 const router = Router();
 
-router.post('/login', async (req, res, next) => {
-  try {
-    await Login(req, res);
-  } catch (error) {
-    next(error);
-  }
-});
+// Wrapper function to handle async errors
+const asyncHandler = (fn: Function) => (req: any, res: any, next: any) => {
+  Promise.resolve(fn(req, res, next)).catch(next);
+};
 
-router.post('/send-verification', async (req, res, next) => {
-  try {
-    await sendVerificationEmail(req, res);
-  } catch (error) {
-    next(error);
-  }
-});
+// Rutas públicas
+router.post('/login', asyncHandler(Login));
+router.post('/send-verification', asyncHandler(sendVerificationEmail));
 
 router.post('/verify-code', async (req, res, next) => {
   try {
@@ -42,45 +39,17 @@ router.post('/verify-code', async (req, res, next) => {
   }
 });
 
-router.post('/register-client', async (req, res, next) => {
-  try {
-    await RegisterClient(req, res);
-  } catch (error) {
-    next(error);
-  }
-});
+router.post('/register-client', asyncHandler(RegisterClient));
+router.post('/register-user', asyncHandler(RegisterUser));
+router.post('/complete-registration', asyncHandler(completeRegistration));
+router.post('/validate-registration', asyncHandler(validateRegistration));
 
-router.post('/register-user', async (req, res, next) => {
-  try {
-    await RegisterUser(req, res);
-  } catch (error) {
-    next(error);
-  }
-});
-
-router.get('/user-data', async (req, res, next) => {
-  try {
-    await GetUserData(req, res);
-  } catch (error) {
-    next(error);
-  }
-});
-
-router.put('/update-user', async (req, res, next) => {
-  try {
-    await UpdateUserData(req, res);
-  } catch (error) {
-    next(error);
-  }
-});
-
-router.get('/current', async (req, res, next) => {
-  try {
-    await getCurrentUser(req, res);
-  } catch (error) {
-    next(error);
-  }
-});
+// Rutas protegidas
+router.post('/send-update-email-verification', verificarToken, asyncHandler(sendUpdateEmailVerification));
+router.post('/verify-update-email', verificarToken, asyncHandler(verifyUpdateEmail));
+router.get('/user-data', verificarToken, asyncHandler(GetUserData));
+router.get('/current', verificarToken, asyncHandler(getCurrentUser));
+router.put('/update-user', verificarToken, asyncHandler(UpdateUserData));
 
 router.post('/mail-recovery', async (req, res, next) => {
   try {
@@ -101,14 +70,6 @@ router.post('/reset-password', async (req, res, next) => {
 router.post('/welcome-mail', async (req, res, next) => {
   try {
     await sendWelcomeEmail(req, res);
-  } catch (error) {
-    next(error);
-  }
-});
-
-router.post('/complete-registration', async (req, res, next) => {
-  try {
-    await completeRegistration(req, res);
   } catch (error) {
     next(error);
   }

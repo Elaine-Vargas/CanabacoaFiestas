@@ -461,7 +461,7 @@ const EventoForm: React.FC<EventoFormProps> = ({
         </Form.Item>
 
         <Form.Item
-          name="estado_evento"
+          name="estado_solicitud"
           label="Estado del Evento"
           initialValue="Pendiente"
         >

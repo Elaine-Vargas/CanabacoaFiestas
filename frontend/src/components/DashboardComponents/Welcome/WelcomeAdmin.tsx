@@ -21,7 +21,6 @@ interface Evento {
   espacio_evento: string;
   desea_supervision: boolean;
   estado_solicitud: EstadoSolicitud;
-  estado_evento: EstadoEvento;
   total_evento: number;
   nombre_asesor: string | null;
   cliente?: Usuario;  
@@ -420,7 +419,7 @@ const WelcomeAdmin: React.FC = () => {
         (evento.espacio_evento || '').toLowerCase().includes(searchLower);
       
       const matchesEstado = selectedEstadoEventos === 'todos' || 
-        evento.estado_evento === selectedEstadoEventos;
+        evento.estado_solicitud === selectedEstadoEventos;
       
       const matchesCliente = !selectedCliente || selectedCliente === '' || 
         `${evento.cliente?.nombre_usuario || ''} ${evento.cliente?.apellido_usuario || ''}` === selectedCliente;
@@ -811,8 +810,8 @@ const WelcomeAdmin: React.FC = () => {
     },
     {
       title: 'Estado Evento',
-      dataIndex: 'estado_evento',
-      key: 'estado_evento',
+      dataIndex: 'estado_solicitud',
+      key: 'estado_solicitud',
       render: (estado: EstadoEvento) => {
         const colors: Record<EstadoEvento, string> = {
           'Pendiente': 'gold',
