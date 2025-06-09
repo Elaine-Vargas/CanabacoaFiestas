@@ -143,6 +143,7 @@ $transition-standard: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 /* Estilos para tablas */
 .dashboard-table {
   width: 100%;
+  overflow-x: auto; /* Permite el desplazamiento horizontal si el contenido es demasiado ancho */
   
   .ant-table {
     background-color: var(--color-background2);
@@ -190,10 +191,118 @@ $transition-standard: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     background-color: var(--color-background2);
     border-top: 1px solid var(--color-shadow);
 
+    .ant-pagination-item-active {
+      background-color: var(--dark-gold) !important;
+      border-color: var(--dark-gold) !important;
+
+      a {
+        color: var(--color-button-text) !important;
+      }
+
+      &:hover {
+        background-color: var(--gold) !important;
+        border-color: var(--gold) !important;
+      }
+    }
+
+    .ant-pagination-item:hover {
+      border-color: var(--gold) !important;
+
+      a {
+        color: var(--gold) !important;
+      }
+    }
+
+    .ant-pagination-prev:hover .ant-pagination-item-link,
+    .ant-pagination-next:hover .ant-pagination-item-link {
+      color: var(--gold) !important;
+    }
+
+    .ant-pagination-options-size-changer.ant-select .ant-select-selector {
+      background-color: var(--color-background) !important;
+      color: var(--color-text) !important;
+      border-color: var(--color-border) !important;
+
+      &:hover {
+        border-color: var(--gold) !important;
+      }
+    }
+
     @media screen and (max-width: 480px) {
       margin: 8px 0 0 0 !important;
       padding: 4px 0;
     }
+  }
+}
+
+/* Overrides de componentes de Ant Design */
+.ant-input,
+.ant-picker,
+.ant-select-selector,
+.ant-input-affix-wrapper { /* Added ant-input-affix-wrapper for search inputs */
+  border-radius: 4px;
+  background-color: var(--color-background) !important; /* Changed to color-background for better dark mode adaptation */
+  color: var(--color-text) !important;
+  border-color: var(--color-border) !important;
+
+  &::placeholder { /* Estilo para el placeholder */
+    color: var(--color-text2) !important;
+  }
+
+  &:hover {
+    border-color: var(--gold) !important;
+  }
+
+  // Specific focus styles for Ant Design elements and their inner input fields
+  &.ant-picker-focused,
+  &.ant-input-focused,
+  &.ant-select-focused .ant-select-selector,
+  &.ant-input-affix-wrapper-focused {
+    box-shadow: 0 0 0 2px rgba(var(--gold-rgb), 0.2) !important;
+    border-color: var(--gold) !important;
+    outline: none !important; // Ensure no default outline
+  }
+
+  // Target the actual input/textarea elements within these Ant Design components
+  input:focus,
+  textarea:focus {
+    outline: none !important;
+    border-color: var(--gold) !important;
+    box-shadow: none !important; /* Remove any inner box-shadow from Ant Design to avoid conflicts */
+  }
+
+  // Specific focus style for select's internal search input
+  .ant-select-selection-search-input:focus {
+    outline: none !important;
+    border-color: var(--gold) !important;
+    box-shadow: none !important;
+  }
+}
+
+.ant-input-search {
+  .ant-input-suffix {
+    .anticon-search {
+      color: var(--color-text) !important;
+    }
+  }
+}
+
+.ant-select-arrow {
+  color: var(--color-text) !important;
+}
+
+/* Ensure dropdowns also follow dark mode theme */
+.ant-select-dropdown {
+  background-color: var(--color-background) !important; /* Changed to color-background for dropdowns */
+  .ant-select-item-option-selected:not(.ant-select-item-option-disabled) {
+    background-color: var(--dark-gold) !important;
+    color: var(--color-button-text) !important;
+  }
+  .ant-select-item-option-active:not(.ant-select-item-option-disabled) {
+    background-color: var(--color-background2) !important; /* Slightly lighter for active hover */
+  }
+  .ant-select-item-option-content {
+    color: var(--color-text) !important;
   }
 }
 
@@ -402,6 +511,54 @@ $transition-standard: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   .ant-picker,
   .ant-select-selector {
     border-radius: 4px;
+    background-color: var(--color-background2) !important;
+    color: var(--color-text) !important;
+    border-color: var(--color-border) !important;
+
+    &::placeholder {
+      color: var(--color-text2) !important;
+    }
+
+    &:hover {
+      border-color: var(--gold) !important;
+    }
+
+    &.ant-picker-focused,
+    &.ant-input-focused {
+      box-shadow: 0 0 0 2px rgba(var(--gold-rgb), 0.2) !important;
+      border-color: var(--gold) !important;
+    }
+
+    &.ant-input-search {
+      .ant-input-suffix {
+        .anticon-search {
+          color: var(--color-text) !important;
+        }
+      }
+    }
+  }
+
+  .ant-select-selector {
+    background-color: var(--color-background2) !important;
+    color: var(--color-text) !important;
+    border-color: var(--color-border) !important;
+
+    &::placeholder {
+      color: var(--color-text2) !important;
+    }
+
+    &:hover {
+      border-color: var(--gold) !important;
+    }
+
+    &.ant-select-focused {
+      box-shadow: 0 0 0 2px rgba(var(--gold-rgb), 0.2) !important;
+      border-color: var(--gold) !important;
+    }
+  }
+
+  .ant-select-arrow {
+    color: var(--color-text) !important;
   }
 
   .ant-checkbox-wrapper {

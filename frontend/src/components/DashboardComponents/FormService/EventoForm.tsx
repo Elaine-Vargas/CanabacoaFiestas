@@ -101,13 +101,13 @@ const EventoForm: React.FC<EventoFormProps> = ({
         }
       });
       if (!response.ok) {
-        throw new Error('Error al cargar los asesores');
+        throw new Error('Error al cargar los empleados');
       }
       const data = await response.json();
       setAsesores(data.usuarios);
     } catch (error) {
-      console.error('Error al cargar asesores:', error);
-      message.error('Error al cargar los asesores');
+      console.error('Error al cargar empleados:', error);
+      message.error('Error al cargar los empleados');
     } finally {
       setLoadingAsesores(false);
     }

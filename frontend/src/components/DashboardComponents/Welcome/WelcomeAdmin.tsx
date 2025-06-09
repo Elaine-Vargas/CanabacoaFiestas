@@ -664,14 +664,14 @@ const WelcomeAdmin: React.FC = () => {
                 <div style={{ marginBottom: 4 }}>Evento:</div>
                 <Select
                   placeholder="Filtrar por evento"
-                  style={{ width: 150 }}
+                  style={{ width: 300 }}
                   onChange={handleEventoChange}
                   value={selectedEvento}
                   options={[
                     { value: '', label: 'Todos' },
                     ...eventos.map(evento => ({
                       value: evento.id_evento,
-                      label: `${evento.nombre_cliente} - ${new Date(evento.fecha_evento).toLocaleDateString()}`
+                      label: `${evento.cliente?.nombre_usuario || ''} ${evento.cliente?.apellido_usuario || ''} - ${new Date(evento.fecha_evento).toLocaleDateString()}`
                     }))
                   ]}
                 />
@@ -680,16 +680,17 @@ const WelcomeAdmin: React.FC = () => {
                 <div style={{ marginBottom: 4 }}>Cargo del empleado:</div>
                 <Select
                   placeholder="Filtrar por cargo"
-                  style={{ width: 150 }}
+                  style={{ width: 200 }}
                   onChange={handleCargoChange}
                   value={selectedCargo}
                   options={[
                     { value: '', label: 'Todos' },
-                    { value: 'Mesero', label: 'Mesero' },
-                    { value: 'Cocinero', label: 'Cocinero' },
-                    { value: 'Bartender', label: 'Bartender' },
-                    { value: 'Seguridad', label: 'Seguridad' },
-                    { value: 'Otro', label: 'Otro' }
+                    { value: 'Decorador', label: 'Decorador' },
+                    { value: 'Camarero', label: 'Camarero' },
+                    { value: 'Conductor', label: 'Conductor' },
+                    { value: 'Supervisor', label: 'Supervisor' },
+                    { value: 'Encargado de Logística', label: 'Encargado de Logística' },
+                    { value: 'Encargado de Limpieza', label: 'Encargado de Limpieza' }
                   ]}
                 />
               </div>
@@ -898,19 +899,14 @@ const WelcomeAdmin: React.FC = () => {
 
   const proveedorColumns = [
     {
-      title: 'ID',
-      dataIndex: 'id_proveedor',
-      key: 'id_proveedor',
+      title: 'Nombre',
+      dataIndex: 'nombre_proveedor',
+      key: 'nombre_proveedor',
     },
     {
       title: 'Tipo',
       dataIndex: 'tipo_proveedor',
       key: 'tipo_proveedor',
-    },
-    {
-      title: 'Nombre',
-      dataIndex: 'nombre_proveedor',
-      key: 'nombre_proveedor',
     },
     {
       title: 'Teléfono',
@@ -959,23 +955,21 @@ const WelcomeAdmin: React.FC = () => {
   const asignacionColumns = [
     {
       title: 'Evento',
-      dataIndex: 'nombre_cliente',
-      key: 'nombre_cliente',
-      render: (_: string, record: AsignacionEmpleado) => (
+      key: 'evento',
+      render: (_: unknown, record: any) => (
         <span>
-          {record.nombre_cliente} - {new Date(record.fecha_evento!).toLocaleDateString()}
+          {record.evento?.id_evento}, {record.cliente?.cedula_usuario}
         </span>
-      )
+      ),
     },
     {
       title: 'Empleado',
-      dataIndex: 'nombre_empleado',
-      key: 'nombre_empleado',
-      render: (_: string, record: AsignacionEmpleado) => (
+      key: 'empleado_evento',
+      render: (_: unknown, record: any) => (
         <span>
-          {record.nombre_empleado} {record.apellido_empleado}
+          {record.empleado?.nombre_usuario}, {record.empleado?.apellido_empleado}
         </span>
-      )
+      ),
     },
     {
       title: 'Puesto',
@@ -1087,7 +1081,7 @@ const WelcomeAdmin: React.FC = () => {
                 columns={columns}
                 dataSource={getFilteredEventos()}
                 loading={loading}
-                pagination={{ pageSize: 5 }}
+                pagination={{ pageSize: 3 }}
                 rowKey="id_evento"
               />
             </Card>
@@ -1115,7 +1109,7 @@ const WelcomeAdmin: React.FC = () => {
                 columns={usuarioColumns}
                 dataSource={getFilteredUsuarios()}
                 loading={loading}
-                pagination={{ pageSize: 5 }}
+                pagination={{ pageSize: 3 }}
                 rowKey="cedula_usuario"
               />
             </Card>
@@ -1140,7 +1134,7 @@ const WelcomeAdmin: React.FC = () => {
                 columns={proveedorColumns}
                 dataSource={getFilteredProveedores()}
                 loading={loading}
-                pagination={{ pageSize: 5 }}
+                pagination={{ pageSize: 3 }}
                 rowKey="id_proveedor"
               />
             </Card>
@@ -1168,7 +1162,7 @@ const WelcomeAdmin: React.FC = () => {
                 columns={asignacionColumns}
                 dataSource={getFilteredAsignaciones()}
                 loading={loading}
-                pagination={{ pageSize: 5 }}
+                pagination={{ pageSize: 3 }}
                 rowKey="id"
               />
             </Card>
@@ -1193,7 +1187,7 @@ const WelcomeAdmin: React.FC = () => {
                 columns={decoracionColumns}
                 dataSource={getFilteredDecoraciones()}
                 loading={loading}
-                pagination={{ pageSize: 5 }}
+                pagination={{ pageSize: 3 }}
                 rowKey="id_decoracion"
               />
             </Card>
