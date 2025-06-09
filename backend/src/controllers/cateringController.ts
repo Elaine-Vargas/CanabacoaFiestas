@@ -6,10 +6,12 @@ import Menu from '../models/Menu_model';
 import PlatoMenu from '../models/PlatoMenu_model';
 import Plato from '../models/Plato_model';
 import Proveedor from '../models/Proveedor_model';
-import { Op } from 'sequelize';
+import { Op, Transaction } from 'sequelize';
+import { sequelize } from '../database/database';
 
 // Catering Controllers
 export const createCatering = async (req: Request, res: Response) => {
+    const t: Transaction = await sequelize.transaction();
     try {
         const {
             id_evento,
@@ -23,7 +25,11 @@ export const createCatering = async (req: Request, res: Response) => {
         // Verificar que el evento existe
         const evento = await Evento.findByPk(id_evento);
         if (!evento) {
-            return res.status(404).json({ error: 'Evento no encontrado' });
+            await t.rollback();
+            return res.status(404).json({ 
+                error: 'Evento no encontrado',
+                mensaje: 'No se encontró el evento solicitado'
+            });
         }
 
         // Crear el servicio de catering
@@ -32,19 +38,34 @@ export const createCatering = async (req: Request, res: Response) => {
             personas_catering,
             precioneto_catering: precioneto_catering || 0,
             itbis_catering: itbis_catering || 0,
-            total_catering: total_catering || 0
-        });
+            total_catering: total_catering || 0,
+            estado_catering: 'Solicitado'
+        }, { transaction: t });
 
         // Si se proporcionaron menús, crearlos
         if (menus && menus.length > 0) {
-            const menuPromises = menus.map((menuId: number) => 
+            // Validar que todos los menús existen
+            for (const menuId of menus) {
+                const menu = await Menu.findByPk(menuId);
+                if (!menu) {
+                    await t.rollback();
+                    return res.status(404).json({
+                        error: 'Menú no encontrado',
+                        mensaje: `No se encontró el menú con ID ${menuId}`
+                    });
+                }
+            }
+
+            await Promise.all(menus.map((menuId: number) => 
                 MenuCatering.create({
                     id_catering: catering.id_catering,
-                    id_menu: menuId
-                })
-            );
-            await Promise.all(menuPromises);
+                    id_menu: menuId,
+                    estado_menucatering: 'Aceptado'
+                }, { transaction: t })
+            ));
         }
+
+        await t.commit();
 
         // Obtener el catering con sus menús
         const cateringConMenus = await CateringServicio.findByPk(catering.id_catering, {
@@ -52,6 +73,10 @@ export const createCatering = async (req: Request, res: Response) => {
                 {
                     model: MenuCatering,
                     as: 'menus_catering',
+                    where: {
+                        estado_menucatering: 'Aceptado'
+                    },
+                    required: false,
                     include: [
                         {
                             model: Menu,
@@ -80,14 +105,23 @@ export const createCatering = async (req: Request, res: Response) => {
 
         res.status(201).json(cateringConMenus);
     } catch (error) {
+        await t.rollback();
         console.error('Error al crear servicio de catering:', error);
-        res.status(500).json({ error: 'Error al crear servicio de catering' });
+        res.status(500).json({ 
+            error: 'Error al crear servicio de catering',
+            mensaje: 'Ocurrió un error al crear el servicio de catering'
+        });
     }
 };
 
 export const getAllCaterings = async (req: Request, res: Response) => {
     try {
         const caterings = await CateringServicio.findAll({
+            where: {
+                estado_catering: {
+                    [Op.ne]: 'Cancelado'
+                }
+            },
             include: [
                 {
                     model: Evento,
@@ -96,6 +130,10 @@ export const getAllCaterings = async (req: Request, res: Response) => {
                 {
                     model: MenuCatering,
                     as: 'menus_catering',
+                    where: {
+                        estado_menucatering: 'Aceptado'
+                    },
+                    required: false,
                     include: [
                         {
                             model: Menu,
@@ -151,6 +189,10 @@ export const getCateringById = async (req: Request, res: Response) => {
                 {
                     model: MenuCatering,
                     as: 'menus_catering',
+                    where: {
+                        estado_menucatering: 'Aceptado'
+                    },
+                    required: false,
                     include: [
                         {
                             model: Menu,
@@ -178,17 +220,24 @@ export const getCateringById = async (req: Request, res: Response) => {
         });
 
         if (!catering) {
-            return res.status(404).json({ error: 'Servicio de catering no encontrado' });
+            return res.status(404).json({ 
+                error: 'Servicio de catering no encontrado',
+                mensaje: 'No se encontró el servicio de catering solicitado'
+            });
         }
 
         res.json(catering);
     } catch (error) {
         console.error('Error al obtener servicio de catering:', error);
-        res.status(500).json({ error: 'Error al obtener servicio de catering' });
+        res.status(500).json({ 
+            error: 'Error al obtener servicio de catering',
+            mensaje: 'Ocurrió un error al cargar el servicio de catering'
+        });
     }
 };
 
 export const editCatering = async (req: Request, res: Response) => {
+    const t: Transaction = await sequelize.transaction();
     try {
         const { id_catering } = req.params;
         const {
@@ -201,7 +250,11 @@ export const editCatering = async (req: Request, res: Response) => {
 
         const catering = await CateringServicio.findByPk(id_catering);
         if (!catering) {
-            return res.status(404).json({ error: 'Servicio de catering no encontrado' });
+            await t.rollback();
+            return res.status(404).json({ 
+                error: 'Servicio de catering no encontrado',
+                mensaje: 'No se encontró el servicio de catering solicitado'
+            });
         }
 
         // Actualizar el servicio de catering
@@ -210,26 +263,44 @@ export const editCatering = async (req: Request, res: Response) => {
             precioneto_catering: precioneto_catering || catering.precioneto_catering,
             itbis_catering: itbis_catering || catering.itbis_catering,
             total_catering: total_catering || catering.total_catering
-        });
+        }, { transaction: t });
 
         // Si se proporcionaron nuevos menús, actualizar la lista
         if (menus) {
-            // Eliminar menús existentes
-            await MenuCatering.destroy({
-                where: { id_catering: id_catering }
-            });
+            // Marcar menús existentes como cancelados
+            await MenuCatering.update(
+                { estado_menucatering: 'Cancelado' },
+                { 
+                    where: { id_catering },
+                    transaction: t
+                }
+            );
 
             // Crear nuevos menús
             if (menus.length > 0) {
-                const menuPromises = menus.map((menuId: number) => 
+                // Validar que todos los menús existen
+                for (const menuId of menus) {
+                    const menu = await Menu.findByPk(menuId);
+                    if (!menu) {
+                        await t.rollback();
+                        return res.status(404).json({
+                            error: 'Menú no encontrado',
+                            mensaje: `No se encontró el menú con ID ${menuId}`
+                        });
+                    }
+                }
+
+                await Promise.all(menus.map((menuId: number) => 
                     MenuCatering.create({
                         id_catering: catering.id_catering,
-                        id_menu: menuId
-                    })
-                );
-                await Promise.all(menuPromises);
+                        id_menu: menuId,
+                        estado_menucatering: 'Aceptado'
+                    }, { transaction: t })
+                ));
             }
         }
+
+        await t.commit();
 
         // Obtener el catering actualizado con sus menús
         const cateringActualizado = await CateringServicio.findByPk(id_catering, {
@@ -237,6 +308,10 @@ export const editCatering = async (req: Request, res: Response) => {
                 {
                     model: MenuCatering,
                     as: 'menus_catering',
+                    where: {
+                        estado_menucatering: 'Aceptado'
+                    },
+                    required: false,
                     include: [
                         {
                             model: Menu,
@@ -265,29 +340,71 @@ export const editCatering = async (req: Request, res: Response) => {
 
         res.json(cateringActualizado);
     } catch (error) {
+        await t.rollback();
         console.error('Error al editar servicio de catering:', error);
-        res.status(500).json({ error: 'Error al editar servicio de catering' });
+        res.status(500).json({ 
+            error: 'Error al editar servicio de catering',
+            mensaje: 'Ocurrió un error al actualizar el servicio de catering'
+        });
     }
 };
 
 export const deleteCatering = async (req: Request, res: Response) => {
+    const t: Transaction = await sequelize.transaction();
     try {
         const { id_catering } = req.params;
         const catering = await CateringServicio.findByPk(id_catering);
         
         if (!catering) {
-            return res.status(404).json({ error: 'Servicio de catering no encontrado' });
+            await t.rollback();
+            return res.status(404).json({ 
+                error: 'Servicio de catering no encontrado',
+                mensaje: 'No se encontró el servicio de catering solicitado'
+            });
         }
 
-        // Borrado lógico - marcar como eliminado
+        // Marcar el catering como cancelado
         await catering.update({
-            estado: 'Eliminado'
+            estado_catering: 'Cancelado'
+        }, { transaction: t });
+
+        // Marcar todos los menús como cancelados
+        await MenuCatering.update(
+            { estado_menucatering: 'Cancelado' },
+            { 
+                where: { id_catering },
+                transaction: t
+            }
+        );
+
+        await t.commit();
+
+        // Obtener el catering actualizado
+        const cateringActualizado = await CateringServicio.findByPk(id_catering, {
+            include: [
+                {
+                    model: MenuCatering,
+                    include: [
+                        {
+                            model: Menu,
+                            as: 'menu'
+                        }
+                    ]
+                }
+            ]
         });
 
-        res.json({ message: 'Servicio de catering eliminado correctamente' });
+        res.json({ 
+            mensaje: 'Servicio de catering cancelado correctamente',
+            catering: cateringActualizado
+        });
     } catch (error) {
+        await t.rollback();
         console.error('Error al eliminar servicio de catering:', error);
-        res.status(500).json({ error: 'Error al eliminar servicio de catering' });
+        res.status(500).json({ 
+            error: 'Error al eliminar servicio de catering',
+            mensaje: 'Ocurrió un error al cancelar el servicio de catering'
+        });
     }
 };
 
@@ -563,56 +680,151 @@ export const deleteMenu = async (req: Request, res: Response) => {
 
 // MenuCatering Controllers
 export const addMenuToCatering = async (req: Request, res: Response) => {
+    const t: Transaction = await sequelize.transaction();
     try {
         const { id_catering, id_menu } = req.body;
+
+        // Verificar que el catering existe
+        const catering = await CateringServicio.findByPk(id_catering);
+        if (!catering) {
+            await t.rollback();
+            return res.status(404).json({ 
+                error: 'Servicio de catering no encontrado',
+                mensaje: 'No se encontró el servicio de catering solicitado'
+            });
+        }
 
         // Verificar que el menú existe
         const menu = await Menu.findByPk(id_menu);
         if (!menu) {
-            return res.status(404).json({ error: 'Menú no encontrado' });
+            await t.rollback();
+            return res.status(404).json({ 
+                error: 'Menú no encontrado',
+                mensaje: 'No se encontró el menú solicitado'
+            });
+        }
+
+        // Verificar si el menú ya está asignado al catering
+        const menuExistente = await MenuCatering.findOne({
+            where: {
+                id_catering,
+                id_menu,
+                estado_menucatering: 'Aceptado'
+            }
+        });
+
+        if (menuExistente) {
+            await t.rollback();
+            return res.status(400).json({
+                error: 'Menú ya asignado',
+                mensaje: 'Este menú ya está asignado al catering'
+            });
         }
 
         // Crear la relación
         const menuCatering = await MenuCatering.create({
             id_catering,
-            id_menu
+            id_menu,
+            estado_menucatering: 'Aceptado'
+        }, { transaction: t });
+
+        await t.commit();
+
+        // Obtener el menú con sus detalles
+        const menuCompleto = await Menu.findByPk(id_menu, {
+            include: [
+                {
+                    model: PlatoMenu,
+                    as: 'platos_menu',
+                    include: [
+                        {
+                            model: Plato,
+                            as: 'plato'
+                        }
+                    ]
+                },
+                {
+                    model: Proveedor,
+                    as: 'proveedor'
+                }
+            ]
         });
 
-        res.status(201).json(menuCatering);
+        res.status(201).json({
+            mensaje: 'Menú agregado al catering correctamente',
+            menuCatering,
+            menu: menuCompleto
+        });
     } catch (error) {
+        await t.rollback();
         console.error('Error al agregar menú al catering:', error);
-        res.status(500).json({ error: 'Error al agregar menú al catering' });
+        res.status(500).json({ 
+            error: 'Error al agregar menú al catering',
+            mensaje: 'Ocurrió un error al agregar el menú al catering'
+        });
     }
 };
 
 export const removeMenuFromCatering = async (req: Request, res: Response) => {
+    const t: Transaction = await sequelize.transaction();
     try {
         const { id_catering, id_menu } = req.params;
 
         const menuCatering = await MenuCatering.findOne({
             where: {
                 id_catering,
-                id_menu
+                id_menu,
+                estado_menucatering: 'Aceptado'
             }
         });
 
         if (!menuCatering) {
-            return res.status(404).json({ error: 'Relación menú-catering no encontrada' });
+            await t.rollback();
+            return res.status(404).json({ 
+                error: 'Relación menú-catering no encontrada',
+                mensaje: 'No se encontró la relación entre el menú y el catering'
+            });
         }
 
-        await menuCatering.destroy();
-        res.json({ message: 'Menú removido del catering correctamente' });
+        // Marcar como cancelado en lugar de eliminar
+        await menuCatering.update({
+            estado_menucatering: 'Cancelado'
+        }, { transaction: t });
+
+        await t.commit();
+
+        res.json({ 
+            mensaje: 'Menú removido del catering correctamente',
+            menuCatering
+        });
     } catch (error) {
+        await t.rollback();
         console.error('Error al remover menú del catering:', error);
-        res.status(500).json({ error: 'Error al remover menú del catering' });
+        res.status(500).json({ 
+            error: 'Error al remover menú del catering',
+            mensaje: 'Ocurrió un error al remover el menú del catering'
+        });
     }
 };
 
 export const getMenusByCatering = async (req: Request, res: Response) => {
     try {
         const { id_catering } = req.params;
+
+        // Verificar que el catering existe
+        const catering = await CateringServicio.findByPk(id_catering);
+        if (!catering) {
+            return res.status(404).json({ 
+                error: 'Servicio de catering no encontrado',
+                mensaje: 'No se encontró el servicio de catering solicitado'
+            });
+        }
+
         const menus = await MenuCatering.findAll({
-            where: { id_catering },
+            where: { 
+                id_catering,
+                estado_menucatering: 'Aceptado'
+            },
             include: [
                 {
                     model: Menu,
@@ -636,10 +848,21 @@ export const getMenusByCatering = async (req: Request, res: Response) => {
                 }
             ]
         });
+
+        if (!menus || menus.length === 0) {
+            return res.status(404).json({ 
+                error: 'No se encontraron menús',
+                mensaje: 'No hay menús asignados a este catering'
+            });
+        }
+
         res.json(menus);
     } catch (error) {
         console.error('Error al obtener menús del catering:', error);
-        res.status(500).json({ error: 'Error al obtener menús del catering' });
+        res.status(500).json({ 
+            error: 'Error al obtener menús del catering',
+            mensaje: 'Ocurrió un error al cargar los menús del catering'
+        });
     }
 };
 
@@ -691,7 +914,20 @@ export const getMenuCatalog = async (req: Request, res: Response) => {
 // Plato Controllers
 export const getAllPlatos = async (req: Request, res: Response) => {
     try {
-        const platos = await Plato.findAll();
+        const platos = await Plato.findAll({
+            include: [
+                {
+                    model: PlatoMenu,
+                    as: 'platos_menu',
+                    include: [
+                        {
+                            model: Menu,
+                            as: 'menu'
+                        }
+                    ]
+                }
+            ]
+        });
 
         if (!platos || platos.length === 0) {
             return res.status(404).json({ 
@@ -712,51 +948,221 @@ export const getAllPlatos = async (req: Request, res: Response) => {
 
 export const getPlatoById = async (req: Request, res: Response) => {
     try {
-        const plato = await Plato.findByPk(req.params.id);
+        const plato = await Plato.findByPk(req.params.id, {
+            include: [
+                {
+                    model: PlatoMenu,
+                    as: 'platos_menu',
+                    include: [
+                        {
+                            model: Menu,
+                            as: 'menu'
+                        }
+                    ]
+                }
+            ]
+        });
+        
         if (!plato) {
-            return res.status(404).json({ message: 'Plato no encontrado' });
+            return res.status(404).json({ 
+                error: 'Plato no encontrado',
+                mensaje: 'No se encontró el plato solicitado'
+            });
         }
+        
         res.json(plato);
     } catch (error) {
         console.error('Error al obtener plato:', error);
-        res.status(500).json({ message: 'Error al obtener plato' });
+        res.status(500).json({ 
+            error: 'Error al obtener plato',
+            mensaje: 'Ocurrió un error al cargar el plato'
+        });
     }
 };
 
 export const createPlato = async (req: Request, res: Response) => {
+    const t: Transaction = await sequelize.transaction();
     try {
-        const plato = await Plato.create(req.body);
-        res.status(201).json(plato);
+        const { desc_plato, menus } = req.body;
+
+        // Crear el plato
+        const plato = await Plato.create({
+            desc_plato
+        }, { transaction: t });
+
+        // Si se proporcionaron menús, crear las relaciones
+        if (menus && menus.length > 0) {
+            // Validar que todos los menús existen
+            for (const menuId of menus) {
+                const menu = await Menu.findByPk(menuId);
+                if (!menu) {
+                    await t.rollback();
+                    return res.status(404).json({
+                        error: 'Menú no encontrado',
+                        mensaje: `No se encontró el menú con ID ${menuId}`
+                    });
+                }
+            }
+
+            // Crear las relaciones plato-menú
+            await Promise.all(menus.map((menuId: number) => 
+                PlatoMenu.create({
+                    id_plato: plato.id_plato,
+                    id_menu: menuId
+                }, { transaction: t })
+            ));
+        }
+
+        await t.commit();
+
+        // Obtener el plato con sus menús
+        const platoCompleto = await Plato.findByPk(plato.id_plato, {
+            include: [
+                {
+                    model: PlatoMenu,
+                    as: 'platos_menu',
+                    include: [
+                        {
+                            model: Menu,
+                            as: 'menu'
+                        }
+                    ]
+                }
+            ]
+        });
+
+        res.status(201).json({
+            mensaje: 'Plato creado correctamente',
+            plato: platoCompleto
+        });
     } catch (error) {
+        await t.rollback();
         console.error('Error al crear plato:', error);
-        res.status(500).json({ message: 'Error al crear plato' });
+        res.status(500).json({ 
+            error: 'Error al crear plato',
+            mensaje: 'Ocurrió un error al crear el plato'
+        });
     }
 };
 
 export const updatePlato = async (req: Request, res: Response) => {
+    const t: Transaction = await sequelize.transaction();
     try {
-        const plato = await Plato.findByPk(req.params.id);
+        const { id } = req.params;
+        const { desc_plato, menus } = req.body;
+
+        const plato = await Plato.findByPk(id);
         if (!plato) {
-            return res.status(404).json({ message: 'Plato no encontrado' });
+            await t.rollback();
+            return res.status(404).json({ 
+                error: 'Plato no encontrado',
+                mensaje: 'No se encontró el plato solicitado'
+            });
         }
-        await plato.update(req.body);
-        res.json(plato);
+
+        // Actualizar el plato
+        await plato.update({
+            desc_plato: desc_plato || plato.desc_plato
+        }, { transaction: t });
+
+        // Si se proporcionaron nuevos menús, actualizar las relaciones
+        if (menus) {
+            // Eliminar relaciones existentes
+            await PlatoMenu.destroy({
+                where: { id_plato: id },
+                transaction: t
+            });
+
+            // Crear nuevas relaciones
+            if (menus.length > 0) {
+                // Validar que todos los menús existen
+                for (const menuId of menus) {
+                    const menu = await Menu.findByPk(menuId);
+                    if (!menu) {
+                        await t.rollback();
+                        return res.status(404).json({
+                            error: 'Menú no encontrado',
+                            mensaje: `No se encontró el menú con ID ${menuId}`
+                        });
+                    }
+                }
+
+                await Promise.all(menus.map((menuId: number) => 
+                    PlatoMenu.create({
+                        id_plato: plato.id_plato,
+                        id_menu: menuId
+                    }, { transaction: t })
+                ));
+            }
+        }
+
+        await t.commit();
+
+        // Obtener el plato actualizado con sus menús
+        const platoActualizado = await Plato.findByPk(id, {
+            include: [
+                {
+                    model: PlatoMenu,
+                    as: 'platos_menu',
+                    include: [
+                        {
+                            model: Menu,
+                            as: 'menu'
+                        }
+                    ]
+                }
+            ]
+        });
+
+        res.json({
+            mensaje: 'Plato actualizado correctamente',
+            plato: platoActualizado
+        });
     } catch (error) {
+        await t.rollback();
         console.error('Error al actualizar plato:', error);
-        res.status(500).json({ message: 'Error al actualizar plato' });
+        res.status(500).json({ 
+            error: 'Error al actualizar plato',
+            mensaje: 'Ocurrió un error al actualizar el plato'
+        });
     }
 };
 
 export const deletePlato = async (req: Request, res: Response) => {
+    const t: Transaction = await sequelize.transaction();
     try {
-        const plato = await Plato.findByPk(req.params.id);
+        const { id } = req.params;
+        const plato = await Plato.findByPk(id);
+        
         if (!plato) {
-            return res.status(404).json({ message: 'Plato no encontrado' });
+            await t.rollback();
+            return res.status(404).json({ 
+                error: 'Plato no encontrado',
+                mensaje: 'No se encontró el plato solicitado'
+            });
         }
-        await plato.destroy();
-        res.json({ message: 'Plato eliminado correctamente' });
+
+        // Eliminar las relaciones plato-menú
+        await PlatoMenu.destroy({
+            where: { id_plato: id },
+            transaction: t
+        });
+
+        // Eliminar el plato
+        await plato.destroy({ transaction: t });
+
+        await t.commit();
+
+        res.json({ 
+            mensaje: 'Plato eliminado correctamente',
+            plato
+        });
     } catch (error) {
+        await t.rollback();
         console.error('Error al eliminar plato:', error);
-        res.status(500).json({ message: 'Error al eliminar plato' });
+        res.status(500).json({ 
+            error: 'Error al eliminar plato',
+            mensaje: 'Ocurrió un error al eliminar el plato'
+        });
     }
 };

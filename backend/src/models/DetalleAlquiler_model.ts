@@ -8,16 +8,15 @@ import {
   ForeignKey,
   BelongsTo
 } from 'sequelize-typescript';
-import Evento from './Evento_model';
 import Elemento from './Elemento_model';
 import AlquilerServicio from './AlquilerServicio_model';
 
-@Table({ tableName: 'detalle_alquiler', timestamps: false })
+@Table({ tableName: 'id_detalquiler', timestamps: false })
 export default class DetalleAlquiler extends Model {
   @PrimaryKey
   @AutoIncrement
   @Column({ type: DataType.INTEGER })
-  id_detalle!: number;
+  id_detalquiler!: number;
 
   @ForeignKey(() => AlquilerServicio)
   @Column({ type: DataType.INTEGER, field: 'id_alquiler', allowNull: false })

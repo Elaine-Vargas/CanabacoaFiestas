@@ -17,14 +17,18 @@ export const createAlquilerServicio = async (req: Request, res: Response) => {
       precioneto_alquiler,
       itbis_alquiler,
       total_alquiler,
-      estado_alquiler,
+      estado_alquiler = 'En proceso',
       elementos
     } = req.body;
 
     // Verificar que el evento existe
     const evento = await Evento.findByPk(id_evento);
     if (!evento) {
-      return res.status(404).json({ error: 'Evento no encontrado' });
+      await t.rollback();
+      return res.status(404).json({ 
+        error: 'Evento no encontrado',
+        mensaje: 'El evento especificado no existe en el sistema'
+      });
     }
 
     // Crear el alquiler
@@ -39,30 +43,98 @@ export const createAlquilerServicio = async (req: Request, res: Response) => {
 
     // Crear los detalles del alquiler
     if (elementos && elementos.length > 0) {
+      // Validar que todos los elementos existen y tienen suficiente cantidad disponible
+      for (const elem of elementos) {
+        const elemento = await Elemento.findByPk(elem.id_elemento);
+        if (!elemento) {
+          await t.rollback();
+          return res.status(404).json({
+            error: 'Elemento no encontrado',
+            mensaje: `El elemento con ID ${elem.id_elemento} no existe en el sistema`
+          });
+        }
+
+        if (elemento.cantidad_disponible < elem.cantidad) {
+          await t.rollback();
+          return res.status(400).json({
+            error: 'Cantidad insuficiente',
+            mensaje: `No hay suficiente cantidad disponible del elemento ${elemento.nombre_elemento}`
+          });
+        }
+      }
+
       await Promise.all(elementos.map(async (elem: any) => {
         await DetalleAlquiler.create({
           id_alquiler: alquiler.id_alquiler,
           id_elemento: elem.id_elemento,
           cantidad_alquiler: elem.cantidad,
           precio_unitario: elem.precio_unitario,
-          total_alquiler: elem.subtotal
+          total_alquiler: elem.subtotal,
+          estado_detalquiler: 'Aceptado'
         }, { transaction: t });
+
+        // Actualizar la cantidad disponible del elemento
+        const elemento = await Elemento.findByPk(elem.id_elemento);
+        if (elemento) {
+          await elemento.update({
+            cantidad_disponible: elemento.cantidad_disponible - elem.cantidad
+          }, { transaction: t });
+        }
       }));
     }
 
     await t.commit();
-    res.status(201).json(alquiler);
+
+    // Obtener el alquiler con sus detalles
+    const alquilerCompleto = await AlquilerServicio.findByPk(alquiler.id_alquiler, {
+      include: [
+        {
+          model: DetalleAlquiler,
+          include: [
+            {
+              model: Elemento
+            }
+          ]
+        },
+        {
+          model: Evento,
+          as: 'evento'
+        }
+      ]
+    });
+
+    res.status(201).json(alquilerCompleto);
   } catch (error) {
     await t.rollback();
     console.error('Error al crear alquiler:', error);
-    res.status(500).json({ error: 'Error al crear alquiler' });
+    res.status(500).json({ 
+      error: 'Error al crear alquiler',
+      mensaje: 'Ocurrió un error al procesar el alquiler'
+    });
   }
 };
 
 export const getAllAlquileres = async (req: Request, res: Response) => {
   try {
     const alquileres = await AlquilerServicio.findAll({
+      where: {
+        estado_alquiler: {
+          [Op.ne]: 'Cancelado'
+        }
+      },
       include: [
+        {
+          model: DetalleAlquiler,
+          where: {
+            estado_detalquiler: 'Aceptado'
+          },
+          required: false,
+          include: [
+            {
+              model: Elemento
+            }
+          ]
+        },
         {
           model: Evento,
           as: 'evento'
@@ -70,10 +142,21 @@ export const getAllAlquileres = async (req: Request, res: Response) => {
       ],
       order: [['id_alquiler', 'DESC']]
     });
+
+    if (!alquileres || alquileres.length === 0) {
+      return res.status(404).json({ 
+        error: 'No se encontraron alquileres',
+        mensaje: 'No hay alquileres registrados en el sistema'
+      });
+    }
+
     res.json(alquileres);
   } catch (error) {
     console.error('Error al obtener alquileres:', error);
-    res.status(500).json({ error: 'Error al obtener alquileres' });
+    res.status(500).json({ 
+      error: 'Error al obtener alquileres',
+      mensaje: 'Ocurrió un error al cargar los alquileres'
+    });
   }
 };
 
@@ -82,6 +165,18 @@ export const getAlquilerById = async (req: Request, res: Response) => {
     const { id_alquiler } = req.params;
     const alquiler = await AlquilerServicio.findByPk(id_alquiler, {
       include: [
+        {
+          model: DetalleAlquiler,
+          where: {
+            estado_detalquiler: 'Aceptado'
+          },
+          required: false,
+          include: [
+            {
+              model: Elemento
+            }
+          ]
+        },
         {
           model: Evento,
           as: 'evento'
@@ -120,8 +215,25 @@ export const getAlquileresByEvento = async (req: Request, res: Response) => {
     }
 
     const alquileres = await AlquilerServicio.findAll({
-      where: { id_evento },
+      where: { 
+        id_evento,
+        estado_alquiler: {
+          [Op.ne]: 'Cancelado'
+        }
+      },
       include: [
+        {
+          model: DetalleAlquiler,
+          where: {
+            estado_detalquiler: 'Aceptado'
+          },
+          required: false,
+          include: [
+            {
+              model: Elemento
+            }
+          ]
+        },
         {
           model: Evento,
           as: 'evento',
@@ -171,6 +283,11 @@ export const getAlquileresByElemento = async (req: Request, res: Response) => {
         {
           model: AlquilerServicio,
           as: 'alquiler',
+          where: {
+            estado_alquiler: {
+              [Op.ne]: 'Cancelado'
+            }
+          },
           include: [
             {
               model: Evento,
@@ -216,22 +333,20 @@ export const getAlquileresByElemento = async (req: Request, res: Response) => {
 export const getElementosAlquiler = async (req: Request, res: Response) => {
   try {
     const { id_alquiler } = req.params;
-    console.log('Buscando elementos para el alquiler:', id_alquiler);
     
-    // Primero verificar si el alquiler existe
+    // Verificar si el alquiler existe
     const alquilerExists = await AlquilerServicio.findByPk(id_alquiler);
     if (!alquilerExists) {
-      console.log('Alquiler no encontrado:', id_alquiler);
       return res.status(404).json({ 
         error: 'Alquiler no encontrado',
         mensaje: `No se encontró el alquiler con ID ${id_alquiler}`
       });
     }
-    console.log('Alquiler encontrado:', alquilerExists.toJSON());
 
     const detalles = await DetalleAlquiler.findAll({
       where: { 
-        id_alquiler
+        id_alquiler,
+        estado_detalquiler: 'Aceptado'
       },
       include: [
         {
@@ -241,10 +356,8 @@ export const getElementosAlquiler = async (req: Request, res: Response) => {
         }
       ]
     });
-    console.log('Detalles encontrados:', JSON.stringify(detalles, null, 2));
 
     if (!detalles || detalles.length === 0) {
-      console.log('No se encontraron detalles para el alquiler:', id_alquiler);
       return res.status(404).json({ 
         error: 'No se encontraron elementos',
         mensaje: 'Este alquiler no tiene elementos asociados'
@@ -254,10 +367,7 @@ export const getElementosAlquiler = async (req: Request, res: Response) => {
     // Transformar la respuesta para incluir solo la información necesaria
     const elementosFormateados = detalles.map(detalle => {
       const elemento = detalle.elemento;
-      if (!elemento) {
-        console.log(`Elemento no encontrado para el detalle ${detalle.id_detalle}`);
-        return null;
-      }
+      if (!elemento) return null;
       
       return {
         id_elemento: elemento.id_elemento,
@@ -272,18 +382,12 @@ export const getElementosAlquiler = async (req: Request, res: Response) => {
       };
     }).filter(elemento => elemento !== null);
 
-    console.log('Elementos formateados:', JSON.stringify(elementosFormateados, null, 2));
     res.json(elementosFormateados);
   } catch (error) {
-    console.error('Error detallado al obtener elementos del alquiler:', error);
-    if (error instanceof Error) {
-      console.error('Mensaje de error:', error.message);
-      console.error('Stack trace:', error.stack);
-    }
+    console.error('Error al obtener elementos del alquiler:', error);
     res.status(500).json({ 
       error: 'Error al obtener elementos del alquiler',
-      mensaje: 'Ocurrió un error interno al procesar la solicitud',
-      detalles: error instanceof Error ? error.message : 'Error desconocido'
+      mensaje: 'Ocurrió un error al cargar los elementos del alquiler'
     });
   }
 };
@@ -303,7 +407,11 @@ export const editAlquilerServicio = async (req: Request, res: Response) => {
 
     const alquiler = await AlquilerServicio.findByPk(id_alquiler);
     if (!alquiler) {
-      return res.status(404).json({ error: 'Alquiler no encontrado' });
+      await t.rollback();
+      return res.status(404).json({ 
+        error: 'Alquiler no encontrado',
+        mensaje: 'El alquiler especificado no existe en el sistema'
+      });
     }
 
     // Actualizar el alquiler
@@ -314,6 +422,24 @@ export const editAlquilerServicio = async (req: Request, res: Response) => {
       total_alquiler,
       estado_alquiler
     }, { transaction: t });
+
+    // Obtener detalles actuales para restaurar cantidades
+    const detallesActuales = await DetalleAlquiler.findAll({
+      where: { 
+        id_alquiler,
+        estado_detalquiler: 'Aceptado'
+      }
+    });
+
+    // Restaurar cantidades de elementos
+    for (const detalle of detallesActuales) {
+      const elemento = await Elemento.findByPk(detalle.id_elemento);
+      if (elemento) {
+        await elemento.update({
+          cantidad_disponible: elemento.cantidad_disponible + detalle.cantidad_alquiler
+        }, { transaction: t });
+      }
+    }
 
     // Marcar todos los detalles existentes como cancelados
     await DetalleAlquiler.update(
@@ -326,6 +452,26 @@ export const editAlquilerServicio = async (req: Request, res: Response) => {
 
     // Crear los nuevos detalles
     if (elementos && elementos.length > 0) {
+      // Validar que todos los elementos existen y tienen suficiente cantidad disponible
+      for (const elem of elementos) {
+        const elemento = await Elemento.findByPk(elem.id_elemento);
+        if (!elemento) {
+          await t.rollback();
+          return res.status(404).json({
+            error: 'Elemento no encontrado',
+            mensaje: `El elemento con ID ${elem.id_elemento} no existe en el sistema`
+          });
+        }
+
+        if (elemento.cantidad_disponible < elem.cantidad) {
+          await t.rollback();
+          return res.status(400).json({
+            error: 'Cantidad insuficiente',
+            mensaje: `No hay suficiente cantidad disponible del elemento ${elemento.nombre_elemento}`
+          });
+        }
+      }
+
       await Promise.all(elementos.map(async (elem: any) => {
         await DetalleAlquiler.create({
           id_alquiler,
@@ -335,15 +481,49 @@ export const editAlquilerServicio = async (req: Request, res: Response) => {
           total_alquiler: elem.subtotal,
           estado_detalquiler: 'Aceptado'
         }, { transaction: t });
+
+        // Actualizar la cantidad disponible del elemento
+        const elemento = await Elemento.findByPk(elem.id_elemento);
+        if (elemento) {
+          await elemento.update({
+            cantidad_disponible: elemento.cantidad_disponible - elem.cantidad
+          }, { transaction: t });
+        }
       }));
     }
 
     await t.commit();
-    res.json(alquiler);
+
+    // Obtener el alquiler actualizado con sus detalles
+    const alquilerActualizado = await AlquilerServicio.findByPk(id_alquiler, {
+      include: [
+        {
+          model: DetalleAlquiler,
+          where: {
+            estado_detalquiler: 'Aceptado'
+          },
+          required: false,
+          include: [
+            {
+              model: Elemento
+            }
+          ]
+        },
+        {
+          model: Evento,
+          as: 'evento'
+        }
+      ]
+    });
+
+    res.json(alquilerActualizado);
   } catch (error) {
     await t.rollback();
     console.error('Error al editar alquiler:', error);
-    res.status(500).json({ error: 'Error al editar alquiler' });
+    res.status(500).json({ 
+      error: 'Error al editar alquiler',
+      mensaje: 'Ocurrió un error al actualizar el alquiler'
+    });
   }
 };
 
@@ -354,7 +534,29 @@ export const deleteAlquilerServicio = async (req: Request, res: Response) => {
     const alquiler = await AlquilerServicio.findByPk(id_alquiler);
     
     if (!alquiler) {
-      return res.status(404).json({ error: 'Alquiler no encontrado' });
+      await t.rollback();
+      return res.status(404).json({ 
+        error: 'Alquiler no encontrado',
+        mensaje: 'El alquiler especificado no existe en el sistema'
+      });
+    }
+
+    // Obtener detalles actuales para restaurar cantidades
+    const detallesActuales = await DetalleAlquiler.findAll({
+      where: { 
+        id_alquiler,
+        estado_detalquiler: 'Aceptado'
+      }
+    });
+
+    // Restaurar cantidades de elementos
+    for (const detalle of detallesActuales) {
+      const elemento = await Elemento.findByPk(detalle.id_elemento);
+      if (elemento) {
+        await elemento.update({
+          cantidad_disponible: elemento.cantidad_disponible + detalle.cantidad_alquiler
+        }, { transaction: t });
+      }
     }
 
     // Marcar el alquiler como cancelado
@@ -372,10 +574,16 @@ export const deleteAlquilerServicio = async (req: Request, res: Response) => {
     );
 
     await t.commit();
-    res.json({ message: 'Alquiler cancelado correctamente' });
+    res.json({ 
+      message: 'Alquiler cancelado correctamente',
+      alquiler: alquiler
+    });
   } catch (error) {
     await t.rollback();
     console.error('Error al eliminar alquiler:', error);
-    res.status(500).json({ error: 'Error al eliminar alquiler' });
+    res.status(500).json({ 
+      error: 'Error al eliminar alquiler',
+      mensaje: 'Ocurrió un error al cancelar el alquiler'
+    });
   }
 }; 

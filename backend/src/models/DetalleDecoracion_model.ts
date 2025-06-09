@@ -5,12 +5,19 @@ import {
   PrimaryKey,
   DataType,
   ForeignKey,
-  BelongsTo
+  BelongsTo,
+  AutoIncrement
 } from 'sequelize-typescript';
 import DecoracionServicio from './DecoracionServicio_model';
 
 @Table({ tableName: 'detalle_decoracion', timestamps: false })
 export default class DetalleDecoracion extends Model {
+  @PrimaryKey
+  @AutoIncrement
+  @Column({ type: DataType.INTEGER, field: 'id_detdecoracion' })
+  id_detdecoracion!: number;
+
+
   @ForeignKey(() => DecoracionServicio)
   @Column({ type: DataType.INTEGER, field: 'id_decoracion', allowNull: false })
   id_decoracion!: number;
