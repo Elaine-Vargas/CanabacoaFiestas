@@ -118,8 +118,8 @@ const ReportAdmin = () => {
   const [isFacturaModalVisible, setIsFacturaModalVisible] = useState<boolean>(false);
   const [isProveedorModalVisible, setIsProveedorModalVisible] = useState<boolean>(false);
   const [selectedEquipoReport, setSelectedEquipoReport] = useState<string>('');
-  const [selectedEventoId, setSelectedEventoId] = useState<string>('');
-  const [selectedEmpleadoId, setSelectedEmpleadoId] = useState<string>('');
+  const [selectedEventoId, setSelectedEventoId] = useState<string>('todos');
+  const [selectedEmpleadoId, setSelectedEmpleadoId] = useState<string>('todos');
   const [selectedFacturaReport, setSelectedFacturaReport] = useState<string>('');
   const [selectedClienteId, setSelectedClienteId] = useState<string>('');
   const [selectedMetodoPago, setSelectedMetodoPago] = useState<string>('');
@@ -139,7 +139,7 @@ const ReportAdmin = () => {
   const [elementosCompra, setElementosCompra] = useState<ElementoCompra[]>([]);
   const [loadingCompras, setLoadingCompras] = useState(false);
   const [loadingElementosCompra, setLoadingElementosCompra] = useState(false);
-  const [selectedPuesto, setSelectedPuesto] = useState<string>('');
+  const [selectedPuesto, setSelectedPuesto] = useState<string>('todos');
 
   const handleRoleAndStatusReport = async () => {
     try {
@@ -206,6 +206,8 @@ const ReportAdmin = () => {
     setIsEventModalVisible(false);
     setSelectedEventType('');
     setCedula('');
+    setSelectedTipoEvento('todos');
+    setDateRange([null, null]);
   };
 
   const [searchText, setSearchText] = useState('');
@@ -333,11 +335,19 @@ const ReportAdmin = () => {
     }
   }, [isEventModalVisible]);
 
-  const handleGeneralEventReport = async () => {
+  const handleEventReport = async () => {
     try {
       setLoading(true);
       let url = `${apiUrl}/reporte/eventos`;
       const params = new URLSearchParams();
+
+      if (selectedEventType === 'cliente' && cedula && cedula !== 'todos') {
+        url = `${apiUrl}/reporte/eventos/cliente/${cedula}`;
+      } else if (selectedEventType === 'asesor' && cedula && cedula !== 'todos') {
+        url = `${apiUrl}/reporte/eventos/asesor/${cedula}`;
+      } else if (selectedEventType === 'personal' && cedula && cedula !== 'todos') {
+        url = `${apiUrl}/reporte/eventos/personal/${cedula}`;
+      }
 
       if (selectedTipoEvento && selectedTipoEvento !== 'todos') {
         params.append('tipo_evento', selectedTipoEvento);
@@ -352,84 +362,7 @@ const ReportAdmin = () => {
         url += `?${params.toString()}`;
       }
 
-      const response = await axios.get(url, {
-        responseType: 'blob',
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        }
-      });
-      
-      const file = new Blob([response.data], { type: 'application/pdf' });
-      const fileURL = window.URL.createObjectURL(file);
-      window.open(fileURL);
-    } catch (error) {
-      if (axios.isAxiosError(error)) {
-        const { response } = error;
-        if (response && response.data instanceof Blob) {
-          try {
-            const blobText = await new Promise<string>((resolve, reject) => {
-              const reader = new FileReader();
-              reader.onloadend = () => {
-                if (reader.result) {
-                  resolve(reader.result as string);
-                } else {
-                  reject(new Error('Failed to read blob as text.'));
-                }
-              };
-              reader.onerror = reject;
-              reader.readAsText(response.data);
-            });
-
-            const errorData = JSON.parse(blobText);
-            if (errorData.mensaje) {
-              message.error(errorData.mensaje);
-            } else {
-              message.error('Error al generar el reporte general de eventos');
-            }
-          } catch (parseError) {
-            console.error('Error parsing error response:', parseError);
-            message.error('Error al generar el reporte general de eventos');
-          }
-        } else {
-          message.error('Error al generar el reporte general de eventos');
-        }
-      } else {
-        message.error('Error al generar el reporte general de eventos');
-      }
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleSpecificEventReport = async () => {
-    if (!selectedEventType || !cedula) {
-      message.warning('Por favor complete todos los campos');
-      return;
-    }
-
-    try {
-      setLoading(true);
-      let endpoint;
-      if (selectedEventType === 'cliente') {
-        endpoint = `/reporte/eventos/cliente/${cedula}`;
-      } else if (selectedEventType === 'asesor') {
-        endpoint = `/reporte/eventos/asesor/${cedula}`;
-      } else if (selectedEventType === 'personal') {
-        endpoint = `/reporte/eventos/personal/${cedula}`;
-      }
-
-      const params = new URLSearchParams();
-
-      if (selectedTipoEvento && selectedTipoEvento !== 'todos') {
-        params.append('tipo_evento', selectedTipoEvento);
-      }
-
-      if (dateRange[0] && dateRange[1]) {
-        params.append('fecha_inicio', dateRange[0].format('YYYY-MM-DD'));
-        params.append('fecha_fin', dateRange[1].format('YYYY-MM-DD'));
-      }
-
-      const url = `${apiUrl}${endpoint}${params.toString() ? `?${params.toString()}` : ''}`;
+      console.log('URL del reporte de eventos:', url);
 
       const response = await axios.get(url, {
         responseType: 'blob',
@@ -463,17 +396,17 @@ const ReportAdmin = () => {
             if (errorData.mensaje) {
               message.error(errorData.mensaje);
             } else {
-              message.error('Error al generar el reporte específico de eventos');
+              message.error('Error al generar el reporte de eventos');
             }
           } catch (parseError) {
             console.error('Error parsing error response:', parseError);
-            message.error('Error al generar el reporte específico de eventos');
+            message.error('Error al generar el reporte de eventos');
           }
         } else {
-          message.error('Error al generar el reporte específico de eventos');
+          message.error('Error al generar el reporte de eventos');
         }
       } else {
-        message.error('Error al generar el reporte específico de eventos');
+        message.error('Error al generar el reporte de eventos');
       }
     } finally {
       setLoading(false);
@@ -726,10 +659,9 @@ const ReportAdmin = () => {
 
   const handleEquipoModalCancel = () => {
     setIsEquipoModalVisible(false);
-    setSelectedEquipoReport('');
-    setSelectedEventoId('');
-    setSelectedEmpleadoId('');
-    setSelectedPuesto('');
+    setSelectedEventoId('todos');
+    setSelectedEmpleadoId('todos');
+    setSelectedPuesto('todos');
   };
 
   const showFacturaModal = () => {
@@ -1250,19 +1182,7 @@ const ReportAdmin = () => {
           </div>
 
           <div>
-            <h4 className='reportTitle'>Reporte General de Eventos</h4>
-            <Button 
-              type="primary" 
-              icon={<DownloadOutlined />}
-              onClick={handleGeneralEventReport}
-              loading={loading}
-            >
-              Generar Reporte General
-            </Button>
-          </div>
-
-          <div>
-            <h4 className='reportTitle'>Reporte Específico de Eventos</h4>
+            <h4 className='reportTitle'>Generar Reporte de Eventos</h4>
             <Space direction="vertical" style={{ width: '100%' }}>
               <Select
                 style={{ width: '100%' }}
@@ -1344,11 +1264,10 @@ const ReportAdmin = () => {
               <Button 
                 type="primary" 
                 icon={<DownloadOutlined />}
-                onClick={handleSpecificEventReport}
+                onClick={handleEventReport}
                 loading={loading}
-                disabled={loading || !selectedEventType || !cedula}
               >
-                Generar Reporte Específico
+                Generar Reporte
               </Button>
             </Space>
           </div>
@@ -1469,23 +1388,9 @@ const ReportAdmin = () => {
       >
         <Space direction="vertical" size="large" style={{ width: '100%' }}>
           <div>
-            <h4 className='reportTitle'>Reporte General de Equipos</h4>
-            <Button 
-              type="primary" 
-              icon={<DownloadOutlined />}
-              onClick={() => {
-                setSelectedEquipoReport('general');
-                handleEquipoReport();
-              }}
-              loading={loading}
-            >
-              Generar Reporte General
-            </Button>
-          </div>
-
-          <div>
-            <h4 className='reportTitle'>Reporte por Evento</h4>
+            <h4 className='reportTitle'>Generar Reporte de Equipos</h4>
             <Space direction="vertical" style={{ width: '100%' }}>
+              <h4 className='reportTitle'>Reporte por Evento</h4>
               <Select
                 style={{ width: '100%' }}
                 placeholder="Seleccione un evento"
@@ -1511,21 +1416,8 @@ const ReportAdmin = () => {
                   </Option>
                 ))}
               </Select>
-              <Button 
-                type="primary" 
-                icon={<DownloadOutlined />}
-                onClick={handleEquipoReport}
-                loading={loading}
-                disabled={!selectedEventoId}
-              >
-                Generar Reporte por Evento
-              </Button>
-            </Space>
-          </div>
 
-          <div>
-            <h4 className='reportTitle'>Reporte por Empleado</h4>
-            <Space direction="vertical" style={{ width: '100%' }}>
+              <h4 className='reportTitle'>Reporte por Empleado</h4>
               <Select
                 style={{ width: '100%' }}
                 placeholder="Seleccione un empleado"
@@ -1547,25 +1439,12 @@ const ReportAdmin = () => {
                     value={empleado.cedula_usuario}
                     label={`${empleado.nombre_usuario} ${empleado.apellido_usuario} (${empleado.cedula_usuario})`}
                   >
-                    {`${empleado.nombre_usuario} ${empleado.apellido_usuario} (${empleado.cedula_usuario})`}
+                    {`${empleado.nombre_usuario} ${empleado.apellido_usuario} (${empleado.cedula_usuario})`} 
                   </Option>
                 ))}
               </Select>
-              <Button 
-                type="primary" 
-                icon={<DownloadOutlined />}
-                onClick={handleEquipoReport}
-                loading={loading}
-                disabled={!selectedEmpleadoId}
-              >
-                Generar Reporte por Empleado
-              </Button>
-            </Space>
-          </div>
 
-          <div>
-            <h4 className='reportTitle'>Reporte por Puesto</h4>
-            <Space direction="vertical" style={{ width: '100%' }}>
+              <h4 className='reportTitle'>Reporte por Puesto</h4>
               <Select
                 style={{ width: '100%' }}
                 placeholder="Seleccione un puesto"
@@ -1587,9 +1466,8 @@ const ReportAdmin = () => {
                 icon={<DownloadOutlined />}
                 onClick={handleEquipoReport}
                 loading={loading}
-                disabled={!selectedPuesto}
               >
-                Generar Reporte por Puesto
+                Generar Reporte
               </Button>
             </Space>
           </div>
