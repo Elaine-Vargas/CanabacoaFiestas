@@ -4,6 +4,9 @@ import Usuario from '../models/Usuario_model';
 import { Op } from 'sequelize';
 import TipoEvento from '../models/TipoEvento_model';
 import EmpleadoEvento from '../models/EmpleadoEvento_model';
+import Direccion from '../models/Direccion_model';
+import Ciudad from '../models/Ciudad_model';
+import Provincia from '../models/Provincia_model';
 
 export const createEvent = async (req: Request, res: Response) => {
     try {
@@ -13,20 +16,21 @@ export const createEvent = async (req: Request, res: Response) => {
             fecha_evento,
             hora_evento,
             id_tipo_evento,
-            id_direccion,
+            id_provincia,
+            id_ciudad,
+            sector,
+            calle,
+            detalles,
             espacio_evento,
             estado_solicitud,
             desea_supervision,
-            nota_cliente,
-            subtotal_evento,
-            itbis_evento,
-            total_evento
+            nota_cliente
         } = req.body;
+
+        console.log('Datos recibidos:', req.body);
 
         // Verificar roles
         const cliente = await Usuario.findOne({ where: { cedula_usuario: cedula_cliente, id_rol: 2 } });
-        const asesor = await Usuario.findOne({ where: { cedula_usuario: cedula_asesor, id_rol: 3 } });
-
         if (!cliente) {
             return res.status(400).json({ 
                 error: 'Cliente no válido',
@@ -34,35 +38,117 @@ export const createEvent = async (req: Request, res: Response) => {
             });
         }
 
-        if (!asesor) {
-            return res.status(400).json({ 
-                error: 'Asesor no válido',
-                mensaje: 'El asesor no existe o no tiene el rol correcto'
+        let asesor = null;
+        if (cedula_asesor) {
+            asesor = await Usuario.findOne({ where: { cedula_usuario: cedula_asesor, id_rol: 3 } });
+            if (!asesor) {
+                return res.status(400).json({ 
+                    error: 'Asesor no válido',
+                    mensaje: 'El asesor no existe o no tiene el rol correcto'
+                });
+            }
+        }
+
+        // Verificar que el tipo de evento existe
+        const tipoEvento = await TipoEvento.findByPk(id_tipo_evento);
+        if (!tipoEvento) {
+            return res.status(400).json({
+                error: 'Tipo de evento no válido',
+                mensaje: 'El tipo de evento seleccionado no existe'
             });
         }
 
+        // Verificar que la ciudad existe y pertenece a la provincia
+        const ciudad = await Ciudad.findOne({
+            where: {
+                id_ciudad,
+                id_provincia
+            }
+        });
+
+        if (!ciudad) {
+            return res.status(400).json({
+                error: 'Ciudad no válida',
+                mensaje: 'La ciudad seleccionada no existe o no pertenece a la provincia seleccionada'
+            });
+        }
+
+        // Crear la dirección
+        const direccion = await Direccion.create({
+            id_ciudad,
+            sector,
+            calle,
+            detalles: detalles || null
+        });
+
+        console.log('Dirección creada:', direccion.toJSON());
+
+        // Crear el evento
         const evento = await Evento.create({
             cedula_cliente,
             cedula_asesor: cedula_asesor || null,
             fecha_evento,
             hora_evento,
-            id_direccion,
-            espacio_evento,
             id_tipo_evento,
+            id_direccion: direccion.id_direccion,
+            espacio_evento,
             estado_solicitud: estado_solicitud || 'Pendiente',
             desea_supervision: desea_supervision || false,
             nota_cliente: nota_cliente || null,
-            subtotal_evento: subtotal_evento || 0.00,
-            itbis_evento: itbis_evento || 0.00,
-            total_evento: total_evento || 0.00
+            subtotal_evento: 0,
+            itbis_evento: 0,
+            total_evento: 0
         });
 
-        res.status(201).json(evento);
+        console.log('Evento creado:', evento.toJSON());
+
+        // Obtener el evento con sus relaciones
+        const eventoCompleto = await Evento.findByPk(evento.id_evento, {
+            include: [
+                {
+                    model: Usuario,
+                    as: 'cliente',
+                    attributes: ['cedula_usuario', 'nombre_usuario', 'apellido_usuario']
+                },
+                {
+                    model: Usuario,
+                    as: 'asesor',
+                    attributes: ['cedula_usuario', 'nombre_usuario', 'apellido_usuario']
+                },
+                {
+                    model: TipoEvento,
+                    attributes: ['id_tipo_evento', 'tipo_evento']
+                },
+                {
+                    model: Direccion,
+                    include: [
+                        {
+                            model: Ciudad,
+                            include: [
+                                {
+                                    model: Provincia,
+                                    attributes: ['id_provincia', 'nombre_provincia']
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        });
+
+        if (!eventoCompleto) {
+            throw new Error('Error al recuperar el evento creado');
+        }
+
+        res.status(201).json({
+            mensaje: 'Evento creado exitosamente',
+            evento: eventoCompleto
+        });
     } catch (error) {
-        console.error('Error al crear evento:', error);
-        res.status(500).json({ 
-            error: 'Error al crear el evento',
-            mensaje: 'Ocurrió un error al crear el evento'
+        console.error('Error detallado al crear evento:', error);
+        res.status(500).json({
+            error: 'Error al crear evento',
+            mensaje: error instanceof Error ? error.message : 'Ocurrió un error al crear el evento'
         });
     }
 };

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Modal, Form, Input, Select, Button } from 'antd';
+import { Modal, Form, Input, Select, Button, message } from 'antd';
+import { validateCedula, validateEmail, validatePhoneNumber, validateUsername, validatePassword } from '../../../utils/validation';
 import '../../../styles/dashboard/DashboardForms.scss';
 
 interface Rol {
@@ -20,9 +21,11 @@ const UsuarioForm: React.FC<UsuarioFormProps> = ({
   onSubmit,
   loading = false,
 }) => {
+  const apiUrl = import.meta.env.VITE_API_BASE_URL;
   const [form] = Form.useForm();
   const [roles, setRoles] = useState<Rol[]>([]);
   const [loadingRoles, setLoadingRoles] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
     if (visible) {
@@ -33,14 +36,21 @@ const UsuarioForm: React.FC<UsuarioFormProps> = ({
   const fetchRoles = async () => {
     try {
       setLoadingRoles(true);
-      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/roles`);
+      const response = await fetch(`${apiUrl}/usuario/roles`, {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+          'Content-Type': 'application/json'
+        }
+      });
       if (!response.ok) {
         throw new Error('Error al cargar los roles');
       }
       const data = await response.json();
-      setRoles(data);
+      console.log('Datos de roles recibidos:', data);
+      setRoles(Array.isArray(data.roles) ? data.roles : []);
     } catch (error) {
       console.error('Error al cargar roles:', error);
+      setRoles([]);
     } finally {
       setLoadingRoles(false);
     }
@@ -49,10 +59,95 @@ const UsuarioForm: React.FC<UsuarioFormProps> = ({
   const handleSubmit = async () => {
     try {
       const values = await form.validateFields();
-      onSubmit(values);
+      setIsSubmitting(true);
+
+      const response = await fetch(`${apiUrl}/auth/register-user`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(values)
+      });
+
+      const responseText = await response.text();
+      console.log('Respuesta completa del servidor (ERROR DUPLICADO):', responseText);
+
+      if (!response.ok) {
+        let errorData: any = {};
+        try {
+          errorData = JSON.parse(responseText);
+        } catch (e) {
+          errorData.mensaje = responseText;
+        }
+        throw errorData;
+      }
+
+      const data = JSON.parse(responseText);
+
+      message.success('Usuario creado exitosamente');
+      onSubmit(data.usuario);
       form.resetFields();
-    } catch (error) {
-      console.error('Error al validar el formulario:', error);
+      onCancel();
+    } catch (error: any) {
+      console.error('Error al crear usuario:', error);
+
+      let globalErrorMessage = 'Error al crear el usuario.';
+      let specificBackendErrorMessage = '';
+      let fieldErrors: { name: string; errors: string[] }[] = [];
+
+      if (error.error) {
+        specificBackendErrorMessage = error.error;
+      } else if (error.message) {
+        specificBackendErrorMessage = error.message;
+      } else if (error.mensaje) {
+        specificBackendErrorMessage = error.mensaje;
+      } else if (typeof error === 'string') {
+        specificBackendErrorMessage = error;
+      }
+
+      globalErrorMessage = specificBackendErrorMessage || globalErrorMessage;
+
+      if (error.errors && typeof error.errors === 'object' && Object.keys(error.errors).length > 0) {
+        for (const fieldName in error.errors) {
+          if (Object.prototype.hasOwnProperty.call(error.errors, fieldName)) {
+            fieldErrors.push({
+              name: fieldName,
+              errors: [error.errors[fieldName]]
+            });
+          }
+        }
+        globalErrorMessage = specificBackendErrorMessage || 'Errores de validación. Por favor, revise los campos.';
+      } else if (specificBackendErrorMessage) {
+        const lowerCaseErrorMessage = specificBackendErrorMessage.toLowerCase();
+
+        if (lowerCaseErrorMessage.includes('usuario ya existe') || lowerCaseErrorMessage.includes('nombre de usuario ya está en uso') || lowerCaseErrorMessage.includes('duplicate entry') || lowerCaseErrorMessage.includes('unique constraint failed')) {
+          fieldErrors.push({ name: 'usuario_login', errors: [specificBackendErrorMessage] });
+        }
+        if (lowerCaseErrorMessage.includes('cédula ya existe') || lowerCaseErrorMessage.includes('cédula ya está registrada') || lowerCaseErrorMessage.includes('duplicate entry') || lowerCaseErrorMessage.includes('unique constraint failed')) {
+          fieldErrors.push({ name: 'cedula_usuario', errors: [specificBackendErrorMessage] });
+        }
+        if (lowerCaseErrorMessage.includes('correo ya existe') || lowerCaseErrorMessage.includes('correo ya está en uso') || lowerCaseErrorMessage.includes('duplicate entry') || lowerCaseErrorMessage.includes('unique constraint failed')) {
+          fieldErrors.push({ name: 'correo_usuario', errors: [specificBackendErrorMessage] });
+        }
+
+        if (specificBackendErrorMessage.startsWith('<!DOCTYPE html>')) {
+            globalErrorMessage = 'Error de servidor: No se pudo procesar la solicitud. Por favor, intente más tarde.';
+            form.setFields(Object.keys(form.getFieldsValue()).map(name => ({ name, errors: [] })));
+            fieldErrors = [];
+        }
+      }
+
+      if (fieldErrors.length > 0) {
+        form.setFields(fieldErrors);
+      } else {
+        if (!specificBackendErrorMessage.startsWith('<!DOCTYPE html>')) {
+          form.setFields(Object.keys(form.getFieldsValue()).map(name => ({ name, errors: [] })));
+        }
+      }
+      message.error(globalErrorMessage);
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -69,7 +164,7 @@ const UsuarioForm: React.FC<UsuarioFormProps> = ({
           key="submit" 
           type="primary" 
           onClick={handleSubmit}
-          loading={loading}
+          loading={loading || isSubmitting}
           className="submit-button"
         >
           Crear Usuario
@@ -88,10 +183,16 @@ const UsuarioForm: React.FC<UsuarioFormProps> = ({
           label="Cédula"
           rules={[
             { required: true, message: 'Por favor ingrese la cédula' },
-            { pattern: /^\d{11}$/, message: 'La cédula debe tener 11 dígitos' }
+            { validator: async (_, value) => {
+                if (!value) return Promise.resolve();
+                const error = validateCedula(value);
+                if (error) return Promise.reject(new Error(error));
+                return Promise.resolve();
+              }
+            }
           ]}
         >
-          <Input placeholder="Ingrese la cédula" maxLength={11} />
+          <Input placeholder="Ingrese la cédula" maxLength={13} />
         </Form.Item>
 
         <Form.Item
@@ -124,8 +225,17 @@ const UsuarioForm: React.FC<UsuarioFormProps> = ({
           <Select
             placeholder="Seleccione el rol"
             loading={loadingRoles}
+            showSearch
+            optionFilterProp="children"
+            allowClear
+            filterOption={(input, option) => {
+              if (typeof option?.children === 'string') {
+                return (option.children as string).toLowerCase().includes(input.toLowerCase());
+              }
+              return false;
+            }}
           >
-            {roles.map(rol => (
+            {Array.isArray(roles) && roles.map(rol => (
               <Select.Option key={rol.id_rol} value={rol.id_rol}>
                 {rol.nombre_rol}
               </Select.Option>
@@ -137,22 +247,34 @@ const UsuarioForm: React.FC<UsuarioFormProps> = ({
           name="usuario_login"
           label="Usuario"
           rules={[
-            { required: true, message: 'Crea un nombre de usuario' },
-            { max: 25, message: 'El nombre de usuario no puede exceder los 25 caracteres' }
+            { required: true, message: 'Por favor creele un nombre de usuario' },
+            { validator: async (_, value) => {
+                if (!value) return Promise.resolve();
+                const error = validateUsername(value);
+                if (error) return Promise.reject(new Error(error));
+                return Promise.resolve();
+              }
+            }
           ]}
         >
-          <Input placeholder="Ingrese el nombre de usuario" maxLength={25} />
+          <Input placeholder="Crea un nombre de usuario" maxLength={25} />
         </Form.Item>
 
         <Form.Item
           name="contrasena_login"
           label="Contraseña"
           rules={[
-            { required: true, message: 'Crea una contraseña' },
-            { min: 8, message: 'La contraseña debe tener al menos 8 caracteres' }
+            { required: true, message: 'Por favor creele una contraseña' },
+            { validator: async (_, value) => {
+                if (!value) return Promise.resolve();
+                const error = validatePassword(value);
+                if (error) return Promise.reject(new Error(error));
+                return Promise.resolve();
+              }
+            }
           ]}
         >
-          <Input.Password placeholder="Ingrese la contraseña" />
+          <Input.Password placeholder="Crea una contraseña" />
         </Form.Item>
 
         <Form.Item
@@ -160,10 +282,16 @@ const UsuarioForm: React.FC<UsuarioFormProps> = ({
           label="Teléfono"
           rules={[
             { required: true, message: 'Por favor ingrese el teléfono' },
-            { pattern: /^\d{10}$/, message: 'El teléfono debe tener 10 dígitos' }
+            { validator: async (_, value) => {
+                if (!value) return Promise.resolve();
+                const error = validatePhoneNumber(value);
+                if (error) return Promise.reject(new Error(error));
+                return Promise.resolve();
+              }
+            }
           ]}
         >
-          <Input placeholder="Ingrese el teléfono" maxLength={10} />
+          <Input placeholder="Ingrese el teléfono" maxLength={12} />
         </Form.Item>
 
         <Form.Item
@@ -171,8 +299,13 @@ const UsuarioForm: React.FC<UsuarioFormProps> = ({
           label="Correo Electrónico"
           rules={[
             { required: true, message: 'Por favor ingrese el correo electrónico' },
-            { type: 'email', message: 'Por favor ingrese un correo electrónico válido' },
-            { max: 100, message: 'El correo no puede exceder los 100 caracteres' }
+            { validator: async (_, value) => {
+                if (!value) return Promise.resolve();
+                const error = validateEmail(value);
+                if (error) return Promise.reject(new Error(error));
+                return Promise.resolve();
+              }
+            }
           ]}
         >
           <Input placeholder="Ingrese el correo electrónico" maxLength={100} />
