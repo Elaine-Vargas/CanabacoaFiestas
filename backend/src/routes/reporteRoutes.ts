@@ -15,8 +15,8 @@ router.get('/usuario', ReporteGeneralUsuarios as RequestHandler);
 router.get('/usuario/rol/:id_rol', ReporteUsuariosPorRol as RequestHandler);
 
 router.get('/eventos', generarReporteEventos as RequestHandler);
-router.get('/eventos/cliente/:id_cliente', generarReporteEventosCliente as unknown as RequestHandler);
-router.get('/eventos/asesor/:id_asesor', generarReporteEventosAsesor as unknown as RequestHandler);
-router.get('/eventos/personal/:id_personal', generarReporteEventosPersonal as unknown as RequestHandler);
+router.get('/eventos/cliente/:cedula_cliente', generarReporteEventosCliente as RequestHandler);
+router.get('/eventos/asesor/:cedula_asesor', generarReporteEventosAsesor  as RequestHandler);
+router.get('/eventos/personal/:cedula_personal', generarReporteEventosPersonal as RequestHandler);
 
 export default router;
