@@ -1094,9 +1094,10 @@ const ReportAdmin = () => {
         </Col>
         <Col xs={24} sm={12} md={8} lg={6}>
           <Card
+            
             hoverable
             onClick={showEquipoModal}
-            style={{ textAlign: 'center' }}
+            style={{backgroundColor:'green', textAlign: 'center' }}
           >
             <TeamOutlined style={{ fontSize: '32px', marginBottom: '8px' }} />
             <h3>Reportes de Equipos</h3>
@@ -1120,7 +1121,7 @@ const ReportAdmin = () => {
           <Card
             hoverable
             onClick={showFacturaModal}
-            style={{ backgroundColor:'red', textAlign: 'center' }}
+            style={{ textAlign: 'center' }}
           >
             <PrinterOutlined style={{ fontSize: '32px', marginBottom: '8px' }} />
             <h3>Facturas de Pagos</h3>
