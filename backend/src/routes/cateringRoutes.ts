@@ -9,6 +9,7 @@ import {
     // Menu controllers
     createMenu,
     getAllMenus,
+    getMenuById,
     getMenuByCatering,
     editMenu,
     deleteMenu,
@@ -96,6 +97,15 @@ router.post('/menu', async (req: Request, res: Response, next: NextFunction) => 
 router.get('/menu', async (req: Request, res: Response, next: NextFunction) => {
     try {
         await getAllMenus(req, res);
+    } catch (error) {
+        next(error);
+    }
+});
+
+// Obtener un menú por ID
+router.get('/menu/:id', async (req: Request, res: Response, next: NextFunction) => {
+    try {
+        await getMenuById(req, res);
     } catch (error) {
         next(error);
     }

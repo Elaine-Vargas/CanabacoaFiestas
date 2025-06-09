@@ -1,9 +1,9 @@
 import { Request, Response } from 'express';
 import PDFDocument from 'pdfkit';
-import Usuario from '../../models/Usuario_model';
-import Evento from '../../models/Evento_model';
-import TipoEvento from '../../models/TipoEvento_model';
-import EmpleadoEvento from '../../models/EmpleadoEvento_model';
+import Usuario from '../models/Usuario_model';
+import Evento from '../models/Evento_model';
+import TipoEvento from '../models/TipoEvento_model';
+import EmpleadoEvento from '../models/EmpleadoEvento_model';
 import { Op } from 'sequelize';
 
 export const generarReporteEventos = async (req: Request, res: Response) => {

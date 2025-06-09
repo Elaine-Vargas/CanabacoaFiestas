@@ -56,6 +56,35 @@ export const getAllAlquileres = async (req: Request, res: Response) => {
   }
 };
 
+export const getAlquilerById = async (req: Request, res: Response) => {
+  try {
+    const { id_alquiler } = req.params;
+    const alquiler = await AlquilerServicio.findByPk(id_alquiler, {
+      include: [
+        {
+          model: Evento,
+          as: 'evento'
+        }
+      ]
+    });
+
+    if (!alquiler) {
+      return res.status(404).json({ 
+        error: 'Alquiler no encontrado',
+        mensaje: 'No existe un alquiler con el ID proporcionado'
+      });
+    }
+
+    res.json(alquiler);
+  } catch (error) {
+    console.error('Error al obtener alquiler:', error);
+    res.status(500).json({ 
+      error: 'Error al obtener el alquiler',
+      mensaje: 'Ocurrió un error al cargar el alquiler'
+    });
+  }
+};
+
 export const getAlquileresByEvento = async (req: Request, res: Response) => {
   try {
     const { id_evento } = req.params;

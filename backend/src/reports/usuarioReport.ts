@@ -1,7 +1,7 @@
 import { Request, Response } from 'express';
 import PDFDocument from 'pdfkit';
-import Usuario from '../../models/Usuario_model';
-import Rol from '../../models/Rol_model';
+import Usuario from '../models/Usuario_model';
+import Rol from '../models/Rol_model';
 
 export const ReporteUsuariosPorRolYEstado = async (req: Request, res: Response) => {
   try {

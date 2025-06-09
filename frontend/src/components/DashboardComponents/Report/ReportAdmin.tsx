@@ -35,6 +35,21 @@ interface TipoEvento {
   tipo_evento: string;
 }
 
+interface Subcategoria {
+  id_subcategoria: number;
+  nombre_subcategoria: string;
+}
+
+interface Color {
+  id_color: number;
+  nombre_color: string;
+}
+
+interface Material {
+  id_material: number;
+  nombre_material: string;
+}
+
 const ReportAdmin = () => {
   const apiUrl = import.meta.env.VITE_API_BASE_URL;
   const [loading, setLoading] = useState<boolean>(false);
@@ -52,6 +67,17 @@ const ReportAdmin = () => {
   const [selectedStatusForCombinedReport, setSelectedStatusForCombinedReport] = useState<string>('todos');
   const [selectedTipoEvento, setSelectedTipoEvento] = useState<string>('todos');
   const [dateRange, setDateRange] = useState<[dayjs.Dayjs | null, dayjs.Dayjs | null]>([null, null]);
+  const [isElementoModalVisible, setIsElementoModalVisible] = useState<boolean>(false);
+  const [selectedSubcategoria, setSelectedSubcategoria] = useState<string>('todos');
+  const [selectedColor, setSelectedColor] = useState<string>('todos');
+  const [selectedMaterial, setSelectedMaterial] = useState<string>('todos');
+  const [selectedAgruparPor, setSelectedAgruparPor] = useState<string>('');
+  const [subcategorias, setSubcategorias] = useState<Subcategoria[]>([]);
+  const [colores, setColores] = useState<Color[]>([]);
+  const [materiales, setMateriales] = useState<Material[]>([]);
+  const [loadingSubcategorias, setLoadingSubcategorias] = useState(false);
+  const [loadingColores, setLoadingColores] = useState(false);
+  const [loadingMateriales, setLoadingMateriales] = useState(false);
 
   const handleRoleAndStatusReport = async () => {
     try {
@@ -370,6 +396,241 @@ const ReportAdmin = () => {
     setCedula('');
   };
 
+  const showElementoModal = () => {
+    setIsElementoModalVisible(true);
+  };
+
+  const handleElementoModalCancel = () => {
+    setIsElementoModalVisible(false);
+    setSelectedSubcategoria('todos');
+    setSelectedColor('todos');
+    setSelectedMaterial('todos');
+    setSelectedAgruparPor('');
+  };
+
+  useEffect(() => {
+    if (isElementoModalVisible) {
+      fetchSubcategorias();
+      fetchColores();
+      fetchMateriales();
+    }
+  }, [isElementoModalVisible]);
+
+  const fetchSubcategorias = async () => {
+    try {
+      setLoadingSubcategorias(true);
+      const response = await axios.get(`${apiUrl}/elemento/categorias/list`, {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      console.log('Respuesta de subcategorías:', response.data);
+      if (response.data) {
+        const subcategoriasData = Array.isArray(response.data) ? response.data : 
+                                 response.data.subcategorias ? response.data.subcategorias : [];
+        
+        const validSubcategorias = subcategoriasData.filter((sub: Subcategoria) => 
+          sub && typeof sub.id_subcategoria !== 'undefined' && sub.id_subcategoria !== null
+        );
+        
+        setSubcategorias(validSubcategorias);
+      }
+    } catch (error) {
+      console.error('Error al cargar subcategorías:', error);
+      message.error('Error al cargar las subcategorías');
+    } finally {
+      setLoadingSubcategorias(false);
+    }
+  };
+
+  const fetchColores = async () => {
+    try {
+      setLoadingColores(true);
+      const response = await axios.get(`${apiUrl}/elemento/colores/list`, {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      if (response.data) {
+        setColores(response.data);
+      }
+    } catch (error) {
+      console.error('Error al cargar colores:', error);
+      message.error('Error al cargar los colores');
+    } finally {
+      setLoadingColores(false);
+    }
+  };
+
+  const fetchMateriales = async () => {
+    try {
+      setLoadingMateriales(true);
+      const response = await axios.get(`${apiUrl}/elemento/materiales/list`, {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      if (response.data) {
+        setMateriales(response.data);
+      }
+    } catch (error) {
+      console.error('Error al cargar materiales:', error);
+      message.error('Error al cargar los materiales');
+    } finally {
+      setLoadingMateriales(false);
+    }
+  };
+
+  const handleElementoReport = async () => {
+    try {
+      setLoading(true);
+      let url = `${apiUrl}/reporte/elementos`;
+      const params = new URLSearchParams();
+
+      if (selectedSubcategoria && selectedSubcategoria !== 'todos') {
+        params.append('subcategoria', selectedSubcategoria);
+      }
+
+      if (selectedColor && selectedColor !== 'todos') {
+        params.append('color', selectedColor);
+      }
+
+      if (selectedMaterial && selectedMaterial !== 'todos') {
+        params.append('material', selectedMaterial);
+      }
+
+      if (selectedAgruparPor) {
+        params.append('agrupar_por', selectedAgruparPor);
+      }
+
+      if (params.toString()) {
+        url += `?${params.toString()}`;
+      }
+
+      console.log('URL del reporte:', url);
+      console.log('Parámetros:', {
+        subcategoria: selectedSubcategoria,
+        color: selectedColor,
+        material: selectedMaterial,
+        agrupar_por: selectedAgruparPor
+      });
+
+      const response = await axios.get(url, {
+        responseType: 'blob',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        }
+      });
+      
+      const file = new Blob([response.data], { type: 'application/pdf' });
+      const fileURL = window.URL.createObjectURL(file);
+      window.open(fileURL);
+    } catch (error) {
+      if (axios.isAxiosError(error)) {
+        const { response } = error;
+        if (response && response.data instanceof Blob) {
+          try {
+            const blobText = await new Promise<string>((resolve, reject) => {
+              const reader = new FileReader();
+              reader.onloadend = () => {
+                if (reader.result) {
+                  resolve(reader.result as string);
+                } else {
+                  reject(new Error('Failed to read blob as text.'));
+                }
+              };
+              reader.onerror = reject;
+              reader.readAsText(response.data);
+            });
+
+            const errorData = JSON.parse(blobText);
+            if (errorData.mensaje) {
+              message.error(errorData.mensaje);
+            } else {
+              message.error('Error al generar el reporte de elementos');
+            }
+          } catch (parseError) {
+            console.error('Error parsing error response:', parseError);
+            message.error('Error al generar el reporte de elementos');
+          }
+        } else {
+          message.error('Error al generar el reporte de elementos');
+        }
+      } else {
+        message.error('Error al generar el reporte de elementos');
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDetalleAlquilerReport = async () => {
+    try {
+      setLoading(true);
+      let url = `${apiUrl}/reporte/elementos/alquiler/todos`;
+      const params = new URLSearchParams();
+
+      if (dateRange[0] && dateRange[1]) {
+        params.append('fecha_inicio', dateRange[0].format('YYYY-MM-DD'));
+        params.append('fecha_fin', dateRange[1].format('YYYY-MM-DD'));
+      }
+
+      if (params.toString()) {
+        url += `?${params.toString()}`;
+      }
+
+      const response = await axios.get(url, {
+        responseType: 'blob',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        }
+      });
+      
+      const file = new Blob([response.data], { type: 'application/pdf' });
+      const fileURL = window.URL.createObjectURL(file);
+      window.open(fileURL);
+    } catch (error) {
+      if (axios.isAxiosError(error)) {
+        const { response } = error;
+        if (response && response.data instanceof Blob) {
+          try {
+            const blobText = await new Promise<string>((resolve, reject) => {
+              const reader = new FileReader();
+              reader.onloadend = () => {
+                if (reader.result) {
+                  resolve(reader.result as string);
+                } else {
+                  reject(new Error('Failed to read blob as text.'));
+                }
+              };
+              reader.onerror = reject;
+              reader.readAsText(response.data);
+            });
+
+            const errorData = JSON.parse(blobText);
+            if (errorData.mensaje) {
+              message.error(errorData.mensaje);
+            } else {
+              message.error('Error al generar el reporte de detalles de alquiler');
+            }
+          } catch (parseError) {
+            console.error('Error parsing error response:', parseError);
+            message.error('Error al generar el reporte de detalles de alquiler');
+          }
+        } else {
+          message.error('Error al generar el reporte de detalles de alquiler');
+        }
+      } else {
+        message.error('Error al generar el reporte de detalles de alquiler');
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div style={{ padding: '20px' }}>
       <h2>Reportes del Sistema</h2>
@@ -409,6 +670,7 @@ const ReportAdmin = () => {
         <Col xs={24} sm={12} md={8} lg={6}>
           <Card
             hoverable
+            onClick={showElementoModal}
             style={{ textAlign: 'center' }}
           >
             <BarChartOutlined style={{ fontSize: '32px', marginBottom: '8px' }} />
@@ -606,6 +868,119 @@ const ReportAdmin = () => {
                 disabled={loading || !selectedEventType || !cedula}
               >
                 Generar Reporte Específico
+              </Button>
+            </Space>
+          </div>
+        </Space>
+      </Modal>
+
+      <Modal className='ReportsModal'
+        title="Reportes de Elementos"
+        open={isElementoModalVisible}
+        onCancel={handleElementoModalCancel}
+        footer={null}
+      >
+        <Space direction="vertical" size="large" style={{ width: '100%' }}>
+          <div>
+            <h4 className='reportTitle'>Reporte de Elementos</h4>
+            <Space direction="vertical" style={{ width: '100%' }}>
+              <Select
+                style={{ width: '100%' }}
+                placeholder="Seleccione una subcategoría"
+                value={selectedSubcategoria}
+                onChange={setSelectedSubcategoria}
+                loading={loadingSubcategorias}
+              >
+                <Option key="todos" value="todos">Todas las Subcategorías</Option>
+                {subcategorias && subcategorias.map(subcategoria => {
+                  if (!subcategoria || !subcategoria.id_subcategoria) return null;
+                  return (
+                    <Option 
+                      key={`subcat-${subcategoria.id_subcategoria}`}
+                      value={subcategoria.id_subcategoria.toString()}
+                    >
+                      {subcategoria.nombre_subcategoria || 'Sin nombre'}
+                    </Option>
+                  );
+                })}
+              </Select>
+
+              <Select
+                style={{ width: '100%' }}
+                placeholder="Seleccione un color"
+                value={selectedColor}
+                onChange={setSelectedColor}
+                loading={loadingColores}
+              >
+                <Option value="todos">Todos los Colores</Option>
+                {colores && colores.map(color => (
+                  <Option 
+                    key={color?.id_color || ''} 
+                    value={(color?.id_color || '').toString()}
+                  >
+                    {color?.nombre_color || 'Sin nombre'}
+                  </Option>
+                ))}
+              </Select>
+
+              <Select
+                style={{ width: '100%' }}
+                placeholder="Seleccione un material"
+                value={selectedMaterial}
+                onChange={setSelectedMaterial}
+                loading={loadingMateriales}
+              >
+                <Option value="todos">Todos los Materiales</Option>
+                {materiales && materiales.map(material => (
+                  <Option 
+                    key={material?.id_material || ''} 
+                    value={(material?.id_material || '').toString()}
+                  >
+                    {material?.nombre_material || 'Sin nombre'}
+                  </Option>
+                ))}
+              </Select>
+
+              <Select
+                style={{ width: '100%' }}
+                placeholder="Agrupar por (opcional)"
+                value={selectedAgruparPor}
+                onChange={setSelectedAgruparPor}
+                allowClear
+              >
+                <Option value="subcategoria">Subcategoría</Option>
+                <Option value="color">Color</Option>
+                <Option value="material">Material</Option>
+              </Select>
+
+              <Button 
+                type="primary" 
+                icon={<DownloadOutlined />}
+                onClick={handleElementoReport}
+                loading={loading}
+              >
+                Generar Reporte de Elementos
+              </Button>
+            </Space>
+          </div>
+
+          <div>
+            <h4 className='reportTitle'>Reporte de Detalles de Alquiler</h4>
+            <Space direction="vertical" style={{ width: '100%' }}>
+              <RangePicker
+                style={{ width: '100%' }}
+                placeholder={['Fecha Inicio', 'Fecha Fin']}
+                value={dateRange}
+                onChange={(dates) => setDateRange(dates as [dayjs.Dayjs | null, dayjs.Dayjs | null])}
+              />
+
+              <Button 
+                type="primary" 
+                icon={<DownloadOutlined />}
+                onClick={handleDetalleAlquilerReport}
+                loading={loading}
+              >
+                Generar Reporte de Detalles de Alquiler
               </Button>
             </Space>
           </div>

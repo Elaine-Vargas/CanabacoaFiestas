@@ -390,6 +390,45 @@ export const getAllMenus = async (req: Request, res: Response) => {
     }
 };
 
+export const getMenuById = async (req: Request, res: Response) => {
+    try {
+        const { id_menu } = req.params;
+        const menu = await Menu.findByPk(id_menu, {
+            include: [
+                {
+                    model: PlatoMenu,
+                    as: 'platos_menu',
+                    include: [
+                        {
+                            model: Plato,
+                            as: 'plato'
+                        }
+                    ]
+                },
+                {
+                    model: Proveedor,
+                    as: 'proveedor'
+                }
+            ]
+        });
+
+        if (!menu) {
+            return res.status(404).json({ 
+                error: 'Menú no encontrado',
+                mensaje: 'No existe un menú con el ID proporcionado'
+            });
+        }
+
+        res.json(menu);
+    } catch (error) {
+        console.error('Error al obtener menú:', error);
+        res.status(500).json({ 
+            error: 'Error al obtener el menú',
+            mensaje: 'Ocurrió un error al cargar el menú'
+        });
+    }
+};
+
 export const getMenuByCatering = async (req: Request, res: Response) => {
     try {
         const { id_catering } = req.params;

@@ -5,7 +5,8 @@ import {
     getAlquileresByEvento,
     getAlquileresByElemento,
     editAlquilerServicio,
-    deleteAlquilerServicio
+    deleteAlquilerServicio,
+    getAlquilerById
 } from '../controllers/alquilerServicioController';
 import { verificarToken } from '../middlewares/authMiddleware';
 
@@ -32,6 +33,15 @@ router.post('/', async (req: Request, res: Response, next: NextFunction) => {
 router.get('/', async (req: Request, res: Response, next: NextFunction) => {
     try {
         await getAllAlquileres(req, res);
+    } catch (error) {
+        next(error);
+    }
+});
+
+// Obtener un alquiler por ID
+router.get('/:id_alquiler', async (req: Request, res: Response, next: NextFunction) => {
+    try {
+        await getAlquilerById(req, res);
     } catch (error) {
         next(error);
     }

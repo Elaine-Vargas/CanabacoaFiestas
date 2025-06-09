@@ -1,13 +1,13 @@
 // routes/reporte.routes.ts
 import { Router, RequestHandler } from 'express';
 import { Request, Response } from 'express';
-import { ReporteUsuariosPorRolYEstado } from '../controllers/reports/usuarioReport';
+import { ReporteUsuariosPorRolYEstado } from '../reports/usuarioReport';
 import {
 generarReporteEventos,
   generarReporteEventosCliente,
   generarReporteEventosAsesor,
   generarReporteEventosPersonal
-} from '../controllers/reports/eventoReport';
+} from '../reports/eventoReport';
 
 const router = Router();
 
