@@ -1,6 +1,6 @@
-import { Table, Model, Column, PrimaryKey, AutoIncrement, DataType, ForeignKey, BelongsTo } from 'sequelize-typescript';
+import { Table, Model, Column, PrimaryKey, AutoIncrement, DataType, ForeignKey, BelongsTo, HasMany } from 'sequelize-typescript';
 import Evento from './Evento_model';
-import Elemento from './Elemento_model';
+import DetalleAlquiler from './DetalleAlquiler_model';
 
 @Table({ tableName: 'alquiler_servicio', timestamps: false })
 export default class AlquilerServicio extends Model {
@@ -15,7 +15,10 @@ export default class AlquilerServicio extends Model {
 
   @BelongsTo(() => Evento)
   evento!: Evento;
-  
+
+  @HasMany(() => DetalleAlquiler)
+  detalles?: DetalleAlquiler[];
+
   @Column({ type: DataType.INTEGER})
   cant_elementos_alquiler!: number;
 
@@ -33,5 +36,4 @@ export default class AlquilerServicio extends Model {
     defaultValue: 'Solicitado'
   })
   estado_alquiler!: 'Solicitado' | 'Aceptado' | 'Completado' | 'Cancelado';
-
 }

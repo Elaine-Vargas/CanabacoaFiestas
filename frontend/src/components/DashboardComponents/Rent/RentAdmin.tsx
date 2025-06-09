@@ -13,8 +13,10 @@ import {
   Space,
   DatePicker,
   Typography,
+  Popconfirm,
+  Divider,
 } from 'antd';
-import { PlusOutlined, RightOutlined, CloseOutlined, ReloadOutlined } from '@ant-design/icons';
+import { PlusOutlined, RightOutlined, CloseOutlined, ReloadOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons';
 import axios from 'axios';
 import styled from 'styled-components';
 import dayjs from 'dayjs';
@@ -48,7 +50,7 @@ const ModalContent = styled.div`
   max-height: 60vh;
   overflow-y: auto;
   padding-right: 8px;
-  margin-bottom: ${props => props.hasSelection ? '80px' : '0'};
+  margin-bottom: ${props => props.$hasSelection ? '80px' : '0'};
 
   &::-webkit-scrollbar {
     width: 8px;
@@ -191,6 +193,8 @@ const RentAdmin: React.FC = () => {
   const [searchText, setSearchText] = useState('');
   const [filterCategoria, setFilterCategoria] = useState('');
   const [categorias, setCategorias] = useState([]);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editingAlquiler, setEditingAlquiler] = useState<any>(null);
 
   useEffect(() => {
     fetchAlquileres();
@@ -325,11 +329,6 @@ const RentAdmin: React.FC = () => {
         return;
       }
 
-      if (!values.fecha_inicio || !values.fecha_fin) {
-        message.error('Por favor seleccione las fechas de inicio y fin');
-        return;
-      }
-
       if (elementosSeleccionados.length === 0) {
         message.error('Por favor seleccione al menos un elemento');
         return;
@@ -344,8 +343,6 @@ const RentAdmin: React.FC = () => {
 
       const alquilerData = {
         id_evento: values.id_evento,
-        fecha_inicio: values.fecha_inicio.format('YYYY-MM-DD'),
-        fecha_fin: values.fecha_fin.format('YYYY-MM-DD'),
         estado_alquiler: 'Solicitado',
         precioneto_alquiler: precioNeto.toFixed(2),
         itbis_alquiler: itbis.toFixed(2),
@@ -382,6 +379,125 @@ const RentAdmin: React.FC = () => {
     }
   };
 
+  const handleDelete = async (record: any) => {
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        message.error('No hay sesión activa');
+        return;
+      }
+
+      await axios.delete(`${apiUrl}/alquiler/${record.id_alquiler}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      message.success('Alquiler cancelado correctamente');
+      fetchAlquileres();
+    } catch (error) {
+      console.error('Error al cancelar el alquiler:', error);
+      message.error('Error al cancelar el alquiler');
+    }
+  };
+
+  const handleEdit = (record: any) => {
+    // Obtener los elementos actuales del alquiler
+    const fetchElementosAlquiler = async () => {
+      try {
+        const token = localStorage.getItem('token');
+        if (!token) {
+          message.error('No hay sesión activa');
+          return;
+        }
+
+        const response = await axios.get(`${apiUrl}/alquiler/${record.id_alquiler}/elementos`, {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
+
+        if (!response.data || response.data.length === 0) {
+          message.warning('Este alquiler no tiene elementos asociados');
+          return;
+        }
+
+        // Mapear los elementos con su cantidad
+        const elementosConCantidad = response.data.map((detalle: any) => ({
+          id_elemento: detalle.id_elemento,
+          nombre_elemento: detalle.nombre_elemento,
+          precio_elemento: detalle.precio_elemento,
+          cantidad_disponible: detalle.cantidad_disponible,
+          imagen_url: detalle.imagen_url,
+          subcategoria: detalle.subcategoria,
+          cantidad_seleccionada: detalle.cantidad_alquiler,
+          estado_detalquiler: detalle.estado_detalquiler
+        }));
+
+        console.log('Elementos cargados:', elementosConCantidad);
+        setElementosSeleccionados(elementosConCantidad);
+        setEditingAlquiler(record);
+        setShowEditModal(true);
+      } catch (error) {
+        console.error('Error al obtener elementos del alquiler:', error);
+        if (axios.isAxiosError(error) && error.response) {
+          message.error(error.response.data.mensaje || 'Error al cargar los elementos del alquiler');
+        } else {
+          message.error('Error al cargar los elementos del alquiler');
+        }
+      }
+    };
+
+    fetchElementosAlquiler();
+  };
+
+  const handleEditSubmit = async (values: any) => {
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        message.error('No hay sesión activa');
+        return;
+      }
+      
+      // Calcular subtotales y totales
+      const precioNeto = elementosSeleccionados.reduce((sum, elem) => 
+        sum + (elem.precio_elemento * elem.cantidad_seleccionada), 0
+      );
+      const itbis = precioNeto * 0.18;
+      const total = precioNeto + itbis;
+
+      const updateData = {
+        estado_alquiler: values.estado_alquiler,
+        precioneto_alquiler: precioNeto.toFixed(2),
+        itbis_alquiler: itbis.toFixed(2),
+        total_alquiler: total.toFixed(2),
+        cant_elementos_alquiler: elementosSeleccionados.reduce((sum, elem) => sum + elem.cantidad_seleccionada, 0),
+        elementos: elementosSeleccionados.map(elem => ({
+          id_elemento: elem.id_elemento,
+          cantidad: elem.cantidad_seleccionada,
+          precio_unitario: elem.precio_elemento,
+          subtotal: (elem.precio_elemento * elem.cantidad_seleccionada).toFixed(2)
+        }))
+      };
+
+      await axios.patch(`${apiUrl}/alquiler/${editingAlquiler.id_alquiler}`, 
+        updateData,
+        {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        }
+      );
+      message.success('Alquiler actualizado correctamente');
+      setShowEditModal(false);
+      setEditingAlquiler(null);
+      setElementosSeleccionados([]);
+      fetchAlquileres();
+    } catch (error) {
+      console.error('Error al actualizar el alquiler:', error);
+      message.error('Error al actualizar el alquiler');
+    }
+  };
+
   const columns = [
     {
       title: 'ID',
@@ -389,36 +505,14 @@ const RentAdmin: React.FC = () => {
       key: 'id_alquiler',
     },
     {
-      title: 'Evento',
-      dataIndex: ['evento', 'nombre_evento'],
+      title: 'ID Evento',
+      dataIndex: ['evento', 'id_evento'],
       key: 'evento',
-    },
-    {
-      title: 'Fecha Inicio',
-      dataIndex: 'fecha_inicio',
-      key: 'fecha_inicio',
-    },
-    {
-      title: 'Fecha Fin',
-      dataIndex: 'fecha_fin',
-      key: 'fecha_fin',
     },
     {
       title: 'Estado',
       dataIndex: 'estado_alquiler',
       key: 'estado_alquiler',
-      render: (estado: string, record: any) => (
-        <Select
-          defaultValue={estado}
-          style={{ width: 120 }}
-          onChange={(value) => handleEstadoChange(record.id_alquiler, value)}
-        >
-          <Option value="Solicitado">Solicitado</Option>
-          <Option value="Aceptado">Aceptado</Option>
-          <Option value="Completado">Completado</Option>
-          <Option value="Cancelado">Cancelado</Option>
-        </Select>
-      ),
     },
     {
       title: 'Cantidad Elementos',
@@ -443,25 +537,37 @@ const RentAdmin: React.FC = () => {
       key: 'total_alquiler',
       render: (total: number) => `$${Number(total).toFixed(2)}`,
     },
+    {
+      title: 'Acciones',
+      key: 'acciones',
+      render: (_: any, record: any) => (
+        <Space>
+          {record.estado_alquiler !== 'Cancelado' && (
+            <>
+              <Button 
+                type="text" 
+                icon={<EditOutlined />} 
+                onClick={() => handleEdit(record)}
+              />
+              <Popconfirm
+                title="¿Estás seguro de cancelar este alquiler?"
+                description="Esta acción no se puede deshacer"
+                onConfirm={() => handleDelete(record)}
+                okText="Sí"
+                cancelText="No"
+              >
+                <Button 
+                  type="text" 
+                  danger 
+                  icon={<DeleteOutlined />}
+                />
+              </Popconfirm>
+            </>
+          )}
+        </Space>
+      ),
+    },
   ];
-
-  const handleEstadoChange = async (id: number, estado: string) => {
-    try {
-      const token = localStorage.getItem('token');
-      await axios.patch(`${apiUrl}/alquiler/${id}`, 
-        { estado_alquiler: estado },
-        {
-          headers: {
-            'Authorization': `Bearer ${token}`
-          }
-        }
-      );
-      message.success('Estado actualizado correctamente');
-      fetchAlquileres();
-    } catch (error) {
-      message.error('Error al actualizar el estado');
-    }
-  };
 
   const handleReset = () => {
     setElementosSeleccionados([]);
@@ -478,14 +584,21 @@ const RentAdmin: React.FC = () => {
   return (
     <>
       <StyledCard title="Gestión de Alquileres">
-        <Button
-          type="primary"
-          icon={<PlusOutlined />}
-          onClick={() => setShowCatalogo(true)}
-          style={{ marginBottom: 16 }}
-        >
-          Nuevo Alquiler
-        </Button>
+        <Space style={{ marginBottom: 16 }}>
+          <Button
+            type="primary"
+            icon={<PlusOutlined />}
+            onClick={() => setShowCatalogo(true)}
+          >
+            Nuevo Alquiler
+          </Button>
+          <Button
+            icon={<ReloadOutlined />}
+            onClick={fetchAlquileres}
+          >
+            Recargar
+          </Button>
+        </Space>
 
         <Table
           columns={columns}
@@ -539,7 +652,7 @@ const RentAdmin: React.FC = () => {
           </Select>
         </Space>
 
-        <ModalContent hasSelection={elementosSeleccionados.length > 0}>
+        <ModalContent $hasSelection={elementosSeleccionados.length > 0}>
           <List
             dataSource={filteredElementos}
             renderItem={(elemento: Elemento) => (
@@ -613,22 +726,6 @@ const RentAdmin: React.FC = () => {
             </Select>
           </Form.Item>
 
-          <Form.Item
-            name="fecha_inicio"
-            label="Fecha de Inicio"
-            rules={[{ required: true, message: 'Por favor seleccione la fecha de inicio' }]}
-          >
-            <DatePicker style={{ width: '100%' }} />
-          </Form.Item>
-
-          <Form.Item
-            name="fecha_fin"
-            label="Fecha de Fin"
-            rules={[{ required: true, message: 'Por favor seleccione la fecha de fin' }]}
-          >
-            <DatePicker style={{ width: '100%' }} />
-          </Form.Item>
-
           <Title level={5}>Elementos Seleccionados:</Title>
           <List
             dataSource={elementosSeleccionados}
@@ -655,6 +752,97 @@ const RentAdmin: React.FC = () => {
             </Button>
           </Form.Item>
         </Form>
+      </Modal>
+
+      {/* Modal de Edición */}
+      <Modal
+        title="Editar Alquiler"
+        open={showEditModal}
+        onCancel={() => {
+          setShowEditModal(false);
+          setEditingAlquiler(null);
+          setElementosSeleccionados([]);
+        }}
+        footer={null}
+        width={800}
+      >
+        {editingAlquiler && (
+          <Form
+            initialValues={{
+              ...editingAlquiler,
+            }}
+            onFinish={handleEditSubmit}
+            layout="vertical"
+          >
+            <Form.Item
+              name="estado_alquiler"
+              label="Estado"
+              rules={[{ required: true, message: 'Por favor seleccione el estado' }]}
+            >
+              <Select>
+                <Option value="Solicitado">Solicitado</Option>
+                <Option value="Aceptado">Aceptado</Option>
+                <Option value="Completado">Completado</Option>
+              </Select>
+            </Form.Item>
+
+            <Divider>Elementos</Divider>
+
+            <Space style={{ marginBottom: 16 }}>
+              <Button
+                type="primary"
+                onClick={() => setShowCatalogo(true)}
+                icon={<PlusOutlined />}
+              >
+                Agregar Elementos
+              </Button>
+            </Space>
+
+            <List
+              dataSource={elementosSeleccionados}
+              renderItem={(elemento) => (
+                <ListItem>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
+                    <div>
+                      <Typography.Text strong>{elemento.nombre_elemento}</Typography.Text>
+                      <div>Subtotal: ${(elemento.precio_elemento * elemento.cantidad_seleccionada).toFixed(2)}</div>
+                    </div>
+                    <Space>
+                      <Typography.Text>Cantidad:</Typography.Text>
+                      <InputNumber
+                        min={0}
+                        max={elemento.cantidad_disponible}
+                        value={elemento.cantidad_seleccionada}
+                        onChange={(value) => handleCantidadChange(elemento, value || 0)}
+                        style={{ width: 80 }}
+                      />
+                      <Button
+                        type="text"
+                        danger
+                        icon={<DeleteOutlined />}
+                        onClick={() => handleCantidadChange(elemento, 0)}
+                      />
+                    </Space>
+                  </div>
+                </ListItem>
+              )}
+            />
+
+            <div style={{ marginTop: 16, marginBottom: 16 }}>
+              <Typography.Text strong>
+                Total: $
+                {elementosSeleccionados.reduce((total, elem) => 
+                  total + (elem.precio_elemento * elem.cantidad_seleccionada), 0).toFixed(2)}
+              </Typography.Text>
+            </div>
+
+            <Form.Item>
+              <Button type="primary" htmlType="submit">
+                Guardar Cambios
+              </Button>
+            </Form.Item>
+          </Form>
+        )}
       </Modal>
     </>
   );

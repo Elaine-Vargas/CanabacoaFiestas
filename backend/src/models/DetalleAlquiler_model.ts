@@ -14,6 +14,10 @@ import AlquilerServicio from './AlquilerServicio_model';
 
 @Table({ tableName: 'detalle_alquiler', timestamps: false })
 export default class DetalleAlquiler extends Model {
+  @PrimaryKey
+  @AutoIncrement
+  @Column({ type: DataType.INTEGER })
+  id_detalle!: number;
 
   @ForeignKey(() => AlquilerServicio)
   @Column({ type: DataType.INTEGER, field: 'id_alquiler', allowNull: false })
@@ -35,14 +39,13 @@ export default class DetalleAlquiler extends Model {
   @Column({ type: DataType.DECIMAL(10, 2), field: 'precio_unitario', allowNull: false })
   precio_unitario!: number;
 
-  
   @Column({ type: DataType.DECIMAL(10, 2), field: 'total_alquiler', allowNull: false })
   total_alquiler!: number;
 
   @Column({
     type: DataType.ENUM('Aceptado', 'Cancelado'),
-    defaultValue: 'Aceptado'
+    defaultValue: 'Aceptado',
+    allowNull: false
   })
   estado_detalquiler!: 'Aceptado' | 'Cancelado';
-
 } 
