@@ -27,6 +27,7 @@ import EmpleadoEvento from './EmpleadoEvento_model';
 @Table({ tableName: 'evento', timestamps: false })
 export default class Evento extends Model {
   @PrimaryKey
+  @AutoIncrement
   @Column({ type: DataType.INTEGER, field: 'id_evento' })
   id_evento!: number;
 

@@ -36,7 +36,8 @@ interface Usuario {
   correo_usuario: string;
   tel_usuario: string;
   estado_usuario: string;
-  rol: string;
+  id_rol: number;
+  rol_nombre: string;
 }
 
 interface Proveedor {
@@ -76,6 +77,9 @@ interface Decoracion {
 const { Title } = Typography;
 
 const WelcomeAdmin: React.FC = () => {
+  const apiUrl = import.meta.env.VITE_API_BASE_URL;
+
+
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [eventos, setEventos] = useState<Evento[]>([]);
@@ -93,13 +97,16 @@ const WelcomeAdmin: React.FC = () => {
 
   // Estados para los filtros
   const [searchText, setSearchText] = useState('');
-  const [selectedEstado, setSelectedEstado] = useState('todos');
-  const [selectedRol, setSelectedRol] = useState<string | undefined>();
-  const [selectedCliente, setSelectedCliente] = useState<string | undefined>();
-  const [selectedAsesor, setSelectedAsesor] = useState<string | undefined>();
-  const [selectedTipo, setSelectedTipo] = useState<string | undefined>();
-  const [selectedEvento, setSelectedEvento] = useState<string | undefined>();
-  const [selectedCargo, setSelectedCargo] = useState<string | undefined>();
+  const [selectedEstadoEventos, setSelectedEstadoEventos] = useState('todos');
+  const [selectedEstadoUsuarios, setSelectedEstadoUsuarios] = useState('todos');
+  const [selectedEstadoProveedores, setSelectedEstadoProveedores] = useState('todos');
+  const [selectedEstadoDecoraciones, setSelectedEstadoDecoraciones] = useState('todos');
+  const [selectedRol, setSelectedRol] = useState('');
+  const [selectedCliente, setSelectedCliente] = useState('');
+  const [selectedAsesor, setSelectedAsesor] = useState('');
+  const [selectedTipo, setSelectedTipo] = useState('');
+  const [selectedEvento, setSelectedEvento] = useState('');
+  const [selectedCargo, setSelectedCargo] = useState('');
   const searchInputRef = React.useRef<any>(null);
 
   const [clientes, setClientes] = useState<Usuario[]>([]);
@@ -120,14 +127,14 @@ const WelcomeAdmin: React.FC = () => {
       };
   
       // Clientes (rol 2)
-      const resClientes = await fetch(`${import.meta.env.VITE_API_BASE_URL}/usuario?rol=2`, { headers });
+      const resClientes = await fetch(`${apiUrl}/usuario?rol=2`, { headers });
       if (resClientes.ok) {
         const data = await resClientes.json();
         setClientes(data.usuarios);
       }
   
       // Asesores (rol 3)
-      const resAsesores = await fetch(`${import.meta.env.VITE_API_BASE_URL}/usuario?rol=3`, { headers });
+      const resAsesores = await fetch(`${apiUrl}/usuario?rol=3`, { headers });
       if (resAsesores.ok) {
         const data = await resAsesores.json();
         setAsesores(data.usuarios);
@@ -159,7 +166,7 @@ const WelcomeAdmin: React.FC = () => {
       };
       
       // Cargar eventos
-      const eventosResponse = await fetch(`${import.meta.env.VITE_API_BASE_URL}/evento`, {
+      const eventosResponse = await fetch(`${apiUrl}/evento`, {
         method: 'GET',
         headers
       });
@@ -172,7 +179,7 @@ const WelcomeAdmin: React.FC = () => {
       setEventos(eventosData);
 
       // Cargar usuarios
-      const usuariosResponse = await fetch(`${import.meta.env.VITE_API_BASE_URL}/usuario`, {
+      const usuariosResponse = await fetch(`${apiUrl}/usuario`, {
         method: 'GET',
         headers
       });
@@ -182,10 +189,12 @@ const WelcomeAdmin: React.FC = () => {
       }
       
       const usuariosData = await usuariosResponse.json();
-      setUsuarios(usuariosData);
+      console.log('Respuesta del servidor:', usuariosData);
+      setUsuarios(usuariosData.usuarios || []);
+      console.log('Usuarios después de setState:', usuariosData.usuarios);
 
       // Cargar proveedores
-      const proveedoresResponse = await fetch(`${import.meta.env.VITE_API_BASE_URL}/proveedor`, {
+      const proveedoresResponse = await fetch(`${apiUrl}/proveedor`, {
         headers
       });
       
@@ -197,7 +206,7 @@ const WelcomeAdmin: React.FC = () => {
       setProveedores(proveedoresData);
 
       // Cargar decoraciones
-      const decoracionesResponse = await fetch(`${import.meta.env.VITE_API_BASE_URL}/decoracion`, {
+      const decoracionesResponse = await fetch(`${apiUrl}/decoracion`, {
         headers
       });
       
@@ -230,7 +239,7 @@ const WelcomeAdmin: React.FC = () => {
   const handleCreateEvento = async (values: any) => {
     try {
       setLoading(true);
-      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/evento`, {
+      const response = await fetch(`${apiUrl}/evento`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -255,7 +264,7 @@ const WelcomeAdmin: React.FC = () => {
   const handleCreateAsignacion = async (values: any) => {
     try {
       setLoading(true);
-      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/empleado-evento`, {
+      const response = await fetch(`${apiUrl}/empleado-evento`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -280,7 +289,7 @@ const WelcomeAdmin: React.FC = () => {
   const handleCreateDecoracion = async (values: any) => {
     try {
       setLoading(true);
-      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/decoraciones`, {
+      const response = await fetch(`${apiUrl}/decoraciones`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -305,7 +314,7 @@ const WelcomeAdmin: React.FC = () => {
   const handleCreateUsuario = async (values: any) => {
     try {
       setLoading(true);
-      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/usuario`, {
+      const response = await fetch(`${apiUrl}/usuario`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -330,7 +339,7 @@ const WelcomeAdmin: React.FC = () => {
   const handleCreateProveedor = async (values: any) => {
     try {
       setLoading(true);
-      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/proveedor`, {
+      const response = await fetch(`${apiUrl}/proveedor`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -358,8 +367,20 @@ const WelcomeAdmin: React.FC = () => {
     setSearchText(value);
   };
 
-  const handleEstadoChange = (value: string) => {
-    setSelectedEstado(value);
+  const handleEstadoEventosChange = (value: string) => {
+    setSelectedEstadoEventos(value);
+  };
+
+  const handleEstadoUsuariosChange = (value: string) => {
+    setSelectedEstadoUsuarios(value);
+  };
+
+  const handleEstadoProveedoresChange = (value: string) => {
+    setSelectedEstadoProveedores(value);
+  };
+
+  const handleEstadoDecoracionesChange = (value: string) => {
+    setSelectedEstadoDecoraciones(value);
   };
 
   const handleRolChange = (value: string) => {
@@ -398,8 +419,8 @@ const WelcomeAdmin: React.FC = () => {
         (evento.tipo_evento || '').toLowerCase().includes(searchLower) ||
         (evento.espacio_evento || '').toLowerCase().includes(searchLower);
       
-      const matchesEstado = selectedEstado === 'todos' || 
-        evento.estado_evento === selectedEstado;
+      const matchesEstado = selectedEstadoEventos === 'todos' || 
+        evento.estado_evento === selectedEstadoEventos;
       
       const matchesCliente = !selectedCliente || selectedCliente === '' || 
         `${evento.cliente?.nombre_usuario || ''} ${evento.cliente?.apellido_usuario || ''}` === selectedCliente;
@@ -420,11 +441,11 @@ const WelcomeAdmin: React.FC = () => {
         usuario.apellido_usuario.toLowerCase().includes(searchText.toLowerCase()) ||
         usuario.usuario_login.toLowerCase().includes(searchText.toLowerCase());
       
-      const matchesEstado = selectedEstado === 'todos' || 
-        usuario.estado_usuario === selectedEstado;
+      const matchesEstado = selectedEstadoUsuarios === 'todos' || 
+        usuario.estado_usuario === selectedEstadoUsuarios;
       
-      const matchesRol = !selectedRol || 
-        usuario.rol === selectedRol;
+      const matchesRol = selectedRol === '' || 
+        usuario.rol_nombre === selectedRol;
 
       return matchesSearch && matchesEstado && matchesRol;
     });
@@ -436,10 +457,10 @@ const WelcomeAdmin: React.FC = () => {
         proveedor.nombre_proveedor.toLowerCase().includes(searchText.toLowerCase()) ||
         proveedor.tipo_proveedor.toLowerCase().includes(searchText.toLowerCase());
       
-      const matchesEstado = selectedEstado === 'todos' || 
-        proveedor.estado_proveedor === selectedEstado;
+      const matchesEstado = selectedEstadoProveedores === 'todos' || 
+        proveedor.estado_proveedor === selectedEstadoProveedores;
       
-      const matchesTipo = !selectedTipo || 
+      const matchesTipo = selectedTipo === '' || 
         proveedor.tipo_proveedor === selectedTipo;
 
       return matchesSearch && matchesEstado && matchesTipo;
@@ -452,10 +473,10 @@ const WelcomeAdmin: React.FC = () => {
         asignacion.nombre_empleado.toLowerCase().includes(searchText.toLowerCase()) ||
         asignacion.apellido_empleado.toLowerCase().includes(searchText.toLowerCase());
       
-      const matchesEvento = !selectedEvento || 
+      const matchesEvento = selectedEvento === '' || 
         asignacion.id_evento.toString() === selectedEvento;
       
-      const matchesCargo = !selectedCargo || 
+      const matchesCargo = selectedCargo === '' || 
         asignacion.puesto_evento === selectedCargo;
 
       return matchesSearch && matchesEvento && matchesCargo;
@@ -468,10 +489,10 @@ const WelcomeAdmin: React.FC = () => {
         decoracion.tema_decoracion.toLowerCase().includes(searchText.toLowerCase()) ||
         decoracion.colores_decoracion.toLowerCase().includes(searchText.toLowerCase());
       
-      const matchesEstado = selectedEstado === 'todos' || 
-        decoracion.estado_decoracion === selectedEstado;
+      const matchesEstado = selectedEstadoDecoraciones === 'todos' || 
+        decoracion.estado_decoracion === selectedEstadoDecoraciones;
       
-      const matchesTipo = !selectedTipo || 
+      const matchesTipo = selectedTipo === '' || 
         decoracion.tipo_decoracion === selectedTipo;
 
       return matchesSearch && matchesEstado && matchesTipo;
@@ -483,200 +504,242 @@ const WelcomeAdmin: React.FC = () => {
     switch (type) {
       case 'eventos':
         return (
-          <Space style={{ marginBottom: 16 }}>
-            <Input
-              ref={searchInputRef}
-              placeholder="Buscar eventos..."
-              prefix={<SearchOutlined />}
-              onChange={handleSearch}
-              style={{ width: 200 }}
-              value={searchText}
-              allowClear
-            />
-            <Select
-              placeholder="Filtrar por estado"
-              style={{ width: 150 }}
-              onChange={handleEstadoChange}
-              value={selectedEstado}
-              options={[
-                { value: 'todos', label: 'Todos' },
-                { value: 'Pendiente', label: 'Pendiente' },
-                { value: 'Confirmado', label: 'Confirmado' },
-                { value: 'Cancelado', label: 'Cancelado' },
-                { value: 'Completado', label: 'Completado' }
-              ]}
-            />
-            <Select
-              placeholder="Filtrar por cliente"
-              style={{ width: 200 }}
-              onChange={handleClienteChange}
-              value={selectedCliente}
-              options={[
-                { value: '', label: 'Todos' },
-                ...clientes.map(cliente => ({
-                  value: `${cliente.nombre_usuario} ${cliente.apellido_usuario}`,
-                  label: `${cliente.nombre_usuario} ${cliente.apellido_usuario}`
-                }))
-              ]}
-            />
-            <Select
-              placeholder="Filtrar por asesor"
-              style={{ width: 200 }}
-              onChange={handleAsesorChange}
-              value={selectedAsesor}
-              options={[
-                { value: '', label: 'Todos' },
-                ...asesores.map(asesor => ({
-                  value: `${asesor.nombre_usuario} ${asesor.apellido_usuario}`,
-                  label: `${asesor.nombre_usuario} ${asesor.apellido_usuario}`
-                }))
-              ]}
-            />
+          <Space direction="vertical" style={{ width: '100%', marginBottom: 16 }}>
+            <Space>
+              <Input
+                ref={searchInputRef}
+                placeholder="Buscar eventos..."
+                prefix={<SearchOutlined />}
+                onChange={handleSearch}
+                style={{ width: 200 }}
+                value={searchText}
+                allowClear
+              />
+              <div>
+                <div style={{ marginBottom: 4 }}>Estado del evento:</div>
+                <Select
+                  placeholder="Filtrar por estado"
+                  style={{ width: 150 }}
+                  onChange={handleEstadoEventosChange}
+                  value={selectedEstadoEventos}
+                  options={[
+                    { value: 'todos', label: 'Todos' },
+                    { value: 'Pendiente', label: 'Pendiente' },
+                    { value: 'Confirmado', label: 'Confirmado' },
+                    { value: 'Cancelado', label: 'Cancelado' },
+                    { value: 'Completado', label: 'Completado' }
+                  ]}
+                />
+              </div>
+              <div>
+                <div style={{ marginBottom: 4 }}>Cliente:</div>
+                <Select
+                  placeholder="Filtrar por cliente"
+                  style={{ width: 200 }}
+                  onChange={handleClienteChange}
+                  value={selectedCliente}
+                  options={[
+                    { value: '', label: 'Todos' },
+                    ...clientes.map(cliente => ({
+                      value: `${cliente.nombre_usuario} ${cliente.apellido_usuario}`,
+                      label: `${cliente.nombre_usuario} ${cliente.apellido_usuario}`
+                    }))
+                  ]}
+                />
+              </div>
+              <div>
+                <div style={{ marginBottom: 4 }}>Asesor:</div>
+                <Select
+                  placeholder="Filtrar por asesor"
+                  style={{ width: 200 }}
+                  onChange={handleAsesorChange}
+                  value={selectedAsesor}
+                  options={[
+                    { value: '', label: 'Todos' },
+                    ...asesores.map(asesor => ({
+                      value: `${asesor.nombre_usuario} ${asesor.apellido_usuario}`,
+                      label: `${asesor.nombre_usuario} ${asesor.apellido_usuario}`
+                    }))
+                  ]}
+                />
+              </div>
+            </Space>
           </Space>
         );
       case 'usuarios':
         return (
-          <Space style={{ marginBottom: 16 }}>
-            <Input
-              placeholder="Buscar usuarios..."
-              prefix={<SearchOutlined />}
-              onChange={(e) => handleSearch(e)}
-              style={{ width: 200 }}
-            />
-            <Select
-              placeholder="Filtrar por estado"
-              style={{ width: 150 }}
-              onChange={handleEstadoChange}
-              value={selectedEstado}
-              options={[
-                { value: 'todos', label: 'Todos' },
-                { value: 'Activo', label: 'Activo' },
-                { value: 'Inactivo', label: 'Inactivo' },
-                { value: 'Eliminado', label: 'Eliminado' }
-              ]}
-            />
-            <Select
-              placeholder="Filtrar por rol"
-              style={{ width: 150 }}
-              onChange={handleRolChange}
-              value={selectedRol}
-              options={[
-                { value: undefined, label: 'Todos' },
-                { value: 'admin', label: 'Administrador' },
-                { value: 'client', label: 'Cliente' },
-                { value: 'employee', label: 'Empleado' },
-              ]}
-            />
+          <Space direction="vertical" style={{ width: '100%', marginBottom: 16 }}>
+            <Space>
+              <Input
+                placeholder="Buscar usuarios..."
+                prefix={<SearchOutlined />}
+                onChange={(e) => handleSearch(e)}
+                style={{ width: 200 }}
+              />
+              <div>
+                <div style={{ marginBottom: 4 }}>Estado del usuario:</div>
+                <Select
+                  placeholder="Filtrar por estado"
+                  style={{ width: 150 }}
+                  onChange={handleEstadoUsuariosChange}
+                  value={selectedEstadoUsuarios}
+                  options={[
+                    { value: 'todos', label: 'Todos' },
+                    { value: 'Activo', label: 'Activo' },
+                    { value: 'Inactivo', label: 'Inactivo' },
+                    { value: 'Eliminado', label: 'Eliminado' }
+                  ]}
+                />
+              </div>
+              <div>
+                <div style={{ marginBottom: 4 }}>Rol del usuario:</div>
+                <Select
+                  placeholder="Filtrar por rol"
+                  style={{ width: 150 }}
+                  onChange={handleRolChange}
+                  value={selectedRol}
+                  options={[
+                    { value: '', label: 'Todos' },
+                    { value: 'Administrador', label: 'Administrador' },
+                    { value: 'Cliente', label: 'Cliente' },
+                    { value: 'Empleado', label: 'Empleado' },
+                  ]}
+                />
+              </div>
+            </Space>
           </Space>
         );
       case 'proveedores':
         return (
-          <Space style={{ marginBottom: 16 }}>
-            <Input
-              placeholder="Buscar proveedores..."
-              prefix={<SearchOutlined />}
-              onChange={(e) => handleSearch(e)}
-              style={{ width: 200 }}
-            />
-            <Select
-              placeholder="Filtrar por estado"
-              style={{ width: 150 }}
-              onChange={handleEstadoChange}
-              value={selectedEstado}
-              options={[
-                { value: 'todos', label: 'Todos' },
-                { value: 'Activo', label: 'Activo' },
-                { value: 'Inactivo', label: 'Inactivo' },
-                { value: 'Eliminado', label: 'Eliminado' }
-              ]}
-            />
-            <Select
-              placeholder="Filtrar por tipo"
-              style={{ width: 150 }}
-              onChange={handleTipoChange}
-              value={selectedTipo}
-              options={[
-                { value: undefined, label: 'Todos' },
-                { value: 'Catering', label: 'Catering' },
-                { value: 'Elementos', label: 'Elementos' }
-              ]}
-            />
+          <Space direction="vertical" style={{ width: '100%', marginBottom: 16 }}>
+            <Space>
+              <Input
+                placeholder="Buscar proveedores..."
+                prefix={<SearchOutlined />}
+                onChange={(e) => handleSearch(e)}
+                style={{ width: 200 }}
+              />
+              <div>
+                <div style={{ marginBottom: 4 }}>Estado del proveedor:</div>
+                <Select
+                  placeholder="Filtrar por estado"
+                  style={{ width: 150 }}
+                  onChange={handleEstadoProveedoresChange}
+                  value={selectedEstadoProveedores}
+                  options={[
+                    { value: 'todos', label: 'Todos' },
+                    { value: 'Activo', label: 'Activo' },
+                    { value: 'Inactivo', label: 'Inactivo' },
+                    { value: 'Eliminado', label: 'Eliminado' }
+                  ]}
+                />
+              </div>
+              <div>
+                <div style={{ marginBottom: 4 }}>Tipo de proveedor:</div>
+                <Select
+                  placeholder="Filtrar por tipo"
+                  style={{ width: 150 }}
+                  onChange={handleTipoChange}
+                  value={selectedTipo}
+                  options={[
+                    { value: '', label: 'Todos' },
+                    { value: 'Catering', label: 'Catering' },
+                    { value: 'Elementos', label: 'Elementos' }
+                  ]}
+                />
+              </div>
+            </Space>
           </Space>
         );
       case 'asignaciones':
         return (
-          <Space style={{ marginBottom: 16 }}>
-            <Input
-              placeholder="Buscar asignaciones..."
-              prefix={<SearchOutlined />}
-              onChange={(e) => handleSearch(e)}
-              style={{ width: 200 }}
-            />
-            <Select
-              placeholder="Filtrar por evento"
-              style={{ width: 150 }}
-              onChange={handleEventoChange}
-              value={selectedEvento}
-              options={[
-                { value: undefined, label: 'Todos' },
-                ...eventos.map(evento => ({
-                  value: evento.id_evento,
-                  label: `${evento.nombre_cliente} - ${new Date(evento.fecha_evento).toLocaleDateString()}`
-                }))
-              ]}
-            />
-            <Select
-              placeholder="Filtrar por cargo"
-              style={{ width: 150 }}
-              onChange={handleCargoChange}
-              value={selectedCargo}
-              options={[
-                { value: undefined, label: 'Todos' },
-                { value: 'Mesero', label: 'Mesero' },
-                { value: 'Cocinero', label: 'Cocinero' },
-                { value: 'Bartender', label: 'Bartender' },
-                { value: 'Seguridad', label: 'Seguridad' },
-                { value: 'Otro', label: 'Otro' }
-              ]}
-            />
+          <Space direction="vertical" style={{ width: '100%', marginBottom: 16 }}>
+            <Space>
+              <Input
+                placeholder="Buscar asignaciones..."
+                prefix={<SearchOutlined />}
+                onChange={(e) => handleSearch(e)}
+                style={{ width: 200 }}
+              />
+              <div>
+                <div style={{ marginBottom: 4 }}>Evento:</div>
+                <Select
+                  placeholder="Filtrar por evento"
+                  style={{ width: 150 }}
+                  onChange={handleEventoChange}
+                  value={selectedEvento}
+                  options={[
+                    { value: '', label: 'Todos' },
+                    ...eventos.map(evento => ({
+                      value: evento.id_evento,
+                      label: `${evento.nombre_cliente} - ${new Date(evento.fecha_evento).toLocaleDateString()}`
+                    }))
+                  ]}
+                />
+              </div>
+              <div>
+                <div style={{ marginBottom: 4 }}>Cargo del empleado:</div>
+                <Select
+                  placeholder="Filtrar por cargo"
+                  style={{ width: 150 }}
+                  onChange={handleCargoChange}
+                  value={selectedCargo}
+                  options={[
+                    { value: '', label: 'Todos' },
+                    { value: 'Mesero', label: 'Mesero' },
+                    { value: 'Cocinero', label: 'Cocinero' },
+                    { value: 'Bartender', label: 'Bartender' },
+                    { value: 'Seguridad', label: 'Seguridad' },
+                    { value: 'Otro', label: 'Otro' }
+                  ]}
+                />
+              </div>
+            </Space>
           </Space>
         );
       case 'decoraciones':
         return (
-          <Space style={{ marginBottom: 16 }}>
-            <Input
-              placeholder="Buscar decoraciones..."
-              prefix={<SearchOutlined />}
-              onChange={(e) => handleSearch(e)}
-              style={{ width: 200 }}
-            />
-            <Select
-              placeholder="Filtrar por estado"
-              style={{ width: 150 }}
-              onChange={handleEstadoChange}
-              value={selectedEstado}
-              options={[
-                { value: 'todos', label: 'Todos' },
-                { value: 'Solicitado', label: 'Solicitado' },
-                { value: 'Aceptado', label: 'Aceptado' },
-                { value: 'Completado', label: 'Completado' },
-                { value: 'Cancelado', label: 'Cancelado' }
-              ]}
-            />
-            <Select
-              placeholder="Filtrar por tipo"
-              style={{ width: 150 }}
-              onChange={handleTipoChange}
-              value={selectedTipo}
-              options={[
-                { value: undefined, label: 'Todos' },
-                { value: 'Boda', label: 'Boda' },
-                { value: 'Quinceañera', label: 'Quinceañera' },
-                { value: 'Cumpleaños', label: 'Cumpleaños' },
-                { value: 'Graduación', label: 'Graduación' },
-                { value: 'Otro', label: 'Otro' }
-              ]}
-            />
+          <Space direction="vertical" style={{ width: '100%', marginBottom: 16 }}>
+            <Space>
+              <Input
+                placeholder="Buscar decoraciones..."
+                prefix={<SearchOutlined />}
+                onChange={(e) => handleSearch(e)}
+                style={{ width: 200 }}
+              />
+              <div>
+                <div style={{ marginBottom: 4 }}>Estado de la decoración:</div>
+                <Select
+                  placeholder="Filtrar por estado"
+                  style={{ width: 150 }}
+                  onChange={handleEstadoDecoracionesChange}
+                  value={selectedEstadoDecoraciones}
+                  options={[
+                    { value: 'todos', label: 'Todos' },
+                    { value: 'Solicitado', label: 'Solicitado' },
+                    { value: 'Aceptado', label: 'Aceptado' },
+                    { value: 'Completado', label: 'Completado' },
+                    { value: 'Cancelado', label: 'Cancelado' }
+                  ]}
+                />
+              </div>
+              <div>
+                <div style={{ marginBottom: 4 }}>Tipo de decoración:</div>
+                <Select
+                  placeholder="Filtrar por tipo"
+                  style={{ width: 150 }}
+                  onChange={handleTipoChange}
+                  value={selectedTipo}
+                  options={[
+                    { value: '', label: 'Todos' },
+                    { value: 'Boda', label: 'Boda' },
+                    { value: 'Cumpleaños', label: 'Cumpleaños' },
+                    { value: 'Graduación', label: 'Graduación' },
+                    { value: 'Otro', label: 'Otro' }
+                  ]}
+                />
+              </div>
+            </Space>
           </Space>
         );
       default:

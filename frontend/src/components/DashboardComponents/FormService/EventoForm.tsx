@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { Modal, Form, Input, Select, DatePicker, Button } from 'antd';
+import { Modal, Form, Input, Select, DatePicker, Button, message } from 'antd';
 import type { Dayjs } from 'dayjs';
 import '../../../styles/dashboard/DashboardForms.scss';
 
 interface Cliente {
-  cedula_cliente: string;
-  nombre_cliente: string;
-  apellido_cliente: string;
+  cedula_usuario: string;
+  nombre_usuario: string;
+  apellido_usuario: string;
 }
 
 interface Asesor {
@@ -44,6 +44,7 @@ const EventoForm: React.FC<EventoFormProps> = ({
   onSubmit,
   loading = false,
 }) => {
+  const apiUrl = import.meta.env.VITE_API_BASE_URL;
   const [form] = Form.useForm();
   const [clientes, setClientes] = useState<Cliente[]>([]);
   const [asesores, setAsesores] = useState<Asesor[]>([]);
@@ -56,6 +57,7 @@ const EventoForm: React.FC<EventoFormProps> = ({
   const [loadingTipos, setLoadingTipos] = useState(false);
   const [loadingProvincias, setLoadingProvincias] = useState(false);
   const [loadingCiudades, setLoadingCiudades] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
     if (visible) {
@@ -70,7 +72,7 @@ const EventoForm: React.FC<EventoFormProps> = ({
   const fetchClientes = async () => {
     try {
       setLoadingClientes(true);
-      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/usuario/rol/2`, {
+      const response = await fetch(`${apiUrl}/usuario?rol=2`, {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`,
           'Content-Type': 'application/json'
@@ -80,9 +82,10 @@ const EventoForm: React.FC<EventoFormProps> = ({
         throw new Error('Error al cargar los clientes');
       }
       const data = await response.json();
-      setClientes(data);
+      setClientes(data.usuarios);
     } catch (error) {
       console.error('Error al cargar clientes:', error);
+      message.error('Error al cargar los clientes');
     } finally {
       setLoadingClientes(false);
     }
@@ -91,7 +94,7 @@ const EventoForm: React.FC<EventoFormProps> = ({
   const fetchAsesores = async () => {
     try {
       setLoadingAsesores(true);
-      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/usuario/rol/3`, {
+      const response = await fetch(`${apiUrl}/usuario/rol/3`, {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`,
           'Content-Type': 'application/json'
@@ -101,9 +104,10 @@ const EventoForm: React.FC<EventoFormProps> = ({
         throw new Error('Error al cargar los asesores');
       }
       const data = await response.json();
-      setAsesores(data);
+      setAsesores(data.usuarios);
     } catch (error) {
       console.error('Error al cargar asesores:', error);
+      message.error('Error al cargar los asesores');
     } finally {
       setLoadingAsesores(false);
     }
@@ -112,7 +116,7 @@ const EventoForm: React.FC<EventoFormProps> = ({
   const fetchTiposEvento = async () => {
     try {
       setLoadingTipos(true);
-      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/evento/tipo-eventos/list`, {
+      const response = await fetch(`${apiUrl}/evento/tipo-eventos/list`, {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`,
           'Content-Type': 'application/json'
@@ -125,6 +129,7 @@ const EventoForm: React.FC<EventoFormProps> = ({
       setTiposEvento(data);
     } catch (error) {
       console.error('Error al cargar tipos de evento:', error);
+      message.error('Error al cargar los tipos de evento');
     } finally {
       setLoadingTipos(false);
     }
@@ -133,7 +138,7 @@ const EventoForm: React.FC<EventoFormProps> = ({
   const fetchProvincias = async () => {
     try {
       setLoadingProvincias(true);
-      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/direccion/provincias`, {
+      const response = await fetch(`${apiUrl}/direccion/provincias`, {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`,
           'Content-Type': 'application/json'
@@ -146,6 +151,7 @@ const EventoForm: React.FC<EventoFormProps> = ({
       setProvincias(data);
     } catch (error) {
       console.error('Error al cargar provincias:', error);
+      message.error('Error al cargar las provincias');
     } finally {
       setLoadingProvincias(false);
     }
@@ -154,7 +160,7 @@ const EventoForm: React.FC<EventoFormProps> = ({
   const fetchCiudades = async () => {
     try {
       setLoadingCiudades(true);
-      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/direccion/ciudades`, {
+      const response = await fetch(`${apiUrl}/direccion/ciudades`, {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`,
           'Content-Type': 'application/json'
@@ -168,6 +174,7 @@ const EventoForm: React.FC<EventoFormProps> = ({
       setCiudadesFiltradas(data);
     } catch (error) {
       console.error('Error al cargar ciudades:', error);
+      message.error('Error al cargar las ciudades');
     } finally {
       setLoadingCiudades(false);
     }
@@ -182,10 +189,46 @@ const EventoForm: React.FC<EventoFormProps> = ({
   const handleSubmit = async () => {
     try {
       const values = await form.validateFields();
-      onSubmit(values);
+      setIsSubmitting(true);
+
+      // Formatear la fecha y hora
+      const fechaEvento = values.fecha_evento.format('YYYY-MM-DD');
+      const horaEvento = values.hora_evento.format('HH:mm:ss');
+
+      // Preparar los datos para enviar
+      const eventoData = {
+        ...values,
+        fecha_evento: fechaEvento,
+        hora_evento: horaEvento,
+        desea_supervision: values.desea_supervision === 1
+      };
+
+      console.log('Enviando datos:', eventoData);
+
+      const response = await fetch(`${apiUrl}/evento`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(eventoData)
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.mensaje || 'Error al crear el evento');
+      }
+
+      message.success('Evento creado exitosamente');
+      onSubmit(data.evento);
       form.resetFields();
+      onCancel();
     } catch (error) {
-      console.error('Error al validar el formulario:', error);
+      console.error('Error al crear evento:', error);
+      message.error(error instanceof Error ? error.message : 'Error al crear el evento');
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -202,7 +245,7 @@ const EventoForm: React.FC<EventoFormProps> = ({
           key="submit" 
           type="primary" 
           onClick={handleSubmit}
-          loading={loading}
+          loading={isSubmitting}
           className="submit-button"
         >
           Crear Evento
@@ -226,6 +269,7 @@ const EventoForm: React.FC<EventoFormProps> = ({
             loading={loadingClientes}
             showSearch
             optionFilterProp="children"
+            allowClear
             filterOption={(input, option) => {
               if (typeof option?.children === 'string') {
                 return (option.children as string).toLowerCase().includes(input.toLowerCase());
@@ -234,8 +278,8 @@ const EventoForm: React.FC<EventoFormProps> = ({
             }}
           >
             {clientes.map(cliente => (
-              <Select.Option key={cliente.cedula_cliente} value={cliente.cedula_cliente}>
-                {`${cliente.nombre_cliente} ${cliente.apellido_cliente}`}
+              <Select.Option key={cliente.cedula_usuario} value={cliente.cedula_usuario}>
+                {`${cliente.nombre_usuario} ${cliente.apellido_usuario} (${cliente.cedula_usuario})`}
               </Select.Option>
             ))}
           </Select>
@@ -260,7 +304,7 @@ const EventoForm: React.FC<EventoFormProps> = ({
           >
             {asesores.map(asesor => (
               <Select.Option key={asesor.cedula_usuario} value={asesor.cedula_usuario}>
-                {`${asesor.nombre_usuario} ${asesor.apellido_usuario}`}
+                {`${asesor.nombre_usuario} ${asesor.apellido_usuario} (${asesor.cedula_usuario})`}
               </Select.Option>
             ))}
           </Select>
@@ -394,7 +438,7 @@ const EventoForm: React.FC<EventoFormProps> = ({
           name="desea_supervision"
           label="¿Desea supervisión?"
           valuePropName="checked"
-          initialValue={false}
+          initialValue={0}
         >
           <Select>
             <Select.Option value={1}>Sí</Select.Option>
