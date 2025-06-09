@@ -577,6 +577,11 @@ const WelcomeAdmin: React.FC = () => {
                     style={{ width: '100%' }}
                     onChange={handleEstadoEventosChange}
                     value={selectedEstadoEventos}
+                    showSearch
+                    optionFilterProp="label"
+                    filterOption={(input, option) => {
+                      return (option?.label ?? '').toLowerCase().includes(input.toLowerCase());
+                    }}
                     options={[
                       { value: 'todos', label: 'Todos' },
                       { value: 'Pendiente', label: 'Pendiente' },
@@ -593,6 +598,11 @@ const WelcomeAdmin: React.FC = () => {
                     style={{ width: '100%' }}
                     onChange={handleClienteChange}
                     value={selectedCliente}
+                    showSearch
+                    optionFilterProp="label"
+                    filterOption={(input, option) => {
+                      return (option?.label ?? '').toLowerCase().includes(input.toLowerCase());
+                    }}
                     options={[
                       { value: '', label: 'Todos' },
                       ...clientes.map(cliente => ({
@@ -609,6 +619,11 @@ const WelcomeAdmin: React.FC = () => {
                     style={{ width: '100%' }}
                     onChange={handleAsesorChange}
                     value={selectedAsesor}
+                    showSearch
+                    optionFilterProp="label"
+                    filterOption={(input, option) => {
+                      return (option?.label ?? '').toLowerCase().includes(input.toLowerCase());
+                    }}
                     options={[
                       { value: '', label: 'Todos' },
                       ...asesores.map(asesor => ({
@@ -641,6 +656,11 @@ const WelcomeAdmin: React.FC = () => {
                     style={{ width: '100%' }}
                     onChange={handleEstadoUsuariosChange}
                     value={selectedEstadoUsuarios}
+                    showSearch
+                    optionFilterProp="label"
+                    filterOption={(input, option) => {
+                      return (option?.label ?? '').toLowerCase().includes(input.toLowerCase());
+                    }}
                     options={[
                       { value: 'todos', label: 'Todos' },
                       { value: 'Activo', label: 'Activo' },
@@ -656,6 +676,11 @@ const WelcomeAdmin: React.FC = () => {
                     style={{ width: '100%' }}
                     onChange={handleRolChange}
                     value={selectedRol}
+                    showSearch
+                    optionFilterProp="label"
+                    filterOption={(input, option) => {
+                      return (option?.label ?? '').toLowerCase().includes(input.toLowerCase());
+                    }}
                     options={[
                       { value: '', label: 'Todos' },
                       { value: 'Administrador', label: 'Administrador' },
@@ -687,6 +712,11 @@ const WelcomeAdmin: React.FC = () => {
                     style={{ width: '100%' }}
                     onChange={handleEstadoProveedoresChange}
                     value={selectedEstadoProveedores}
+                    showSearch
+                    optionFilterProp="label"
+                    filterOption={(input, option) => {
+                      return (option?.label ?? '').toLowerCase().includes(input.toLowerCase());
+                    }}
                     options={[
                       { value: 'todos', label: 'Todos' },
                       { value: 'Activo', label: 'Activo' },
@@ -702,6 +732,11 @@ const WelcomeAdmin: React.FC = () => {
                     style={{ width: '100%' }}
                     onChange={handleTipoChange}
                     value={selectedTipo}
+                    showSearch
+                    optionFilterProp="label"
+                    filterOption={(input, option) => {
+                      return (option?.label ?? '').toLowerCase().includes(input.toLowerCase());
+                    }}
                     options={[
                       { value: '', label: 'Todos' },
                       { value: 'Catering', label: 'Catering' },
@@ -732,6 +767,11 @@ const WelcomeAdmin: React.FC = () => {
                     style={{ width: '100%' }}
                     onChange={handleEventoChange}
                     value={selectedEvento}
+                    showSearch
+                    optionFilterProp="label"
+                    filterOption={(input, option) => {
+                      return (option?.label ?? '').toLowerCase().includes(input.toLowerCase());
+                    }}
                     options={[
                       { value: '', label: 'Todos' },
                       ...eventos.map(evento => ({
@@ -748,6 +788,11 @@ const WelcomeAdmin: React.FC = () => {
                     style={{ width: '100%' }}
                     onChange={handleCargoChange}
                     value={selectedCargo}
+                    showSearch
+                    optionFilterProp="label"
+                    filterOption={(input, option) => {
+                      return (option?.label ?? '').toLowerCase().includes(input.toLowerCase());
+                    }}
                     options={[
                       { value: '', label: 'Todos' },
                       { value: 'Decorador', label: 'Decorador' },
@@ -782,6 +827,11 @@ const WelcomeAdmin: React.FC = () => {
                     style={{ width: '100%' }}
                     onChange={handleEstadoDecoracionesChange}
                     value={selectedEstadoDecoraciones}
+                    showSearch
+                    optionFilterProp="label"
+                    filterOption={(input, option) => {
+                      return (option?.label ?? '').toLowerCase().includes(input.toLowerCase());
+                    }}
                     options={[
                       { value: 'todos', label: 'Todos' },
                       { value: 'Solicitado', label: 'Solicitado' },
@@ -798,6 +848,11 @@ const WelcomeAdmin: React.FC = () => {
                     style={{ width: '100%' }}
                     onChange={handleTipoChange}
                     value={selectedTipo}
+                    showSearch
+                    optionFilterProp="label"
+                    filterOption={(input, option) => {
+                      return (option?.label ?? '').toLowerCase().includes(input.toLowerCase());
+                    }}
                     options={[
                       { value: '', label: 'Todos' },
                       { value: 'Boda', label: 'Boda' },

@@ -15,8 +15,11 @@ export default function LoginNav() {
   const arrowColor = theme === 'light' ? colorDark : colorLight;
 
   const handleBack = () => {
-    if (location.pathname === '/Login/Recuperar-Contrasena') {
-      navigate('/login');
+    if (location.pathname === '/Login') {
+      navigate('/');
+    }
+    else {
+      navigate('/Login');
     }
   };
 

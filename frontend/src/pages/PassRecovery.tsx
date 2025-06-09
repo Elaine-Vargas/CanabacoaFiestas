@@ -68,10 +68,6 @@ const PassRecovery = () => {
               >
                 {cargando ? 'Enviando...' : 'Enviar enlace de recuperación'}
               </button>
-              
-              <Link to="/Login" className="recovery-cancel-link">
-                Volver al inicio de sesión
-              </Link>
             </div>
           </form>
 
