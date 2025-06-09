@@ -9,7 +9,7 @@ export default class DetalleTransporte extends Model {
   @AutoIncrement
   @Column({ type: DataType.INTEGER })
   id_dettransporte!: number;
-
+  
   @ForeignKey(() => TransporteServicio)
   @Column({ type: DataType.INTEGER, allowNull: false })
   id_transporte!: number;

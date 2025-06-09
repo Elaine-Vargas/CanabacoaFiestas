@@ -8,7 +8,7 @@ import Plato from '../models/Plato_model';
 import Proveedor from '../models/Proveedor_model';
 import { Op, Transaction } from 'sequelize';
 import { sequelize } from '../database/database';
-
+ 
 // Catering Controllers
 export const createCatering = async (req: Request, res: Response) => {
     const t: Transaction = await sequelize.transaction();

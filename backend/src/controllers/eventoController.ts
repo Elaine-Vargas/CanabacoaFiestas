@@ -7,7 +7,7 @@ import EmpleadoEvento from '../models/EmpleadoEvento_model';
 import Direccion from '../models/Direccion_model';
 import Ciudad from '../models/Ciudad_model';
 import Provincia from '../models/Provincia_model';
-
+ 
 export const createEvent = async (req: Request, res: Response) => {
     try {
         const {

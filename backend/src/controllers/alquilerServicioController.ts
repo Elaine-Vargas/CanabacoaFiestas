@@ -586,4 +586,4 @@ export const deleteAlquilerServicio = async (req: Request, res: Response) => {
       mensaje: 'Ocurrió un error al cancelar el alquiler'
     });
   }
-}; 
+};

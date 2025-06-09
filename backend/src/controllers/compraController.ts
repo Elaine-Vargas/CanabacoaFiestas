@@ -444,4 +444,4 @@ export const deleteDetalleCompra = async (req: Request, res: Response) => {
       mensaje: 'Ocurrió un error al eliminar el detalle de compra'
     });
   }
-}; 
+};

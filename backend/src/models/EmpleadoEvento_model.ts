@@ -11,6 +11,7 @@ import Usuario from './Usuario_model';
 
 @Table({ tableName: 'empleado_evento', timestamps: false })
 export default class EmpleadoEvento extends Model {
+ 
   @ForeignKey(() => Evento)
   @Column({ type: DataType.INTEGER, field: 'id_evento', allowNull: false })
   id_evento!: number;

@@ -15,8 +15,8 @@ export default class DetalleDecoracion extends Model {
   @PrimaryKey
   @AutoIncrement
   @Column({ type: DataType.INTEGER, field: 'id_detdecoracion' })
-  id_detdecoracion!: number;
-
+  id_detdecoracion!: number; 
+  
 
   @ForeignKey(() => DecoracionServicio)
   @Column({ type: DataType.INTEGER, field: 'id_decoracion', allowNull: false })

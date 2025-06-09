@@ -9,7 +9,7 @@ export default class MenuCatering extends Model {
   @AutoIncrement
   @Column({ type: DataType.INTEGER })
   id_menucatering!: number;
-
+ 
   @ForeignKey(() => CateringServicio)
   @Column({ type: DataType.INTEGER, allowNull: false })
   id_catering!: number;
