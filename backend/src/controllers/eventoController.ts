@@ -3,6 +3,7 @@ import Evento from '../models/Evento_model';
 import Usuario from '../models/Usuario_model';
 import { Op } from 'sequelize';
 import TipoEvento from '../models/TipoEvento_model';
+import EmpleadoEvento from '../models/EmpleadoEvento_model';
 
 export const createEvent = async (req: Request, res: Response) => {
     try {
@@ -15,7 +16,6 @@ export const createEvent = async (req: Request, res: Response) => {
             id_direccion,
             espacio_evento,
             estado_solicitud,
-            estado_evento,
             desea_supervision,
             nota_cliente,
             subtotal_evento,
@@ -50,7 +50,6 @@ export const createEvent = async (req: Request, res: Response) => {
             espacio_evento,
             id_tipo_evento,
             estado_solicitud: estado_solicitud || 'Pendiente',
-            estado_evento: estado_evento || 'Pendiente',
             desea_supervision: desea_supervision || false,
             nota_cliente: nota_cliente || null,
             subtotal_evento: subtotal_evento || 0.00,
@@ -99,7 +98,7 @@ export const showEventsByStatus = async (req: Request, res: Response) => {
     try {
         const { estado } = req.params;
         const eventos = await Evento.findAll({
-            where: { estado_evento: estado },
+            where: { estado_solicitud: estado },
             include: [
                 { model: Usuario, as: 'cliente' },
                 { model: Usuario, as: 'asesor' },
@@ -196,7 +195,6 @@ export const editEvent = async (req: Request, res: Response) => {
             desea_supervision,
             nota_cliente,
             estado_solicitud,
-            estado_evento,
             subtotal_evento,
             itbis_evento,
             total_evento
@@ -240,7 +238,6 @@ export const editEvent = async (req: Request, res: Response) => {
             espacio_evento: espacio_evento || evento.espacio_evento,
             id_tipo_evento: id_tipo_evento || evento.id_tipo_evento,
             estado_solicitud: estado_solicitud || evento.estado_solicitud,
-            estado_evento: estado_evento || evento.estado_evento,
             desea_supervision: desea_supervision !== undefined ? desea_supervision : evento.desea_supervision,
             nota_cliente: nota_cliente || evento.nota_cliente,
             subtotal_evento: subtotal_evento || evento.subtotal_evento,
@@ -271,7 +268,7 @@ export const deleteEvent = async (req: Request, res: Response) => {
         }
 
         await evento.update({
-            estado_evento: 'Cancelado'
+            estado_solicitud: 'Cancelado'
         });
 
         res.json({ 
@@ -286,7 +283,6 @@ export const deleteEvent = async (req: Request, res: Response) => {
         });
     }
 };
-
 
 export const getTiposEventos = async (req: Request, res: Response) => {
     try {
@@ -311,3 +307,143 @@ export const getTiposEventos = async (req: Request, res: Response) => {
       });
     }
   };
+
+//empleado-evento APIs
+export const assignEmployeeToEvent = async (req: Request, res: Response) => {
+    try {
+        const { id_evento, empleado_evento, puesto_evento } = req.body;
+
+        // Verificar que el evento existe
+        const evento = await Evento.findByPk(id_evento);
+        if (!evento) {
+            return res.status(404).json({
+                error: 'Evento no encontrado',
+                mensaje: 'El evento especificado no existe'
+            });
+        }
+
+        // Verificar que el empleado existe y tiene rol de empleado (id_rol: 4)
+        const empleado = await Usuario.findOne({
+            where: { cedula_usuario: empleado_evento, id_rol: 4 }
+        });
+        if (!empleado) {
+            return res.status(404).json({
+                error: 'Empleado no encontrado',
+                mensaje: 'El empleado especificado no existe o no tiene el rol correcto'
+            });
+        }
+
+        // Verificar si el empleado ya está asignado al evento
+        const existingAssignment = await EmpleadoEvento.findOne({
+            where: { id_evento, empleado_evento }
+        });
+        if (existingAssignment) {
+            return res.status(400).json({
+                error: 'Asignación duplicada',
+                mensaje: 'Este empleado ya está asignado a este evento'
+            });
+        }
+
+        const empleadoEvento = await EmpleadoEvento.create({
+            id_evento,
+            empleado_evento,
+            puesto_evento
+        });
+
+        res.status(201).json(empleadoEvento);
+    } catch (error) {
+        console.error('Error al asignar empleado al evento:', error);
+        res.status(500).json({
+            error: 'Error al asignar empleado',
+            mensaje: 'Ocurrió un error al asignar el empleado al evento'
+        });
+    }
+};
+
+export const getEventEmployees = async (req: Request, res: Response) => {
+    try {
+        const { id_evento } = req.params;
+
+        const empleados = await EmpleadoEvento.findAll({
+            where: { id_evento },
+            include: [
+                { model: Usuario, as: 'empleado' }
+            ]
+        });
+
+        if (!empleados || empleados.length === 0) {
+            return res.status(404).json({
+                error: 'No se encontraron empleados',
+                mensaje: 'No hay empleados asignados a este evento'
+            });
+        }
+
+        res.json(empleados);
+    } catch (error) {
+        console.error('Error al obtener empleados del evento:', error);
+        res.status(500).json({
+            error: 'Error al obtener empleados',
+            mensaje: 'Ocurrió un error al cargar los empleados del evento'
+        });
+    }
+};
+
+export const updateEmployeeRole = async (req: Request, res: Response) => {
+    try {
+        const { id_evento, empleado_evento } = req.params;
+        const { puesto_evento } = req.body;
+
+        const empleadoEvento = await EmpleadoEvento.findOne({
+            where: { id_evento, empleado_evento }
+        });
+
+        if (!empleadoEvento) {
+            return res.status(404).json({
+                error: 'Asignación no encontrada',
+                mensaje: 'No se encontró la asignación del empleado al evento'
+            });
+        }
+
+        await empleadoEvento.update({ puesto_evento });
+
+        res.json(empleadoEvento);
+    } catch (error) {
+        console.error('Error al actualizar rol del empleado:', error);
+        res.status(500).json({
+            error: 'Error al actualizar rol',
+            mensaje: 'Ocurrió un error al actualizar el rol del empleado'
+        });
+    }
+};
+
+export const removeEmployeeFromEvent = async (req: Request, res: Response) => {
+    try {
+        const { id_evento, empleado_evento } = req.params;
+
+        const empleadoEvento = await EmpleadoEvento.findOne({
+            where: { id_evento, empleado_evento }
+        });
+
+        if (!empleadoEvento) {
+            return res.status(404).json({
+                error: 'Asignación no encontrada',
+                mensaje: 'No se encontró la asignación del empleado al evento'
+            });
+        }
+
+        await empleadoEvento.destroy();
+
+        res.json({
+            error: null,
+            mensaje: 'Empleado removido del evento correctamente'
+        });
+    } catch (error) {
+        console.error('Error al remover empleado del evento:', error);
+        res.status(500).json({
+            error: 'Error al remover empleado',
+            mensaje: 'Ocurrió un error al remover el empleado del evento'
+        });
+    }
+};
+
+  

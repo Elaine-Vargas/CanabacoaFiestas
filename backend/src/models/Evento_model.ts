@@ -83,14 +83,6 @@ export default class Evento extends Model {
   })
   estado_solicitud!: 'Pendiente' | 'Aceptada' | 'Rechazada' | 'Completada' | 'Cancelada';
 
-  @Column({
-    type: DataType.ENUM('Pendiente', 'Completado', 'Cancelado'),
-    field: 'estado_evento',
-    allowNull: false,
-    defaultValue: 'Pendiente'
-  })
-  estado_evento!: 'Pendiente' | 'Completado' | 'Cancelado';
-
   @Column({ type: DataType.BOOLEAN, field: 'desea_supervision', defaultValue: false })
   desea_supervision!: boolean;
 

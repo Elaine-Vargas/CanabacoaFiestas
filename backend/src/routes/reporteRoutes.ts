@@ -1,18 +1,17 @@
 // routes/reporte.routes.ts
 import { Router, RequestHandler } from 'express';
 import { Request, Response } from 'express';
-import { ReporteGeneralUsuarios, ReporteUsuariosPorRol } from '../controllers/reports/usuarioReport';
-import { 
+import { ReporteUsuariosPorRolYEstado } from '../controllers/reports/usuarioReport';
+import {
 generarReporteEventos,
-  generarReporteEventosCliente, 
-  generarReporteEventosAsesor, 
-  generarReporteEventosPersonal 
+  generarReporteEventosCliente,
+  generarReporteEventosAsesor,
+  generarReporteEventosPersonal
 } from '../controllers/reports/eventoReport';
 
 const router = Router();
 
-router.get('/usuario', ReporteGeneralUsuarios as RequestHandler);
-router.get('/usuario/rol/:id_rol', ReporteUsuariosPorRol as RequestHandler);
+router.get('/usuario/rol/:id_rol/estado/:estado_usuario', ReporteUsuariosPorRolYEstado as RequestHandler);
 
 router.get('/eventos', generarReporteEventos as RequestHandler);
 router.get('/eventos/cliente/:cedula_cliente', generarReporteEventosCliente as RequestHandler);
