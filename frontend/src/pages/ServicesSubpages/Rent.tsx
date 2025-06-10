@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import RentAdmin from '../../components/DashboardComponents/Rent/RentAdmin';
+import RentClient from '../../components/DashboardComponents/Rent/RentClient';
 import { message, Spin, Result } from 'antd';
 import styled from 'styled-components';
 
@@ -21,7 +22,7 @@ const MainContent = styled.div`
 
 const RentPage = () => {
   const navigate = useNavigate();
-  const [isAdmin, setIsAdmin] = useState(false);
+  const [userRole, setUserRole] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -32,7 +33,6 @@ const RentPage = () => {
     try {
       const token = localStorage.getItem('token');
       const userData = JSON.parse(localStorage.getItem('userData') || '{}');
-      console.log('User Data:', userData); // Debug log
 
       if (!token) {
         message.error('Sesión no iniciada');
@@ -40,23 +40,23 @@ const RentPage = () => {
         return;
       }
 
-      // Verificar directamente del userData
-      const userRole = Number(userData.rol);
-      console.log('User Role:', userRole); // Debug log
-
-      // Si el rol es 1 (admin) o 4 (empleado de inventario)
-      if (userRole === 1 || userRole === 4) {
-        setIsAdmin(true);
-      } else {
-        setIsAdmin(false);
+      const role = Number(userData.rol);
+      
+      // Verificar que el rol sea válido (1 para admin, 2 para cliente)
+      if (role !== 1 && role !== 2) {
+        message.error('Rol de usuario no válido');
+        navigate('/auth/login');
+        return;
       }
 
+      setUserRole(role);
       setLoading(false);
 
     } catch (error) {
       console.error('Error checking user role:', error);
       message.error('Error al verificar los permisos');
       setLoading(false);
+      navigate('/auth/login');
     }
   };
 
@@ -68,10 +68,24 @@ const RentPage = () => {
     );
   }
 
+  if (!userRole) {
+    return (
+      <MainContent>
+        <Result
+          status="403"
+          title="Acceso Restringido"
+          subTitle="Lo sentimos, no tienes permisos para acceder a esta sección."
+        />
+      </MainContent>
+    );
+  }
+
   return (
     <MainContent>
-      {isAdmin ? (
+      {userRole === 1 ? (
         <RentAdmin />
+      ) : userRole === 2 ? (
+        <RentClient />
       ) : (
         <Result
           status="403"

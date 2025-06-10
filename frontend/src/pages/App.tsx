@@ -43,8 +43,8 @@ const RoleBasedRedirect = () => {
   const routeMappings: RouteMappings = {
     'Alquiler': {
       1: 'Alquileres-Compras', // Admin
-      2: 'Alquiler', // Cliente
-      3: 'Alquiler', // Empleado
+      2: 'Alquileres-Compras', // Cliente - Cambiado para que use la misma ruta
+      3: 'Alquileres-Compras', // Empleado
     },
     'Facturas': {
       1: 'Reportes-Facturas', // Admin
@@ -60,7 +60,8 @@ const RoleBasedRedirect = () => {
     return <Navigate to={`/Menu-Servicios/${mapping[rolId]}`} replace />;
   }
 
-  return null;
+  // Si no hay mapeo o el rol no está definido, redirigir a la página de bienvenida
+  return <Navigate to="/Menu-Servicios/Bienvenida" replace />;
 };
 
 function App() {

@@ -135,7 +135,7 @@ interface CatalogProps {
   onComprarCarrito?: (carrito: CarritoItem[]) => void;
 }
 
-const Catalog: React.FC<CatalogProps> = ({ onAddToCart = true, onComprarCarrito }) => {
+const Catalog: React.FC<CatalogProps> = ({ onAddToCart, onComprarCarrito }) => {
   const navigate = useNavigate();
   const [elementos, setElementos] = useState<Elemento[]>([]);
   const [categorias, setCategorias] = useState<CategoriaElemento[]>([]);

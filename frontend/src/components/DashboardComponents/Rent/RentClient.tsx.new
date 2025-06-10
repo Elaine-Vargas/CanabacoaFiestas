@@ -10,8 +10,12 @@ import {
   DialogActions, 
   TextField, 
   MenuItem, 
+  Snackbar, 
+  Alert,
   Badge,
   IconButton,
+  Card,
+  CardContent,
   List,
   ListItem,
   ListItemText,
@@ -19,11 +23,31 @@ import {
   Drawer,
   CircularProgress
 } from '@mui/material';
+import ViewModuleIcon from '@mui/icons-material/ViewModule';
 import ShoppingCartIcon from '@mui/icons-material/ShoppingCart';
 import DeleteIcon from '@mui/icons-material/Delete';
 import axios from 'axios';
 import '../../../styles/dashboard/ServicesSubpages.scss';
 import DashboardCatalog from '../MoreDash/DashboardCatalog';
+
+interface Rent {
+  id_alquiler?: number;
+  id_evento: number;
+  id_elemento: number;
+  precio_unitario: number;
+  cantidad_alquiler: number;
+  precioneto_alquiler: number;
+  itbis_alquiler: number;
+  total_alquiler: number;
+}
+
+interface Evento {
+  id_evento: number;
+  tipo_evento: string;
+  fecha_evento: string;
+  hora_evento: string;
+  estado_evento: string;
+}
 
 interface CartItem {
   id: number;
@@ -40,10 +64,19 @@ export default function RentClient() {
   const userData = JSON.parse(localStorage.getItem('userData') || '{}');
   const [showEventoModal, setShowEventoModal] = useState(false);
   const [showNuevoEventoModal, setShowNuevoEventoModal] = useState(false);
-  const [eventos, setEventos] = useState([]);
+  const [eventos, setEventos] = useState<Evento[]>([]);
   const [items, setItems] = useState<any[]>([]);
   const [carritoItems, setCarritoItems] = useState<CartItem[]>([]);
   const [showCart, setShowCart] = useState(false);
+  const [notificacion, setNotificacion] = useState<{
+    abierta: boolean;
+    mensaje: string;
+    tipo: 'success' | 'error' | 'info' | 'warning';
+  }>({
+    abierta: false,
+    mensaje: '',
+    tipo: 'success'
+  });
   const [nuevoEvento, setNuevoEvento] = useState({
     tipo_evento: '',
     fecha_evento: '',
@@ -74,6 +107,11 @@ export default function RentClient() {
         setItems(itemsRes.data);
       } catch (error) {
         console.error('Error al cargar datos iniciales:', error);
+        setNotificacion({
+          abierta: true,
+          mensaje: 'Error al cargar los datos. Por favor, intente nuevamente.',
+          tipo: 'error'
+        });
       } finally {
         setLoading(false);
       }
@@ -140,10 +178,23 @@ export default function RentClient() {
         cantidad: 1
       }]);
     }
+
+    // Mostrar notificación
+    setNotificacion({
+      abierta: true,
+      mensaje: `${item.nombre_elemento} agregado al carrito`,
+      tipo: 'success'
+    });
   };
 
   const handleRemoveFromCart = (itemId: number) => {
     setCarritoItems(prev => prev.filter(item => item.id !== itemId));
+    
+    setNotificacion({
+      abierta: true,
+      mensaje: 'Producto eliminado del carrito',
+      tipo: 'success'
+    });
   };
 
   const handleUpdateQuantity = (itemId: number, newQuantity: number) => {
@@ -186,9 +237,20 @@ export default function RentClient() {
           hora_evento: '',
           estado_evento: 'Pendiente'
         });
+        
+        setNotificacion({
+          abierta: true,
+          mensaje: 'Evento creado con éxito',
+          tipo: 'success'
+        });
       }
     } catch (error) {
       console.error('Error al crear evento:', error);
+      setNotificacion({
+        abierta: true,
+        mensaje: 'Error al crear el evento',
+        tipo: 'error'
+      });
     }
   };
 
@@ -225,6 +287,22 @@ export default function RentClient() {
           </Badge>
         </IconButton>
       </div>
+
+      {/* Notificaciones */}
+      <Snackbar
+        open={notificacion.abierta}
+        autoHideDuration={3000}
+        onClose={() => setNotificacion({ ...notificacion, abierta: false })}
+        anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
+      >
+        <Alert 
+          onClose={() => setNotificacion({ ...notificacion, abierta: false })} 
+          severity={notificacion.tipo}
+          sx={{ width: '100%' }}
+        >
+          {notificacion.mensaje}
+        </Alert>
+      </Snackbar>
 
       <div className="catalog-section">
         <DashboardCatalog onAddToCart={handleAddToCart} />
@@ -303,7 +381,7 @@ export default function RentClient() {
         <DialogTitle>Seleccionar Evento</DialogTitle>
         <DialogContent>
           <List>
-            {eventos.map((evento: any) => (
+            {eventos.map((evento) => (
               <ListItem 
                 button 
                 key={evento.id_evento}
