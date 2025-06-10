@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import '../../../styles/dashboard/ServicesSubpages.scss';
-import { Card, Button, Table, Tag, Space, Typography, Input, Select, Dropdown } from 'antd';
+import { Card, Button, Table, Tag, Space, Typography, Input, Select, Dropdown, Modal, Descriptions, message } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import { PlusOutlined, EditOutlined, DeleteOutlined, EyeOutlined, SearchOutlined, FilterOutlined } from '@ant-design/icons';
 import EventoForm from '../FormService/EventoForm';
@@ -8,22 +8,55 @@ import UsuarioForm from '../FormService/UsuarioForm';
 import ProveedorForm from '../FormService/ProveedorForm';
 import AsignacionEmpleadoForm from '../FormService/AsignacionEmpleadoForm';
 import DecoracionForm from '../FormService/DecoracionForm';
+import TableFilters from '../MoreDash/TableFilters';
+import { 
+  getEventoColumns, 
+  getUsuarioColumns, 
+  getProveedorColumns, 
+  getAsignacionColumns, 
+  getDecoracionColumns 
+} from '../MoreDash/TablesActions';
+import { 
+  updateEventoEstado, 
+  updateUsuarioEstado, 
+  updateProveedorEstado, 
+  updateDecoracionEstado 
+} from '../MoreDash/TableUpdateActions';
+
 
 // Definición de tipos
 type EstadoSolicitud = 'Pendiente' | 'Aceptada' | 'Rechazada' | 'Completada' | 'Cancelada';
-type EstadoEvento = 'Pendiente' | 'Completado' | 'Cancelado';
+
+interface TipoEvento {
+  id_tipo_evento: number;
+  tipo_evento: string;
+}
 
 interface Evento {
   id_evento: number;
   nombre_cliente: string;
   fecha_evento: string;
   hora_evento: string;
-  tipo_evento: string;
+  tipo_evento: string | TipoEvento;
   espacio_evento: string;
   desea_supervision: boolean;
   estado_solicitud: EstadoSolicitud;
   total_evento: number;
   nombre_asesor: string | null;
+  subtotal_evento: number;
+  itbis_evento: number;
+  nota_cliente: string;
+  creacion_evento: string;
+  direccion?: {
+    calle: string;
+    sector: string;
+    ciudad: {
+      nombre_ciudad: string;
+      provincia: {
+        nombre_provincia: string;
+      };
+    };
+  };
   cliente?: Usuario;  
   asesor?: Usuario;   
 }
@@ -38,6 +71,10 @@ interface Usuario {
   estado_usuario: string;
   id_rol: number;
   rol_nombre: string;
+  creacion_usuario: string;
+  contrasena_login?: string;
+  codigo_recuperacion?: string | null;
+  expiracion_codigo?: string | null;
 }
 
 interface Proveedor {
@@ -46,32 +83,87 @@ interface Proveedor {
   nombre_proveedor: string;
   tel_proveedor: string;
   correo_proveedor: string;
+  id_direccion: number;
   direccion: {
     calle: string;
     sector: string;
+    ciudad: {
+      nombre_ciudad: string;
+      provincia: {
+        nombre_provincia: string;
+      };
+    };
   };
   estado_proveedor: string;
+  creacion_proveedor: string;
+}
+
+interface Empleado {
+  cedula_usuario: string;
+  nombre_usuario: string;
+  apellido_usuario: string;
 }
 
 interface AsignacionEmpleado {
-  id: number;
   id_evento: number;
-  nombre_cliente: string;
-  fecha_evento: string;
-  nombre_empleado: string;
-  apellido_empleado: string;
+  empleado_evento: string;
   puesto_evento: string;
+  evento?: {
+    id_evento: number;
+    fecha_evento: string;
+    hora_evento: string;
+    cliente?: {
+      nombre_usuario: string;
+      apellido_usuario: string;
+    };
+  };
+  empleado?: {
+    cedula_usuario: string;
+    nombre_usuario: string;
+    apellido_usuario: string;
+  };
 }
 
 interface Decoracion {
   id_decoracion: number;
-  nombre_cliente: string;
-  fecha_evento: string;
+  id_evento: number;
   tema_decoracion: string;
   colores_decoracion: string;
-  tipo_decoracion: string;
+  precioneto_decoracion: number;
+  itbis_decoracion: number;
   total_decoracion: number;
   estado_decoracion: string;
+  detalle_decoracion?: {
+    id_detdecoracion: number;
+    elemento_decoracion: string;
+    cantelemento_decoracion: number;
+    precio_elemento: number;
+    precio_decoracion: number;
+    estado_detdecoracion: string;
+  }[];
+  evento?: {
+    id_evento: number;
+    fecha_evento: string;
+    tipo_evento: {
+      id_tipo_evento: number;
+      tipo_evento: string;
+    };
+    cliente?: {
+      nombre_usuario: string;
+      apellido_usuario: string;
+    };
+  };
+}
+
+interface Provincia {
+  id_provincia: number;
+  nombre_provincia: string;
+}
+
+interface Ciudad {
+  id_ciudad: number;
+  nombre_ciudad: string;
+  id_provincia: number;
 }
 
 const { Title } = Typography;
@@ -79,14 +171,17 @@ const { Title } = Typography;
 const WelcomeAdmin: React.FC = () => {
   const apiUrl = import.meta.env.VITE_API_BASE_URL;
 
-
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [eventos, setEventos] = useState<Evento[]>([]);
   const [usuarios, setUsuarios] = useState<Usuario[]>([]);
   const [proveedores, setProveedores] = useState<Proveedor[]>([]);
   const [asignaciones, setAsignaciones] = useState<AsignacionEmpleado[]>([]);
+  const [selectedEventoForDetails, setSelectedEventoForDetails] = useState<Evento | null>(null);
+  const [showEventoDetailsInTable, setShowEventoDetailsInTable] = useState(false);
   const [decoraciones, setDecoraciones] = useState<Decoracion[]>([]);
+  const [empleados, setEmpleados] = useState<Empleado[]>([]);
+  const [selectedEmpleado, setSelectedEmpleado] = useState('');
   
   // Estados para los modales
   const [modalEventoVisible, setModalEventoVisible] = useState(false);
@@ -95,8 +190,28 @@ const WelcomeAdmin: React.FC = () => {
   const [modalAsignacionVisible, setModalAsignacionVisible] = useState(false);
   const [modalDecoracionVisible, setModalDecoracionVisible] = useState(false);
 
+  // Estados para los modales de detalles
+  const [modalDetallesEventoVisible, setModalDetallesEventoVisible] = useState(false);
+  const [modalDetallesUsuarioVisible, setModalDetallesUsuarioVisible] = useState(false);
+  const [modalDetallesProveedorVisible, setModalDetallesProveedorVisible] = useState(false);
+  const [modalDetallesDecoracionVisible, setModalDetallesDecoracionVisible] = useState(false);
+  const [modalDetallesAsignacionVisible, setModalDetallesAsignacionVisible] = useState(false);
+
+  // Estados para los datos seleccionados
+  const [eventoSeleccionado, setEventoSeleccionado] = useState<Evento | null>(null);
+  const [usuarioSeleccionado, setUsuarioSeleccionado] = useState<Usuario | null>(null);
+  const [proveedorSeleccionado, setProveedorSeleccionado] = useState<Proveedor | null>(null);
+  const [decoracionSeleccionada, setDecoracionSeleccionada] = useState<Decoracion | null>(null);
+  const [asignacionSeleccionada, setAsignacionSeleccionada] = useState<AsignacionEmpleado | null>(null);
+
+  // Estados para los filtros de búsqueda individuales
+  const [searchTextEventos, setSearchTextEventos] = useState('');
+  const [searchTextUsuarios, setSearchTextUsuarios] = useState('');
+  const [searchTextProveedores, setSearchTextProveedores] = useState('');
+  const [searchTextAsignaciones, setSearchTextAsignaciones] = useState('');
+  const [searchTextDecoraciones, setSearchTextDecoraciones] = useState('');
+
   // Estados para los filtros
-  const [searchText, setSearchText] = useState('');
   const [selectedEstadoEventos, setSelectedEstadoEventos] = useState('todos');
   const [selectedEstadoUsuarios, setSelectedEstadoUsuarios] = useState('todos');
   const [selectedEstadoProveedores, setSelectedEstadoProveedores] = useState('todos');
@@ -107,16 +222,30 @@ const WelcomeAdmin: React.FC = () => {
   const [selectedTipo, setSelectedTipo] = useState('');
   const [selectedEvento, setSelectedEvento] = useState('');
   const [selectedCargo, setSelectedCargo] = useState('');
-  const searchInputRef = React.useRef<any>(null);
 
   const [clientes, setClientes] = useState<Usuario[]>([]);
   const [asesores, setAsesores] = useState<Usuario[]>([]);
+  const [tiposEvento, setTiposEvento] = useState<TipoEvento[]>([]);
+  const [provincias, setProvincias] = useState<Provincia[]>([]);
+  const [ciudades, setCiudades] = useState<Ciudad[]>([]);
 
-  useEffect(() => {
-    if (searchInputRef.current) {
-      searchInputRef.current.focus();
-    }
-  }, [searchText]);
+  // Estados de carga
+  const [loadingClientes, setLoadingClientes] = useState(false);
+  const [loadingAsesores, setLoadingAsesores] = useState(false);
+  const [loadingTipos, setLoadingTipos] = useState(false);
+  const [loadingProvincias, setLoadingProvincias] = useState(false);
+  const [loadingCiudades, setLoadingCiudades] = useState(false);
+
+  // Estados para los formularios de edición
+  const [showEventoForm, setShowEventoForm] = useState(false);
+  const [showUsuarioForm, setShowUsuarioForm] = useState(false);
+  const [showProveedorForm, setShowProveedorForm] = useState(false);
+  const [showAsignacionForm, setShowAsignacionForm] = useState(false);
+  const [showDecoracionForm, setShowDecoracionForm] = useState(false);
+
+  const handleEmpleadoChange = (value: string) => {
+    setSelectedEmpleado(value);
+  };
 
   const fetchClientesYAsesores = async () => {
     try {
@@ -125,15 +254,17 @@ const WelcomeAdmin: React.FC = () => {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${token}`
       };
-  
+
       // Clientes (rol 2)
+      setLoadingClientes(true);
       const resClientes = await fetch(`${apiUrl}/usuario?rol=2`, { headers });
       if (resClientes.ok) {
         const data = await resClientes.json();
         setClientes(data.usuarios);
       }
-  
+
       // Asesores (rol 3)
+      setLoadingAsesores(true);
       const resAsesores = await fetch(`${apiUrl}/usuario?rol=3`, { headers });
       if (resAsesores.ok) {
         const data = await resAsesores.json();
@@ -141,6 +272,9 @@ const WelcomeAdmin: React.FC = () => {
       }
     } catch (error) {
       console.error("Error al cargar clientes o asesores", error);
+    } finally {
+      setLoadingClientes(false);
+      setLoadingAsesores(false);
     }
   };
   
@@ -165,8 +299,8 @@ const WelcomeAdmin: React.FC = () => {
         'Authorization': `Bearer ${token}`
       };
       
-      // Cargar eventos
-      const eventosResponse = await fetch(`${apiUrl}/evento`, {
+      // Cargar eventos con dirección y detalles
+      const eventosResponse = await fetch(`${apiUrl}/evento?include=direccion.ciudad.provincia,cliente,asesor,tipo_evento`, {
         method: 'GET',
         headers
       });
@@ -176,10 +310,11 @@ const WelcomeAdmin: React.FC = () => {
       }
       
       const eventosData = await eventosResponse.json();
+      console.log('Datos de eventos:', eventosData);
       setEventos(eventosData);
 
       // Cargar usuarios
-      const usuariosResponse = await fetch(`${apiUrl}/usuario`, {
+      const usuariosResponse = await fetch(`${apiUrl}/usuario?include=rol`, {
         method: 'GET',
         headers
       });
@@ -189,12 +324,12 @@ const WelcomeAdmin: React.FC = () => {
       }
       
       const usuariosData = await usuariosResponse.json();
-      console.log('Respuesta del servidor:', usuariosData);
+      console.log('Datos de usuarios recibidos del backend:', usuariosData);
+      console.log('Primer usuario de ejemplo:', usuariosData.usuarios?.[0]);
       setUsuarios(usuariosData.usuarios || []);
-      console.log('Usuarios después de setState:', usuariosData.usuarios);
 
-      // Cargar proveedores
-      const proveedoresResponse = await fetch(`${apiUrl}/proveedor`, {
+      // Cargar proveedores con dirección
+      const proveedoresResponse = await fetch(`${apiUrl}/proveedor?include=direccion.ciudad.provincia`, {
         headers
       });
       
@@ -203,19 +338,50 @@ const WelcomeAdmin: React.FC = () => {
       }
       
       const proveedoresData = await proveedoresResponse.json();
+      console.log('Datos de proveedores recibidos:', proveedoresData);
       setProveedores(proveedoresData);
 
-      // Cargar decoraciones
-      const decoracionesResponse = await fetch(`${apiUrl}/decoracion`, {
-        headers
+      // Cargar asignaciones con detalles del evento y cliente
+      const asignacionesResponse = await fetch(`${apiUrl}/evento/asignar-empleados?include=evento.cliente,empleado`, { 
+        headers 
       });
       
-      if (!decoracionesResponse.ok) {
-        throw new Error('Error al cargar decoraciones');
+      if (!asignacionesResponse.ok) {
+        throw new Error('Error al cargar asignaciones');
       }
       
+      const asignacionesData = await asignacionesResponse.json();
+      console.log('Datos de asignaciones:', asignacionesData);
+      setAsignaciones(asignacionesData);
+
+      // Cargar decoraciones con detalles
+      const decoracionesResponse = await fetch(`${apiUrl}/decoracion?include=evento.cliente,evento.tipo_evento,detalle_decoracion`, {
+        headers
+      });
+
+      if (!decoracionesResponse.ok) {
+        const errorText = await decoracionesResponse.text();
+        let errorMessage = 'Error al cargar decoraciones';
+        try {
+          const errorJson = JSON.parse(errorText);
+          errorMessage = errorJson.mensaje || errorJson.error || errorMessage;
+        } catch (parseError) {
+          console.warn('No se pudo parsear el error de decoraciones como JSON:', errorText);
+        }
+        console.error('Error al cargar decoraciones:', errorText);
+        throw new Error(errorMessage);
+      }
+
       const decoracionesData = await decoracionesResponse.json();
-      setDecoraciones(decoracionesData);
+      console.log('Datos de decoraciones recibidos:', decoracionesData);
+
+      // Asegurarse de que decoracionesData sea un array
+      if (!Array.isArray(decoracionesData)) {
+        console.error('Los datos de decoraciones no son un array:', decoracionesData);
+        setDecoraciones([]);
+      } else {
+        setDecoraciones(decoracionesData);
+      }
 
     } catch (error) {
       console.error('Error al cargar los datos:', error);
@@ -225,11 +391,78 @@ const WelcomeAdmin: React.FC = () => {
     }
   };
 
+  const fetchTiposEvento = async () => {
+    try {
+      setLoadingTipos(true);
+      const response = await fetch(`${apiUrl}/evento/tipo-eventos/list`, {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      if (!response.ok) {
+        throw new Error('Error al cargar los tipos de evento');
+      }
+      const data = await response.json();
+      setTiposEvento(data);
+    } catch (error) {
+      console.error('Error al cargar tipos de evento:', error);
+    } finally {
+      setLoadingTipos(false);
+    }
+  };
+
+  const fetchProvincias = async () => {
+    try {
+      setLoadingProvincias(true);
+      const response = await fetch(`${apiUrl}/direccion/provincias`, {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      if (!response.ok) {
+        throw new Error('Error al cargar las provincias');
+      }
+      const data = await response.json();
+      setProvincias(data);
+    } catch (error) {
+      console.error('Error al cargar provincias:', error);
+    } finally {
+      setLoadingProvincias(false);
+    }
+  };
+
+  const fetchCiudades = async () => {
+    try {
+      setLoadingCiudades(true);
+      const response = await fetch(`${apiUrl}/direccion/ciudades`, {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      if (!response.ok) {
+        throw new Error('Error al cargar las ciudades');
+      }
+      const data = await response.json();
+      setCiudades(data);
+    } catch (error) {
+      console.error('Error al cargar ciudades:', error);
+    } finally {
+      setLoadingCiudades(false);
+    }
+  };
+
   // Cargar datos al montar el componente
   useEffect(() => {
     const token = localStorage.getItem('token');
     if (token) {
       fetchData();
+      fetchClientesYAsesores();
+      fetchTiposEvento();
+      fetchProvincias();
+      fetchCiudades();
     } else {
       setError('No hay token de autenticación');
       setLoading(false);
@@ -289,23 +522,12 @@ const WelcomeAdmin: React.FC = () => {
   const handleCreateDecoracion = async (values: any) => {
     try {
       setLoading(true);
-      const response = await fetch(`${apiUrl}/decoraciones`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        },
-        body: JSON.stringify(values),
-      });
-
-      if (!response.ok) {
-        throw new Error('Error al crear la decoración');
-      }
-
       setModalDecoracionVisible(false);
-      fetchData();
+      await fetchData();
+      message.success('Decoración creada exitosamente');
     } catch (error) {
       console.error('Error al crear decoración:', error);
+      message.error(error instanceof Error ? error.message : 'Ocurrió un error al crear la decoración');
     } finally {
       setLoading(false);
     }
@@ -362,11 +584,6 @@ const WelcomeAdmin: React.FC = () => {
   };
 
   // Funciones para manejar los filtros
-  const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value;
-    setSearchText(value);
-  };
-
   const handleEstadoEventosChange = (value: string) => {
     setSelectedEstadoEventos(value);
   };
@@ -407,17 +624,59 @@ const WelcomeAdmin: React.FC = () => {
     setSelectedCargo(value);
   };
 
-  // Funciones de filtrado
+  const fetchEmpleados = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const headers = {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      };
+  
+      const response = await fetch(`${apiUrl}/usuario/rol/3`, { headers });
+      if (response.ok) {
+        const data = await response.json();
+        setEmpleados(data.usuarios);
+      }
+    } catch (error) {
+      console.error("Error al cargar empleados", error);
+    }
+  };
+  
+  useEffect(() => {
+    fetchEmpleados();
+  }, []);
+
+  // Funciones de filtrado actualizadas
   const getFilteredEventos = () => {
     return eventos.filter(evento => {
-      const searchLower = searchText.toLowerCase();
-      const matchesSearch = searchText === '' || 
+      const searchLower = searchTextEventos.toLowerCase();
+      const tipoEventoStr = typeof evento.tipo_evento === 'string' 
+        ? evento.tipo_evento 
+        : evento.tipo_evento.tipo_evento;
+      
+      // Formatear la fecha para búsqueda
+      const fechaEvento = new Date(evento.fecha_evento);
+      const fechaFormateada = fechaEvento.toLocaleDateString('es-DO', {
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit'
+      });
+      
+      // Convertir supervisión a texto para búsqueda
+      const supervisionStr = evento.desea_supervision ? 'Sí' : 'No';
+      
+      const matchesSearch = searchTextEventos === '' || 
         (evento.cliente?.nombre_usuario || '').toLowerCase().includes(searchLower) ||
         (evento.cliente?.apellido_usuario || '').toLowerCase().includes(searchLower) ||
         (evento.asesor?.nombre_usuario || '').toLowerCase().includes(searchLower) ||
         (evento.asesor?.apellido_usuario || '').toLowerCase().includes(searchLower) ||
-        (evento.tipo_evento || '').toLowerCase().includes(searchLower) ||
-        (evento.espacio_evento || '').toLowerCase().includes(searchLower);
+        tipoEventoStr.toLowerCase().includes(searchLower) ||
+        (evento.espacio_evento || '').toLowerCase().includes(searchLower) ||
+        evento.id_evento.toString().includes(searchTextEventos) ||
+        evento.total_evento.toString().includes(searchTextEventos) ||
+        fechaFormateada.includes(searchTextEventos) ||
+        evento.hora_evento.includes(searchTextEventos) ||
+        supervisionStr.includes(searchTextEventos);
       
       const matchesEstado = selectedEstadoEventos === 'todos' || 
         evento.estado_solicitud === selectedEstadoEventos;
@@ -436,10 +695,14 @@ const WelcomeAdmin: React.FC = () => {
     if (!Array.isArray(usuarios)) return [];
     
     return usuarios.filter(usuario => {
-      const matchesSearch = searchText === '' || 
-        usuario.nombre_usuario.toLowerCase().includes(searchText.toLowerCase()) ||
-        usuario.apellido_usuario.toLowerCase().includes(searchText.toLowerCase()) ||
-        usuario.usuario_login.toLowerCase().includes(searchText.toLowerCase());
+      const searchLower = searchTextUsuarios.toLowerCase();
+      const matchesSearch = searchTextUsuarios === '' || 
+        usuario.nombre_usuario.toLowerCase().includes(searchLower) ||
+        usuario.apellido_usuario.toLowerCase().includes(searchLower) ||
+        usuario.usuario_login.toLowerCase().includes(searchLower) ||
+        usuario.cedula_usuario.includes(searchTextUsuarios) ||
+        usuario.tel_usuario.includes(searchTextUsuarios) ||
+        usuario.correo_usuario.toLowerCase().includes(searchLower);
       
       const matchesEstado = selectedEstadoUsuarios === 'todos' || 
         usuario.estado_usuario === selectedEstadoUsuarios;
@@ -453,9 +716,13 @@ const WelcomeAdmin: React.FC = () => {
 
   const getFilteredProveedores = () => {
     return proveedores.filter(proveedor => {
-      const matchesSearch = searchText === '' || 
-        proveedor.nombre_proveedor.toLowerCase().includes(searchText.toLowerCase()) ||
-        proveedor.tipo_proveedor.toLowerCase().includes(searchText.toLowerCase());
+      const searchLower = searchTextProveedores.toLowerCase();
+      const matchesSearch = searchTextProveedores === '' || 
+        proveedor.nombre_proveedor.toLowerCase().includes(searchLower) ||
+        proveedor.tipo_proveedor.toLowerCase().includes(searchLower) ||
+        proveedor.id_proveedor.toString().includes(searchTextProveedores) ||
+        proveedor.tel_proveedor.includes(searchTextProveedores) ||
+        proveedor.correo_proveedor.toLowerCase().includes(searchLower);
       
       const matchesEstado = selectedEstadoProveedores === 'todos' || 
         proveedor.estado_proveedor === selectedEstadoProveedores;
@@ -469,9 +736,13 @@ const WelcomeAdmin: React.FC = () => {
 
   const getFilteredAsignaciones = () => {
     return asignaciones.filter(asignacion => {
-      const matchesSearch = searchText === '' || 
-        asignacion.nombre_empleado.toLowerCase().includes(searchText.toLowerCase()) ||
-        asignacion.apellido_empleado.toLowerCase().includes(searchText.toLowerCase());
+      const searchLower = searchTextAsignaciones.toLowerCase();
+      const matchesSearch = searchTextAsignaciones === '' || 
+        asignacion.empleado_evento.toLowerCase().includes(searchLower) ||
+        asignacion.id_evento.toString().includes(searchTextAsignaciones) ||
+        asignacion.empleado?.cedula_usuario.includes(searchTextAsignaciones) ||
+        asignacion.empleado?.nombre_usuario.toLowerCase().includes(searchLower) ||
+        asignacion.empleado?.apellido_usuario.toLowerCase().includes(searchLower);
       
       const matchesEvento = selectedEvento === '' || 
         asignacion.id_evento.toString() === selectedEvento;
@@ -479,782 +750,119 @@ const WelcomeAdmin: React.FC = () => {
       const matchesCargo = selectedCargo === '' || 
         asignacion.puesto_evento === selectedCargo;
 
-      return matchesSearch && matchesEvento && matchesCargo;
+      const matchesEmpleado = selectedEmpleado === '' ||
+        asignacion.empleado_evento === selectedEmpleado;
+
+      return matchesSearch && matchesEvento && matchesCargo && matchesEmpleado;
     });
   };
 
   const getFilteredDecoraciones = () => {
     return decoraciones.filter(decoracion => {
-      const matchesSearch = searchText === '' || 
-        decoracion.tema_decoracion.toLowerCase().includes(searchText.toLowerCase()) ||
-        decoracion.colores_decoracion.toLowerCase().includes(searchText.toLowerCase());
+      const searchLower = searchTextDecoraciones.toLowerCase();
+      const tipoEvento = typeof decoracion.evento?.tipo_evento === 'object' 
+        ? decoracion.evento.tipo_evento.tipo_evento 
+        : decoracion.evento?.tipo_evento;
+      
+      const matchesSearch = searchTextDecoraciones === '' || 
+        decoracion.tema_decoracion.toLowerCase().includes(searchLower) ||
+        decoracion.colores_decoracion.toLowerCase().includes(searchLower) ||
+        (tipoEvento || '').toLowerCase().includes(searchLower) ||
+        decoracion.id_decoracion.toString().includes(searchTextDecoraciones) ||
+        decoracion.id_evento.toString().includes(searchTextDecoraciones) ||
+        decoracion.precioneto_decoracion.toString().includes(searchTextDecoraciones) ||
+        decoracion.total_decoracion.toString().includes(searchTextDecoraciones);
       
       const matchesEstado = selectedEstadoDecoraciones === 'todos' || 
         decoracion.estado_decoracion === selectedEstadoDecoraciones;
-      
-      const matchesTipo = selectedTipo === '' || 
-        decoracion.tipo_decoracion === selectedTipo;
 
-      return matchesSearch && matchesEstado && matchesTipo;
+      const matchesEvento = selectedEvento === '' ||
+        decoracion.id_evento?.toString() === selectedEvento;
+
+      return matchesSearch && matchesEstado && matchesEvento;
     });
   };
 
-  // Componente de filtros para las tablas
-  const TableFilters = ({ type }: { type: string }) => {
-    const clearAllFilters = () => {
-      switch (type) {
-        case 'eventos':
-          setSelectedEstadoEventos('todos');
-          setSelectedCliente('');
-          setSelectedAsesor('');
-          break;
-        case 'usuarios':
-          setSelectedEstadoUsuarios('todos');
-          setSelectedRol('');
-          break;
-        case 'proveedores':
-          setSelectedEstadoProveedores('todos');
-          setSelectedTipo('');
-          break;
-        case 'asignaciones':
-          setSelectedEvento('');
-          setSelectedCargo('');
-          break;
-        case 'decoraciones':
-          setSelectedEstadoDecoraciones('todos');
-          setSelectedTipo('');
-          break;
+  // Obtener las columnas con las acciones correspondientes
+  const columns = getEventoColumns({
+    onViewDetails: (record) => {
+      setEventoSeleccionado(record);
+      setModalDetallesEventoVisible(true);
+    },
+    onEdit: (record) => {
+      setEventoSeleccionado(record);
+      setShowEventoForm(true);
+    },
+    onDelete: async (record) => {
+      const success = await updateEventoEstado(record.id_evento);
+      if (success) {
+        fetchData(); // Recargar los datos después de eliminar
       }
-    };
+    }
+  });
 
-    const getActiveFiltersCount = () => {
-      let count = 0;
-      switch (type) {
-        case 'eventos':
-          if (selectedEstadoEventos !== 'todos') count++;
-          if (selectedCliente) count++;
-          if (selectedAsesor) count++;
-          break;
-        case 'usuarios':
-          if (selectedEstadoUsuarios !== 'todos') count++;
-          if (selectedRol) count++;
-          break;
-        case 'proveedores':
-          if (selectedEstadoProveedores !== 'todos') count++;
-          if (selectedTipo) count++;
-          break;
-        case 'asignaciones':
-          if (selectedEvento) count++;
-          if (selectedCargo) count++;
-          break;
-        case 'decoraciones':
-          if (selectedEstadoDecoraciones !== 'todos') count++;
-          if (selectedTipo) count++;
-          break;
+  const usuarioColumns = getUsuarioColumns({
+    onViewDetails: (record) => {
+      setUsuarioSeleccionado(record);
+      setModalDetallesUsuarioVisible(true);
+    },
+    onEdit: (record) => {
+      setUsuarioSeleccionado(record);
+      setShowUsuarioForm(true);
+    },
+    onDelete: async (record) => {
+      const success = await updateUsuarioEstado(record.cedula_usuario);
+      if (success) {
+        fetchData(); // Recargar los datos después de eliminar
       }
-      return count;
-    };
+    }
+  });
 
-    const getFilterContent = () => {
-      switch (type) {
-        case 'eventos':
-          return (
-            <div style={{ padding: '8px', minWidth: '300px', backgroundColor: '#f5f5f5', borderRadius: '4px' }}>
-              <Space direction="vertical" style={{ width: '100%' }}>
-                <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '8px' }}>
-                  <Button 
-                    type="link" 
-                    onClick={clearAllFilters}
-                    disabled={getActiveFiltersCount() === 0}
-                  >
-                    Limpiar filtros
-                  </Button>
-                </div>
-                <div>
-                  <div style={{ marginBottom: 4 }}>Estado del evento:</div>
-                  <Select
-                    placeholder="Filtrar por estado"
-                    style={{ width: '100%' }}
-                    onChange={handleEstadoEventosChange}
-                    value={selectedEstadoEventos}
-                    showSearch
-                    optionFilterProp="label"
-                    filterOption={(input, option) => {
-                      return (option?.label ?? '').toLowerCase().includes(input.toLowerCase());
-                    }}
-                    options={[
-                      { value: 'todos', label: 'Todos' },
-                      { value: 'Pendiente', label: 'Pendiente' },
-                      { value: 'Confirmado', label: 'Confirmado' },
-                      { value: 'Cancelado', label: 'Cancelado' },
-                      { value: 'Completado', label: 'Completado' }
-                    ]}
-                  />
-                </div>
-                <div>
-                  <div style={{ marginBottom: 4 }}>Cliente:</div>
-                  <Select
-                    placeholder="Filtrar por cliente"
-                    style={{ width: '100%' }}
-                    onChange={handleClienteChange}
-                    value={selectedCliente}
-                    showSearch
-                    optionFilterProp="label"
-                    filterOption={(input, option) => {
-                      return (option?.label ?? '').toLowerCase().includes(input.toLowerCase());
-                    }}
-                    options={[
-                      { value: '', label: 'Todos' },
-                      ...clientes.map(cliente => ({
-                        value: `${cliente.nombre_usuario} ${cliente.apellido_usuario}`,
-                        label: `${cliente.nombre_usuario} ${cliente.apellido_usuario}`
-                      }))
-                    ]}
-                  />
-                </div>
-                <div>
-                  <div style={{ marginBottom: 4 }}>Asesor:</div>
-                  <Select
-                    placeholder="Filtrar por asesor"
-                    style={{ width: '100%' }}
-                    onChange={handleAsesorChange}
-                    value={selectedAsesor}
-                    showSearch
-                    optionFilterProp="label"
-                    filterOption={(input, option) => {
-                      return (option?.label ?? '').toLowerCase().includes(input.toLowerCase());
-                    }}
-                    options={[
-                      { value: '', label: 'Todos' },
-                      ...asesores.map(asesor => ({
-                        value: `${asesor.nombre_usuario} ${asesor.apellido_usuario}`,
-                        label: `${asesor.nombre_usuario} ${asesor.apellido_usuario}`
-                      }))
-                    ]}
-                  />
-                </div>
-              </Space>
-            </div>
-          );
-        case 'usuarios':
-          return (
-            <div style={{ padding: '8px', minWidth: '300px', backgroundColor: '#f5f5f5', borderRadius: '4px' }}>
-              <Space direction="vertical" style={{ width: '100%' }}>
-                <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '8px' }}>
-                  <Button 
-                    type="link" 
-                    onClick={clearAllFilters}
-                    disabled={getActiveFiltersCount() === 0}
-                  >
-                    Limpiar filtros
-                  </Button>
-                </div>
-                <div>
-                  <div style={{ marginBottom: 4 }}>Estado del usuario:</div>
-                  <Select
-                    placeholder="Filtrar por estado"
-                    style={{ width: '100%' }}
-                    onChange={handleEstadoUsuariosChange}
-                    value={selectedEstadoUsuarios}
-                    showSearch
-                    optionFilterProp="label"
-                    filterOption={(input, option) => {
-                      return (option?.label ?? '').toLowerCase().includes(input.toLowerCase());
-                    }}
-                    options={[
-                      { value: 'todos', label: 'Todos' },
-                      { value: 'Activo', label: 'Activo' },
-                      { value: 'Inactivo', label: 'Inactivo' },
-                      { value: 'Eliminado', label: 'Eliminado' }
-                    ]}
-                  />
-                </div>
-                <div>
-                  <div style={{ marginBottom: 4 }}>Rol del usuario:</div>
-                  <Select
-                    placeholder="Filtrar por rol"
-                    style={{ width: '100%' }}
-                    onChange={handleRolChange}
-                    value={selectedRol}
-                    showSearch
-                    optionFilterProp="label"
-                    filterOption={(input, option) => {
-                      return (option?.label ?? '').toLowerCase().includes(input.toLowerCase());
-                    }}
-                    options={[
-                      { value: '', label: 'Todos' },
-                      { value: 'Administrador', label: 'Administrador' },
-                      { value: 'Cliente', label: 'Cliente' },
-                      { value: 'Empleado', label: 'Empleado' },
-                    ]}
-                  />
-                </div>
-              </Space>
-            </div>
-          );
-        case 'proveedores':
-          return (
-            <div style={{ padding: '8px', minWidth: '300px', backgroundColor: '#f5f5f5', borderRadius: '4px' }}>
-              <Space direction="vertical" style={{ width: '100%' }}>
-                <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '8px' }}>
-                  <Button 
-                    type="link" 
-                    onClick={clearAllFilters}
-                    disabled={getActiveFiltersCount() === 0}
-                  >
-                    Limpiar filtros
-                  </Button>
-                </div>
-                <div>
-                  <div style={{ marginBottom: 4 }}>Estado del proveedor:</div>
-                  <Select
-                    placeholder="Filtrar por estado"
-                    style={{ width: '100%' }}
-                    onChange={handleEstadoProveedoresChange}
-                    value={selectedEstadoProveedores}
-                    showSearch
-                    optionFilterProp="label"
-                    filterOption={(input, option) => {
-                      return (option?.label ?? '').toLowerCase().includes(input.toLowerCase());
-                    }}
-                    options={[
-                      { value: 'todos', label: 'Todos' },
-                      { value: 'Activo', label: 'Activo' },
-                      { value: 'Inactivo', label: 'Inactivo' },
-                      { value: 'Eliminado', label: 'Eliminado' }
-                    ]}
-                  />
-                </div>
-                <div>
-                  <div style={{ marginBottom: 4 }}>Tipo de proveedor:</div>
-                  <Select
-                    placeholder="Filtrar por tipo"
-                    style={{ width: '100%' }}
-                    onChange={handleTipoChange}
-                    value={selectedTipo}
-                    showSearch
-                    optionFilterProp="label"
-                    filterOption={(input, option) => {
-                      return (option?.label ?? '').toLowerCase().includes(input.toLowerCase());
-                    }}
-                    options={[
-                      { value: '', label: 'Todos' },
-                      { value: 'Catering', label: 'Catering' },
-                      { value: 'Elementos', label: 'Elementos' }
-                    ]}
-                  />
-                </div>
-              </Space>
-            </div>
-          );
-        case 'asignaciones':
-          return (
-            <div style={{ padding: '8px', minWidth: '300px', backgroundColor: '#f5f5f5', borderRadius: '4px' }}>
-              <Space direction="vertical" style={{ width: '100%' }}>
-                <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '8px' }}>
-                  <Button 
-                    type="link" 
-                    onClick={clearAllFilters}
-                    disabled={getActiveFiltersCount() === 0}
-                  >
-                    Limpiar filtros
-                  </Button>
-                </div>
-                <div>
-                  <div style={{ marginBottom: 4 }}>Evento:</div>
-                  <Select
-                    placeholder="Filtrar por evento"
-                    style={{ width: '100%' }}
-                    onChange={handleEventoChange}
-                    value={selectedEvento}
-                    showSearch
-                    optionFilterProp="label"
-                    filterOption={(input, option) => {
-                      return (option?.label ?? '').toLowerCase().includes(input.toLowerCase());
-                    }}
-                    options={[
-                      { value: '', label: 'Todos' },
-                      ...eventos.map(evento => ({
-                        value: evento.id_evento,
-                        label: `${evento.cliente?.nombre_usuario || ''} ${evento.cliente?.apellido_usuario || ''} - ${new Date(evento.fecha_evento).toLocaleDateString()}`
-                      }))
-                    ]}
-                  />
-                </div>
-                <div>
-                  <div style={{ marginBottom: 4 }}>Cargo del empleado:</div>
-                  <Select
-                    placeholder="Filtrar por cargo"
-                    style={{ width: '100%' }}
-                    onChange={handleCargoChange}
-                    value={selectedCargo}
-                    showSearch
-                    optionFilterProp="label"
-                    filterOption={(input, option) => {
-                      return (option?.label ?? '').toLowerCase().includes(input.toLowerCase());
-                    }}
-                    options={[
-                      { value: '', label: 'Todos' },
-                      { value: 'Decorador', label: 'Decorador' },
-                      { value: 'Camarero', label: 'Camarero' },
-                      { value: 'Conductor', label: 'Conductor' },
-                      { value: 'Supervisor', label: 'Supervisor' },
-                      { value: 'Encargado de Logística', label: 'Encargado de Logística' },
-                      { value: 'Encargado de Limpieza', label: 'Encargado de Limpieza' }
-                    ]}
-                  />
-                </div>
-              </Space>
-            </div>
-          );
-        case 'decoraciones':
-          return (
-            <div style={{ padding: '8px', minWidth: '300px', backgroundColor: '#f5f5f5', borderRadius: '4px' }}>
-              <Space direction="vertical" style={{ width: '100%' }}>
-                <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '8px' }}>
-                  <Button 
-                    type="link" 
-                    onClick={clearAllFilters}
-                    disabled={getActiveFiltersCount() === 0}
-                  >
-                    Limpiar filtros
-                  </Button>
-                </div>
-                <div>
-                  <div style={{ marginBottom: 4 }}>Estado de la decoración:</div>
-                  <Select
-                    placeholder="Filtrar por estado"
-                    style={{ width: '100%' }}
-                    onChange={handleEstadoDecoracionesChange}
-                    value={selectedEstadoDecoraciones}
-                    showSearch
-                    optionFilterProp="label"
-                    filterOption={(input, option) => {
-                      return (option?.label ?? '').toLowerCase().includes(input.toLowerCase());
-                    }}
-                    options={[
-                      { value: 'todos', label: 'Todos' },
-                      { value: 'Solicitado', label: 'Solicitado' },
-                      { value: 'Aceptado', label: 'Aceptado' },
-                      { value: 'Completado', label: 'Completado' },
-                      { value: 'Cancelado', label: 'Cancelado' }
-                    ]}
-                  />
-                </div>
-                <div>
-                  <div style={{ marginBottom: 4 }}>Tipo de decoración:</div>
-                  <Select
-                    placeholder="Filtrar por tipo"
-                    style={{ width: '100%' }}
-                    onChange={handleTipoChange}
-                    value={selectedTipo}
-                    showSearch
-                    optionFilterProp="label"
-                    filterOption={(input, option) => {
-                      return (option?.label ?? '').toLowerCase().includes(input.toLowerCase());
-                    }}
-                    options={[
-                      { value: '', label: 'Todos' },
-                      { value: 'Boda', label: 'Boda' },
-                      { value: 'Cumpleaños', label: 'Cumpleaños' },
-                      { value: 'Graduación', label: 'Graduación' },
-                      { value: 'Otro', label: 'Otro' }
-                    ]}
-                  />
-                </div>
-              </Space>
-            </div>
-          );
-        default:
-          return <div style={{ padding: '8px', backgroundColor: '#f5f5f5', borderRadius: '4px' }}>No hay filtros disponibles</div>;
+  const proveedorColumns = getProveedorColumns({
+    onViewDetails: (record) => {
+      setProveedorSeleccionado(record);
+      setModalDetallesProveedorVisible(true);
+    },
+    onEdit: (record) => {
+      setProveedorSeleccionado(record);
+      setShowProveedorForm(true);
+    },
+    onDelete: async (record) => {
+      const success = await updateProveedorEstado(record.id_proveedor);
+      if (success) {
+        fetchData(); // Recargar los datos después de eliminar
       }
-    };
+    }
+  });
 
-    const getSearchPlaceholder = () => {
-      switch (type) {
-        case 'eventos':
-          return 'Buscar eventos...';
-        case 'usuarios':
-          return 'Buscar usuarios...';
-        case 'proveedores':
-          return 'Buscar proveedores...';
-        case 'asignaciones':
-          return 'Buscar asignaciones...';
-        case 'decoraciones':
-          return 'Buscar decoraciones...';
-        default:
-          return 'Buscar...';
+  const asignacionColumns = getAsignacionColumns({
+    onViewDetails: (record) => {
+      setAsignacionSeleccionada(record);
+      setModalDetallesAsignacionVisible(true);
+    },
+    onEdit: (record) => {
+      setAsignacionSeleccionada(record);
+      setShowAsignacionForm(true);
+    },
+    onDelete: (record) => console.log('Eliminar', record) // No implementamos eliminación para asignaciones
+  });
+
+  const decoracionColumns = getDecoracionColumns({
+    onViewDetails: (record) => {
+      setDecoracionSeleccionada(record);
+      setModalDetallesDecoracionVisible(true);
+    },
+    onEdit: (record) => {
+      setDecoracionSeleccionada(record);
+      setShowDecoracionForm(true);
+    },
+    onDelete: async (record) => {
+      const success = await updateDecoracionEstado(record.id_decoracion);
+      if (success) {
+        fetchData(); // Recargar los datos después de eliminar
       }
-    };
-
-    const activeFiltersCount = getActiveFiltersCount();
-
-    return (
-      <div style={{ marginBottom: 16 }}>
-        <Space>
-          <Input
-            ref={searchInputRef}
-            placeholder={getSearchPlaceholder()}
-            prefix={<SearchOutlined />}
-            onChange={handleSearch}
-            value={searchText}
-            allowClear
-            style={{ width: 200 }}
-          />
-          <Dropdown
-            overlay={getFilterContent()}
-            trigger={['click']}
-            placement="bottomRight"
-          >
-            <Button icon={<FilterOutlined />}>
-              Filtros {activeFiltersCount > 0 && `(${activeFiltersCount})`}
-            </Button>
-          </Dropdown>
-        </Space>
-      </div>
-    );
-  };
-
-  const columns: ColumnsType<Evento> = [
-    {
-      title: 'Cliente',
-      dataIndex: ['cliente', 'nombre_usuario'],
-      key: 'nombre_cliente',
-      width: 'fit-content',
-      render: (_: any, record: any) => 
-        `${record.cliente?.nombre_usuario || ''} ${record.cliente?.apellido_usuario || ''}`
-    },
-    {
-      title: 'Asesor',
-      dataIndex: ['asesor', 'nombre_usuario'],
-      key: 'nombre_asesor',
-      width: 'fit-content',
-      render: (_: any, record: any) => 
-        `${record.asesor?.nombre_usuario || ''} ${record.asesor?.apellido_usuario || ''}`
-    },
-    {
-      title: 'Fecha',
-      dataIndex: 'fecha_evento',
-      key: 'fecha_evento',
-      width: 'fit-content',
-    },
-    {
-      title: 'Hora',
-      dataIndex: 'hora_evento',
-      key: 'hora_evento',
-      width: 'fit-content',
-    },
-    {
-      title: 'Tipo',
-      dataIndex: 'tipo_evento',
-      key: 'tipo_evento',
-      width: 'fit-content',
-      render: (_: any, record: any) => record.tipo_evento?.tipo_evento || ''
-    },
-    {
-      title: 'Espacio',
-      dataIndex: 'espacio_evento',
-      key: 'espacio_evento',
-      width: 'fit-content',
-    },
-    {
-      title: 'Supervisión',
-      dataIndex: 'desea_supervision',
-      key: 'desea_supervision',
-      width: 'fit-content',
-      render: (desea_supervision: boolean) => (
-        <Tag color={desea_supervision ? 'green' : 'default'}>
-          {desea_supervision ? 'Sí' : 'No'}
-        </Tag>
-      )
-    },
-    {
-      title: 'Estado Solicitud',
-      dataIndex: 'estado_solicitud',
-      key: 'estado_solicitud',
-      width: 'fit-content',
-      render: (estado: EstadoSolicitud) => {
-        const colors: Record<EstadoSolicitud, string> = {
-          'Pendiente': 'gold',
-          'Aceptada': 'green',
-          'Rechazada': 'red',
-          'Completada': 'blue',
-          'Cancelada': 'gray'
-        };
-        return <Tag color={colors[estado]}>{estado}</Tag>;
-      }
-    },
-    {
-      title: 'Estado Evento',
-      dataIndex: 'estado_solicitud',
-      key: 'estado_solicitud',
-      width: 'fit-content',
-      render: (estado: EstadoEvento) => {
-        const colors: Record<EstadoEvento, string> = {
-          'Pendiente': 'gold',
-          'Completado': 'green',
-          'Cancelado': 'red'
-        };
-        return <Tag color={colors[estado]}>{estado}</Tag>;
-      }
-    },
-    {
-      title: 'Total',
-      dataIndex: 'total_evento',
-      key: 'total_evento',
-      width: 'fit-content',
-      render: (total: number) => `RD$ ${total.toLocaleString('es-DO', { minimumFractionDigits: 2 })}`
-    },
-    {
-      title: 'Acciones',
-      key: 'acciones',
-      width: 'fit-content',
-      fixed: 'right' as const,
-      render: (_: unknown, record: Evento) => (
-        <Space>
-          <Button type="text" icon={<EyeOutlined />} onClick={() => console.log('Ver', record)} />
-          <Button type="text" icon={<EditOutlined />} onClick={() => console.log('Editar', record)} />
-          <Button type="text" danger icon={<DeleteOutlined />} onClick={() => console.log('Eliminar', record)} />
-        </Space>
-      ),
-    },
-  ];
-
-  const usuarioColumns: ColumnsType<Usuario> = [
-    {
-      title: 'Cédula',
-      dataIndex: 'cedula_usuario',
-      key: 'cedula_usuario',
-      width: 'fit-content',
-    },
-    {
-      title: 'Nombre',
-      dataIndex: 'nombre_usuario',
-      key: 'nombre_usuario',
-      width: 'fit-content',
-    },
-    {
-      title: 'Apellido',
-      dataIndex: 'apellido_usuario',
-      key: 'apellido_usuario',
-      width: 'fit-content',
-    },
-    {
-      title: 'Usuario',
-      dataIndex: 'usuario_login',
-      key: 'usuario_login',
-      width: 'fit-content',
-    },
-    {
-      title: 'Correo',
-      dataIndex: 'correo_usuario',
-      key: 'correo_usuario',
-      width: 'fit-content',
-    },
-    {
-      title: 'Teléfono',
-      dataIndex: 'tel_usuario',
-      key: 'tel_usuario',
-      width: 'fit-content',
-    },
-    {
-      title: 'Estado',
-      dataIndex: 'estado_usuario',
-      key: 'estado_usuario',
-      width: 'fit-content',
-      render: (estado: string) => {
-        const colors: Record<string, string> = {
-          'Activo': 'green',
-          'Inactivo': 'orange',
-          'Eliminado': 'red'
-        };
-        return <Tag color={colors[estado]}>{estado}</Tag>;
-      }
-    },
-    {
-      title: 'Acciones',
-      key: 'acciones',
-      width: 'fit-content',
-      fixed: 'right' as const,
-      render: (_: unknown, record: any) => (
-        <Space>
-          <Button type="text" icon={<EyeOutlined />} onClick={() => console.log('Ver', record)} />
-          <Button type="text" icon={<EditOutlined />} onClick={() => console.log('Editar', record)} />
-          <Button type="text" danger icon={<DeleteOutlined />} onClick={() => console.log('Eliminar', record)} />
-        </Space>
-      ),
-    },
-  ];
-
-  const proveedorColumns: ColumnsType<Proveedor> = [
-    {
-      title: 'Nombre',
-      dataIndex: 'nombre_proveedor',
-      key: 'nombre_proveedor',
-      width: 'fit-content',
-    },
-    {
-      title: 'Tipo',
-      dataIndex: 'tipo_proveedor',
-      key: 'tipo_proveedor',
-      width: 'fit-content',
-    },
-    {
-      title: 'Teléfono',
-      dataIndex: 'tel_proveedor',
-      key: 'tel_proveedor',
-      width: 'fit-content',
-    },
-    {
-      title: 'Correo',
-      dataIndex: 'correo_proveedor',
-      key: 'correo_proveedor',
-      width: 'fit-content',
-    },
-    {
-      title: 'Dirección',
-      key: 'direccion',
-      width: 'fit-content',
-      render: (_: unknown, record: any) => (
-        <span>
-          {record.direccion?.calle}, {record.direccion?.sector}
-        </span>
-      ),
-    },
-    {
-      title: 'Estado',
-      dataIndex: 'estado_proveedor',
-      key: 'estado_proveedor',
-      width: 'fit-content',
-      render: (estado: string) => {
-        const colors: Record<string, string> = {
-          'Activo': 'green',
-          'Inactivo': 'orange',
-          'Eliminado': 'red'
-        };
-        return <Tag color={colors[estado]}>{estado}</Tag>;
-      }
-    },
-    {
-      title: 'Acciones',
-      key: 'acciones',
-      width: 'fit-content',
-      fixed: 'right' as const,
-      render: (_: unknown, record: any) => (
-        <Space>
-          <Button type="text" icon={<EyeOutlined />} onClick={() => console.log('Ver', record)} />
-          <Button type="text" icon={<EditOutlined />} onClick={() => console.log('Editar', record)} />
-          <Button type="text" danger icon={<DeleteOutlined />} onClick={() => console.log('Eliminar', record)} />
-        </Space>
-      ),
-    },
-  ];
-
-  const asignacionColumns: ColumnsType<AsignacionEmpleado> = [
-    {
-      title: 'Evento',
-      key: 'evento',
-      width: 'fit-content',
-      render: (_: unknown, record: any) => (
-        <span>
-          {record.evento?.id_evento}, {record.cliente?.cedula_usuario}
-        </span>
-      ),
-    },
-    {
-      title: 'Empleado',
-      key: 'empleado_evento',
-      width: 'fit-content',
-      render: (_: unknown, record: any) => (
-        <span>
-          {record.empleado?.nombre_usuario}, {record.empleado?.apellido_empleado}
-        </span>
-      ),
-    },
-    {
-      title: 'Puesto',
-      dataIndex: 'puesto_evento',
-      key: 'puesto_evento',
-      width: 'fit-content',
-      render: (puesto: string) => (
-        <Tag color="blue">{puesto}</Tag>
-      )
-    },
-    {
-      title: 'Acciones',
-      key: 'acciones',
-      width: 'fit-content',
-      fixed: 'right' as const,
-      render: (_: unknown, record: AsignacionEmpleado) => (
-        <Space>
-          <Button type="text" icon={<EditOutlined />} onClick={() => console.log('Editar', record)} />
-          <Button type="text" danger icon={<DeleteOutlined />} onClick={() => console.log('Eliminar', record)} />
-        </Space>
-      ),
-    },
-  ];
-
-  const decoracionColumns: ColumnsType<Decoracion> = [
-    {
-      title: 'Evento',
-      dataIndex: 'nombre_cliente',
-      key: 'nombre_cliente',
-      width: 'fit-content',
-      render: (_: string, record: Decoracion) => (
-        <span>
-          {record.nombre_cliente} - {new Date(record.fecha_evento!).toLocaleDateString()}
-        </span>
-      )
-    },
-    {
-      title: 'Tema',
-      dataIndex: 'tema_decoracion',
-      key: 'tema_decoracion',
-      width: 'fit-content',
-      ellipsis: true
-    },
-    {
-      title: 'Colores',
-      dataIndex: 'colores_decoracion',
-      key: 'colores_decoracion',
-      width: 'fit-content'
-    },
-    {
-      title: 'Total',
-      dataIndex: 'total_decoracion',
-      key: 'total_decoracion',
-      width: 'fit-content',
-      render: (total: number) => `RD$ ${total.toLocaleString('es-DO', { minimumFractionDigits: 2 })}`
-    },
-    {
-      title: 'Estado',
-      dataIndex: 'estado_decoracion',
-      key: 'estado_decoracion',
-      width: 'fit-content',
-      render: (estado: string) => {
-        const colors: Record<string, string> = {
-          'Solicitado': 'gold',
-          'Aceptado': 'blue',
-          'Completado': 'green',
-          'Cancelado': 'red'
-        };
-        return <Tag color={colors[estado]}>{estado}</Tag>;
-      }
-    },
-    {
-      title: 'Acciones',
-      key: 'acciones',
-      width: 'fit-content',
-      fixed: 'right' as const,
-      render: (_: unknown, record: Decoracion) => (
-        <Space>
-          <Button type="text" icon={<EyeOutlined />} onClick={() => console.log('Ver', record)} />
-          <Button type="text" icon={<EditOutlined />} onClick={() => console.log('Editar', record)} />
-          <Button type="text" danger icon={<DeleteOutlined />} onClick={() => console.log('Eliminar', record)} />
-        </Space>
-      ),
-    },
-  ];
+    }
+  });
 
   return (
     <div className="welcome-container">
@@ -1268,153 +876,452 @@ const WelcomeAdmin: React.FC = () => {
       </Card>
 
       <div className="dashboard-container">
-        <div className="dashboard-grid">
-          {/* Primera fila: Eventos */}
-          <div className="dashboard-row">
-            <Card 
-              title="EVENTOS" 
-              className="dashboard-card full-width"
-              extra={
-                <Button 
-                  type="primary" 
-                  icon={<PlusOutlined />} 
-                  className="action-button primary"
-                  onClick={() => setModalEventoVisible(true)}
-                >
-                  Nuevo Evento
-                </Button>
-              }
-            >
-              <TableFilters type="eventos" />
-              <Table 
-                className="dashboard-table"
-                columns={columns}
-                dataSource={getFilteredEventos()}
-                loading={loading}
-                pagination={{ pageSize: 3 }}
-                rowKey="id_evento"
-                scroll={{ x: 'max-content' }}
-              />
-            </Card>
-          </div>
-
-          {/* Segunda fila: Usuarios y Proveedores */}
-          <div className="dashboard-row">
-            <Card 
-              title="USUARIOS" 
-              className="dashboard-card"
-              extra={
-                <Button 
-                  type="primary" 
-                  icon={<PlusOutlined />} 
-                  className="action-button primary"
-                  onClick={() => setModalUsuarioVisible(true)}
-                >
-                  Nuevo Usuario
-                </Button>
-              }
-            >
-              <TableFilters type="usuarios" />
-              <Table 
-                className="dashboard-table"
-                columns={usuarioColumns}
-                dataSource={getFilteredUsuarios()}
-                loading={loading}
-                pagination={{ pageSize: 3 }}
-                rowKey="cedula_usuario"
-                scroll={{ x: 'max-content' }}
-              />
-            </Card>
-
-            <Card 
-              title="PROVEEDORES" 
-              className="dashboard-card"
-              extra={
-                <Button 
-                  type="primary" 
-                  icon={<PlusOutlined />} 
-                  className="action-button primary"
-                  onClick={() => setModalProveedorVisible(true)}
-                >
-                  Nuevo Proveedor
-                </Button>
-              }
-            >
-              <TableFilters type="proveedores" />
-              <Table 
-                className="dashboard-table"
-                columns={proveedorColumns}
-                dataSource={getFilteredProveedores()}
-                loading={loading}
-                pagination={{ pageSize: 3 }}
-                rowKey="id_proveedor"
-                scroll={{ x: 'max-content' }}
-              />
-            </Card>
-          </div>
-
-          {/* Tercera fila: Asignación de Equipo y Decoraciones */}
-          <div className="dashboard-row">
-            <Card 
-              title="ASIGNACIÓN DE EQUIPO" 
-              className="dashboard-card"
-              extra={
-                <Button 
-                  type="primary" 
-                  icon={<PlusOutlined />} 
-                  className="action-button primary"
-                  onClick={() => setModalAsignacionVisible(true)}
-                >
-                  Asignar Empleado
-                </Button>
-              }
-            >
-              <TableFilters type="asignaciones" />
-              <Table 
-                className="dashboard-table"
-                columns={asignacionColumns}
-                dataSource={getFilteredAsignaciones()}
-                loading={loading}
-                pagination={{ pageSize: 3 }}
-                rowKey="id"
-                scroll={{ x: 'max-content' }}
-              />
-            </Card>
-
-            <Card 
-              title="DECORACIONES" 
-              className="dashboard-card"
-              extra={
-                <Button 
-                  type="primary" 
-                  icon={<PlusOutlined />} 
-                  className="action-button primary"
-                  onClick={() => setModalDecoracionVisible(true)}
-                >
-                  Nueva Decoración
-                </Button>
-              }
-            >
-              <TableFilters type="decoraciones" />
-              <Table 
-                className="dashboard-table"
-                columns={decoracionColumns}
-                dataSource={getFilteredDecoraciones()}
-                loading={loading}
-                pagination={{ pageSize: 3 }}
-                rowKey="id_decoracion"
-                scroll={{ x: 'max-content' }}
-              />
-            </Card>
-          </div>
+  <div className="dashboard-grid">
+    {/* Primera fila: Eventos */}
+    <div className="dashboard-row">
+      <Card
+        title="EVENTOS"
+        className="dashboard-card full-width"
+        extra={
+          <Button
+            type="primary"
+            icon={<PlusOutlined />}
+            className="action-button primary"
+            onClick={() => setModalEventoVisible(true)}
+          >
+            Nuevo Evento
+          </Button>
+        }
+      >
+        <TableFilters
+  type="eventos"
+  searchText={searchTextEventos}
+  onSearchChange={setSearchTextEventos}
+  clearFilters={() => {
+    setSearchTextEventos('');
+    setSelectedEstadoEventos('todos');
+    setSelectedCliente('');
+    setSelectedAsesor('');
+  }}
+  activeFiltersCount={
+    (selectedEstadoEventos !== 'todos' ? 1 : 0) +
+    (selectedCliente ? 1 : 0) +
+    (selectedAsesor ? 1 : 0)
+  }
+  filterContent={
+    <div style={{ padding: '8px', minWidth: '300px', backgroundColor: '#f5f5f5', borderRadius: '4px' }}>
+      <Space direction="vertical" style={{ width: '100%' }}>
+        <div>
+          <div style={{ marginBottom: 4 }}>Estado del evento:</div>
+          <Select
+            placeholder="Filtrar por estado"
+            style={{ width: '100%' }}
+            onChange={handleEstadoEventosChange}
+            value={selectedEstadoEventos}
+            options={[
+              { value: 'todos', label: 'Todos' },
+              { value: 'Pendiente', label: 'Pendiente' },
+              { value: 'Confirmado', label: 'Confirmado' },
+              { value: 'Cancelado', label: 'Cancelado' },
+              { value: 'Completado', label: 'Completado' }
+            ]}
+          />
         </div>
-      </div>
+        <div>
+          <div style={{ marginBottom: 4 }}>Cliente:</div>
+          <Select
+            placeholder="Filtrar por cliente"
+            style={{ width: '100%' }}
+            onChange={handleClienteChange}
+            value={selectedCliente}
+            options={[
+              { value: '', label: 'Todos' },
+              ...clientes.map(cliente => ({
+                value: `${cliente.nombre_usuario} ${cliente.apellido_usuario}`,
+                label: `${cliente.nombre_usuario} ${cliente.apellido_usuario} (${cliente.cedula_usuario})`
+              }))
+            ]}
+          />
+        </div>
+        <div>
+          <div style={{ marginBottom: 4 }}>Asesor:</div>
+          <Select
+            placeholder="Filtrar por asesor"
+            style={{ width: '100%' }}
+            onChange={handleAsesorChange}
+            value={selectedAsesor}
+            options={[
+              { value: '', label: 'Todos' },
+              ...asesores.map(asesor => ({
+                value: `${asesor.nombre_usuario} ${asesor.apellido_usuario}`,
+                label: `${asesor.nombre_usuario} ${asesor.apellido_usuario} (${asesor.cedula_usuario})`
+              }))
+            ]}
+          />
+        </div>
+      </Space>
+    </div>
+  }
+/>
+        <Table
+          className="dashboard-table"
+          columns={columns}
+          dataSource={getFilteredEventos()}
+          loading={loading}
+          pagination={{ pageSize: 3 }}
+          rowKey="id_evento"
+          scroll={{ x: 'max-content' }}
+        />
+      </Card>
+    </div>
+
+    {/* Segunda fila: Usuarios y Proveedores */}
+    <div className="dashboard-row">
+      <Card
+        title="USUARIOS"
+        className="dashboard-card"
+        extra={
+          <Button
+            type="primary"
+            icon={<PlusOutlined />}
+            className="action-button primary"
+            onClick={() => setModalUsuarioVisible(true)}
+          >
+            Nuevo Usuario
+          </Button>
+        }
+      >
+        <TableFilters
+  type="usuarios"
+  searchText={searchTextUsuarios}
+  onSearchChange={setSearchTextUsuarios}
+  clearFilters={() => {
+    setSearchTextUsuarios('');
+    setSelectedEstadoUsuarios('todos');
+    setSelectedRol('');
+  }}
+  activeFiltersCount={
+    (selectedEstadoUsuarios !== 'todos' ? 1 : 0) +
+    (selectedRol ? 1 : 0)
+  }
+  filterContent={
+    <div style={{ padding: '8px', minWidth: '300px', backgroundColor: '#f5f5f5', borderRadius: '4px' }}>
+      <Space direction="vertical" style={{ width: '100%' }}>
+        <div>
+          <div style={{ marginBottom: 4 }}>Estado del usuario:</div>
+          <Select
+            placeholder="Filtrar por estado"
+            style={{ width: '100%' }}
+            onChange={handleEstadoUsuariosChange}
+            value={selectedEstadoUsuarios}
+            options={[
+              { value: 'todos', label: 'Todos' },
+              { value: 'Activo', label: 'Activo' },
+              { value: 'Inactivo', label: 'Inactivo' },
+              { value: 'Eliminado', label: 'Eliminado' }
+            ]}
+          />
+        </div>
+        <div>
+          <div style={{ marginBottom: 4 }}>Rol del usuario:</div>
+          <Select
+            placeholder="Filtrar por rol"
+            style={{ width: '100%' }}
+            onChange={handleRolChange}
+            value={selectedRol}
+            options={[
+              { value: '', label: 'Todos' },
+              { value: 'Administrador', label: 'Administrador' },
+              { value: 'Cliente', label: 'Cliente' },
+              { value: 'Empleado', label: 'Empleado' }
+            ]}
+          />
+        </div>
+      </Space>
+    </div>
+  }
+/>
+        <Table
+          className="dashboard-table"
+          columns={usuarioColumns}
+          dataSource={getFilteredUsuarios()}
+          loading={loading}
+          pagination={{ pageSize: 3 }}
+          rowKey="cedula_usuario"
+          scroll={{ x: 'max-content' }}
+        />
+      </Card>
+
+      <Card
+        title="PROVEEDORES"
+        className="dashboard-card"
+        extra={
+          <Button
+            type="primary"
+            icon={<PlusOutlined />}
+            className="action-button primary"
+            onClick={() => setModalProveedorVisible(true)}
+          >
+            Nuevo Proveedor
+          </Button>
+        }
+      >
+        <TableFilters
+  type="proveedores"
+  searchText={searchTextProveedores}
+  onSearchChange={setSearchTextProveedores}
+  clearFilters={() => {
+    setSearchTextProveedores('');
+    setSelectedEstadoProveedores('todos');
+    setSelectedTipo('');
+  }}
+  activeFiltersCount={
+    (selectedEstadoProveedores !== 'todos' ? 1 : 0) +
+    (selectedTipo ? 1 : 0)
+  }
+  filterContent={
+    <div style={{ padding: '8px', minWidth: '300px', backgroundColor: '#f5f5f5', borderRadius: '4px' }}>
+      <Space direction="vertical" style={{ width: '100%' }}>
+        <div>
+          <div style={{ marginBottom: 4 }}>Estado del proveedor:</div>
+          <Select
+            placeholder="Filtrar por estado"
+            style={{ width: '100%' }}
+            onChange={handleEstadoProveedoresChange}
+            value={selectedEstadoProveedores}
+            options={[
+              { value: 'todos', label: 'Todos' },
+              { value: 'Activo', label: 'Activo' },
+              { value: 'Inactivo', label: 'Inactivo' },
+              { value: 'Eliminado', label: 'Eliminado' }
+            ]}
+          />
+        </div>
+        <div>
+          <div style={{ marginBottom: 4 }}>Tipo de proveedor:</div>
+          <Select
+            placeholder="Filtrar por tipo"
+            style={{ width: '100%' }}
+            onChange={handleTipoChange}
+            value={selectedTipo}
+            options={[
+              { value: '', label: 'Todos' },
+              { value: 'Catering', label: 'Catering' },
+              { value: 'Elementos', label: 'Elementos' }
+            ]}
+          />
+        </div>
+      </Space>
+    </div>
+  }
+/>
+        <Table
+          className="dashboard-table"
+          columns={proveedorColumns}
+          dataSource={getFilteredProveedores()}
+          loading={loading}
+          pagination={{ pageSize: 3 }}
+          rowKey="id_proveedor"
+          scroll={{ x: 'max-content' }}
+        />
+      </Card>
+    </div>
+
+    {/* Tercera fila: Asignación y Decoración */}
+    <div className="dashboard-row">
+      <Card
+        title="ASIGNACIÓN DE EQUIPO"
+        className="dashboard-card"
+        extra={
+          <Button
+            type="primary"
+            icon={<PlusOutlined />}
+            className="action-button primary"
+            onClick={() => setModalAsignacionVisible(true)}
+          >
+            Asignar Empleado
+          </Button>
+        }
+      >
+        <TableFilters
+  type="asignaciones"
+  searchText={searchTextAsignaciones}
+  onSearchChange={setSearchTextAsignaciones}
+  clearFilters={() => {
+    setSearchTextAsignaciones('');
+    setSelectedEvento('');
+    setSelectedCargo('');
+    setSelectedEmpleado('');
+  }}
+  activeFiltersCount={
+    (selectedEvento ? 1 : 0) +
+    (selectedCargo ? 1 : 0) +
+    (selectedEmpleado ? 1 : 0)
+  }
+  filterContent={
+    <div style={{ padding: '8px', minWidth: '300px', backgroundColor: '#f5f5f5', borderRadius: '4px' }}>
+      <Space direction="vertical" style={{ width: '100%' }}>
+        <div>
+          <div style={{ marginBottom: 4 }}>Evento:</div>
+          <Select
+            placeholder="Filtrar por evento"
+            style={{ width: '100%' }}
+            onChange={handleEventoChange}
+            value={selectedEvento}
+            options={[
+              { value: '', label: 'Todos' },
+              ...eventos.map(evento => ({
+                value: evento.id_evento.toString(),
+                label: `ID: ${evento.id_evento} - ${evento.cliente?.nombre_usuario || ''} ${evento.cliente?.apellido_usuario || ''}`
+              }))
+            ]}
+          />
+        </div>
+        <div>
+          <div style={{ marginBottom: 4 }}>Empleado:</div>
+          <Select
+            placeholder="Filtrar por empleado"
+            style={{ width: '100%' }}
+            onChange={handleEmpleadoChange}
+            value={selectedEmpleado}
+            options={[
+              { value: '', label: 'Todos' },
+              ...empleados.map(empleado => ({
+                value: empleado.cedula_usuario,
+                label: `${empleado.nombre_usuario} ${empleado.apellido_usuario} (${empleado.cedula_usuario})`
+              }))
+            ]}
+          />
+        </div>
+        <div>
+          <div style={{ marginBottom: 4 }}>Cargo del empleado:</div>
+          <Select
+            placeholder="Filtrar por cargo"
+            style={{ width: '100%' }}
+            onChange={handleCargoChange}
+            value={selectedCargo}
+            options={[
+              { value: '', label: 'Todos' },
+              { value: 'Decorador', label: 'Decorador' },
+              { value: 'Camarero', label: 'Camarero' },
+              { value: 'Conductor', label: 'Conductor' },
+              { value: 'Supervisor', label: 'Supervisor' },
+              { value: 'Encargado de Logística', label: 'Encargado de Logística' },
+              { value: 'Encargado de Limpieza', label: 'Encargado de Limpieza' }
+            ]}
+          />
+        </div>
+      </Space>
+    </div>
+  }
+/>
+        <Table
+          className="dashboard-table"
+          columns={asignacionColumns}
+          dataSource={getFilteredAsignaciones()}
+          loading={loading}
+          pagination={{ pageSize: 3 }}
+          rowKey={(record) => `${record.id_evento}-${record.empleado_evento}`}
+          scroll={{ x: 'max-content' }}
+        />
+      </Card>
+
+      <Card
+        title="DECORACIONES"
+        className="dashboard-card"
+        extra={
+          <Button
+            type="primary"
+            icon={<PlusOutlined />}
+            className="action-button primary"
+            onClick={() => setModalDecoracionVisible(true)}
+          >
+            Nueva Decoración
+          </Button>
+        }
+      >
+        <TableFilters
+  type="decoraciones"
+  searchText={searchTextDecoraciones}
+  onSearchChange={setSearchTextDecoraciones}
+  clearFilters={() => {
+    setSearchTextDecoraciones('');
+    setSelectedEstadoDecoraciones('todos');
+    setSelectedEvento('');
+  }}
+  activeFiltersCount={
+    (selectedEstadoDecoraciones !== 'todos' ? 1 : 0) +
+    (selectedEvento ? 1 : 0)
+  }
+  filterContent={
+    <div style={{ padding: '8px', minWidth: '300px', backgroundColor: '#f5f5f5', borderRadius: '4px' }}>
+      <Space direction="vertical" style={{ width: '100%' }}>
+        <div>
+          <div style={{ marginBottom: 4 }}>Estado de la decoración:</div>
+          <Select
+            placeholder="Filtrar por estado"
+            style={{ width: '100%' }}
+            onChange={handleEstadoDecoracionesChange}
+            value={selectedEstadoDecoraciones}
+            options={[
+              { value: 'todos', label: 'Todos' },
+              { value: 'Solicitado', label: 'Solicitado' },
+              { value: 'Aceptado', label: 'Aceptado' },
+              { value: 'Completado', label: 'Completado' },
+              { value: 'Cancelado', label: 'Cancelado' }
+            ]}
+          />
+        </div>
+        <div>
+          <div style={{ marginBottom: 4 }}>Evento:</div>
+          <Select
+            placeholder="Filtrar por evento"
+            style={{ width: '100%' }}
+            onChange={handleEventoChange}
+            value={selectedEvento}
+            options={[
+              { value: '', label: 'Todos' },
+              ...eventos.map(evento => ({
+                value: evento.id_evento.toString(),
+                label: `ID: ${evento.id_evento} - ${evento.cliente?.nombre_usuario || ''} ${evento.cliente?.apellido_usuario || ''}`
+              }))
+            ]}
+          />
+        </div>
+      </Space>
+    </div>
+  }
+/>
+        <Table
+          className="dashboard-table"
+          columns={decoracionColumns}
+          dataSource={getFilteredDecoraciones()}
+          loading={loading}
+          pagination={{ pageSize: 3 }}
+          rowKey="id_decoracion"
+          scroll={{ x: 'max-content' }}
+        />
+      </Card>
+    </div>
+  </div>
+</div>
+
 
       <EventoForm
         visible={modalEventoVisible}
         onCancel={() => setModalEventoVisible(false)}
         onSubmit={handleCreateEvento}
         loading={loading}
+        clientes={clientes}
+        asesores={asesores}
+        tiposEvento={tiposEvento}
+        provincias={provincias}
+        ciudades={ciudades}
+        loadingClientes={loadingClientes}
+        loadingAsesores={loadingAsesores}
+        loadingTipos={loadingTipos}
+        loadingProvincias={loadingProvincias}
+        loadingCiudades={loadingCiudades}
       />
 
       <UsuarioForm
@@ -1444,9 +1351,501 @@ const WelcomeAdmin: React.FC = () => {
         onSubmit={handleCreateDecoracion}
         loading={loading}
       />
+
+      <Modal
+        title="Detalles del Evento"
+        open={modalDetallesEventoVisible}
+        onCancel={() => setModalDetallesEventoVisible(false)}
+        footer={[
+          <Button key="close" onClick={() => setModalDetallesEventoVisible(false)}>
+            Cerrar
+          </Button>
+        ]}
+        width={800}
+      >
+        {eventoSeleccionado && (
+          <Descriptions bordered column={2}>
+            <Descriptions.Item label="ID del Evento" span={2}>{eventoSeleccionado.id_evento}</Descriptions.Item>
+            <Descriptions.Item label="Cliente" span={2}>
+              {`${eventoSeleccionado.cliente?.nombre_usuario || ''} ${eventoSeleccionado.cliente?.apellido_usuario || ''}`}
+            </Descriptions.Item>
+            <Descriptions.Item label="Asesor" span={2}>
+              {eventoSeleccionado.asesor 
+                ? `${eventoSeleccionado.asesor.nombre_usuario} ${eventoSeleccionado.asesor.apellido_usuario}`
+                : 'No asignado'}
+            </Descriptions.Item>
+            <Descriptions.Item label="Fecha">{new Date(eventoSeleccionado.fecha_evento).toLocaleDateString()}</Descriptions.Item>
+            <Descriptions.Item label="Hora">{eventoSeleccionado.hora_evento}</Descriptions.Item>
+            <Descriptions.Item label="Tipo de Evento" span={2}>
+              {typeof eventoSeleccionado.tipo_evento === 'string'
+                ? eventoSeleccionado.tipo_evento
+                : eventoSeleccionado.tipo_evento.tipo_evento}
+            </Descriptions.Item>
+            <Descriptions.Item label="Dirección" span={2}>
+              {eventoSeleccionado.direccion ? (
+                <>
+                  {eventoSeleccionado.direccion.calle}, {eventoSeleccionado.direccion.sector}
+                  <br />
+                  {eventoSeleccionado.direccion.ciudad.nombre_ciudad}, {eventoSeleccionado.direccion.ciudad.provincia.nombre_provincia}
+                </>
+              ) : 'No especificada'}
+            </Descriptions.Item>
+            <Descriptions.Item label="Espacio" span={2}>{eventoSeleccionado.espacio_evento}</Descriptions.Item>
+            <Descriptions.Item label="Supervisión">{eventoSeleccionado.desea_supervision ? 'Sí' : 'No'}</Descriptions.Item>
+            <Descriptions.Item label="Estado">{eventoSeleccionado.estado_solicitud}</Descriptions.Item>
+            <Descriptions.Item label="Subtotal">RD$ {eventoSeleccionado.subtotal_evento?.toLocaleString('es-DO', { minimumFractionDigits: 2 })}</Descriptions.Item>
+            <Descriptions.Item label="ITBIS">RD$ {eventoSeleccionado.itbis_evento?.toLocaleString('es-DO', { minimumFractionDigits: 2 })}</Descriptions.Item>
+            <Descriptions.Item label="Total" span={2}>RD$ {eventoSeleccionado.total_evento?.toLocaleString('es-DO', { minimumFractionDigits: 2 })}</Descriptions.Item>
+            <Descriptions.Item label="Notas del Cliente" span={2}>{eventoSeleccionado.nota_cliente || 'Sin notas'}</Descriptions.Item>
+            <Descriptions.Item label="Fecha de Creación" span={2}>
+              {new Date(eventoSeleccionado.creacion_evento).toLocaleString()}
+            </Descriptions.Item>
+          </Descriptions>
+        )}
+      </Modal>
+
+      {/* Modal de Detalles de Usuario */}
+      <Modal
+        title="Detalles del Usuario"
+        open={modalDetallesUsuarioVisible}
+        onCancel={() => setModalDetallesUsuarioVisible(false)}
+        footer={[
+          <Button key="close" onClick={() => setModalDetallesUsuarioVisible(false)}>
+            Cerrar
+          </Button>
+        ]}
+        width={600}
+      >
+        {usuarioSeleccionado && (
+          <Descriptions bordered column={1}>
+            <Descriptions.Item label="Cédula">{usuarioSeleccionado.cedula_usuario}</Descriptions.Item>
+            <Descriptions.Item label="Nombre">{usuarioSeleccionado.nombre_usuario}</Descriptions.Item>
+            <Descriptions.Item label="Apellido">{usuarioSeleccionado.apellido_usuario}</Descriptions.Item>
+            <Descriptions.Item label="Usuario">{usuarioSeleccionado.usuario_login}</Descriptions.Item>
+            <Descriptions.Item label="Correo">{usuarioSeleccionado.correo_usuario}</Descriptions.Item>
+            <Descriptions.Item label="Teléfono">{usuarioSeleccionado.tel_usuario}</Descriptions.Item>
+            <Descriptions.Item label="Rol">{usuarioSeleccionado.rol_nombre}</Descriptions.Item>
+            <Descriptions.Item label="Estado">{usuarioSeleccionado.estado_usuario}</Descriptions.Item>
+            <Descriptions.Item label="Fecha de Creación">
+              {(() => {
+                if (!usuarioSeleccionado.creacion_usuario) {
+                  return 'No disponible';
+                }
+                try {
+                  const fecha = new Date(usuarioSeleccionado.creacion_usuario);
+                  if (isNaN(fecha.getTime())) {
+                    return 'Formato de fecha inválido';
+                  }
+                  return fecha.toLocaleString('es-DO', {
+                    year: 'numeric',
+                    month: '2-digit',
+                    day: '2-digit',
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    second: '2-digit',
+                    hour12: true
+                  });
+                } catch (error) {
+                  console.error('Error al procesar la fecha:', error);
+                  return 'Error al procesar la fecha';
+                }
+              })()}
+            </Descriptions.Item>
+          </Descriptions>
+        )}
+      </Modal>
+
+      {/* Modal de Detalles de Proveedor */}
+      <Modal
+        title="Detalles del Proveedor"
+        open={modalDetallesProveedorVisible}
+        onCancel={() => setModalDetallesProveedorVisible(false)}
+        footer={[
+          <Button key="close" onClick={() => setModalDetallesProveedorVisible(false)}>
+            Cerrar
+          </Button>
+        ]}
+        width={600}
+      >
+        {proveedorSeleccionado && (
+          <Descriptions bordered column={1}>
+            <Descriptions.Item label="ID">{proveedorSeleccionado.id_proveedor}</Descriptions.Item>
+            <Descriptions.Item label="Tipo">{proveedorSeleccionado.tipo_proveedor}</Descriptions.Item>
+            <Descriptions.Item label="Nombre">{proveedorSeleccionado.nombre_proveedor}</Descriptions.Item>
+            <Descriptions.Item label="Teléfono">{proveedorSeleccionado.tel_proveedor}</Descriptions.Item>
+            <Descriptions.Item label="Correo">{proveedorSeleccionado.correo_proveedor}</Descriptions.Item>
+            <Descriptions.Item label="Dirección" span={2}>
+              {(() => {
+                if (!proveedorSeleccionado.direccion) {
+                  return 'No especificada';
+                }
+                const { calle, sector, ciudad } = proveedorSeleccionado.direccion;
+                return (
+                  <>
+                    {calle}, {sector}
+                    <br />
+                    {ciudad?.nombre_ciudad}, {ciudad?.provincia?.nombre_provincia}
+                  </>
+                );
+              })()}
+            </Descriptions.Item>
+            <Descriptions.Item label="Estado">{proveedorSeleccionado.estado_proveedor}</Descriptions.Item>
+          </Descriptions>
+        )}
+      </Modal>
+
+      {/* Modal de Detalles de Decoración */}
+      <Modal
+        title="Detalles de la Decoración"
+        open={modalDetallesDecoracionVisible}
+        onCancel={() => setModalDetallesDecoracionVisible(false)}
+        footer={[
+          <Button key="close" onClick={() => setModalDetallesDecoracionVisible(false)}>
+            Cerrar
+          </Button>
+        ]}
+        width={1000}
+      >
+        {decoracionSeleccionada && (
+          <>
+            <Descriptions bordered column={2}>
+              <Descriptions.Item label="ID de Decoración" span={2}>{decoracionSeleccionada.id_decoracion}</Descriptions.Item>
+              <Descriptions.Item label="Evento" span={2}>
+                ID: {decoracionSeleccionada.evento?.id_evento} - 
+                Tipo: {decoracionSeleccionada.evento?.tipo_evento?.tipo_evento || 'No especificado'}
+                <br />
+                Cliente: {decoracionSeleccionada.evento?.cliente?.nombre_usuario} {decoracionSeleccionada.evento?.cliente?.apellido_usuario}
+              </Descriptions.Item>
+              <Descriptions.Item label="Tema" span={2}>{decoracionSeleccionada.tema_decoracion}</Descriptions.Item>
+              <Descriptions.Item label="Colores" span={2}>{decoracionSeleccionada.colores_decoracion}</Descriptions.Item>
+              <Descriptions.Item label="Precio Neto">RD$ {decoracionSeleccionada.precioneto_decoracion?.toLocaleString('es-DO', { minimumFractionDigits: 2 })}</Descriptions.Item>
+              <Descriptions.Item label="ITBIS">RD$ {decoracionSeleccionada.itbis_decoracion?.toLocaleString('es-DO', { minimumFractionDigits: 2 })}</Descriptions.Item>
+              <Descriptions.Item label="Total" span={2}>RD$ {decoracionSeleccionada.total_decoracion?.toLocaleString('es-DO', { minimumFractionDigits: 2 })}</Descriptions.Item>
+              <Descriptions.Item label="Estado" span={2}>{decoracionSeleccionada.estado_decoracion}</Descriptions.Item>
+            </Descriptions>
+
+            {decoracionSeleccionada.detalle_decoracion && decoracionSeleccionada.detalle_decoracion.length > 0 && (
+              <div style={{ marginTop: '20px' }}>
+                <Title level={4}>Elementos de Decoración</Title>
+                <Table
+                  dataSource={decoracionSeleccionada.detalle_decoracion}
+                  columns={[
+                    {
+                      title: 'Elemento',
+                      dataIndex: 'elemento_decoracion',
+                      key: 'elemento_decoracion',
+                    },
+                    {
+                      title: 'Cantidad',
+                      dataIndex: 'cantelemento_decoracion',
+                      key: 'cantelemento_decoracion',
+                    },
+                    {
+                      title: 'Precio Unitario',
+                      dataIndex: 'precio_elemento',
+                      key: 'precio_elemento',
+                      render: (precio: number) => `RD$ ${precio.toLocaleString('es-DO', { minimumFractionDigits: 2 })}`,
+                    },
+                    {
+                      title: 'Precio Total',
+                      dataIndex: 'precio_decoracion',
+                      key: 'precio_decoracion',
+                      render: (precio: number) => `RD$ ${precio.toLocaleString('es-DO', { minimumFractionDigits: 2 })}`,
+                    },
+                    {
+                      title: 'Estado',
+                      dataIndex: 'estado_detdecoracion',
+                      key: 'estado_detdecoracion',
+                      render: (estado: string) => (
+                        <Tag color={estado === 'Aceptado' ? 'green' : 'red'}>
+                          {estado}
+                        </Tag>
+                      ),
+                    },
+                    {
+                      title: 'Acciones',
+                      key: 'acciones',
+                      render: (_, record) => (
+                        <Space>
+                          <Button
+                            type="text"
+                            icon={<EditOutlined />}
+                            onClick={() => {
+                              // Aquí irá la lógica para editar el elemento
+                              console.log('Editar elemento:', record);
+                            }}
+                          />
+                          <Button
+                            type="text"
+                            danger
+                            icon={<DeleteOutlined />}
+                            onClick={() => {
+                              // Aquí irá la lógica para eliminar el elemento
+                              console.log('Eliminar elemento:', record);
+                            }}
+                          />
+                        </Space>
+                      ),
+                    },
+                  ]}
+                  pagination={false}
+                  rowKey="id_detdecoracion"
+                />
+              </div>
+            )}
+          </>
+        )}
+      </Modal>
+
+      {/* Modal de Detalles de Asignación */}
+      <Modal
+        title="Detalles de la Asignación"
+        open={modalDetallesAsignacionVisible}
+        onCancel={() => setModalDetallesAsignacionVisible(false)}
+        footer={[
+          <Button key="close" onClick={() => setModalDetallesAsignacionVisible(false)}>
+            Cerrar
+          </Button>
+        ]}
+        width={600}
+      >
+        {asignacionSeleccionada && (
+          <Descriptions bordered column={1}>
+            <Descriptions.Item label="Evento">
+              ID: {asignacionSeleccionada.evento?.id_evento}
+              <br />
+              Cliente: {asignacionSeleccionada.evento?.cliente?.nombre_usuario} {asignacionSeleccionada.evento?.cliente?.apellido_usuario}
+            </Descriptions.Item>
+            <Descriptions.Item label="Fecha del Evento">
+              {asignacionSeleccionada.evento?.fecha_evento} {asignacionSeleccionada.evento?.hora_evento}
+            </Descriptions.Item>
+            <Descriptions.Item label="Empleado">
+              {asignacionSeleccionada.empleado?.nombre_usuario} {asignacionSeleccionada.empleado?.apellido_usuario}
+            </Descriptions.Item>
+            <Descriptions.Item label="Cédula del Empleado">
+              {asignacionSeleccionada.empleado?.cedula_usuario}
+            </Descriptions.Item>
+            <Descriptions.Item label="Puesto">{asignacionSeleccionada.puesto_evento}</Descriptions.Item>
+          </Descriptions>
+        )}
+      </Modal>
+
+      {/* Formulario de Edición de Evento */}
+      <EventoForm
+        visible={showEventoForm}
+        onCancel={() => {
+          setShowEventoForm(false);
+          setEventoSeleccionado(null);
+        }}
+        onSubmit={async (values) => {
+          try {
+            const token = localStorage.getItem('token');
+            if (!token) {
+              message.error('No hay sesión activa');
+              return;
+            }
+
+            const response = await fetch(`${apiUrl}/evento/${eventoSeleccionado?.id_evento}`, {
+              method: 'PUT',
+              headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+              },
+              body: JSON.stringify(values)
+            });
+
+            if (!response.ok) {
+              throw new Error('Error al actualizar el evento');
+            }
+
+            message.success('Evento actualizado exitosamente');
+            setShowEventoForm(false);
+            setEventoSeleccionado(null);
+            fetchData();
+          } catch (error) {
+            console.error('Error al actualizar el evento:', error);
+            message.error('Error al actualizar el evento');
+          }
+        }}
+        loading={loading}
+        clientes={clientes}
+        asesores={asesores}
+        tiposEvento={tiposEvento}
+        provincias={provincias}
+        ciudades={ciudades}
+        loadingClientes={loadingClientes}
+        loadingAsesores={loadingAsesores}
+        loadingTipos={loadingTipos}
+        loadingProvincias={loadingProvincias}
+        loadingCiudades={loadingCiudades}
+        initialValues={eventoSeleccionado}
+      />
+
+      {/* Formulario de Edición de Usuario */}
+      <UsuarioForm
+        visible={showUsuarioForm}
+        onCancel={() => {
+          setShowUsuarioForm(false);
+          setUsuarioSeleccionado(null);
+        }}
+        onSubmit={async (values) => {
+          try {
+            const token = localStorage.getItem('token');
+            if (!token) {
+              message.error('No hay sesión activa');
+              return;
+            }
+
+            const response = await fetch(`${apiUrl}/usuario/${usuarioSeleccionado?.cedula_usuario}`, {
+              method: 'PUT',
+              headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+              },
+              body: JSON.stringify(values)
+            });
+
+            if (!response.ok) {
+              throw new Error('Error al actualizar el usuario');
+            }
+
+            message.success('Usuario actualizado exitosamente');
+            setShowUsuarioForm(false);
+            setUsuarioSeleccionado(null);
+            fetchData();
+          } catch (error) {
+            console.error('Error al actualizar el usuario:', error);
+            message.error('Error al actualizar el usuario');
+          }
+        }}
+        loading={loading}
+        initialValues={usuarioSeleccionado}
+      />
+
+      {/* Formulario de Edición de Proveedor */}
+      <ProveedorForm
+        visible={showProveedorForm}
+        onCancel={() => {
+          setShowProveedorForm(false);
+          setProveedorSeleccionado(null);
+        }}
+        onSubmit={async (values) => {
+          try {
+            const token = localStorage.getItem('token');
+            if (!token) {
+              message.error('No hay sesión activa');
+              return;
+            }
+
+            const response = await fetch(`${apiUrl}/proveedor/${proveedorSeleccionado?.id_proveedor}`, {
+              method: 'PUT',
+              headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+              },
+              body: JSON.stringify(values)
+            });
+
+            if (!response.ok) {
+              throw new Error('Error al actualizar el proveedor');
+            }
+
+            message.success('Proveedor actualizado exitosamente');
+            setShowProveedorForm(false);
+            setProveedorSeleccionado(null);
+            fetchData();
+          } catch (error) {
+            console.error('Error al actualizar el proveedor:', error);
+            message.error('Error al actualizar el proveedor');
+          }
+        }}
+        loading={loading}
+        initialValues={proveedorSeleccionado}
+      />
+
+      {/* Formulario de Edición de Asignación */}
+      <AsignacionEmpleadoForm
+        visible={showAsignacionForm}
+        onCancel={() => {
+          setShowAsignacionForm(false);
+          setAsignacionSeleccionada(null);
+        }}
+        onSubmit={async (values) => {
+          try {
+            const token = localStorage.getItem('token');
+            if (!token) {
+              message.error('No hay sesión activa');
+              return;
+            }
+
+            const response = await fetch(`${apiUrl}/asignacion/${asignacionSeleccionada?.id_evento}/${asignacionSeleccionada?.empleado_evento}`, {
+              method: 'PUT',
+              headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+              },
+              body: JSON.stringify(values)
+            });
+
+            if (!response.ok) {
+              throw new Error('Error al actualizar la asignación');
+            }
+
+            message.success('Asignación actualizada exitosamente');
+            setShowAsignacionForm(false);
+            setAsignacionSeleccionada(null);
+            fetchData();
+          } catch (error) {
+            console.error('Error al actualizar la asignación:', error);
+            message.error('Error al actualizar la asignación');
+          }
+        }}
+        loading={loading}
+        initialValues={asignacionSeleccionada}
+      />
+
+      {/* Formulario de Edición de Decoración */}
+      <DecoracionForm
+        visible={showDecoracionForm}
+        onCancel={() => {
+          setShowDecoracionForm(false);
+          setDecoracionSeleccionada(null);
+        }}
+        onSubmit={async (values) => {
+          try {
+            const token = localStorage.getItem('token');
+            if (!token) {
+              message.error('No hay sesión activa');
+              return;
+            }
+
+            const response = await fetch(`${apiUrl}/decoracion/${decoracionSeleccionada?.id_decoracion}`, {
+              method: 'PUT',
+              headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+              },
+              body: JSON.stringify(values)
+            });
+
+            if (!response.ok) {
+              throw new Error('Error al actualizar la decoración');
+            }
+
+            message.success('Decoración actualizada exitosamente');
+            setShowDecoracionForm(false);
+            setDecoracionSeleccionada(null);
+            fetchData();
+          } catch (error) {
+            console.error('Error al actualizar la decoración:', error);
+            message.error('Error al actualizar la decoración');
+          }
+        }}
+        loading={loading}
+        initialValues={decoracionSeleccionada}
+      />
     </div>
   );
 };
 
 export default WelcomeAdmin;
-

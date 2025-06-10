@@ -1,7 +1,7 @@
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
-import sequelize from './config';
+import sequelize from './database/database';
 import { syncDatabase } from './config/syncDatabase';
 import path from 'path';
 
@@ -44,11 +44,11 @@ app.use(express.json());
 app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 
 // Rutas
- app.use('/api/auth', authRoutes);
+app.use('/api/auth', authRoutes);
 app.use('/api/elemento', elementoRoutes);
- app.use('/api/comentario', comentarioRoutes);
+app.use('/api/comentario', comentarioRoutes);
 app.use('/api/usuario', usersRoutes);
- app.use('/api/evento', eventoRoutes);
+app.use('/api/evento', eventoRoutes);
 app.use('/api/alquiler', alquilerRoutes);
 app.use('/api/decoracion', decoracionRoutes);
 app.use('/api/direccion', direccionRoutes);
@@ -63,15 +63,18 @@ app.use('/api/proveedor', proveedorRoutes);
 app.use('/api/vehiculo', vehiculoRoutes);
 app.use('/api/reporte', reporteRoutes);
 
-
-
-
-
-
-
 // Ruta de prueba
 app.get('/', (req, res) => {
   res.send('Servidor funcionando correctamente');
+});
+
+// Middleware de manejo de errores global
+app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
+  console.error('Error en el servidor:', err);
+  res.status(500).json({
+    error: 'Error interno del servidor',
+    mensaje: err.message || 'Ocurrió un error en el servidor'
+  });
 });
 
 // Iniciar servidor

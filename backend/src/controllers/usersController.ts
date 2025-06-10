@@ -44,7 +44,8 @@ export const getAllUsers = async (req: Request, res: Response) => {
         'correo_usuario',
         'usuario_login',
         'id_rol',
-        'estado_usuario'
+        'estado_usuario',
+        'creacion_usuario'
       ],
       include: [{
         association: 'rol',
@@ -71,7 +72,8 @@ export const getAllUsers = async (req: Request, res: Response) => {
         usuario_login: usuario.usuario_login,
         id_rol: usuario.id_rol,
         estado_usuario: usuario.estado_usuario,
-        rol_nombre: usuario.rol?.nombre_rol
+        rol_nombre: usuario.rol?.nombre_rol,
+        creacion_usuario: usuario.creacion_usuario
       }))
     });
 
@@ -101,7 +103,8 @@ export const getUsersByRole = async (req: Request, res: Response) => {
         'tel_usuario',
         'usuario_login',
         'id_rol',
-        'estado_usuario'
+        'estado_usuario',
+        'creacion_usuario'
       ],
       include: [{
         association: 'rol',
@@ -128,7 +131,8 @@ export const getUsersByRole = async (req: Request, res: Response) => {
         usuario_login: usuario.usuario_login,
         id_rol: usuario.id_rol,
         estado_usuario: usuario.estado_usuario,
-        rol_nombre: usuario.rol?.nombre_rol
+        rol_nombre: usuario.rol?.nombre_rol,
+        creacion_usuario: usuario.creacion_usuario
       }))
     });
 
@@ -157,7 +161,8 @@ export const getUsersByStatus = async (req: Request, res: Response) => {
         'tel_usuario',
         'usuario_login',
         'id_rol',
-        'estado_usuario'
+        'estado_usuario',
+        'creacion_usuario'
       ],
       include: [{
         association: 'rol',
@@ -184,7 +189,8 @@ export const getUsersByStatus = async (req: Request, res: Response) => {
         usuario_login: usuario.usuario_login,
         id_rol: usuario.id_rol,
         estado_usuario: usuario.estado_usuario,
-        rol_nombre: usuario.rol?.nombre_rol
+        rol_nombre: usuario.rol?.nombre_rol,
+        creacion_usuario: usuario.creacion_usuario
       }))
     });
 
@@ -210,7 +216,6 @@ export const searchUsers = async (req: Request, res: Response) => {
 
     const usuarios = await Usuario.findAll({
       where: {
-        estado_usuario: 'Activo',
         [Op.or]: [
           { nombre_usuario: { [Op.like]: `%${query}%` } },
           { apellido_usuario: { [Op.like]: `%${query}%` } },
@@ -227,7 +232,8 @@ export const searchUsers = async (req: Request, res: Response) => {
         'tel_usuario',
         'usuario_login',
         'id_rol',
-        'estado_usuario'
+        'estado_usuario',
+        'creacion_usuario'
       ],
       include: [{
         association: 'rol',
@@ -239,7 +245,7 @@ export const searchUsers = async (req: Request, res: Response) => {
     if (!usuarios || usuarios.length === 0) {
       return res.status(404).json({ 
         error: 'No se encontraron usuarios',
-        mensaje: `No hay usuarios activos que coincidan con la búsqueda: ${query}`
+        mensaje: `No hay usuarios que coincidan con la búsqueda: ${query}`
       });
     }
 
@@ -254,7 +260,8 @@ export const searchUsers = async (req: Request, res: Response) => {
         usuario_login: usuario.usuario_login,
         id_rol: usuario.id_rol,
         estado_usuario: usuario.estado_usuario,
-        rol_nombre: usuario.rol?.nombre_rol
+        rol_nombre: usuario.rol?.nombre_rol,
+        creacion_usuario: usuario.creacion_usuario
       }))
     });
 
@@ -262,7 +269,7 @@ export const searchUsers = async (req: Request, res: Response) => {
     console.error('Error al buscar usuarios:', error);
     res.status(500).json({ 
       error: 'Error al buscar usuarios',
-      mensaje: 'Ocurrió un error al realizar la búsqueda de usuarios'
+      mensaje: 'Ocurrió un error al realizar la búsqueda'
     });
   }
 };
@@ -398,6 +405,48 @@ export const getAllRoles = async (req: Request, res: Response) => {
     res.status(500).json({ 
       error: 'Error al obtener roles',
       mensaje: 'Ocurrió un error al cargar los roles'
+    });
+  }
+};
+
+export const updateUserStatus = async (req: Request, res: Response) => {
+  try {
+    const { cedula } = req.params;
+    const { estado } = req.body;
+
+    if (!estado) {
+      return res.status(400).json({
+        error: 'Estado requerido',
+        mensaje: 'Se requiere especificar el nuevo estado del usuario'
+      });
+    }
+
+    const usuario = await Usuario.findByPk(cedula);
+
+    if (!usuario) {
+      return res.status(404).json({
+        error: 'Usuario no encontrado',
+        mensaje: `No existe un usuario con la cédula: ${cedula}`
+      });
+    }
+
+    await usuario.update({ estado_usuario: estado });
+
+    res.json({
+      mensaje: 'Estado del usuario actualizado exitosamente',
+      usuario: {
+        cedula_usuario: usuario.cedula_usuario,
+        nombre_usuario: usuario.nombre_usuario,
+        apellido_usuario: usuario.apellido_usuario,
+        estado_usuario: usuario.estado_usuario
+      }
+    });
+
+  } catch (error) {
+    console.error('Error al actualizar estado del usuario:', error);
+    res.status(500).json({
+      error: 'Error al actualizar estado del usuario',
+      mensaje: 'Ocurrió un error al actualizar el estado del usuario'
     });
   }
 };

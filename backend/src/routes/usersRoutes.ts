@@ -6,7 +6,8 @@ import {
   searchUsers,
   updateUser,
   deleteUser,
-  getAllRoles
+  getAllRoles,
+  updateUserStatus
 } from '../controllers/usersController';
 
 const router = Router();
@@ -62,6 +63,14 @@ router.put('/:cedula', async (req, res, next) => {
 router.delete('/:cedula', async (req, res, next) => {
   try {
     await deleteUser(req, res);
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.patch('/:cedula/estado', async (req, res, next) => {
+  try {
+    await updateUserStatus(req, res);
   } catch (error) {
     next(error);
   }

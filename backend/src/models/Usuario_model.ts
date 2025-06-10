@@ -14,6 +14,7 @@ import * as bcrypt from 'bcryptjs';
 import Rol from './Rol_model';
 import Evento from './Evento_model';
 import DetalleTransporte from './DetalleTransporte_model';
+import EmpleadoEvento from './EmpleadoEvento_model';
 
 @Table({
   tableName: 'usuario',
@@ -242,4 +243,10 @@ export default class Usuario extends Model {
   })
   transportesConducidos!: DetalleTransporte[];
 
+  @HasMany(() => EmpleadoEvento, {
+    foreignKey: 'empleado_evento',
+    sourceKey: 'cedula_usuario',
+    as: 'empleadosAsignados'
+  })
+  empleadosAsignados!: EmpleadoEvento[];
 }

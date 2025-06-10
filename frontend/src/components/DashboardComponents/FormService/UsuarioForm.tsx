@@ -13,6 +13,7 @@ interface UsuarioFormProps {
   onCancel: () => void;
   onSubmit: (values: any) => void;
   loading?: boolean;
+  initialValues?: Usuario | null;
 }
 
 const UsuarioForm: React.FC<UsuarioFormProps> = ({
@@ -20,6 +21,7 @@ const UsuarioForm: React.FC<UsuarioFormProps> = ({
   onCancel,
   onSubmit,
   loading = false,
+  initialValues,
 }) => {
   const apiUrl = import.meta.env.VITE_API_BASE_URL;
   const [form] = Form.useForm();
@@ -32,6 +34,12 @@ const UsuarioForm: React.FC<UsuarioFormProps> = ({
       fetchRoles();
     }
   }, [visible]);
+
+  useEffect(() => {
+    if (visible && initialValues) {
+      form.setFieldsValue(initialValues);
+    }
+  }, [visible, initialValues, form]);
 
   const fetchRoles = async () => {
     try {
@@ -56,143 +64,122 @@ const UsuarioForm: React.FC<UsuarioFormProps> = ({
     }
   };
 
-  const handleSubmit = async () => {
+  const formatCedula = (value: string) => {
+    // Eliminar todos los caracteres no numéricos
+    const numbers = value.replace(/\D/g, '');
+    // Aplicar formato XXX-XXXXXXX-X
+    if (numbers.length <= 3) return numbers;
+    if (numbers.length <= 10) return `${numbers.slice(0, 3)}-${numbers.slice(3)}`;
+    return `${numbers.slice(0, 3)}-${numbers.slice(3, 10)}-${numbers.slice(10, 11)}`;
+  };
+
+  const formatTelefono = (value: string) => {
+    // Eliminar todos los caracteres no numéricos
+    const numbers = value.replace(/\D/g, '');
+    // Aplicar formato XXX-XXX-XXXX
+    if (numbers.length <= 3) return numbers;
+    if (numbers.length <= 6) return `${numbers.slice(0, 3)}-${numbers.slice(3)}`;
+    return `${numbers.slice(0, 3)}-${numbers.slice(3, 6)}-${numbers.slice(6, 10)}`;
+  };
+
+  const handleCedulaChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const formattedValue = formatCedula(e.target.value);
+    form.setFieldValue('cedula_usuario', formattedValue);
+  };
+
+  const handleTelefonoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const formattedValue = formatTelefono(e.target.value);
+    form.setFieldValue('telefono_usuario', formattedValue);
+  };
+
+  const handleSubmit = async (values: any) => {
     try {
-      const values = await form.validateFields();
       setIsSubmitting(true);
 
-      const response = await fetch(`${apiUrl}/auth/register-user`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(values)
-      });
+      const userData = {
+        cedula_usuario: values.cedula_usuario,
+        nombre_usuario: values.nombre_usuario,
+        apellido_usuario: values.apellido_usuario,
+        usuario_login: values.usuario_login,
+        correo_usuario: values.correo_usuario,
+        tel_usuario: values.tel_usuario,
+        id_rol: values.id_rol,
+        contrasena_login: values.contrasena_login
+      };
 
-      const responseText = await response.text();
-      console.log('Respuesta completa del servidor (ERROR DUPLICADO):', responseText);
+      let response;
+      if (initialValues) {
+        // Si estamos editando, actualizamos el usuario existente
+        response = await fetch(`${apiUrl}/usuario/${initialValues.cedula_usuario}`, {
+          method: 'PUT',
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('token')}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(userData)
+        });
+      } else {
+        // Si estamos creando, insertamos un nuevo usuario
+        response = await fetch(`${apiUrl}/usuario`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('token')}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(userData)
+        });
+      }
 
       if (!response.ok) {
-        let errorData: any = {};
-        try {
-          errorData = JSON.parse(responseText);
-        } catch (e) {
-          errorData.mensaje = responseText;
-        }
-        throw errorData;
+        const errorData = await response.json();
+        throw new Error(errorData.mensaje || `Error al ${initialValues ? 'actualizar' : 'crear'} el usuario`);
       }
 
-      const data = JSON.parse(responseText);
-
-      message.success('Usuario creado exitosamente');
-      onSubmit(data.usuario);
+      const data = await response.json();
+      message.success(`Usuario ${initialValues ? 'actualizado' : 'creado'} exitosamente`);
+      onSubmit(data);
       form.resetFields();
       onCancel();
-    } catch (error: any) {
-      console.error('Error al crear usuario:', error);
-
-      let globalErrorMessage = 'Error al crear el usuario.';
-      let specificBackendErrorMessage = '';
-      let fieldErrors: { name: string; errors: string[] }[] = [];
-
-      if (error.error) {
-        specificBackendErrorMessage = error.error;
-      } else if (error.message) {
-        specificBackendErrorMessage = error.message;
-      } else if (error.mensaje) {
-        specificBackendErrorMessage = error.mensaje;
-      } else if (typeof error === 'string') {
-        specificBackendErrorMessage = error;
-      }
-
-      globalErrorMessage = specificBackendErrorMessage || globalErrorMessage;
-
-      if (error.errors && typeof error.errors === 'object' && Object.keys(error.errors).length > 0) {
-        for (const fieldName in error.errors) {
-          if (Object.prototype.hasOwnProperty.call(error.errors, fieldName)) {
-            fieldErrors.push({
-              name: fieldName,
-              errors: [error.errors[fieldName]]
-            });
-          }
-        }
-        globalErrorMessage = specificBackendErrorMessage || 'Errores de validación. Por favor, revise los campos.';
-      } else if (specificBackendErrorMessage) {
-        const lowerCaseErrorMessage = specificBackendErrorMessage.toLowerCase();
-
-        if (lowerCaseErrorMessage.includes('usuario ya existe') || lowerCaseErrorMessage.includes('nombre de usuario ya está en uso') || lowerCaseErrorMessage.includes('duplicate entry') || lowerCaseErrorMessage.includes('unique constraint failed')) {
-          fieldErrors.push({ name: 'usuario_login', errors: [specificBackendErrorMessage] });
-        }
-        if (lowerCaseErrorMessage.includes('cédula ya existe') || lowerCaseErrorMessage.includes('cédula ya está registrada') || lowerCaseErrorMessage.includes('duplicate entry') || lowerCaseErrorMessage.includes('unique constraint failed')) {
-          fieldErrors.push({ name: 'cedula_usuario', errors: [specificBackendErrorMessage] });
-        }
-        if (lowerCaseErrorMessage.includes('correo ya existe') || lowerCaseErrorMessage.includes('correo ya está en uso') || lowerCaseErrorMessage.includes('duplicate entry') || lowerCaseErrorMessage.includes('unique constraint failed')) {
-          fieldErrors.push({ name: 'correo_usuario', errors: [specificBackendErrorMessage] });
-        }
-
-        if (specificBackendErrorMessage.startsWith('<!DOCTYPE html>')) {
-            globalErrorMessage = 'Error de servidor: No se pudo procesar la solicitud. Por favor, intente más tarde.';
-            form.setFields(Object.keys(form.getFieldsValue()).map(name => ({ name, errors: [] })));
-            fieldErrors = [];
-        }
-      }
-
-      if (fieldErrors.length > 0) {
-        form.setFields(fieldErrors);
-      } else {
-        if (!specificBackendErrorMessage.startsWith('<!DOCTYPE html>')) {
-          form.setFields(Object.keys(form.getFieldsValue()).map(name => ({ name, errors: [] })));
-        }
-      }
-      message.error(globalErrorMessage);
+    } catch (error) {
+      console.error(`Error al ${initialValues ? 'actualizar' : 'crear'} usuario:`, error);
+      message.error(error instanceof Error ? error.message : `Error al ${initialValues ? 'actualizar' : 'crear'} el usuario`);
     } finally {
       setIsSubmitting(false);
     }
   };
 
+  const handleCancel = () => {
+    form.resetFields();
+    onCancel();
+  };
+
   return (
     <Modal
-      title="Nuevo Usuario"
+      title={initialValues ? "Editar Usuario" : "Crear Nuevo Usuario"}
       open={visible}
-      onCancel={onCancel}
-      footer={[
-        <Button key="cancel" onClick={onCancel} className="cancel-button">
-          Cancelar
-        </Button>,
-        <Button 
-          key="submit" 
-          type="primary" 
-          onClick={handleSubmit}
-          loading={loading || isSubmitting}
-          className="submit-button"
-        >
-          Crear Usuario
-        </Button>
-      ]}
-      width={600}
-      className="dashboard-modal"
+      onCancel={handleCancel}
+      footer={null}
+      width={800}
     >
       <Form
         form={form}
         layout="vertical"
-        className="dashboard-form"
+        onFinish={handleSubmit}
+        className="usuario-form"
       >
         <Form.Item
           name="cedula_usuario"
           label="Cédula"
           rules={[
             { required: true, message: 'Por favor ingrese la cédula' },
-            { validator: async (_, value) => {
-                if (!value) return Promise.resolve();
-                const error = validateCedula(value);
-                if (error) return Promise.reject(new Error(error));
-                return Promise.resolve();
-              }
-            }
+            { pattern: /^\d{3}-\d{7}-\d{1}$/, message: 'Formato de cédula inválido (XXX-XXXXXXX-X)' }
           ]}
         >
-          <Input placeholder="Ingrese la cédula" maxLength={13} />
+          <Input 
+            placeholder="XXX-XXXXXXX-X" 
+            maxLength={13}
+            onChange={handleCedulaChange}
+          />
         </Form.Item>
 
         <Form.Item
@@ -278,20 +265,18 @@ const UsuarioForm: React.FC<UsuarioFormProps> = ({
         </Form.Item>
 
         <Form.Item
-          name="tel_usuario"
+          name="telefono_usuario"
           label="Teléfono"
           rules={[
             { required: true, message: 'Por favor ingrese el teléfono' },
-            { validator: async (_, value) => {
-                if (!value) return Promise.resolve();
-                const error = validatePhoneNumber(value);
-                if (error) return Promise.reject(new Error(error));
-                return Promise.resolve();
-              }
-            }
+            { pattern: /^\d{3}-\d{3}-\d{4}$/, message: 'Formato de teléfono inválido (XXX-XXX-XXXX)' }
           ]}
         >
-          <Input placeholder="Ingrese el teléfono" maxLength={12} />
+          <Input 
+            placeholder="XXX-XXX-XXXX" 
+            maxLength={12}
+            onChange={handleTelefonoChange}
+          />
         </Form.Item>
 
         <Form.Item
@@ -311,16 +296,13 @@ const UsuarioForm: React.FC<UsuarioFormProps> = ({
           <Input placeholder="Ingrese el correo electrónico" maxLength={100} />
         </Form.Item>
 
-        <Form.Item
-          name="estado_usuario"
-          label="Estado"
-          initialValue="Activo"
-        >
-          <Select>
-            <Select.Option value="Activo">Activo</Select.Option>
-            <Select.Option value="Inactivo">Inactivo</Select.Option>
-            <Select.Option value="Eliminado">Eliminado</Select.Option>
-          </Select>
+        <Form.Item>
+          <div className="form-buttons">
+            <Button onClick={handleCancel}>Cancelar</Button>
+            <Button type="primary" htmlType="submit" loading={isSubmitting}>
+              {initialValues ? "Actualizar Usuario" : "Crear Usuario"}
+            </Button>
+          </div>
         </Form.Item>
       </Form>
     </Modal>
