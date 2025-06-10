@@ -287,33 +287,39 @@ const RentAdmin: React.FC = () => {
   };
 
   const handleCantidadChange = (elemento: Elemento, cantidad: number) => {
-    if (cantidad === 0) {
-      setElementosSeleccionados(prev => 
-        prev.filter(item => item.id_elemento !== elemento.id_elemento)
-      );
-    } else {
-      setElementosSeleccionados(prev => {
-        const exists = prev.find(item => item.id_elemento === elemento.id_elemento);
-        if (exists) {
-          return prev.map(item =>
-            item.id_elemento === elemento.id_elemento
-              ? { ...item, cantidad_seleccionada: cantidad }
-              : item
-          );
-        } else {
-          return [...prev, { ...elemento, cantidad_seleccionada: cantidad }];
-        }
-      });
+    if (cantidad < 0 || cantidad > elemento.cantidad_disponible) {
+      message.error(`La cantidad debe estar entre 0 y ${elemento.cantidad_disponible}`);
+      return;
     }
+
+    setElementosSeleccionados(prevElementos => {
+      if (cantidad === 0) {
+        // Si la cantidad es 0, remover el elemento
+        return prevElementos.filter(e => e.id_elemento !== elemento.id_elemento);
+      }
+
+      const elementoExistente = prevElementos.find(e => e.id_elemento === elemento.id_elemento);
+      if (elementoExistente) {
+        // Si el elemento ya existe, actualizar su cantidad
+        return prevElementos.map(e =>
+          e.id_elemento === elemento.id_elemento
+            ? { ...e, cantidad_seleccionada: cantidad }
+            : e
+        );
+      } else {
+        // Si el elemento no existe, agregarlo
+        return [...prevElementos, { ...elemento, cantidad_seleccionada: cantidad }];
+      }
+    });
   };
 
   const handleContinuar = () => {
-    if (elementosSeleccionados.length === 0) {
-      message.warning('Seleccione al menos un elemento');
-      return;
+    if (!editingAlquiler) {
+      setShowCatalogo(false);
+      setShowFormulario(true);
+    } else {
+      setShowCatalogo(false);
     }
-    setShowCatalogo(false);
-    setShowFormulario(true);
   };
 
   const handleSubmitAlquiler = async (values: any) => {
@@ -401,6 +407,9 @@ const RentAdmin: React.FC = () => {
   };
 
   const handleEdit = (record: any) => {
+    // Asegurarse de que el formulario de agregar alquiler no se muestre
+    setShowFormulario(false);
+    
     // Obtener los elementos actuales del alquiler
     const fetchElementosAlquiler = async () => {
       try {
@@ -426,7 +435,7 @@ const RentAdmin: React.FC = () => {
           id_elemento: detalle.id_elemento,
           nombre_elemento: detalle.nombre_elemento,
           precio_elemento: detalle.precio_elemento,
-          cantidad_disponible: detalle.cantidad_disponible,
+          cantidad_disponible: detalle.cantidad_disponible + detalle.cantidad_alquiler, // Sumar la cantidad actual del alquiler
           imagen_url: detalle.imagen_url,
           subcategoria: detalle.subcategoria,
           cantidad_seleccionada: detalle.cantidad_alquiler,
@@ -458,6 +467,11 @@ const RentAdmin: React.FC = () => {
         return;
       }
       
+      if (elementosSeleccionados.length === 0) {
+        message.error('Por favor seleccione al menos un elemento');
+        return;
+      }
+
       // Calcular subtotales y totales
       const precioNeto = elementosSeleccionados.reduce((sum, elem) => 
         sum + (elem.precio_elemento * elem.cantidad_seleccionada), 0
@@ -475,26 +489,41 @@ const RentAdmin: React.FC = () => {
           id_elemento: elem.id_elemento,
           cantidad: elem.cantidad_seleccionada,
           precio_unitario: elem.precio_elemento,
-          subtotal: (elem.precio_elemento * elem.cantidad_seleccionada).toFixed(2)
+          subtotal: (elem.precio_elemento * elem.cantidad_seleccionada).toFixed(2),
+          estado_detalquiler: 'Aceptado'
         }))
       };
+
+      console.log('Enviando datos de actualización:', JSON.stringify(updateData, null, 2));
 
       await axios.patch(`${apiUrl}/alquiler/${editingAlquiler.id_alquiler}`, 
         updateData,
         {
           headers: {
-            'Authorization': `Bearer ${token}`
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
           }
         }
       );
+
       message.success('Alquiler actualizado correctamente');
       setShowEditModal(false);
       setEditingAlquiler(null);
       setElementosSeleccionados([]);
-      fetchAlquileres();
+      setShowFormulario(false);
+      
+      // Esperar un momento antes de recargar los alquileres
+      setTimeout(() => {
+        fetchAlquileres();
+        fetchElementos(); // Actualizar también la lista de elementos disponibles
+      }, 500);
     } catch (error) {
       console.error('Error al actualizar el alquiler:', error);
-      message.error('Error al actualizar el alquiler');
+      if (axios.isAxiosError(error) && error.response) {
+        message.error(error.response.data.mensaje || 'Error al actualizar el alquiler');
+      } else {
+        message.error('Error al actualizar el alquiler');
+      }
     }
   };
 
@@ -612,41 +641,33 @@ const RentAdmin: React.FC = () => {
 
       {/* Modal de Catálogo */}
       <Modal
-        title={
-          <div style={{ display: 'flex', alignItems: 'center' }}>
-            <span style={{ marginRight: 'auto' }}>Seleccionar Elementos</span>
-            <ResetIcon 
-              onClick={(e) => {
-                e.stopPropagation();
-                handleReset();
-              }}
-              title="Reiniciar selección"
-            />
-          </div>
-        }
+        title="Catálogo de Elementos"
         open={showCatalogo}
         onCancel={() => {
           setShowCatalogo(false);
-          setElementosSeleccionados([]);
+          // Solo resetear elementos si no estamos en modo edición
+          if (!editingAlquiler) {
+            setElementosSeleccionados([]);
+          }
         }}
-        width={800}
         footer={null}
+        width={800}
       >
-        <Space direction="vertical" style={{ width: '100%', marginBottom: 16 }}>
+        <Space style={{ marginBottom: 16 }}>
           <Search
-            placeholder="Buscar elementos"
+            placeholder="Buscar elementos..."
             onChange={(e) => setSearchText(e.target.value)}
             style={{ width: 200 }}
           />
           <Select
-            placeholder="Filtrar por categoría"
-            onChange={setFilterCategoria}
-            allowClear
             style={{ width: 200 }}
+            placeholder="Filtrar por categoría"
+            allowClear
+            onChange={(value) => setFilterCategoria(value)}
           >
-            {categorias.map((cat: any) => (
-              <Option key={cat.id_categoria} value={cat.nombre_categoria}>
-                {cat.nombre_categoria}
+            {categorias.map((categoria: any) => (
+              <Option key={categoria.id_categoria} value={categoria.id_categoria}>
+                {categoria.nombre_categoria}
               </Option>
             ))}
           </Select>
@@ -691,9 +712,21 @@ const RentAdmin: React.FC = () => {
         </ModalContent>
 
         {elementosSeleccionados.length > 0 && (
-          <ContinueButton onClick={handleContinuar}>
-            Continuar con el Alquiler <RightOutlined />
-          </ContinueButton>
+          <ButtonGroup>
+            <ResetButton onClick={handleReset}>
+              <ResetIcon />
+              Resetear Selección
+            </ResetButton>
+            <HeaderButton onClick={() => {
+              setShowCatalogo(false);
+              // Solo mostrar el formulario si no estamos en modo edición
+              if (!editingAlquiler) {
+                setShowFormulario(true);
+              }
+            }}>
+              Continuar <RightOutlined />
+            </HeaderButton>
+          </ButtonGroup>
         )}
       </Modal>
 
