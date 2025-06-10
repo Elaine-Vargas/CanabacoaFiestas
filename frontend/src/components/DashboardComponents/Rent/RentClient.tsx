@@ -17,8 +17,15 @@ import {
   ListItemText,
   ListItemSecondaryAction,
   Drawer,
-  CircularProgress
+  CircularProgress,
+  Snackbar,
+  Alert
 } from '@mui/material';
+import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
+import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
+import { DatePicker } from '@mui/x-date-pickers/DatePicker';
+import { TimePicker } from '@mui/x-date-pickers/TimePicker';
+import { es } from 'date-fns/locale';
 import ShoppingCartIcon from '@mui/icons-material/ShoppingCart';
 import DeleteIcon from '@mui/icons-material/Delete';
 import axios from 'axios';
@@ -32,6 +39,18 @@ interface CartItem {
   cantidad: number;
 }
 
+interface Evento {
+  id_evento: number;
+  id_usuario: number;
+  tipo_evento: string;
+  fecha_evento: string;
+  hora_inicio: string;
+  hora_fin: string;
+  lugar_evento: string;
+  descripcion: string;
+  estado_evento: string;
+}
+
 export default function RentClient() { 
   const apiUrl = import.meta.env.VITE_API_BASE_URL;
   const navigate = useNavigate();
@@ -40,14 +59,22 @@ export default function RentClient() {
   const userData = JSON.parse(localStorage.getItem('userData') || '{}');
   const [showEventoModal, setShowEventoModal] = useState(false);
   const [showNuevoEventoModal, setShowNuevoEventoModal] = useState(false);
-  const [eventos, setEventos] = useState([]);
+  const [eventos, setEventos] = useState<Evento[]>([]);
   const [items, setItems] = useState<any[]>([]);
   const [carritoItems, setCarritoItems] = useState<CartItem[]>([]);
   const [showCart, setShowCart] = useState(false);
+  const [notificacion, setNotificacion] = useState({
+    abierta: false,
+    mensaje: '',
+    tipo: 'success' as 'success' | 'error'
+  });
   const [nuevoEvento, setNuevoEvento] = useState({
     tipo_evento: '',
-    fecha_evento: '',
-    hora_evento: '',
+    fecha_evento: new Date(),
+    hora_inicio: new Date(),
+    hora_fin: new Date(),
+    lugar_evento: '',
+    descripcion: '',
     estado_evento: 'Pendiente'
   });
 
@@ -66,7 +93,7 @@ export default function RentClient() {
         const headers = { Authorization: `Bearer ${token}` };
 
         const [eventosRes, itemsRes] = await Promise.all([
-          axios.get(`${apiUrl}/eventos`, { headers }),
+          axios.get(`${apiUrl}/eventos/usuario/${userData.id_usuario}`, { headers }),
           axios.get(`${apiUrl}/elemento`, { headers })
         ]);
 
@@ -74,6 +101,11 @@ export default function RentClient() {
         setItems(itemsRes.data);
       } catch (error) {
         console.error('Error al cargar datos iniciales:', error);
+        setNotificacion({
+          abierta: true,
+          mensaje: 'Error al cargar los datos. Por favor, intente nuevamente.',
+          tipo: 'error'
+        });
       } finally {
         setLoading(false);
       }
@@ -82,46 +114,55 @@ export default function RentClient() {
     fetchInitialData();
   }, []);
 
-  if (loading) {
-    return (
-      <Box 
-        sx={{ 
-          display: 'flex', 
-          justifyContent: 'center', 
-          alignItems: 'center', 
-          height: '100vh' 
-        }}
-      >
-        <CircularProgress />
-      </Box>
-    );
-  }
+  const handleCrearEvento = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        setError('No tienes permisos para realizar esta acción');
+        navigate('/auth/login');
+        return;
+      }
 
-  if (error) {
-    return (
-      <Box 
-        sx={{ 
-          display: 'flex', 
-          justifyContent: 'center', 
-          alignItems: 'center', 
-          height: '100vh',
-          flexDirection: 'column',
-          gap: 2
-        }}
-      >
-        <Typography variant="h6" color="error">
-          {error}
-        </Typography>
-        <Button 
-          variant="contained" 
-          color="primary" 
-          onClick={() => navigate('/auth/login')}
-        >
-          Ir al login
-        </Button>
-      </Box>
-    );
-  }
+      const eventoData = {
+        ...nuevoEvento,
+        id_usuario: userData.id_usuario,
+        fecha_evento: nuevoEvento.fecha_evento.toISOString().split('T')[0],
+        hora_inicio: nuevoEvento.hora_inicio.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' }),
+        hora_fin: nuevoEvento.hora_fin.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })
+      };
+
+      const headers = { Authorization: `Bearer ${token}` };
+      const response = await axios.post(`${apiUrl}/eventos`, eventoData, { headers });
+
+      if (response.status === 200 || response.status === 201) {
+        const eventoCreado = response.data;
+        setEventos(prev => [...prev, eventoCreado]);
+        setShowNuevoEventoModal(false);
+        setNuevoEvento({
+          tipo_evento: '',
+          fecha_evento: new Date(),
+          hora_inicio: new Date(),
+          hora_fin: new Date(),
+          lugar_evento: '',
+          descripcion: '',
+          estado_evento: 'Pendiente'
+        });
+        
+        setNotificacion({
+          abierta: true,
+          mensaje: 'Evento creado exitosamente',
+          tipo: 'success'
+        });
+      }
+    } catch (error) {
+      console.error('Error al crear evento:', error);
+      setNotificacion({
+        abierta: true,
+        mensaje: 'Error al crear el evento. Por favor, intente nuevamente.',
+        tipo: 'error'
+      });
+    }
+  };
 
   const handleAddToCart = (item: any) => {
     const existingItem = carritoItems.find(cartItem => cartItem.id === item.id_elemento);
@@ -164,33 +205,46 @@ export default function RentClient() {
     };
   };
 
-  const handleCrearEvento = async () => {
-    try {
-      const token = localStorage.getItem('token');
-      if (!token) {
-        setError('No tienes permisos para realizar esta acción');
-        navigate('/auth/login');
-        return;
-      }
+  if (loading) {
+    return (
+      <Box 
+        sx={{ 
+          display: 'flex', 
+          justifyContent: 'center', 
+          alignItems: 'center', 
+          height: '100vh' 
+        }}
+      >
+        <CircularProgress />
+      </Box>
+    );
+  }
 
-      const headers = { Authorization: `Bearer ${token}` };
-      const response = await axios.post(`${apiUrl}/eventos`, nuevoEvento, { headers });
-
-      if (response.status === 200 || response.status === 201) {
-        const eventoCreado = response.data;
-        setEventos(prev => [...prev, eventoCreado]);
-        setShowNuevoEventoModal(false);
-        setNuevoEvento({
-          tipo_evento: '',
-          fecha_evento: '',
-          hora_evento: '',
-          estado_evento: 'Pendiente'
-        });
-      }
-    } catch (error) {
-      console.error('Error al crear evento:', error);
-    }
-  };
+  if (error) {
+    return (
+      <Box 
+        sx={{ 
+          display: 'flex', 
+          justifyContent: 'center', 
+          alignItems: 'center', 
+          height: '100vh',
+          flexDirection: 'column',
+          gap: 2
+        }}
+      >
+        <Typography variant="h6" color="error">
+          {error}
+        </Typography>
+        <Button 
+          variant="contained" 
+          color="primary" 
+          onClick={() => navigate('/auth/login')}
+        >
+          Ir al login
+        </Button>
+      </Box>
+    );
+  }
 
   return (
     <div className="rent-page">
@@ -225,6 +279,22 @@ export default function RentClient() {
           </Badge>
         </IconButton>
       </div>
+
+      {/* Notificaciones */}
+      <Snackbar
+        open={notificacion.abierta}
+        autoHideDuration={3000}
+        onClose={() => setNotificacion({ ...notificacion, abierta: false })}
+        anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
+      >
+        <Alert 
+          onClose={() => setNotificacion({ ...notificacion, abierta: false })} 
+          severity={notificacion.tipo}
+          sx={{ width: '100%' }}
+        >
+          {notificacion.mensaje}
+        </Alert>
+      </Snackbar>
 
       <div className="catalog-section">
         <DashboardCatalog onAddToCart={handleAddToCart} />
@@ -298,27 +368,52 @@ export default function RentClient() {
         )}
       </Drawer>
 
-      {/* Modales de eventos */}
-      <Dialog open={showEventoModal} onClose={() => setShowEventoModal(false)}>
+      {/* Modal de Eventos */}
+      <Dialog 
+        open={showEventoModal} 
+        onClose={() => setShowEventoModal(false)}
+        maxWidth="sm"
+        fullWidth
+      >
         <DialogTitle>Seleccionar Evento</DialogTitle>
         <DialogContent>
-          <List>
-            {eventos.map((evento: any) => (
-              <ListItem 
-                button 
-                key={evento.id_evento}
-                onClick={() => {
-                  // Aquí iría la lógica para asociar el carrito al evento
-                  setShowEventoModal(false);
-                }}
-              >
-                <ListItemText
-                  primary={evento.tipo_evento}
-                  secondary={`${evento.fecha_evento} - ${evento.hora_evento}`}
-                />
-              </ListItem>
-            ))}
-          </List>
+          {eventos.length === 0 ? (
+            <Typography sx={{ textAlign: 'center', my: 2 }}>
+              No tienes eventos creados
+            </Typography>
+          ) : (
+            <List>
+              {eventos.map((evento) => (
+                <ListItem 
+                  button 
+                  key={evento.id_evento}
+                  onClick={() => {
+                    // Aquí iría la lógica para asociar el carrito al evento
+                    setShowEventoModal(false);
+                  }}
+                >
+                  <ListItemText
+                    primary={evento.tipo_evento}
+                    secondary={
+                      <>
+                        <Typography component="span" variant="body2">
+                          Fecha: {new Date(evento.fecha_evento).toLocaleDateString()}
+                        </Typography>
+                        <br />
+                        <Typography component="span" variant="body2">
+                          Hora: {evento.hora_inicio} - {evento.hora_fin}
+                        </Typography>
+                        <br />
+                        <Typography component="span" variant="body2">
+                          Lugar: {evento.lugar_evento}
+                        </Typography>
+                      </>
+                    }
+                  />
+                </ListItem>
+              ))}
+            </List>
+          )}
           <Button
             fullWidth
             variant="contained"
@@ -339,42 +434,91 @@ export default function RentClient() {
         </DialogContent>
       </Dialog>
 
-      <Dialog open={showNuevoEventoModal} onClose={() => setShowNuevoEventoModal(false)}>
-        <DialogTitle>Crear Nuevo Evento</DialogTitle>
-        <DialogContent>
-          <TextField
-            fullWidth
-            label="Tipo de Evento"
-            value={nuevoEvento.tipo_evento}
-            onChange={(e) => setNuevoEvento({ ...nuevoEvento, tipo_evento: e.target.value })}
-            margin="normal"
-          />
-          <TextField
-            fullWidth
-            type="date"
-            label="Fecha del Evento"
-            value={nuevoEvento.fecha_evento}
-            onChange={(e) => setNuevoEvento({ ...nuevoEvento, fecha_evento: e.target.value })}
-            margin="normal"
-            InputLabelProps={{ shrink: true }}
-          />
-          <TextField
-            fullWidth
-            type="time"
-            label="Hora del Evento"
-            value={nuevoEvento.hora_evento}
-            onChange={(e) => setNuevoEvento({ ...nuevoEvento, hora_evento: e.target.value })}
-            margin="normal"
-            InputLabelProps={{ shrink: true }}
-          />
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setShowNuevoEventoModal(false)}>Cancelar</Button>
-          <Button onClick={handleCrearEvento} variant="contained" color="primary">
-            Crear Evento
-          </Button>
-        </DialogActions>
-      </Dialog>
+      {/* Modal de Nuevo Evento */}
+      <LocalizationProvider dateAdapter={AdapterDateFns} adapterLocale={es}>
+        <Dialog 
+          open={showNuevoEventoModal} 
+          onClose={() => setShowNuevoEventoModal(false)}
+          maxWidth="sm"
+          fullWidth
+        >
+          <DialogTitle>Crear Nuevo Evento</DialogTitle>
+          <DialogContent>
+            <Box sx={{ mt: 2, display: 'flex', flexDirection: 'column', gap: 2 }}>
+              <TextField
+                fullWidth
+                label="Tipo de Evento"
+                value={nuevoEvento.tipo_evento}
+                onChange={(e) => setNuevoEvento({ ...nuevoEvento, tipo_evento: e.target.value })}
+              />
+              
+              <DatePicker
+                label="Fecha del Evento"
+                value={nuevoEvento.fecha_evento}
+                onChange={(newValue) => {
+                  if (newValue) {
+                    setNuevoEvento({ ...nuevoEvento, fecha_evento: newValue });
+                  }
+                }}
+                sx={{ width: '100%' }}
+              />
+              
+              <TimePicker
+                label="Hora de Inicio"
+                value={nuevoEvento.hora_inicio}
+                onChange={(newValue) => {
+                  if (newValue) {
+                    setNuevoEvento({ ...nuevoEvento, hora_inicio: newValue });
+                  }
+                }}
+                sx={{ width: '100%' }}
+              />
+              
+              <TimePicker
+                label="Hora de Fin"
+                value={nuevoEvento.hora_fin}
+                onChange={(newValue) => {
+                  if (newValue) {
+                    setNuevoEvento({ ...nuevoEvento, hora_fin: newValue });
+                  }
+                }}
+                sx={{ width: '100%' }}
+              />
+              
+              <TextField
+                fullWidth
+                label="Lugar del Evento"
+                value={nuevoEvento.lugar_evento}
+                onChange={(e) => setNuevoEvento({ ...nuevoEvento, lugar_evento: e.target.value })}
+              />
+              
+              <TextField
+                fullWidth
+                label="Descripción"
+                value={nuevoEvento.descripcion}
+                onChange={(e) => setNuevoEvento({ ...nuevoEvento, descripcion: e.target.value })}
+                multiline
+                rows={4}
+              />
+            </Box>
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={() => setShowNuevoEventoModal(false)}>Cancelar</Button>
+            <Button 
+              onClick={handleCrearEvento} 
+              variant="contained"
+              sx={{
+                backgroundColor: 'var(--gold)',
+                '&:hover': {
+                  backgroundColor: 'var(--dark-gold)'
+                }
+              }}
+            >
+              Crear Evento
+            </Button>
+          </DialogActions>
+        </Dialog>
+      </LocalizationProvider>
     </div>
   );
 } 

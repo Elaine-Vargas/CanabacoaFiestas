@@ -23,6 +23,13 @@ export default class Menu extends Model {
   @Column({ type: DataType.DECIMAL(10, 2), allowNull: false })
   precio_menu!: number;
 
+  @Column({ 
+    type: DataType.ENUM('Activo', 'Inactivo'), 
+    defaultValue: 'Activo',
+    allowNull: false 
+  })
+  estado_menu!: string;
+
   @HasMany(() => PlatoMenu)
   platos_menu!: PlatoMenu[];
 

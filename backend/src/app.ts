@@ -4,6 +4,7 @@ import dotenv from 'dotenv';
 import sequelize from './config';
 import { syncDatabase } from './config/syncDatabase';
 import path from 'path';
+import morgan from 'morgan';
 
 import elementoRoutes from './routes/elementoRoutes';
 import authRoutes from './routes/authRoutes';
@@ -23,32 +24,34 @@ import costoAgregadoRoutes from './routes/costoAgregadoRoutes';
 import pagoRoutes from './routes/pagoRoutes';
 import proveedorRoutes from './routes/proveedorRoutes';
 import reporteRoutes from './routes/reporteRoutes';
+import { verificarToken } from './middlewares/authMiddleware';
 dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// CORS configuration
+// Configuración de CORS
 const corsOptions = {
-  origin: 'http://localhost:5173',
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization'],
-  credentials: true
+  origin: ['http://localhost:5173', 'http://127.0.0.1:5173'],
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
 };
 
 // Middlewares
 app.use(cors(corsOptions));
+app.use(morgan('dev'));
 app.use(express.json());
 
 // Servir archivos estáticos desde el directorio uploads
 app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 
 // Rutas
- app.use('/api/auth', authRoutes);
+app.use('/api/auth', authRoutes);
 app.use('/api/elemento', elementoRoutes);
- app.use('/api/comentario', comentarioRoutes);
+app.use('/api/comentario', comentarioRoutes);
 app.use('/api/usuario', usersRoutes);
- app.use('/api/evento', eventoRoutes);
+app.use('/api/evento', eventoRoutes);
 app.use('/api/alquiler', alquilerRoutes);
 app.use('/api/decoracion', decoracionRoutes);
 app.use('/api/direccion', direccionRoutes);
@@ -62,12 +65,6 @@ app.use('/api/pago', pagoRoutes);
 app.use('/api/proveedor', proveedorRoutes);
 app.use('/api/vehiculo', vehiculoRoutes);
 app.use('/api/reporte', reporteRoutes);
-
-
-
-
-
-
 
 // Ruta de prueba
 app.get('/', (req, res) => {
