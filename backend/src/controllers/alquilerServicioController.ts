@@ -117,21 +117,23 @@ export const createAlquilerServicio = async (req: Request, res: Response) => {
 export const getAllAlquileres = async (req: Request, res: Response) => {
   try {
     const alquileres = await AlquilerServicio.findAll({
-      where: {
-        estado_alquiler: {
-          [Op.ne]: 'Cancelado'
-        }
-      },
       include: [
         {
           model: DetalleAlquiler,
-          where: {
-            estado_detalquiler: 'Aceptado'
-          },
-          required: false,
           include: [
             {
-              model: Elemento
+              model: Elemento,
+              include: [
+                {
+                  model: SubcategoriaElemento,
+                  include: [
+                    {
+                      model: CategoriaElemento,
+                      as: 'categoria'
+                    }
+                  ]
+                }
+              ]
             }
           ]
         },
@@ -142,13 +144,6 @@ export const getAllAlquileres = async (req: Request, res: Response) => {
       ],
       order: [['id_alquiler', 'DESC']]
     });
-
-    if (!alquileres || alquileres.length === 0) {
-      return res.status(404).json({ 
-        error: 'No se encontraron alquileres',
-        mensaje: 'No hay alquileres registrados en el sistema'
-      });
-    }
 
     res.json(alquileres);
   } catch (error) {

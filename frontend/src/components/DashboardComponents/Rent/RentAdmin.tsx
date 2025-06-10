@@ -15,6 +15,8 @@ import {
   Typography,
   Popconfirm,
   Divider,
+  Tag,
+  Tooltip,
 } from 'antd';
 import { PlusOutlined, RightOutlined, CloseOutlined, ReloadOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons';
 import axios from 'axios';
@@ -46,11 +48,11 @@ const StyledCard = styled(Card)`
   }
 `;
 
-const ModalContent = styled.div`
+const ModalContent = styled.div<{ hasSelection?: boolean }>`
   max-height: 60vh;
   overflow-y: auto;
   padding-right: 8px;
-  margin-bottom: ${props => props.$hasSelection ? '80px' : '0'};
+  margin-bottom: ${props => props.hasSelection ? '80px' : '0'};
 
   &::-webkit-scrollbar {
     width: 8px;
@@ -195,6 +197,9 @@ const RentAdmin: React.FC = () => {
   const [categorias, setCategorias] = useState([]);
   const [showEditModal, setShowEditModal] = useState(false);
   const [editingAlquiler, setEditingAlquiler] = useState<any>(null);
+  const [searchAlquiler, setSearchAlquiler] = useState('');
+  const [filterEvento, setFilterEvento] = useState<string | null>(null);
+  const [filterEstado, setFilterEstado] = useState<string | null>(null);
 
   useEffect(() => {
     fetchAlquileres();
@@ -393,13 +398,56 @@ const RentAdmin: React.FC = () => {
         return;
       }
 
-      await axios.delete(`${apiUrl}/alquiler/${record.id_alquiler}`, {
-        headers: {
-          'Authorization': `Bearer ${token}`
+      // Mostrar mensaje de confirmación con más detalles
+      Modal.confirm({
+        title: '¿Estás seguro de cancelar este alquiler?',
+        content: (
+          <div>
+            <p>Al cancelar el alquiler:</p>
+            <ul>
+              <li>El estado cambiará a "Cancelado"</li>
+              <li>No se podrá editar posteriormente</li>
+              <li>Los elementos volverán a estar disponibles</li>
+            </ul>
+            <p>Esta acción no se puede deshacer.</p>
+          </div>
+        ),
+        okText: 'Sí, cancelar',
+        okType: 'danger',
+        cancelText: 'No',
+        onOk: async () => {
+          try {
+            const updateData = {
+              estado_alquiler: 'Cancelado',
+              precioneto_alquiler: record.precioneto_alquiler,
+              itbis_alquiler: record.itbis_alquiler,
+              total_alquiler: record.total_alquiler,
+              cant_elementos_alquiler: record.cant_elementos_alquiler
+            };
+
+            await axios.patch(
+              `${apiUrl}/alquiler/${record.id_alquiler}`,
+              updateData,
+              {
+                headers: {
+                  'Authorization': `Bearer ${token}`,
+                  'Content-Type': 'application/json'
+                }
+              }
+            );
+            
+            message.success('Alquiler cancelado correctamente');
+            // Esperar un momento antes de recargar los datos
+            setTimeout(() => {
+              fetchAlquileres();
+              fetchElementos(); // Actualizar también la lista de elementos disponibles
+            }, 500);
+          } catch (error) {
+            console.error('Error al cancelar el alquiler:', error);
+            message.error('Error al cancelar el alquiler');
+          }
         }
       });
-      message.success('Alquiler cancelado correctamente');
-      fetchAlquileres();
     } catch (error) {
       console.error('Error al cancelar el alquiler:', error);
       message.error('Error al cancelar el alquiler');
@@ -537,11 +585,36 @@ const RentAdmin: React.FC = () => {
       title: 'ID Evento',
       dataIndex: ['evento', 'id_evento'],
       key: 'evento',
+      render: (id_evento: number, record: any) => (
+        <span>
+          {id_evento} - {record.evento?.nombre_evento || 'N/A'}
+        </span>
+      ),
     },
     {
       title: 'Estado',
       dataIndex: 'estado_alquiler',
       key: 'estado_alquiler',
+      render: (estado: string) => {
+        let color = 'default';
+        let text = estado;
+        switch (estado) {
+          case 'Solicitado':
+            color = 'processing';
+            break;
+          case 'Aceptado':
+            color = 'warning';
+            break;
+          case 'Completado':
+            color = 'success';
+            break;
+          case 'Cancelado':
+            color = 'error';
+            text = 'Cancelado';
+            break;
+        }
+        return <Tag color={color}>{text}</Tag>;
+      },
     },
     {
       title: 'Cantidad Elementos',
@@ -569,32 +642,39 @@ const RentAdmin: React.FC = () => {
     {
       title: 'Acciones',
       key: 'acciones',
-      render: (_: any, record: any) => (
-        <Space>
-          {record.estado_alquiler !== 'Cancelado' && (
-            <>
+      render: (_: any, record: any) => {
+        // Si el alquiler está cancelado, mostrar mensaje informativo
+        if (record.estado_alquiler === 'Cancelado') {
+          return (
+            <Tooltip title="Los alquileres cancelados no pueden ser modificados">
+              <Typography.Text type="secondary">
+                <CloseOutlined style={{ marginRight: 8 }} />
+                Alquiler cancelado
+              </Typography.Text>
+            </Tooltip>
+          );
+        }
+
+        return (
+          <Space>
+            <Tooltip title="Editar alquiler">
               <Button 
                 type="text" 
                 icon={<EditOutlined />} 
                 onClick={() => handleEdit(record)}
               />
-              <Popconfirm
-                title="¿Estás seguro de cancelar este alquiler?"
-                description="Esta acción no se puede deshacer"
-                onConfirm={() => handleDelete(record)}
-                okText="Sí"
-                cancelText="No"
-              >
-                <Button 
-                  type="text" 
-                  danger 
-                  icon={<DeleteOutlined />}
-                />
-              </Popconfirm>
-            </>
-          )}
-        </Space>
-      ),
+            </Tooltip>
+            <Tooltip title="Cancelar alquiler">
+              <Button 
+                type="text" 
+                danger 
+                icon={<DeleteOutlined />}
+                onClick={() => handleDelete(record)}
+              />
+            </Tooltip>
+          </Space>
+        );
+      },
     },
   ];
 
@@ -610,28 +690,82 @@ const RentAdmin: React.FC = () => {
     return matchesSearch && matchesCategoria;
   });
 
+  const filteredAlquileres = alquileres.filter((alquiler: any) => {
+    const matchesSearch = searchAlquiler 
+      ? alquiler.id_alquiler.toString().includes(searchAlquiler) ||
+        (alquiler.evento?.id_evento.toString() || '').includes(searchAlquiler)
+      : true;
+
+    const matchesEvento = filterEvento
+      ? alquiler.evento?.id_evento.toString() === filterEvento
+      : true;
+
+    const matchesEstado = filterEstado
+      ? alquiler.estado_alquiler === filterEstado
+      : true;
+
+    return matchesSearch && matchesEvento && matchesEstado;
+  });
+
   return (
     <>
       <StyledCard title="Gestión de Alquileres">
-        <Space style={{ marginBottom: 16 }}>
-          <Button
-            type="primary"
-            icon={<PlusOutlined />}
-            onClick={() => setShowCatalogo(true)}
-          >
-            Nuevo Alquiler
-          </Button>
-          <Button
-            icon={<ReloadOutlined />}
-            onClick={fetchAlquileres}
-          >
-            Recargar
-          </Button>
+        <Space direction="vertical" style={{ width: '100%', marginBottom: 16 }}>
+          <Space wrap>
+            <Button
+              type="primary"
+              icon={<PlusOutlined />}
+              onClick={() => setShowCatalogo(true)}
+            >
+              Nuevo Alquiler
+            </Button>
+            <Button
+              icon={<ReloadOutlined />}
+              onClick={fetchAlquileres}
+            >
+              Recargar
+            </Button>
+          </Space>
+
+          <Space wrap>
+            <Input.Search
+              placeholder="Buscar por ID de alquiler"
+              allowClear
+              style={{ width: 200 }}
+              value={searchAlquiler}
+              onChange={(e) => setSearchAlquiler(e.target.value)}
+            />
+            <Select
+              placeholder="Filtrar por evento"
+              allowClear
+              style={{ width: 200 }}
+              value={filterEvento}
+              onChange={setFilterEvento}
+            >
+              {eventos.map((evento: any) => (
+                <Option key={evento.id_evento} value={evento.id_evento.toString()}>
+                  {evento.nombre_evento} (ID: {evento.id_evento})
+                </Option>
+              ))}
+            </Select>
+            <Select
+              placeholder="Filtrar por estado"
+              allowClear
+              style={{ width: 200 }}
+              value={filterEstado}
+              onChange={setFilterEstado}
+            >
+              <Option value="Solicitado">Solicitado</Option>
+              <Option value="Aceptado">Aceptado</Option>
+              <Option value="Completado">Completado</Option>
+              <Option value="Cancelado">Cancelado</Option>
+            </Select>
+          </Space>
         </Space>
 
         <Table
           columns={columns}
-          dataSource={alquileres}
+          dataSource={filteredAlquileres}
           loading={loading}
           rowKey="id_alquiler"
           pagination={{ pageSize: 10 }}
@@ -673,7 +807,7 @@ const RentAdmin: React.FC = () => {
           </Select>
         </Space>
 
-        <ModalContent $hasSelection={elementosSeleccionados.length > 0}>
+        <ModalContent hasSelection={elementosSeleccionados.length > 0}>
           <List
             dataSource={filteredElementos}
             renderItem={(elemento: Elemento) => (
@@ -819,47 +953,78 @@ const RentAdmin: React.FC = () => {
               </Select>
             </Form.Item>
 
-            <Divider>Elementos</Divider>
+            <Divider>Elementos del Alquiler</Divider>
+
+            {/* Lista de elementos actuales */}
+            <List
+              dataSource={editingAlquiler.detalles || []}
+              renderItem={(detalle: any) => (
+                <ListItem>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
+                    <div>
+                      <Typography.Text strong>{detalle.elemento.nombre_elemento}</Typography.Text>
+                      <div>
+                        <Typography.Text type="secondary">
+                          Cantidad: {detalle.cantidad_alquiler} | 
+                          Precio unitario: ${detalle.precio_unitario} |
+                          Subtotal: ${detalle.total_alquiler}
+                        </Typography.Text>
+                      </div>
+                      {detalle.estado_detalquiler === 'Cancelado' && (
+                        <Tag color="error">Cancelado</Tag>
+                      )}
+                    </div>
+                  </div>
+                </ListItem>
+              )}
+            />
 
             <Space style={{ marginBottom: 16 }}>
               <Button
                 type="primary"
                 onClick={() => setShowCatalogo(true)}
                 icon={<PlusOutlined />}
+                disabled={editingAlquiler.estado_alquiler === 'Cancelado'}
               >
                 Agregar Elementos
               </Button>
             </Space>
 
-            <List
-              dataSource={elementosSeleccionados}
-              renderItem={(elemento) => (
-                <ListItem>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
-                    <div>
-                      <Typography.Text strong>{elemento.nombre_elemento}</Typography.Text>
-                      <div>Subtotal: ${(elemento.precio_elemento * elemento.cantidad_seleccionada).toFixed(2)}</div>
-                    </div>
-                    <Space>
-                      <Typography.Text>Cantidad:</Typography.Text>
-                      <InputNumber
-                        min={0}
-                        max={elemento.cantidad_disponible}
-                        value={elemento.cantidad_seleccionada}
-                        onChange={(value) => handleCantidadChange(elemento, value || 0)}
-                        style={{ width: 80 }}
-                      />
-                      <Button
-                        type="text"
-                        danger
-                        icon={<DeleteOutlined />}
-                        onClick={() => handleCantidadChange(elemento, 0)}
-                      />
-                    </Space>
-                  </div>
-                </ListItem>
-              )}
-            />
+            {/* Lista de nuevos elementos seleccionados */}
+            {elementosSeleccionados.length > 0 && (
+              <>
+                <Divider>Nuevos Elementos Seleccionados</Divider>
+                <List
+                  dataSource={elementosSeleccionados}
+                  renderItem={(elemento) => (
+                    <ListItem>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
+                        <div>
+                          <Typography.Text strong>{elemento.nombre_elemento}</Typography.Text>
+                          <div>Subtotal: ${(elemento.precio_elemento * elemento.cantidad_seleccionada).toFixed(2)}</div>
+                        </div>
+                        <Space>
+                          <Typography.Text>Cantidad:</Typography.Text>
+                          <InputNumber
+                            min={0}
+                            max={elemento.cantidad_disponible}
+                            value={elemento.cantidad_seleccionada}
+                            onChange={(value) => handleCantidadChange(elemento, value || 0)}
+                            style={{ width: 80 }}
+                          />
+                          <Button
+                            type="text"
+                            danger
+                            icon={<DeleteOutlined />}
+                            onClick={() => handleCantidadChange(elemento, 0)}
+                          />
+                        </Space>
+                      </div>
+                    </ListItem>
+                  )}
+                />
+              </>
+            )}
 
             <div style={{ marginTop: 16, marginBottom: 16 }}>
               <Typography.Text strong>
@@ -870,7 +1035,11 @@ const RentAdmin: React.FC = () => {
             </div>
 
             <Form.Item>
-              <Button type="primary" htmlType="submit">
+              <Button 
+                type="primary" 
+                htmlType="submit"
+                disabled={editingAlquiler.estado_alquiler === 'Cancelado'}
+              >
                 Guardar Cambios
               </Button>
             </Form.Item>
