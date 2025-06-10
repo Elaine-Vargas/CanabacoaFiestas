@@ -1,13 +1,39 @@
 import React, { useState, useEffect } from 'react';
-import { Table, Input, Select, Button, Card, Row, Col, message, Modal, Form, DatePicker, Space, Tabs } from 'antd';
-import { PlusOutlined, EditOutlined, DeleteOutlined, ArrowRightOutlined } from '@ant-design/icons';
+import {
+  Table,
+  Input,
+  Select,
+  Button,
+  Card,
+  Row,
+  Col,
+  message,
+  Modal,
+  Form,
+  DatePicker,
+  Space,
+  Tabs,
+  InputNumber,
+  Typography,
+  Tag,
+  List
+} from 'antd';
+import {
+  PlusOutlined,
+  EditOutlined,
+  DeleteOutlined,
+  ArrowRightOutlined,
+  ReloadOutlined
+} from '@ant-design/icons';
 import styled from 'styled-components';
 import axios from 'axios';
+import dayjs from 'dayjs';
+import { apiUrl } from '../../../config';
 
-const apiUrl = import.meta.env.VITE_API_BASE_URL;
 const { Search } = Input;
 const { Option } = Select;
 const { TabPane } = Tabs;
+const { Title } = Typography;
 
 // Styled Components
 const StyledCard = styled(Card)`
@@ -85,11 +111,20 @@ const ContinueButton = styled(Button)`
 
 // Interfaces
 interface CateringService {
-  id_catering_service: number;
+  id_catering: number;
   id_evento: number;
-  estado_catering: string;
-  fecha_catering: string;
+  personas_catering: number;
+  precioneto_catering: number;
+  itbis_catering: number;
   total_catering: number;
+  estado_catering: string;
+  fecha_catering?: string;
+  evento?: {
+    nombre_evento: string;
+  };
+  menus_catering?: Array<{
+    menu: Menu;
+  }>;
 }
 
 interface Menu {
@@ -101,6 +136,9 @@ interface Menu {
   proveedor: {
     nombre_proveedor: string;
   };
+  platos_menu?: Array<{
+    plato: Plato;
+  }>;
 }
 
 interface Plato {
@@ -115,12 +153,19 @@ interface Event {
   nombre_evento: string;
 }
 
+interface Proveedor {
+  id_proveedor: number;
+  nombre_proveedor: string;
+  tipo_proveedor: string;
+}
+
 const CateringAdmin = () => {
   // Estados
   const [cateringServices, setCateringServices] = useState<CateringService[]>([]);
   const [menus, setMenus] = useState<Menu[]>([]);
   const [platos, setPlatos] = useState<Plato[]>([]);
   const [events, setEvents] = useState<Event[]>([]);
+  const [proveedores, setProveedores] = useState<Proveedor[]>([]);
   const [loading, setLoading] = useState(false);
   const [showMenuSelection, setShowMenuSelection] = useState(false);
   const [showCateringForm, setShowCateringForm] = useState(false);
@@ -139,6 +184,7 @@ const CateringAdmin = () => {
     fetchMenus();
     fetchPlatos();
     fetchEvents();
+    fetchProveedores();
   }, []);
 
   // Funciones de fetch
@@ -150,14 +196,22 @@ const CateringAdmin = () => {
         message.error('No hay sesión activa');
         return;
       }
-      const response = await axios.get(`${apiUrl}/catering_service`, {
+
+      const response = await axios.get(`${apiUrl}/catering`, {
         headers: {
           'Authorization': `Bearer ${token}`
         }
       });
-      setCateringServices(response.data);
+
+      if (response.data) {
+        setCateringServices(response.data);
+      } else {
+        setCateringServices([]);
+      }
     } catch (error) {
+      console.error('Error al cargar los servicios de catering:', error);
       message.error('Error al cargar los servicios de catering');
+      setCateringServices([]);
     } finally {
       setLoading(false);
     }
@@ -170,6 +224,7 @@ const CateringAdmin = () => {
         message.error('No hay sesión activa');
         return;
       }
+
       const response = await axios.get(`${apiUrl}/menu`, {
         headers: {
           'Authorization': `Bearer ${token}`
@@ -177,6 +232,7 @@ const CateringAdmin = () => {
       });
       setMenus(response.data);
     } catch (error) {
+      console.error('Error al cargar los menús:', error);
       message.error('Error al cargar los menús');
     }
   };
@@ -188,6 +244,7 @@ const CateringAdmin = () => {
         message.error('No hay sesión activa');
         return;
       }
+
       const response = await axios.get(`${apiUrl}/plato`, {
         headers: {
           'Authorization': `Bearer ${token}`
@@ -195,6 +252,7 @@ const CateringAdmin = () => {
       });
       setPlatos(response.data);
     } catch (error) {
+      console.error('Error al cargar los platos:', error);
       message.error('Error al cargar los platos');
     }
   };
@@ -206,6 +264,7 @@ const CateringAdmin = () => {
         message.error('No hay sesión activa');
         return;
       }
+
       const response = await axios.get(`${apiUrl}/evento`, {
         headers: {
           'Authorization': `Bearer ${token}`
@@ -213,7 +272,32 @@ const CateringAdmin = () => {
       });
       setEvents(response.data);
     } catch (error) {
+      console.error('Error al cargar los eventos:', error);
       message.error('Error al cargar los eventos');
+    }
+  };
+
+  const fetchProveedores = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        message.error('No hay sesión activa');
+        return;
+      }
+
+      const response = await axios.get(`${apiUrl}/proveedor`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      // Filtrar solo proveedores de tipo Catering
+      const proveedoresCatering = response.data.filter(
+        (proveedor: Proveedor) => proveedor.tipo_proveedor === 'Catering'
+      );
+      setProveedores(proveedoresCatering);
+    } catch (error) {
+      console.error('Error al cargar los proveedores:', error);
+      message.error('Error al cargar los proveedores');
     }
   };
 
@@ -225,7 +309,7 @@ const CateringAdmin = () => {
         message.error('No hay sesión activa');
         return;
       }
-      await axios.patch(`${apiUrl}/catering_service/${id}`, 
+      await axios.put(`${apiUrl}/api/catering/${id}`, 
         { estado_catering: newStatus },
         {
           headers: {
@@ -236,6 +320,7 @@ const CateringAdmin = () => {
       message.success('Estado actualizado correctamente');
       fetchCateringServices();
     } catch (error) {
+      console.error('Error al actualizar el estado:', error);
       message.error('Error al actualizar el estado');
     }
   };
@@ -273,11 +358,15 @@ const CateringAdmin = () => {
         return;
       }
       const cateringData = {
-        ...values,
-        menus: selectedMenus.map(menu => menu.id_menu),
-        total_catering: selectedMenus.reduce((sum, menu) => sum + menu.precio_menu, 0),
+        id_evento: values.id_evento,
+        personas_catering: values.personas_catering || 0,
+        precioneto_catering: selectedMenus.reduce((sum, menu) => sum + menu.precio_menu, 0),
+        itbis_catering: selectedMenus.reduce((sum, menu) => sum + menu.precio_menu, 0) * 0.18,
+        total_catering: selectedMenus.reduce((sum, menu) => sum + menu.precio_menu, 0) * 1.18,
+        menus: selectedMenus.map(menu => menu.id_menu)
       };
-      await axios.post(`${apiUrl}/catering_service`, cateringData, {
+
+      await axios.post(`${apiUrl}/api/catering`, cateringData, {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -287,69 +376,268 @@ const CateringAdmin = () => {
       form.resetFields();
       fetchCateringServices();
     } catch (error) {
+      console.error('Error al crear el servicio de catering:', error);
       message.error('Error al crear el servicio de catering');
     }
+  };
+
+  const handleMenuFormSubmit = async (values: any) => {
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        message.error('No hay sesión activa');
+        return;
+      }
+      await axios.post(`${apiUrl}/api/catering/menu`, values, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      message.success('Menú creado correctamente');
+      setShowMenuForm(false);
+      form.resetFields();
+      fetchMenus();
+    } catch (error) {
+      console.error('Error al crear el menú:', error);
+      message.error('Error al crear el menú');
+    }
+  };
+
+  const handlePlatoFormSubmit = async (values: any) => {
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        message.error('No hay sesión activa');
+        return;
+      }
+      await axios.post(`${apiUrl}/api/catering/plato`, values, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      message.success('Plato creado correctamente');
+      setShowPlatoForm(false);
+      form.resetFields();
+      fetchPlatos();
+    } catch (error) {
+      console.error('Error al crear el plato:', error);
+      message.error('Error al crear el plato');
+    }
+  };
+
+  // Handlers para Catering Service
+  const handleEdit = (record: CateringService) => {
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        message.error('No hay sesión activa');
+        return;
+      }
+      
+      // Obtener los menús del servicio
+      const fetchMenusService = async () => {
+        const response = await axios.get(`${apiUrl}/catering_service/${record.id_catering}/menus`, {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
+        
+        if (response.data) {
+          setSelectedMenus(response.data);
+          form.setFieldsValue({
+            id_evento: record.id_evento,
+            estado_catering: record.estado_catering
+          });
+          setShowCateringForm(true);
+        }
+      };
+      
+      fetchMenusService();
+    } catch (error) {
+      message.error('Error al cargar los datos del servicio');
+    }
+  };
+
+  const handleDelete = async (record: CateringService) => {
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        message.error('No hay sesión activa');
+        return;
+      }
+
+      await axios.delete(`${apiUrl}/catering/${record.id_catering}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      message.success('Servicio de catering eliminado exitosamente');
+      fetchCateringServices();
+    } catch (error) {
+      console.error('Error al eliminar el servicio de catering:', error);
+      message.error('Error al eliminar el servicio de catering');
+    }
+  };
+
+  // Handlers para Menús
+  const handleEditMenu = (record: Menu) => {
+    try {
+      form.setFieldsValue({
+        nombre_menu: record.nombre_menu,
+        descripcion_menu: record.descripcion_menu,
+        precio_menu: record.precio_menu,
+        id_proveedor: record.id_proveedor
+      });
+      setShowMenuForm(true);
+    } catch (error) {
+      message.error('Error al cargar los datos del menú');
+    }
+  };
+
+  const handleDeleteMenu = async (record: Menu) => {
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        message.error('No hay sesión activa');
+        return;
+      }
+
+      await axios.delete(`${apiUrl}/menu/${record.id_menu}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      message.success('Menú eliminado exitosamente');
+      fetchMenus();
+    } catch (error) {
+      console.error('Error al eliminar el menú:', error);
+      message.error('Error al eliminar el menú');
+    }
+  };
+
+  // Handlers para Platos
+  const handleEditPlato = (record: Plato) => {
+    try {
+      form.setFieldsValue({
+        nombre_plato: record.nombre_plato,
+        descripcion_plato: record.descripcion_plato,
+        tipo_plato: record.tipo_plato
+      });
+      setShowPlatoForm(true);
+    } catch (error) {
+      message.error('Error al cargar los datos del plato');
+    }
+  };
+
+  const handleDeletePlato = async (record: Plato) => {
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        message.error('No hay sesión activa');
+        return;
+      }
+
+      await axios.delete(`${apiUrl}/plato/${record.id_plato}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      message.success('Plato eliminado exitosamente');
+      fetchPlatos();
+    } catch (error) {
+      console.error('Error al eliminar el plato:', error);
+      message.error('Error al eliminar el plato');
+    }
+  };
+
+  const handleAddPlatos = (menu: Menu) => {
+    // Implementar lógica para agregar platos al menú
+    message.info('Funcionalidad en desarrollo');
   };
 
   // Columnas para las tablas
   const cateringColumns = [
     {
       title: 'ID',
-      dataIndex: 'id_catering_service',
-      key: 'id_catering_service',
+      dataIndex: 'id_catering',
+      key: 'id_catering',
     },
     {
       title: 'Evento',
-      dataIndex: 'id_evento',
-      key: 'id_evento',
-      render: (eventId: number) => {
-        const event = events.find(e => e.id_evento === eventId);
-        return event ? event.nombre_evento : eventId;
-      }
+      dataIndex: ['evento', 'nombre_evento'],
+      key: 'evento',
+      render: (nombre: string, record: CateringService) => (
+        <span>
+          {record.id_evento} - {nombre || 'N/A'}
+        </span>
+      ),
     },
     {
       title: 'Estado',
       dataIndex: 'estado_catering',
       key: 'estado_catering',
-      render: (estado: string, record: CateringService) => (
-        <Select
-          defaultValue={estado}
-          style={{ width: '100%' }}
-          onChange={(value) => handleStatusChange(record.id_catering_service, value)}
-        >
-          <Option value="pendiente">Pendiente</Option>
-          <Option value="confirmado">Confirmado</Option>
-          <Option value="completado">Completado</Option>
-          <Option value="cancelado">Cancelado</Option>
-        </Select>
-      ),
+      render: (estado: string) => {
+        let color = 'default';
+        switch (estado.toLowerCase()) {
+          case 'solicitado':
+            color = 'processing';
+            break;
+          case 'confirmado':
+            color = 'warning';
+            break;
+          case 'completado':
+            color = 'success';
+            break;
+          case 'cancelado':
+            color = 'error';
+            break;
+        }
+        return <Tag color={color}>{estado}</Tag>;
+      },
+    },
+    {
+      title: 'Personas',
+      dataIndex: 'personas_catering',
+      key: 'personas_catering',
+    },
+    {
+      title: 'Precio Neto',
+      dataIndex: 'precioneto_catering',
+      key: 'precioneto_catering',
+      render: (precio: number) => `$${Number(precio).toFixed(2)}`,
+    },
+    {
+      title: 'ITBIS',
+      dataIndex: 'itbis_catering',
+      key: 'itbis_catering',
+      render: (itbis: number) => `$${Number(itbis).toFixed(2)}`,
     },
     {
       title: 'Total',
       dataIndex: 'total_catering',
       key: 'total_catering',
-      render: (total: number) => `$${total.toFixed(2)}`,
-    },
-    {
-      title: 'Fecha',
-      dataIndex: 'fecha_catering',
-      key: 'fecha_catering',
+      render: (total: number) => `$${Number(total).toFixed(2)}`,
     },
     {
       title: 'Acciones',
       key: 'actions',
-      render: (text: string, record: CateringService) => (
+      render: (_: any, record: CateringService) => (
         <Space>
           <Button
             icon={<EditOutlined />}
             type="link"
             onClick={() => handleEdit(record)}
+            disabled={record.estado_catering.toLowerCase() === 'cancelado'}
           />
           <Button
             icon={<DeleteOutlined />}
             type="link"
             danger
             onClick={() => handleDelete(record)}
+            disabled={record.estado_catering.toLowerCase() === 'cancelado'}
           />
         </Space>
       ),
@@ -371,7 +659,7 @@ const CateringAdmin = () => {
       title: 'Precio',
       dataIndex: 'precio_menu',
       key: 'precio_menu',
-      render: (precio: number) => `$${precio.toFixed(2)}`,
+      render: (precio: number) => `$${Number(precio).toFixed(2)}`,
     },
     {
       title: 'Proveedor',
@@ -381,7 +669,7 @@ const CateringAdmin = () => {
     {
       title: 'Acciones',
       key: 'actions',
-      render: (text: string, record: Menu) => (
+      render: (_: any, record: Menu) => (
         <Space>
           <Button
             icon={<EditOutlined />}
@@ -394,12 +682,6 @@ const CateringAdmin = () => {
             danger
             onClick={() => handleDeleteMenu(record)}
           />
-          <Button
-            type="link"
-            onClick={() => handleAddPlatos(record)}
-          >
-            Agregar Platos
-          </Button>
         </Space>
       ),
     },
@@ -420,11 +702,29 @@ const CateringAdmin = () => {
       title: 'Tipo',
       dataIndex: 'tipo_plato',
       key: 'tipo_plato',
+      render: (tipo: string) => {
+        let color = 'default';
+        switch (tipo.toLowerCase()) {
+          case 'entrada':
+            color = 'blue';
+            break;
+          case 'plato_principal':
+            color = 'green';
+            break;
+          case 'postre':
+            color = 'purple';
+            break;
+          case 'bebida':
+            color = 'orange';
+            break;
+        }
+        return <Tag color={color}>{tipo.replace('_', ' ')}</Tag>;
+      },
     },
     {
       title: 'Acciones',
       key: 'actions',
-      render: (text: string, record: Plato) => (
+      render: (_: any, record: Plato) => (
         <Space>
           <Button
             icon={<EditOutlined />}
@@ -441,6 +741,12 @@ const CateringAdmin = () => {
       ),
     },
   ];
+
+  const filteredMenus = menus.filter(menu => {
+    const matchesSearch = menu.nombre_menu.toLowerCase().includes(searchText.toLowerCase());
+    const matchesProveedor = !proveedorFilter || menu.id_proveedor.toString() === proveedorFilter;
+    return matchesSearch && matchesProveedor;
+  });
 
   return (
     <>
@@ -461,7 +767,7 @@ const CateringAdmin = () => {
               style={{ width: 200 }}
             >
               {events.map(event => (
-                <Option key={event.id_evento} value={event.id_evento}>
+                <Option key={event.id_evento} value={event.id_evento.toString()}>
                   {event.nombre_evento}
                 </Option>
               ))}
@@ -473,7 +779,7 @@ const CateringAdmin = () => {
               allowClear
               style={{ width: 200 }}
             >
-              <Option value="pendiente">Pendiente</Option>
+              <Option value="solicitado">Solicitado</Option>
               <Option value="confirmado">Confirmado</Option>
               <Option value="completado">Completado</Option>
               <Option value="cancelado">Cancelado</Option>
@@ -490,29 +796,49 @@ const CateringAdmin = () => {
 
         <Table
           columns={cateringColumns}
-          dataSource={cateringServices}
+          dataSource={cateringServices.filter(service => {
+            const matchesSearch = searchText
+              ? service.id_catering.toString().includes(searchText) ||
+                service.evento?.nombre_evento.toLowerCase().includes(searchText.toLowerCase())
+              : true;
+            const matchesEvent = eventFilter
+              ? service.id_evento.toString() === eventFilter
+              : true;
+            const matchesStatus = statusFilter
+              ? service.estado_catering.toLowerCase() === statusFilter
+              : true;
+            return matchesSearch && matchesEvent && matchesStatus;
+          })}
           loading={loading}
-          rowKey="id_catering_service"
+          rowKey="id_catering"
         />
       </StyledCard>
 
-      <StyledCard title="Gestión de Menús y Platos">
+      <StyledCard>
         <Tabs defaultActiveKey="1">
           <TabPane tab="Menús" key="1">
             <TableActions>
-              <Search
-                placeholder="Buscar menú"
-                style={{ width: 200 }}
-              />
-              <Select
-                placeholder="Filtrar por proveedor"
-                value={proveedorFilter}
-                onChange={value => setProveedorFilter(value)}
-                allowClear
-                style={{ width: 200 }}
-              >
-                {/* Opciones de proveedores */}
-              </Select>
+              <FilterContainer>
+                <Search
+                  placeholder="Buscar menú"
+                  value={searchText}
+                  onChange={e => setSearchText(e.target.value)}
+                  style={{ width: 200 }}
+                />
+                <Select
+                  placeholder="Filtrar por proveedor"
+                  value={proveedorFilter}
+                  onChange={value => setProveedorFilter(value)}
+                  allowClear
+                  style={{ width: 200 }}
+                >
+                  {proveedores.map(proveedor => (
+                    <Option key={proveedor.id_proveedor} value={proveedor.id_proveedor.toString()}>
+                      {proveedor.nombre_proveedor}
+                    </Option>
+                  ))}
+                </Select>
+              </FilterContainer>
               <Button
                 type="primary"
                 icon={<PlusOutlined />}
@@ -523,16 +849,29 @@ const CateringAdmin = () => {
             </TableActions>
             <Table
               columns={menuColumns}
-              dataSource={menus}
+              dataSource={menus.filter(menu => {
+                const matchesSearch = searchText
+                  ? menu.nombre_menu.toLowerCase().includes(searchText.toLowerCase()) ||
+                    menu.descripcion_menu.toLowerCase().includes(searchText.toLowerCase())
+                  : true;
+                const matchesProveedor = proveedorFilter
+                  ? menu.id_proveedor.toString() === proveedorFilter
+                  : true;
+                return matchesSearch && matchesProveedor;
+              })}
               rowKey="id_menu"
             />
           </TabPane>
           <TabPane tab="Platos" key="2">
             <TableActions>
-              <Search
-                placeholder="Buscar plato"
-                style={{ width: 200 }}
-              />
+              <FilterContainer>
+                <Search
+                  placeholder="Buscar plato"
+                  value={searchText}
+                  onChange={e => setSearchText(e.target.value)}
+                  style={{ width: 200 }}
+                />
+              </FilterContainer>
               <Button
                 type="primary"
                 icon={<PlusOutlined />}
@@ -543,7 +882,12 @@ const CateringAdmin = () => {
             </TableActions>
             <Table
               columns={platoColumns}
-              dataSource={platos}
+              dataSource={platos.filter(plato =>
+                searchText
+                  ? plato.nombre_plato.toLowerCase().includes(searchText.toLowerCase()) ||
+                    plato.descripcion_plato.toLowerCase().includes(searchText.toLowerCase())
+                  : true
+              )}
               rowKey="id_plato"
             />
           </TabPane>
@@ -611,11 +955,28 @@ const CateringAdmin = () => {
             </Select>
           </Form.Item>
           <Form.Item
-            name="fecha_catering"
-            label="Fecha"
-            rules={[{ required: true, message: 'Por favor seleccione una fecha' }]}
+            name="personas_catering"
+            label="Número de Personas"
+            rules={[{ required: true, message: 'Por favor ingrese el número de personas' }]}
           >
-            <DatePicker style={{ width: '100%' }} />
+            <InputNumber min={1} style={{ width: '100%' }} />
+          </Form.Item>
+          <Form.Item
+            label="Menús Seleccionados"
+          >
+            <List
+              dataSource={selectedMenus}
+              renderItem={menu => (
+                <List.Item>
+                  <div>{menu.nombre_menu} - ${menu.precio_menu}</div>
+                </List.Item>
+              )}
+            />
+            <div style={{ marginTop: 16 }}>
+              <strong>Total: $
+                {(selectedMenus.reduce((sum, menu) => sum + menu.precio_menu, 0) * 1.18).toFixed(2)}
+              </strong> (Incluye ITBIS)
+            </div>
           </Form.Item>
           <Form.Item>
             <Button type="primary" htmlType="submit">
@@ -625,7 +986,115 @@ const CateringAdmin = () => {
         </Form>
       </Modal>
 
-      {/* Otros modales necesarios (formularios de menú, plato, etc.) */}
+      {/* Modal de Formulario de Menú */}
+      <Modal
+        title="Menú"
+        open={showMenuForm}
+        onCancel={() => {
+          setShowMenuForm(false);
+          form.resetFields();
+        }}
+        footer={null}
+      >
+        <Form
+          form={form}
+          layout="vertical"
+          onFinish={handleMenuFormSubmit}
+        >
+          <Form.Item
+            name="nombre_menu"
+            label="Nombre"
+            rules={[{ required: true, message: 'Por favor ingrese el nombre' }]}
+          >
+            <Input />
+          </Form.Item>
+          <Form.Item
+            name="descripcion_menu"
+            label="Descripción"
+            rules={[{ required: true, message: 'Por favor ingrese la descripción' }]}
+          >
+            <Input.TextArea />
+          </Form.Item>
+          <Form.Item
+            name="precio_menu"
+            label="Precio"
+            rules={[{ required: true, message: 'Por favor ingrese el precio' }]}
+          >
+            <InputNumber
+              style={{ width: '100%' }}
+              formatter={value => `$ ${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
+              parser={value => value!.replace(/\$\s?|(,*)/g, '')}
+            />
+          </Form.Item>
+          <Form.Item
+            name="id_proveedor"
+            label="Proveedor"
+            rules={[{ required: true, message: 'Por favor seleccione un proveedor' }]}
+          >
+            <Select>
+              {proveedores.map(proveedor => (
+                <Option key={proveedor.id_proveedor} value={proveedor.id_proveedor}>
+                  {proveedor.nombre_proveedor}
+                </Option>
+              ))}
+            </Select>
+          </Form.Item>
+          <Form.Item>
+            <Button type="primary" htmlType="submit">
+              Guardar Menú
+            </Button>
+          </Form.Item>
+        </Form>
+      </Modal>
+
+      {/* Modal de Formulario de Plato */}
+      <Modal
+        title="Plato"
+        open={showPlatoForm}
+        onCancel={() => {
+          setShowPlatoForm(false);
+          form.resetFields();
+        }}
+        footer={null}
+      >
+        <Form
+          form={form}
+          layout="vertical"
+          onFinish={handlePlatoFormSubmit}
+        >
+          <Form.Item
+            name="nombre_plato"
+            label="Nombre"
+            rules={[{ required: true, message: 'Por favor ingrese el nombre' }]}
+          >
+            <Input />
+          </Form.Item>
+          <Form.Item
+            name="descripcion_plato"
+            label="Descripción"
+            rules={[{ required: true, message: 'Por favor ingrese la descripción' }]}
+          >
+            <Input.TextArea />
+          </Form.Item>
+          <Form.Item
+            name="tipo_plato"
+            label="Tipo"
+            rules={[{ required: true, message: 'Por favor seleccione el tipo' }]}
+          >
+            <Select>
+              <Option value="entrada">Entrada</Option>
+              <Option value="plato_principal">Plato Principal</Option>
+              <Option value="postre">Postre</Option>
+              <Option value="bebida">Bebida</Option>
+            </Select>
+          </Form.Item>
+          <Form.Item>
+            <Button type="primary" htmlType="submit">
+              Guardar Plato
+            </Button>
+          </Form.Item>
+        </Form>
+      </Modal>
     </>
   );
 };

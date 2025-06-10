@@ -117,21 +117,23 @@ export const createAlquilerServicio = async (req: Request, res: Response) => {
 export const getAllAlquileres = async (req: Request, res: Response) => {
   try {
     const alquileres = await AlquilerServicio.findAll({
-      where: {
-        estado_alquiler: {
-          [Op.ne]: 'Cancelado'
-        }
-      },
       include: [
         {
           model: DetalleAlquiler,
-          where: {
-            estado_detalquiler: 'Aceptado'
-          },
-          required: false,
           include: [
             {
-              model: Elemento
+              model: Elemento,
+              include: [
+                {
+                  model: SubcategoriaElemento,
+                  include: [
+                    {
+                      model: CategoriaElemento,
+                      as: 'categoria'
+                    }
+                  ]
+                }
+              ]
             }
           ]
         },
@@ -142,13 +144,6 @@ export const getAllAlquileres = async (req: Request, res: Response) => {
       ],
       order: [['id_alquiler', 'DESC']]
     });
-
-    if (!alquileres || alquileres.length === 0) {
-      return res.status(404).json({ 
-        error: 'No se encontraron alquileres',
-        mensaje: 'No hay alquileres registrados en el sistema'
-      });
-    }
 
     res.json(alquileres);
   } catch (error) {
@@ -405,6 +400,16 @@ export const editAlquilerServicio = async (req: Request, res: Response) => {
       elementos
     } = req.body;
 
+    console.log('Datos recibidos para actualización:', {
+      id_alquiler,
+      cant_elementos_alquiler,
+      precioneto_alquiler,
+      itbis_alquiler,
+      total_alquiler,
+      estado_alquiler,
+      elementos
+    });
+
     const alquiler = await AlquilerServicio.findByPk(id_alquiler);
     if (!alquiler) {
       await t.rollback();
@@ -431,12 +436,16 @@ export const editAlquilerServicio = async (req: Request, res: Response) => {
       }
     });
 
+    console.log('Detalles actuales:', detallesActuales);
+
     // Restaurar cantidades de elementos
     for (const detalle of detallesActuales) {
       const elemento = await Elemento.findByPk(detalle.id_elemento);
       if (elemento) {
+        const nuevaCantidad = elemento.cantidad_disponible + detalle.cantidad_alquiler;
+        console.log(`Restaurando cantidad para elemento ${elemento.id_elemento}: ${elemento.cantidad_disponible} + ${detalle.cantidad_alquiler} = ${nuevaCantidad}`);
         await elemento.update({
-          cantidad_disponible: elemento.cantidad_disponible + detalle.cantidad_alquiler
+          cantidad_disponible: nuevaCantidad
         }, { transaction: t });
       }
     }
@@ -467,13 +476,17 @@ export const editAlquilerServicio = async (req: Request, res: Response) => {
           await t.rollback();
           return res.status(400).json({
             error: 'Cantidad insuficiente',
-            mensaje: `No hay suficiente cantidad disponible del elemento ${elemento.nombre_elemento}`
+            mensaje: `No hay suficiente cantidad disponible del elemento ${elemento.nombre_elemento}. Disponible: ${elemento.cantidad_disponible}, Solicitado: ${elem.cantidad}`
           });
         }
       }
 
+      // Crear los nuevos detalles y actualizar cantidades
       await Promise.all(elementos.map(async (elem: any) => {
-        await DetalleAlquiler.create({
+        console.log(`Procesando elemento ${elem.id_elemento} con cantidad ${elem.cantidad}`);
+        
+        // Crear el detalle
+        const nuevoDetalle = await DetalleAlquiler.create({
           id_alquiler,
           id_elemento: elem.id_elemento,
           cantidad_alquiler: elem.cantidad,
@@ -482,11 +495,15 @@ export const editAlquilerServicio = async (req: Request, res: Response) => {
           estado_detalquiler: 'Aceptado'
         }, { transaction: t });
 
+        console.log('Detalle creado:', nuevoDetalle);
+
         // Actualizar la cantidad disponible del elemento
         const elemento = await Elemento.findByPk(elem.id_elemento);
         if (elemento) {
+          const nuevaCantidad = elemento.cantidad_disponible - elem.cantidad;
+          console.log(`Actualizando cantidad para elemento ${elem.id_elemento}: ${elemento.cantidad_disponible} - ${elem.cantidad} = ${nuevaCantidad}`);
           await elemento.update({
-            cantidad_disponible: elemento.cantidad_disponible - elem.cantidad
+            cantidad_disponible: nuevaCantidad
           }, { transaction: t });
         }
       }));
@@ -516,6 +533,7 @@ export const editAlquilerServicio = async (req: Request, res: Response) => {
       ]
     });
 
+    console.log('Alquiler actualizado:', alquilerActualizado);
     res.json(alquilerActualizado);
   } catch (error) {
     await t.rollback();
