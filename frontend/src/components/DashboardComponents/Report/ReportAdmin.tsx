@@ -1213,10 +1213,13 @@ const ReportAdmin = () => {
           <Card
             hoverable
             onClick={showUserModal}
-            style={{backgroundColor:'green', textAlign: 'center' }}
+            className="dashboard-card"
+            style={{ textAlign: 'center', display: 'flex', flexDirection: 'column', justifyContent: 'center', minHeight: '200px' }}
           >
-            <UserOutlined style={{ fontSize: '32px', marginBottom: '8px' }} />
-            <h3>Reportes de Usuarios</h3>
+            <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '16px' }}>
+              <UserOutlined style={{ fontSize: '48px', color: 'var(--gold)' }} />
+            </div>
+            <h3 className="reportTitle">Reportes de Usuarios</h3>
             <p>Gestión de reportes de usuarios y roles</p>
           </Card>
         </Col>
@@ -1224,22 +1227,27 @@ const ReportAdmin = () => {
           <Card
             hoverable
             onClick={showEventModal}
-            style={{backgroundColor:'green', textAlign: 'center' }}
+            className="dashboard-card"
+            style={{ textAlign: 'center', display: 'flex', flexDirection: 'column', justifyContent: 'center', minHeight: '200px' }}
           >
-            <CalendarOutlined style={{ fontSize: '32px', marginBottom: '8px' }} />
-            <h3>Reportes de Eventos</h3>
+            <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '16px' }}>
+              <CalendarOutlined style={{ fontSize: '48px', color: 'var(--gold)' }} />
+            </div>
+            <h3 className="reportTitle">Reportes de Eventos</h3>
             <p>Estadísticas y métricas de eventos</p>
           </Card>
         </Col>
         <Col xs={24} sm={12} md={8} lg={6}>
           <Card
-            
             hoverable
             onClick={showEquipoModal}
-            style={{backgroundColor:'green', textAlign: 'center' }}
+            className="dashboard-card"
+            style={{ textAlign: 'center', display: 'flex', flexDirection: 'column', justifyContent: 'center', minHeight: '200px' }}
           >
-            <TeamOutlined style={{ fontSize: '32px', marginBottom: '8px' }} />
-            <h3>Reportes de Equipos</h3>
+            <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '16px' }}>
+              <TeamOutlined style={{ fontSize: '48px', color: 'var(--gold)' }} />
+            </div>
+            <h3 className="reportTitle">Reportes de Equipos</h3>
             <p>Análisis de equipos y sus eventos</p>
           </Card>
         </Col>
@@ -1247,10 +1255,13 @@ const ReportAdmin = () => {
           <Card
             hoverable
             onClick={showElementoModal}
-            style={{backgroundColor:'green', textAlign: 'center' }}
+            className="dashboard-card"
+            style={{ textAlign: 'center', display: 'flex', flexDirection: 'column', justifyContent: 'center', minHeight: '200px' }}
           >
-            <InboxOutlined style={{ fontSize: '32px', marginBottom: '8px' }} />
-            <h3>Reporte de Elementos</h3>
+            <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '16px' }}>
+              <InboxOutlined style={{ fontSize: '48px', color: 'var(--gold)' }} />
+            </div>
+            <h3 className="reportTitle">Reporte de Elementos</h3>
             <p>Gestión de elementos del sistema</p>
           </Card>
         </Col>
@@ -1260,10 +1271,13 @@ const ReportAdmin = () => {
           <Card
             hoverable
             onClick={showFacturaModal}
-            style={{ backgroundColor:'green',textAlign: 'center' }}
+            className="dashboard-card"
+            style={{ textAlign: 'center', display: 'flex', flexDirection: 'column', justifyContent: 'center', minHeight: '200px' }}
           >
-            <PrinterOutlined style={{ fontSize: '32px', marginBottom: '8px' }} />
-            <h3>Facturas de Pagos</h3>
+            <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '16px' }}>
+              <PrinterOutlined style={{ fontSize: '48px', color: 'var(--gold)' }} />
+            </div>
+            <h3 className="reportTitle">Facturas de Pagos</h3>
             <p>Gestión de facturación y pagos</p>
           </Card>
         </Col>
@@ -1271,10 +1285,13 @@ const ReportAdmin = () => {
           <Card
             hoverable
             onClick={showCompraModal}
-            style={{ textAlign: 'center' }}
+            className="dashboard-card"
+            style={{ textAlign: 'center', display: 'flex', flexDirection: 'column', justifyContent: 'center', minHeight: '200px' }}
           >
-            <ShoppingCartOutlined style={{ fontSize: '32px', marginBottom: '8px' }} />
-            <h3>Reportes de Compras</h3>
+            <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '16px' }}>
+              <ShoppingCartOutlined style={{ fontSize: '48px', color: 'var(--gold)' }} />
+            </div>
+            <h3 className="reportTitle">Reportes de Compras</h3>
             <p>Entrada y suministro de elementos</p>
           </Card>
         </Col>
@@ -1282,10 +1299,13 @@ const ReportAdmin = () => {
           <Card
             hoverable
             onClick={showProveedorModal}
-            style={{backgroundColor:'green', textAlign: 'center' }}
+            className="dashboard-card"
+            style={{ textAlign: 'center', display: 'flex', flexDirection: 'column', justifyContent: 'center', minHeight: '200px' }}
           >
-            <TruckOutlined style={{ fontSize: '32px', marginBottom: '8px' }} />
-            <h3>Reportes de Proveedores</h3>
+            <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '16px' }}>
+              <TruckOutlined style={{ fontSize: '48px', color: 'var(--gold)' }} />
+            </div>
+            <h3 className="reportTitle">Reportes de Proveedores</h3>
             <p>Gestión de reportes de proveedores</p>
           </Card>
         </Col>
@@ -1293,10 +1313,13 @@ const ReportAdmin = () => {
           <Card
             hoverable
             onClick={showAlquilerModal}
-            style={{ backgroundColor:'green', textAlign: 'center' }}
+            className="dashboard-card"
+            style={{ textAlign: 'center', display: 'flex', flexDirection: 'column', justifyContent: 'center', minHeight: '200px' }}
           >
-            <ShopOutlined style={{ fontSize: '32px', marginBottom: '8px' }} />
-            <h3>Reporte de Alquileres</h3>
+            <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '16px' }}>
+              <ShopOutlined style={{ fontSize: '48px', color: 'var(--gold)' }} />
+            </div>
+            <h3 className="reportTitle">Reporte de Alquileres</h3>
             <p>Gestión y análisis de alquileres del sistema</p>
           </Card>
         </Col>

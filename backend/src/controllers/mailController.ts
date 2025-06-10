@@ -159,26 +159,51 @@ export const sendRecoveryEmail = async (req: Request, res: Response) => {
 };
 
 export const resetPassword = async (req: Request, res: Response) => {
-  const { correo_usuario, codigo, nueva_contrasena } = req.body;
+  const { token, nueva_contrasena } = req.body;
 
   try {
-    const usuario = await Usuario.findOne({ where: { correo_usuario } });
+    // Verificar y decodificar el token
+    const decoded = jwt.verify(token, process.env.JWT_SECRET!) as { id: string, correo: string };
+    
+    const usuario = await Usuario.findOne({ 
+      where: { 
+        cedula_usuario: decoded.id,
+        correo_usuario: decoded.correo
+      } 
+    });
 
     if (!usuario) {
       return res.status(404).json({ error: 'Usuario no encontrado' });
     }
 
-    if (usuario.codigo_recuperacion !== codigo || !usuario.expiracion_codigo || Date.now() > usuario.expiracion_codigo) {
-      return res.status(400).json({ error: 'Código inválido o expirado' });
+    try {
+      // Intentar actualizar la contraseña
+      await usuario.update({ 
+        contrasena_login: nueva_contrasena, 
+        codigo_recuperacion: null, 
+        expiracion_codigo: null 
+      });
+
+      res.status(200).json({ 
+        success: true,
+        message: 'Contraseña restablecida exitosamente' 
+      });
+    } catch (updateError: any) {
+      // Si el error es de validación de contraseña, devolver un mensaje más específico
+      if (updateError.message.includes('contraseña')) {
+        return res.status(400).json({ 
+          error: updateError.message,
+          details: 'La contraseña debe cumplir con los requisitos de seguridad'
+        });
+      }
+      throw updateError; // Re-lanzar otros tipos de errores
     }
-
-    const hashedPassword = await bcrypt.hash(nueva_contrasena, 10);
-    await usuario.update({ contrasena_login: hashedPassword, codigo_recuperacion: null, expiracion_codigo: null });
-
-    res.status(200).json({ message: 'Contraseña restablecida exitosamente' });
 
   } catch (error) {
     console.error('Error en resetPassword:', error);
+    if (error instanceof jwt.JsonWebTokenError) {
+      return res.status(400).json({ error: 'Token inválido o expirado' });
+    }
     res.status(500).json({ error: 'Error al restablecer contraseña' });
   }
 };
