@@ -68,8 +68,14 @@ interface Evento {
 interface Proveedor {
   id_proveedor: number;
   nombre_proveedor: string;
-  tipo_proveedor: string;
-  estado_proveedor: string;
+  tipo_proveedor: 'Catering' | 'Elementos';
+  tel_proveedor: string;
+  correo_proveedor: string;
+  estado_proveedor: 'Activo' | 'Inactivo' | 'Eliminado';
+  direccion?: {
+    calle: string;
+    sector: string;
+  };
 }
 
 interface Compra {
@@ -140,6 +146,14 @@ const ReportAdmin = () => {
   const [loadingCompras, setLoadingCompras] = useState(false);
   const [loadingElementosCompra, setLoadingElementosCompra] = useState(false);
   const [selectedPuesto, setSelectedPuesto] = useState<string>('todos');
+  const [selectedCategoria, setSelectedCategoria] = useState<string>('todos');
+  const [precioRangeElemento, setPrecioRangeElemento] = useState<[number, number]>([0, 0]);
+  const [categorias, setCategorias] = useState<any[]>([]);
+  const [loadingCategorias, setLoadingCategorias] = useState(false);
+  const [isAlquilerModalVisible, setIsAlquilerModalVisible] = useState<boolean>(false);
+  const [selectedAlquilerId, setSelectedAlquilerId] = useState<string>('');
+  const [alquileres, setAlquileres] = useState<any[]>([]);
+  const [loadingAlquileres, setLoadingAlquileres] = useState(false);
 
   const handleRoleAndStatusReport = async () => {
     try {
@@ -428,6 +442,8 @@ const ReportAdmin = () => {
     setSelectedColor('todos');
     setSelectedMaterial('todos');
     setSelectedAgruparPor('');
+    setSelectedCategoria('todos');
+    setPrecioRangeElemento([0, 0]);
   };
 
   useEffect(() => {
@@ -435,13 +451,18 @@ const ReportAdmin = () => {
       fetchSubcategorias();
       fetchColores();
       fetchMateriales();
+      fetchCategorias();
     }
   }, [isElementoModalVisible]);
 
   const fetchSubcategorias = async () => {
     try {
       setLoadingSubcategorias(true);
-      const response = await axios.get(`${apiUrl}/elemento/categorias/list`, {
+      if (selectedCategoria === 'todos') {
+        setSubcategorias([]);
+        return;
+      }
+      const response = await axios.get(`${apiUrl}/elemento/subcategorias/categoria/${selectedCategoria}`, {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`,
           'Content-Type': 'application/json'
@@ -465,6 +486,14 @@ const ReportAdmin = () => {
       setLoadingSubcategorias(false);
     }
   };
+
+  useEffect(() => {
+    if (isElementoModalVisible && selectedCategoria !== 'todos') {
+      fetchSubcategorias();
+    } else {
+      setSubcategorias([]);
+    }
+  }, [selectedCategoria, isElementoModalVisible]);
 
   const fetchColores = async () => {
     try {
@@ -506,6 +535,30 @@ const ReportAdmin = () => {
     }
   };
 
+  const fetchCategorias = async () => {
+    try {
+      setLoadingCategorias(true);
+      const response = await axios.get(`${apiUrl}/elemento/categorias/list`, {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      if (response.data && Array.isArray(response.data)) {
+        setCategorias(response.data);
+      } else {
+        console.error('Formato de datos inválido para categorías', response.data);
+        message.error('Error al cargar las categorías');
+      }
+    } catch (error) {
+      console.error('Error al cargar categorías:', error);
+      message.error('Error al cargar las categorías');
+      setCategorias([]);
+    } finally {
+      setLoadingCategorias(false);
+    }
+  };
+
   const handleElementoReport = async () => {
     try {
       setLoading(true);
@@ -515,29 +568,37 @@ const ReportAdmin = () => {
       if (selectedSubcategoria && selectedSubcategoria !== 'todos') {
         params.append('subcategoria', selectedSubcategoria);
       }
-
       if (selectedColor && selectedColor !== 'todos') {
         params.append('color', selectedColor);
       }
-
       if (selectedMaterial && selectedMaterial !== 'todos') {
         params.append('material', selectedMaterial);
       }
-
       if (selectedAgruparPor) {
         params.append('agrupar_por', selectedAgruparPor);
+      }
+      if (selectedCategoria && selectedCategoria !== 'todos') {
+        params.append('categoria', selectedCategoria);
+      }
+      if (precioRangeElemento[0] > 0) {
+        params.append('precio_min', precioRangeElemento[0].toString());
+      }
+      if (precioRangeElemento[1] > 0) {
+        params.append('precio_max', precioRangeElemento[1].toString());
       }
 
       if (params.toString()) {
         url += `?${params.toString()}`;
       }
 
-      console.log('URL del reporte:', url);
+      console.log('URL del reporte de elementos:', url);
       console.log('Parámetros:', {
         subcategoria: selectedSubcategoria,
         color: selectedColor,
         material: selectedMaterial,
-        agrupar_por: selectedAgruparPor
+        agrupar_por: selectedAgruparPor,
+        categoria: selectedCategoria,
+        precioRangeElemento: precioRangeElemento
       });
 
       const response = await axios.get(url, {
@@ -670,11 +731,14 @@ const ReportAdmin = () => {
 
   const handleFacturaModalCancel = () => {
     setIsFacturaModalVisible(false);
-    setSelectedFacturaReport('');
-    setSelectedClienteId('');
-    setSelectedMetodoPago('');
-    setPrecioRange([0, 0]);
+    setSelectedEventoId('todos');
   };
+
+  useEffect(() => {
+    if (isFacturaModalVisible) {
+      fetchEventos();
+    }
+  }, [isFacturaModalVisible]);
 
   const showProveedorModal = () => {
     setIsProveedorModalVisible(true);
@@ -712,7 +776,7 @@ const ReportAdmin = () => {
   const fetchProveedores = async () => {
     try {
       setLoadingProveedores(true);
-      const response = await axios.get(`${apiUrl}/proveedor/list`, {
+      const response = await axios.get(`${apiUrl}/proveedor`, {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`,
           'Content-Type': 'application/json'
@@ -816,22 +880,7 @@ const ReportAdmin = () => {
   const handleFacturaReport = async () => {
     try {
       setLoading(true);
-      let url = `${apiUrl}/reporte/facturas`;
-      const params = new URLSearchParams();
-
-      if (selectedFacturaReport === 'cliente' && selectedClienteId) {
-        params.append('cliente_id', selectedClienteId);
-      } else if (selectedFacturaReport === 'evento' && selectedEventoId) {
-        params.append('evento_id', selectedEventoId);
-      } else if (selectedFacturaReport === 'metodo') {
-        params.append('metodo_pago', selectedMetodoPago);
-        if (precioRange[0] > 0) params.append('precio_min', precioRange[0].toString());
-        if (precioRange[1] > 0) params.append('precio_max', precioRange[1].toString());
-      }
-
-      if (params.toString()) {
-        url += `?${params.toString()}`;
-      }
+      let url = `${apiUrl}/reporte/factura/evento/${selectedEventoId}`;
 
       const response = await axios.get(url, {
         responseType: 'blob',
@@ -844,7 +893,39 @@ const ReportAdmin = () => {
       const fileURL = window.URL.createObjectURL(file);
       window.open(fileURL);
     } catch (error) {
-      message.error('Error al generar el reporte de facturas');
+      if (axios.isAxiosError(error)) {
+        const { response } = error;
+        if (response && response.data instanceof Blob) {
+          try {
+            const blobText = await new Promise<string>((resolve, reject) => {
+              const reader = new FileReader();
+              reader.onloadend = () => {
+                if (reader.result) {
+                  resolve(reader.result as string);
+                } else {
+                  reject(new Error('Failed to read blob as text.'));
+                }
+              };
+              reader.onerror = reject;
+              reader.readAsText(response.data);
+            });
+
+            const errorData = JSON.parse(blobText);
+            if (errorData.mensaje) {
+              message.error(errorData.mensaje);
+            } else {
+              message.error('Error al generar el reporte de factura');
+            }
+          } catch (parseError) {
+            console.error('Error parsing error response:', parseError);
+            message.error('Error al generar el reporte de factura');
+          }
+        } else {
+          message.error('Error al generar el reporte de factura');
+        }
+      } else {
+        message.error('Error al generar el reporte de factura');
+      }
     } finally {
       setLoading(false);
     }
@@ -854,18 +935,10 @@ const ReportAdmin = () => {
     try {
       setLoading(true);
       let url = `${apiUrl}/reporte/proveedores`;
-      const params = new URLSearchParams();
 
-      if (selectedTipoProveedor !== 'todos') {
-        params.append('tipo', selectedTipoProveedor);
-      }
-
-      if (selectedEstadoProveedor !== 'todos') {
-        params.append('estado', selectedEstadoProveedor);
-      }
-
-      if (params.toString()) {
-        url += `?${params.toString()}`;
+      // Si hay filtros seleccionados, usar la ruta específica
+      if (selectedTipoProveedor !== 'todos' || selectedEstadoProveedor !== 'todos') {
+        url = `${apiUrl}/reporte/proveedores/filtro/tipo/${selectedTipoProveedor}/estado/${selectedEstadoProveedor}`;
       }
 
       const response = await axios.get(url, {
@@ -879,7 +952,39 @@ const ReportAdmin = () => {
       const fileURL = window.URL.createObjectURL(file);
       window.open(fileURL);
     } catch (error) {
-      message.error('Error al generar el reporte de proveedores');
+      if (axios.isAxiosError(error)) {
+        const { response } = error;
+        if (response && response.data instanceof Blob) {
+          try {
+            const blobText = await new Promise<string>((resolve, reject) => {
+              const reader = new FileReader();
+              reader.onloadend = () => {
+                if (reader.result) {
+                  resolve(reader.result as string);
+                } else {
+                  reject(new Error('Failed to read blob as text.'));
+                }
+              };
+              reader.onerror = reject;
+              reader.readAsText(response.data);
+            });
+
+            const errorData = JSON.parse(blobText);
+            if (errorData.mensaje) {
+              message.error(errorData.mensaje);
+            } else {
+              message.error('Error al generar el reporte de proveedores');
+            }
+          } catch (parseError) {
+            console.error('Error parsing error response:', parseError);
+            message.error('Error al generar el reporte de proveedores');
+          }
+        } else {
+          message.error('Error al generar el reporte de proveedores');
+        }
+      } else {
+        message.error('Error al generar el reporte de proveedores');
+      }
     } finally {
       setLoading(false);
     }
@@ -945,40 +1050,15 @@ const ReportAdmin = () => {
     }
   }, [isCompraModalVisible]);
 
-  const handleCompraReport = async (type: string) => {
+  const handleCompraReport = async () => {
     try {
       setLoading(true);
       let url = `${apiUrl}/reporte/compras`;
-      const params = new URLSearchParams();
 
-      switch (type) {
-        case 'general':
-          // No additional parameters needed
-          break;
-        case 'detalle':
-          if (selectedCompraId) {
-            params.append('compra_id', selectedCompraId);
-          }
-          break;
-        case 'elemento':
-          if (selectedElementoId) {
-            params.append('elemento_id', selectedElementoId);
-          }
-          break;
-        case 'estado':
-          if (selectedEstadoCompra !== 'todos') {
-            params.append('estado', selectedEstadoCompra);
-          }
-          break;
-        case 'proveedor':
-          if (selectedProveedorCompra) {
-            params.append('proveedor_id', selectedProveedorCompra);
-          }
-          break;
-      }
-
-      if (params.toString()) {
-        url += `?${params.toString()}`;
+      if (selectedCompraId && selectedCompraId !== 'todos') {
+        url = `${apiUrl}/reporte/compras/${selectedCompraId}`;
+      } else {
+        url = `${apiUrl}/reporte/compras/todos`; // Para el reporte general
       }
 
       const response = await axios.get(url, {
@@ -992,7 +1072,134 @@ const ReportAdmin = () => {
       const fileURL = window.URL.createObjectURL(file);
       window.open(fileURL);
     } catch (error) {
-      message.error('Error al generar el reporte de compras');
+      if (axios.isAxiosError(error)) {
+        const { response } = error;
+        if (response && response.data instanceof Blob) {
+          try {
+            const blobText = await new Promise<string>((resolve, reject) => {
+              const reader = new FileReader();
+              reader.onloadend = () => {
+                if (reader.result) {
+                  resolve(reader.result as string);
+                } else {
+                  reject(new Error('Failed to read blob as text.'));
+                }
+              };
+              reader.onerror = reject;
+              reader.readAsText(response.data);
+            });
+
+            const errorData = JSON.parse(blobText);
+            if (errorData.mensaje) {
+              message.error(errorData.mensaje);
+            } else {
+              message.error('Error al generar el reporte de compras');
+            }
+          } catch (parseError) {
+            console.error('Error parsing error response:', parseError);
+            message.error('Error al generar el reporte de compras');
+          }
+        } else {
+          message.error('Error al generar el reporte de compras');
+        }
+      } else {
+        message.error('Error al generar el reporte de compras');
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const showAlquilerModal = () => {
+    setIsAlquilerModalVisible(true);
+  };
+
+  const handleAlquilerModalCancel = () => {
+    setIsAlquilerModalVisible(false);
+    setSelectedAlquilerId('');
+  };
+
+  const fetchAlquileres = async () => {
+    try {
+      setLoadingAlquileres(true);
+      const response = await axios.get(`${apiUrl}/alquiler`, {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      if (response.data) {
+        setAlquileres(response.data);
+      }
+    } catch (error) {
+      console.error('Error al cargar alquileres:', error);
+      message.error('Error al cargar los alquileres');
+    } finally {
+      setLoadingAlquileres(false);
+    }
+  };
+
+  useEffect(() => {
+    if (isAlquilerModalVisible) {
+      fetchAlquileres();
+    }
+  }, [isAlquilerModalVisible]);
+
+  const handleAlquilerReport = async () => {
+    try {
+      setLoading(true);
+      let url = `${apiUrl}/reporte/alquiler`;
+
+      if (selectedAlquilerId && selectedAlquilerId !== 'todos') {
+        url = `${apiUrl}/reporte/alquiler/${selectedAlquilerId}`;
+      } else {
+        url = `${apiUrl}/reporte/alquiler/todos`;
+      }
+
+      const response = await axios.get(url, {
+        responseType: 'blob',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        }
+      });
+      
+      const file = new Blob([response.data], { type: 'application/pdf' });
+      const fileURL = window.URL.createObjectURL(file);
+      window.open(fileURL);
+    } catch (error) {
+      if (axios.isAxiosError(error)) {
+        const { response } = error;
+        if (response && response.data instanceof Blob) {
+          try {
+            const blobText = await new Promise<string>((resolve, reject) => {
+              const reader = new FileReader();
+              reader.onloadend = () => {
+                if (reader.result) {
+                  resolve(reader.result as string);
+                } else {
+                  reject(new Error('Failed to read blob as text.'));
+                }
+              };
+              reader.onerror = reject;
+              reader.readAsText(response.data);
+            });
+
+            const errorData = JSON.parse(blobText);
+            if (errorData.mensaje) {
+              message.error(errorData.mensaje);
+            } else {
+              message.error('Error al generar el reporte de alquileres');
+            }
+          } catch (parseError) {
+            console.error('Error parsing error response:', parseError);
+            message.error('Error al generar el reporte de alquileres');
+          }
+        } else {
+          message.error('Error al generar el reporte de alquileres');
+        }
+      } else {
+        message.error('Error al generar el reporte de alquileres');
+      }
     } finally {
       setLoading(false);
     }
@@ -1006,10 +1213,13 @@ const ReportAdmin = () => {
           <Card
             hoverable
             onClick={showUserModal}
-            style={{backgroundColor:'green', textAlign: 'center' }}
+            className="dashboard-card"
+            style={{ textAlign: 'center', display: 'flex', flexDirection: 'column', justifyContent: 'center', minHeight: '200px' }}
           >
-            <UserOutlined style={{ fontSize: '32px', marginBottom: '8px' }} />
-            <h3>Reportes de Usuarios</h3>
+            <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '16px' }}>
+              <UserOutlined style={{ fontSize: '48px', color: 'var(--gold)' }} />
+            </div>
+            <h3 className="reportTitle">Reportes de Usuarios</h3>
             <p>Gestión de reportes de usuarios y roles</p>
           </Card>
         </Col>
@@ -1017,22 +1227,27 @@ const ReportAdmin = () => {
           <Card
             hoverable
             onClick={showEventModal}
-            style={{backgroundColor:'green', textAlign: 'center' }}
+            className="dashboard-card"
+            style={{ textAlign: 'center', display: 'flex', flexDirection: 'column', justifyContent: 'center', minHeight: '200px' }}
           >
-            <CalendarOutlined style={{ fontSize: '32px', marginBottom: '8px' }} />
-            <h3>Reportes de Eventos</h3>
+            <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '16px' }}>
+              <CalendarOutlined style={{ fontSize: '48px', color: 'var(--gold)' }} />
+            </div>
+            <h3 className="reportTitle">Reportes de Eventos</h3>
             <p>Estadísticas y métricas de eventos</p>
           </Card>
         </Col>
         <Col xs={24} sm={12} md={8} lg={6}>
           <Card
-            
             hoverable
             onClick={showEquipoModal}
-            style={{backgroundColor:'green', textAlign: 'center' }}
+            className="dashboard-card"
+            style={{ textAlign: 'center', display: 'flex', flexDirection: 'column', justifyContent: 'center', minHeight: '200px' }}
           >
-            <TeamOutlined style={{ fontSize: '32px', marginBottom: '8px' }} />
-            <h3>Reportes de Equipos</h3>
+            <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '16px' }}>
+              <TeamOutlined style={{ fontSize: '48px', color: 'var(--gold)' }} />
+            </div>
+            <h3 className="reportTitle">Reportes de Equipos</h3>
             <p>Análisis de equipos y sus eventos</p>
           </Card>
         </Col>
@@ -1040,10 +1255,13 @@ const ReportAdmin = () => {
           <Card
             hoverable
             onClick={showElementoModal}
-            style={{ textAlign: 'center' }}
+            className="dashboard-card"
+            style={{ textAlign: 'center', display: 'flex', flexDirection: 'column', justifyContent: 'center', minHeight: '200px' }}
           >
-            <InboxOutlined style={{ fontSize: '32px', marginBottom: '8px' }} />
-            <h3>Reporte de Elementos</h3>
+            <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '16px' }}>
+              <InboxOutlined style={{ fontSize: '48px', color: 'var(--gold)' }} />
+            </div>
+            <h3 className="reportTitle">Reporte de Elementos</h3>
             <p>Gestión de elementos del sistema</p>
           </Card>
         </Col>
@@ -1053,10 +1271,13 @@ const ReportAdmin = () => {
           <Card
             hoverable
             onClick={showFacturaModal}
-            style={{ textAlign: 'center' }}
+            className="dashboard-card"
+            style={{ textAlign: 'center', display: 'flex', flexDirection: 'column', justifyContent: 'center', minHeight: '200px' }}
           >
-            <PrinterOutlined style={{ fontSize: '32px', marginBottom: '8px' }} />
-            <h3>Facturas de Pagos</h3>
+            <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '16px' }}>
+              <PrinterOutlined style={{ fontSize: '48px', color: 'var(--gold)' }} />
+            </div>
+            <h3 className="reportTitle">Facturas de Pagos</h3>
             <p>Gestión de facturación y pagos</p>
           </Card>
         </Col>
@@ -1064,10 +1285,13 @@ const ReportAdmin = () => {
           <Card
             hoverable
             onClick={showCompraModal}
-            style={{ textAlign: 'center' }}
+            className="dashboard-card"
+            style={{ textAlign: 'center', display: 'flex', flexDirection: 'column', justifyContent: 'center', minHeight: '200px' }}
           >
-            <ShoppingCartOutlined style={{ fontSize: '32px', marginBottom: '8px' }} />
-            <h3>Reportes de Compras</h3>
+            <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '16px' }}>
+              <ShoppingCartOutlined style={{ fontSize: '48px', color: 'var(--gold)' }} />
+            </div>
+            <h3 className="reportTitle">Reportes de Compras</h3>
             <p>Entrada y suministro de elementos</p>
           </Card>
         </Col>
@@ -1075,22 +1299,28 @@ const ReportAdmin = () => {
           <Card
             hoverable
             onClick={showProveedorModal}
-            style={{ textAlign: 'center' }}
+            className="dashboard-card"
+            style={{ textAlign: 'center', display: 'flex', flexDirection: 'column', justifyContent: 'center', minHeight: '200px' }}
           >
-            <TruckOutlined style={{ fontSize: '32px', marginBottom: '8px' }} />
-            <h3>Reportes de Proveedores</h3>
+            <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '16px' }}>
+              <TruckOutlined style={{ fontSize: '48px', color: 'var(--gold)' }} />
+            </div>
+            <h3 className="reportTitle">Reportes de Proveedores</h3>
             <p>Gestión de reportes de proveedores</p>
           </Card>
         </Col>
         <Col xs={24} sm={12} md={8} lg={6}>
           <Card
             hoverable
-            onClick={showElementoModal}
-            style={{ textAlign: 'center' }}
+            onClick={showAlquilerModal}
+            className="dashboard-card"
+            style={{ textAlign: 'center', display: 'flex', flexDirection: 'column', justifyContent: 'center', minHeight: '200px' }}
           >
-            <ShopOutlined style={{ fontSize: '32px', marginBottom: '8px' }} />
-            <h3>Reporte de Menus</h3>
-            <p>Gestión y análisis de menus del sistema</p>
+            <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '16px' }}>
+              <ShopOutlined style={{ fontSize: '48px', color: 'var(--gold)' }} />
+            </div>
+            <h3 className="reportTitle">Reporte de Alquileres</h3>
+            <p>Gestión y análisis de alquileres del sistema</p>
           </Card>
         </Col>
       </Row>
@@ -1287,7 +1517,21 @@ const ReportAdmin = () => {
           <div>
             <h4 className='reportTitle'>Reporte de Elementos</h4>
             <Space direction="vertical" style={{ width: '100%' }}>
-              <Select
+               <Select
+                style={{ width: '100%' }}
+                placeholder="Seleccione una categoría"
+                value={selectedCategoria}
+                onChange={setSelectedCategoria}
+                loading={loadingCategorias}
+              >
+                <Option value="todos">Todas las Categorías</Option>
+                {categorias.map(categoria => (
+                  <Option key={categoria.id_categoria} value={categoria.id_categoria.toString()}>
+                    {categoria.nombre_categoria}
+                  </Option>
+                ))}
+              </Select>
+               <Select
                 style={{ width: '100%' }}
                 placeholder="Seleccione una subcategoría"
                 value={selectedSubcategoria}
@@ -1307,6 +1551,8 @@ const ReportAdmin = () => {
                   );
                 })}
               </Select>
+
+            
 
               <Select
                 style={{ width: '100%' }}
@@ -1350,27 +1596,6 @@ const ReportAdmin = () => {
                 loading={loading}
               >
                 Generar Reporte de Elementos
-              </Button>
-            </Space>
-          </div>
-
-          <div>
-            <h4 className='reportTitle'>Reporte de Detalles de Alquiler</h4>
-            <Space direction="vertical" style={{ width: '100%' }}>
-              <RangePicker
-                style={{ width: '100%' }}
-                placeholder={['Fecha Inicio', 'Fecha Fin']}
-                value={dateRange}
-                onChange={(dates) => setDateRange(dates as [dayjs.Dayjs | null, dayjs.Dayjs | null])}
-              />
-
-              <Button 
-                type="primary" 
-                icon={<DownloadOutlined />}
-                onClick={handleDetalleAlquilerReport}
-                loading={loading}
-              >
-                Generar Reporte de Detalles de Alquiler
               </Button>
             </Space>
           </div>
@@ -1485,44 +1710,17 @@ const ReportAdmin = () => {
       >
         <Space direction="vertical" size="large" style={{ width: '100%' }}>
           <div>
-            <h4 className='reportTitle'>Reporte por Cliente</h4>
+            <h4 className='reportTitle'>Generar Reporte de Factura</h4>
             <Space direction="vertical" style={{ width: '100%' }}>
-              <Select
-                style={{ width: '100%' }}
-                placeholder="Seleccione un cliente"
-                value={selectedClienteId}
-                onChange={setSelectedClienteId}
-                loading={loadingClientes}
-              >
-                {clientes.map(cliente => (
-                  <Option key={cliente.cedula_usuario} value={cliente.cedula_usuario}>
-                    {`${cliente.nombre_usuario} ${cliente.apellido_usuario}`}
-                  </Option>
-                ))}
-              </Select>
-              <Button 
-                type="primary" 
-                icon={<DownloadOutlined />}
-                onClick={() => {
-                  setSelectedFacturaReport('cliente');
-                  handleFacturaReport();
-                }}
-                loading={loading}
-                disabled={!selectedClienteId}
-              >
-                Generar Reporte por Cliente
-              </Button>
-            </Space>
-          </div>
-
-          <div>
+             
             <h4 className='reportTitle'>Reporte por Evento</h4>
-            <Space direction="vertical" style={{ width: '100%' }}>
               <Select
                 style={{ width: '100%' }}
                 placeholder="Seleccione un evento"
                 value={selectedEventoId}
-                onChange={setSelectedEventoId}
+                onChange={(value) => {
+                  setSelectedEventoId(value);
+                }}
                 loading={loadingEventos}
                 showSearch
                 optionFilterProp="label"
@@ -1530,67 +1728,26 @@ const ReportAdmin = () => {
                   (option?.label ?? '').toString().toLowerCase().includes(input.toLowerCase())
                 }
               >
+                <Option value="todos">Todos los Eventos</Option>
                 {eventos.map(evento => (
-                  <Option key={evento.id_evento} value={evento.id_evento.toString()}>
+                  <Option 
+                    key={evento.id_evento} 
+                    value={evento.id_evento.toString()}
+                    label={`${evento.cliente?.nombre_usuario || ''} ${evento.cliente?.apellido_usuario || ''} - ${new Date(evento.fecha_evento).toLocaleDateString()}`}
+                  >
                     {`${evento.cliente?.nombre_usuario || ''} ${evento.cliente?.apellido_usuario || ''} - ${new Date(evento.fecha_evento).toLocaleDateString()}`}
                   </Option>
                 ))}
               </Select>
-              <Button 
-                type="primary" 
-                icon={<DownloadOutlined />}
-                onClick={() => {
-                  setSelectedFacturaReport('evento');
-                  handleFacturaReport();
-                }}
-                loading={loading}
-                disabled={!selectedEventoId}
-              >
-                Generar Reporte por Evento
-              </Button>
-            </Space>
-          </div>
 
-          <div>
-            <h4 className='reportTitle'>Reporte por Método de Pago</h4>
-            <Space direction="vertical" style={{ width: '100%' }}>
-              <Select
-                style={{ width: '100%' }}
-                placeholder="Seleccione un método de pago"
-                value={selectedMetodoPago}
-                onChange={setSelectedMetodoPago}
-              >
-                <Option value="efectivo">Efectivo</Option>
-                <Option value="tarjeta">Tarjeta</Option>
-                <Option value="transferencia">Transferencia</Option>
-              </Select>
-              <Input.Group compact>
-                <Input
-                  style={{ width: '50%' }}
-                  placeholder="Precio mínimo"
-                  type="number"
-                  value={precioRange[0]}
-                  onChange={(e) => setPrecioRange([Number(e.target.value), precioRange[1]])}
-                />
-                <Input
-                  style={{ width: '50%' }}
-                  placeholder="Precio máximo"
-                  type="number"
-                  value={precioRange[1]}
-                  onChange={(e) => setPrecioRange([precioRange[0], Number(e.target.value)])}
-                />
-              </Input.Group>
               <Button 
                 type="primary" 
                 icon={<DownloadOutlined />}
-                onClick={() => {
-                  setSelectedFacturaReport('metodo');
-                  handleFacturaReport();
-                }}
+                onClick={handleFacturaReport}
                 loading={loading}
-                disabled={!selectedMetodoPago}
+                disabled={!selectedEventoId || selectedEventoId === 'todos'}
               >
-                Generar Reporte por Método de Pago
+                Generar Reporte
               </Button>
             </Space>
           </div>
@@ -1617,10 +1774,8 @@ const ReportAdmin = () => {
                 onChange={setSelectedTipoProveedor}
               >
                 <Option value="todos">Todos los Tipos</Option>
-                <Option value="equipos">Equipos</Option>
-                <Option value="alimentos">Alimentos</Option>
-                <Option value="decoracion">Decoración</Option>
-                <Option value="otros">Otros</Option>
+                <Option value="Catering">Catering</Option>
+                <Option value="Elementos">Elementos</Option>
               </Select>
 
               <Select
@@ -1630,9 +1785,9 @@ const ReportAdmin = () => {
                 onChange={setSelectedEstadoProveedor}
               >
                 <Option value="todos">Todos los Estados</Option>
-                <Option value="activo">Activo</Option>
-                <Option value="inactivo">Inactivo</Option>
-                <Option value="suspendido">Suspendido</Option>
+                <Option value="Activo">Activo</Option>
+                <Option value="Inactivo">Inactivo</Option>
+                <Option value="Eliminado">Eliminado</Option>
               </Select>
 
               <Button 
@@ -1663,7 +1818,7 @@ const ReportAdmin = () => {
             <Button 
               type="primary" 
               icon={<DownloadOutlined />}
-              onClick={() => handleCompraReport('general')}
+              onClick={handleCompraReport}
               loading={loading}
             >
               Generar Reporte General
@@ -1680,18 +1835,19 @@ const ReportAdmin = () => {
                 onChange={setSelectedCompraId}
                 loading={loadingCompras}
               >
+                <Option value="todos">Todas las Compras</Option>
                 {compras.map(compra => (
                   <Option key={compra.id_compra} value={compra.id_compra.toString()}>
-                    {`Compra ID: ${compra.id_compra}, Fecha: ${compra.fecha_compra}, Estado: ${compra.estado_compra}`}
+                    {`Compra ID: ${compra.id_compra}, Fecha: ${new Date(compra.fecha_compra).toLocaleDateString()}, Estado: ${compra.estado_compra}`}
                   </Option>
                 ))}
               </Select>
               <Button 
                 type="primary" 
                 icon={<DownloadOutlined />}
-                onClick={() => handleCompraReport('detalle')}
+                onClick={handleCompraReport}
                 loading={loading}
-                disabled={!selectedCompraId}
+                disabled={!selectedCompraId || selectedCompraId === 'todos'}
               >
                 Generar Reporte de Detalle de Compra
               </Button>
@@ -1708,6 +1864,7 @@ const ReportAdmin = () => {
                 onChange={setSelectedElementoId}
                 loading={loadingElementosCompra}
               >
+                <Option value="todos">Todos los Elementos</Option>
                 {elementosCompra.map(elemento => (
                   <Option key={elemento.id_elemento} value={elemento.id_elemento.toString()}>
                     {elemento.nombre_elemento}
@@ -1717,9 +1874,9 @@ const ReportAdmin = () => {
               <Button 
                 type="primary" 
                 icon={<DownloadOutlined />}
-                onClick={() => handleCompraReport('elemento')}
+                onClick={handleCompraReport}
                 loading={loading}
-                disabled={!selectedElementoId}
+                disabled={!selectedElementoId || selectedElementoId === 'todos'}
               >
                 Generar Reporte de Elemento de Compra
               </Button>
@@ -1736,15 +1893,14 @@ const ReportAdmin = () => {
                 onChange={setSelectedEstadoCompra}
               >
                 <Option value="todos">Todos los Estados</Option>
-                <Option value="pendiente">Pendiente</Option>
-                <Option value="en proceso">En proceso</Option>
-                <Option value="completado">Completado</Option>
-                <Option value="cancelado">Cancelado</Option>
+                <Option value="En proceso">En proceso</Option>
+                <Option value="Completada">Completada</Option>
+                <Option value="Cancelada">Cancelada</Option>
               </Select>
               <Button 
                 type="primary" 
                 icon={<DownloadOutlined />}
-                onClick={() => handleCompraReport('estado')}
+                onClick={handleCompraReport}
                 loading={loading}
               >
                 Generar Reporte de Estado de Compra
@@ -1762,6 +1918,7 @@ const ReportAdmin = () => {
                 onChange={setSelectedProveedorCompra}
                 loading={loadingProveedores}
               >
+                <Option value="todos">Todos los Proveedores</Option>
                 {proveedores.map(proveedor => (
                   <Option key={proveedor.id_proveedor} value={proveedor.id_proveedor.toString()}>
                     {proveedor.nombre_proveedor}
@@ -1771,10 +1928,66 @@ const ReportAdmin = () => {
               <Button 
                 type="primary" 
                 icon={<DownloadOutlined />}
-                onClick={() => handleCompraReport('proveedor')}
+                onClick={handleCompraReport}
                 loading={loading}
               >
                 Generar Reporte de Proveedor de Compra
+              </Button>
+            </Space>
+          </div>
+        </Space>
+      </Modal>
+
+      <Modal className='ReportsModal'
+        title="Reportes de Alquileres"
+        open={isAlquilerModalVisible}
+        onCancel={handleAlquilerModalCancel}
+        footer={null}
+        width={800}
+        style={{ top: 20 }}
+        bodyStyle={{ maxHeight: 'calc(100vh - 200px)', overflow: 'auto' }}
+      >
+        <Space direction="vertical" size="large" style={{ width: '100%' }}>
+          <div>
+            <h4 className='reportTitle'>Reporte General de Alquileres</h4>
+            <Button 
+              type="primary" 
+              icon={<DownloadOutlined />}
+              onClick={() => {
+                setSelectedAlquilerId('todos');
+                handleAlquilerReport();
+              }}
+              loading={loading}
+            >
+              Generar Reporte General
+            </Button>
+          </div>
+
+          <div>
+            <h4 className='reportTitle'>Reporte de Detalle de Alquiler</h4>
+            <Space direction="vertical" style={{ width: '100%' }}>
+              <Select
+                style={{ width: '100%' }}
+                placeholder="Seleccione un alquiler"
+                value={selectedAlquilerId}
+                onChange={setSelectedAlquilerId}
+                loading={loadingAlquileres}
+              >
+                <Option value="todos">Todos los Alquileres</Option>
+                {alquileres.map(alquiler => (
+                  <Option key={alquiler.id_alquiler} value={alquiler.id_alquiler.toString()}>
+                    {`Alquiler ID: ${alquiler.id_alquiler}, Evento: ${alquiler.id_evento}, Estado: ${alquiler.estado_alquiler}`}
+                  </Option>
+                ))}
+              </Select>
+              <Button 
+                type="primary" 
+                icon={<DownloadOutlined />}
+                onClick={handleAlquilerReport}
+                loading={loading}
+                disabled={!selectedAlquilerId || selectedAlquilerId === 'todos'}
+              >
+                Generar Reporte de Detalle de Alquiler
               </Button>
             </Space>
           </div>

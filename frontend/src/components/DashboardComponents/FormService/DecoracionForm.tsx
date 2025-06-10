@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { Modal, Form, Input, Select, InputNumber, Button, Table } from 'antd';
+import { Modal, Form, Input, Select, InputNumber, Button, Table, message } from 'antd';
 import { PlusOutlined, DeleteOutlined } from '@ant-design/icons';
+import axios from 'axios';
 
 interface Evento {
   id_evento: number;
@@ -8,13 +9,26 @@ interface Evento {
   fecha_evento: string;
 }
 
+interface Categoria {
+  id_categoria: number;
+  nombre_categoria: string;
+  subcategorias: Subcategoria[];
+}
+
+interface Subcategoria {
+  id_subcategoria: number;
+  nombre_subcategoria: string;
+  id_categoria: number;
+}
+
 interface ElementoDecoracion {
-  id_decoracion: number;
+  id_elemento?: number;
   elemento_decoracion: string;
   cantelemento_decoracion: number;
   precio_elemento: number;
   precio_decoracion: number;
-  estado_detdecoracion: 'Aceptado' | 'Cancelado';
+  id_categoria?: number;
+  id_subcategoria?: number;
 }
 
 interface DecoracionFormProps {
@@ -32,19 +46,36 @@ const DecoracionForm: React.FC<DecoracionFormProps> = ({
 }) => {
   const [form] = Form.useForm();
   const [eventos, setEventos] = useState<Evento[]>([]);
-  const [elementos, setElementos] = useState<ElementoDecoracion[]>([]);
+  const [elementos, setElementos] = useState<ElementoDecoracion[]>([{
+    elemento_decoracion: '',
+    cantelemento_decoracion: 1,
+    precio_elemento: 0,
+    precio_decoracion: 0,
+    id_categoria: undefined,
+    id_subcategoria: undefined
+  }]);
   const [loadingEventos, setLoadingEventos] = useState(false);
+  const [categorias, setCategorias] = useState<Categoria[]>([]);
+  const [subcategorias, setSubcategorias] = useState<Subcategoria[]>([]);
+  const [loadingCategorias, setLoadingCategorias] = useState(false);
+  const [loadingSubcategorias, setLoadingSubcategorias] = useState(false);
+  const apiUrl = import.meta.env.VITE_API_BASE_URL;
 
   useEffect(() => {
     if (visible) {
       fetchEventos();
+      fetchCategorias();
     }
   }, [visible]);
 
   const fetchEventos = async () => {
     try {
       setLoadingEventos(true);
-      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/evento`);
+      const response = await fetch(`${apiUrl}/evento`, {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        }
+      });
       if (!response.ok) {
         throw new Error('Error al cargar los eventos');
       }
@@ -54,6 +85,45 @@ const DecoracionForm: React.FC<DecoracionFormProps> = ({
       console.error('Error al cargar eventos:', error);
     } finally {
       setLoadingEventos(false);
+    }
+  };
+
+  const fetchCategorias = async () => {
+    try {
+      setLoadingCategorias(true);
+      const response = await axios.get(`${apiUrl}/elemento/categorias/list`, {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      console.log('Respuesta de categorías:', response.data);
+      if (response.data && Array.isArray(response.data)) {
+        setCategorias(response.data);
+      } else {
+        console.error('Formato de datos inválido para categorías', response.data);
+        message.error('Error al cargar las categorías');
+      }
+    } catch (error) {
+      console.error('Error al cargar categorías:', error);
+      message.error('Error al cargar las categorías');
+      setCategorias([]);
+    } finally {
+      setLoadingCategorias(false);
+    }
+  };
+
+  const fetchSubcategorias = async (idCategoria: number) => {
+    try {
+      setLoadingSubcategorias(true);
+      const categoria = categorias.find(cat => cat.id_categoria === idCategoria);
+      if (categoria) {
+        setSubcategorias(categoria.subcategorias);
+      }
+    } catch (error) {
+      console.error('Error al cargar subcategorías:', error);
+    } finally {
+      setLoadingSubcategorias(false);
     }
   };
 
@@ -74,12 +144,12 @@ const DecoracionForm: React.FC<DecoracionFormProps> = ({
 
   const handleAddElemento = () => {
     const newElemento: ElementoDecoracion = {
-      id_decoracion: 0,
       elemento_decoracion: '',
       cantelemento_decoracion: 1,
       precio_elemento: 0,
       precio_decoracion: 0,
-      estado_detdecoracion: 'Aceptado'
+      id_categoria: undefined,
+      id_subcategoria: undefined
     };
     setElementos([...elementos, newElemento]);
   };
@@ -90,15 +160,32 @@ const DecoracionForm: React.FC<DecoracionFormProps> = ({
     setElementos(newElementos);
   };
 
-  const handleElementoChange = (index: number, field: keyof ElementoDecoracion, value: any) => {
+  const handleElementoChange = (index: number, field: string, value: any) => {
     const newElementos = [...elementos];
     newElementos[index] = {
       ...newElementos[index],
-      [field]: value,
-      precio_decoracion: field === 'cantelemento_decoracion' || field === 'precio_elemento'
-        ? newElementos[index].cantelemento_decoracion * newElementos[index].precio_elemento
-        : newElementos[index].precio_decoracion
+      [field]: value
     };
+
+    // Si se cambia la categoría, actualizar las subcategorías disponibles
+    if (field === 'id_categoria') {
+      const categoriaSeleccionada = categorias.find(cat => cat.id_categoria === value);
+      if (categoriaSeleccionada) {
+        setSubcategorias(categoriaSeleccionada.subcategorias || []);
+        // Limpiar la subcategoría seleccionada
+        newElementos[index].id_subcategoria = undefined;
+      } else {
+        setSubcategorias([]);
+      }
+    }
+
+    // Calcular el precio total si cambia la cantidad o el precio unitario
+    if (field === 'cantelemento_decoracion' || field === 'precio_elemento') {
+      const cantidad = field === 'cantelemento_decoracion' ? value : newElementos[index].cantelemento_decoracion;
+      const precioUnitario = field === 'precio_elemento' ? value : newElementos[index].precio_elemento;
+      newElementos[index].precio_decoracion = cantidad * precioUnitario;
+    }
+
     setElementos(newElementos);
   };
 
@@ -114,6 +201,51 @@ const DecoracionForm: React.FC<DecoracionFormProps> = ({
           placeholder="Nombre del elemento"
           maxLength={50}
         />
+      ),
+    },
+    {
+      title: 'Categoría',
+      dataIndex: 'id_categoria',
+      key: 'id_categoria',
+      render: (_: any, record: ElementoDecoracion, index: number) => (
+        <Select
+          value={record.id_categoria}
+          onChange={(value) => handleElementoChange(index, 'id_categoria', value)}
+          placeholder="Seleccione categoría"
+          style={{ width: '100%' }}
+          loading={loadingCategorias}
+        >
+          <Select.Option value="">Todas las categorías</Select.Option>
+          {categorias.map(categoria => (
+            <Select.Option key={categoria.id_categoria} value={categoria.id_categoria}>
+              {categoria.nombre_categoria}
+            </Select.Option>
+          ))}
+        </Select>
+      ),
+    },
+    {
+      title: 'Subcategoría',
+      dataIndex: 'id_subcategoria',
+      key: 'id_subcategoria',
+      render: (_: any, record: ElementoDecoracion, index: number) => (
+        <Select
+          value={record.id_subcategoria}
+          onChange={(value) => handleElementoChange(index, 'id_subcategoria', value)}
+          placeholder="Seleccione subcategoría"
+          style={{ width: '100%' }}
+          loading={loadingSubcategorias}
+          disabled={!record.id_categoria}
+        >
+          <Select.Option value="">Todas las subcategorías</Select.Option>
+          {subcategorias
+            .filter(sub => !record.id_categoria || sub.id_categoria === record.id_categoria)
+            .map(subcategoria => (
+              <Select.Option key={subcategoria.id_subcategoria} value={subcategoria.id_subcategoria}>
+                {subcategoria.nombre_subcategoria}
+              </Select.Option>
+            ))}
+        </Select>
       ),
     },
     {
@@ -135,18 +267,14 @@ const DecoracionForm: React.FC<DecoracionFormProps> = ({
       key: 'precio_elemento',
       render: (_: any, record: ElementoDecoracion, index: number) => (
         <InputNumber
-        value={record.precio_elemento}
-        onChange={(value) => handleElementoChange(index, 'precio_elemento', value)}
-        min={0}
-        precision={2}
-        style={{ width: '100%' }}
-        {...{
-    formatter: (value: any) => `$ ${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ','),
-    parser: (value: any) =>
-      typeof value === 'string' ? value.replace(/\$\s?|(,*)/g, '') : '',
-  }}
-/>
-
+          value={record.precio_elemento}
+          onChange={(value) => handleElementoChange(index, 'precio_elemento', value)}
+          min={0}
+          precision={2}
+          style={{ width: '100%' }}
+          formatter={(value) => `$ ${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
+          parser={(value) => parseFloat(value!.replace(/\$\s?|(,*)/g, ''))}
+        />
       ),
     },
     {
@@ -188,7 +316,7 @@ const DecoracionForm: React.FC<DecoracionFormProps> = ({
           Enviar Decoración
         </Button>
       ]}
-      width={800}
+      width={1000}
       className="dashboard-modal"
     >
       <Form
@@ -269,6 +397,7 @@ const DecoracionForm: React.FC<DecoracionFormProps> = ({
           rowKey={(_, index) => (index !== undefined ? index.toString() : '')}
           pagination={false}
           size="small"
+          scroll={{ x: 'max-content' }}
         />
       </Form>
     </Modal>

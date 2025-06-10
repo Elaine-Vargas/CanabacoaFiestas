@@ -198,6 +198,69 @@ export const getMateriales = async (req: Request, res: Response) => {
   }
 };
 
+// Obtener todas las subcategorías
+export const getSubcategorias = async (req: Request, res: Response) => {
+  try {
+    console.log('Intentando obtener subcategorías...');
+    const subcategorias = await SubcategoriaElemento.findAll({
+      include: [{
+        model: CategoriaElemento,
+        as: 'categoria'
+      }]
+    });
+
+    if (!subcategorias || subcategorias.length === 0) {
+      console.log('No se encontraron subcategorías');
+      return res.status(404).json({ 
+        error: 'No se encontraron subcategorías',
+        mensaje: 'No hay subcategorías disponibles'
+      });
+    }
+
+    res.json(subcategorias);
+  } catch (error) {
+    console.error('Error detallado al obtener subcategorías:', error);
+    res.status(500).json({ 
+      error: 'Error al obtener las subcategorías',
+      mensaje: 'Ocurrió un error al cargar las subcategorías. Por favor, intente más tarde.'
+    });
+  }
+};
+
+// Obtener subcategorías por categoría
+export const getSubcategoriasByCategoria = async (req: Request, res: Response) => {
+  try {
+    const { id_categoria } = req.params;
+    console.log('Intentando obtener subcategorías para la categoría:', id_categoria);
+
+    const subcategorias = await SubcategoriaElemento.findAll({
+      where: {
+        id_categoria: id_categoria
+      },
+      include: [{
+        model: CategoriaElemento,
+        as: 'categoria'
+      }]
+    });
+
+    if (!subcategorias || subcategorias.length === 0) {
+      console.log('No se encontraron subcategorías para la categoría especificada');
+      return res.status(404).json({ 
+        error: 'No se encontraron subcategorías',
+        mensaje: 'No hay subcategorías disponibles para esta categoría'
+      });
+    }
+
+    res.json(subcategorias);
+  } catch (error) {
+    console.error('Error detallado al obtener subcategorías por categoría:', error);
+    res.status(500).json({ 
+      error: 'Error al obtener las subcategorías',
+      mensaje: 'Ocurrió un error al cargar las subcategorías. Por favor, intente más tarde.'
+    });
+  }
+};
+
 // Crear un nuevo elemento
 export const createElemento = async (req: Request, res: Response) => {
   try {

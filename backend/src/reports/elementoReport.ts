@@ -6,13 +6,29 @@ import ColorElemento from '../models/ColorElemento_model';
 import MaterialElemento from '../models/MaterialElemento_model';
 import DetalleAlquiler from '../models/DetalleAlquiler_model';
 import Evento from '../models/Evento_model';
+import CategoriaElemento from '../models/CategoriaElemento_model';
 import { Op } from 'sequelize';
 
 export const generarReporteCatalogo = async (req: Request, res: Response) => {
   try {
-    const { subcategoria, color, material, agrupar_por } = req.query;
+    const { subcategoria, color, material, agrupar_por, categoria, precio_min, precio_max } = req.query;
     
     let whereClause: any = {};
+    let includeClause: any[] = [
+      { 
+        model: SubcategoriaElemento,
+        attributes: ['nombre_subcategoria'],
+        include: [{ model: CategoriaElemento, attributes: ['nombre_categoria'] }]
+      },
+      {
+        model: ColorElemento,
+        attributes: ['nombre_color']
+      },
+      {
+        model: MaterialElemento,
+        attributes: ['nombre_material']
+      }
+    ];
 
     // Aplicar filtros si están presentes
     if (subcategoria && subcategoria !== 'todos') {
@@ -27,27 +43,44 @@ export const generarReporteCatalogo = async (req: Request, res: Response) => {
       whereClause.id_material = material;
     }
 
+    // Filtro por categoría
+    if (categoria && categoria !== 'todos') {
+      // Asegurarse de que la relación con CategoriaElemento esté en el include principal
+      const subcatInclude = includeClause.find(inc => inc.model === SubcategoriaElemento);
+      if (subcatInclude) {
+        subcatInclude.where = { id_categoria: categoria };
+        subcatInclude.required = true; // Asegura que solo elementos con esa categoría sean retornados
+      }
+    }
+
+    // Filtro por rango de precio
+    if (precio_min || precio_max) {
+      whereClause.precio_elemento = {};
+      if (precio_min) {
+        whereClause.precio_elemento[Op.gte] = parseFloat(String(precio_min));
+      }
+      if (precio_max) {
+        whereClause.precio_elemento[Op.lte] = parseFloat(String(precio_max));
+      }
+    }
+
     const elementos = await Elemento.findAll({
       where: whereClause,
-      include: [
-        { 
-          model: SubcategoriaElemento,
-          attributes: ['nombre_subcategoria']
-        },
-        {
-          model: ColorElemento,
-          attributes: ['nombre_color']
-        },
-        {
-          model: MaterialElemento,
-          attributes: ['nombre_material']
-        }
-      ],
+      include: includeClause,
       order: [['nombre_elemento', 'ASC']]
     });
 
     if (!elementos || elementos.length === 0) {
       let mensaje = 'No hay elementos registrados';
+      const hasAnyFilter = (subcategoria && subcategoria !== 'todos') || 
+                           (color && color !== 'todos') || 
+                           (material && material !== 'todos') ||
+                           (categoria && categoria !== 'todos') ||
+                           (precio_min || precio_max);
+
+      if (hasAnyFilter) {
+        mensaje += ' para los criterios especificados';
+      }
       
       if (subcategoria && subcategoria !== 'todos') {
         const subcategoriaInfo = await SubcategoriaElemento.findByPk(Number(subcategoria));
@@ -62,6 +95,15 @@ export const generarReporteCatalogo = async (req: Request, res: Response) => {
       if (material && material !== 'todos') {
         const materialInfo = await MaterialElemento.findByPk(Number(material));
         mensaje += ` del material "${materialInfo?.nombre_material || material}"`;
+      }
+      
+      if (categoria && categoria !== 'todos') {
+        const categoriaInfo = await CategoriaElemento.findByPk(Number(categoria));
+        mensaje += ` de la categoría "${categoriaInfo?.nombre_categoria || categoria}"`;
+      }
+
+      if (precio_min || precio_max) {
+        mensaje += ` con precio ${precio_min ? `desde RD$${precio_min}` : ''}${precio_max ? ` hasta RD$${precio_max}` : ''}`;
       }
       
       return res.status(404).json({ 
@@ -86,26 +128,45 @@ export const generarReporteCatalogo = async (req: Request, res: Response) => {
     doc.fontSize(10).text(`Generado el ${new Date().toLocaleDateString()}`, { align: 'center' });
     
     // Agregar información de filtros aplicados
-    if (subcategoria && subcategoria !== 'todos') {
-      const subcategoriaInfo = await SubcategoriaElemento.findByPk(Number(subcategoria));
-      doc.fontSize(10).text(`Subcategoría: ${subcategoriaInfo?.nombre_subcategoria || subcategoria}`, { align: 'center' });
-    }
-    
-    if (color && color !== 'todos') {
-      const colorInfo = await ColorElemento.findByPk(Number(color));
-      doc.fontSize(10).text(`Color: ${colorInfo?.nombre_color || color}`, { align: 'center' });
-    }
-    
-    if (material && material !== 'todos') {
-      const materialInfo = await MaterialElemento.findByPk(Number(material));
-      doc.fontSize(10).text(`Material: ${materialInfo?.nombre_material || material}`, { align: 'center' });
+    const hasFilters = (subcategoria && subcategoria !== 'todos') || 
+                      (color && color !== 'todos') || 
+                      (material && material !== 'todos') ||
+                      (categoria && categoria !== 'todos') ||
+                      (precio_min || precio_max);
+
+    if (hasFilters) {
+      doc.fontSize(12).text('Filtros aplicados:', { underline: true });
+      if (subcategoria && subcategoria !== 'todos') {
+        const subcategoriaInfo = await SubcategoriaElemento.findByPk(Number(subcategoria));
+        doc.text(`Subcategoría: ${subcategoriaInfo?.nombre_subcategoria || subcategoria}`);
+      }
+      
+      if (color && color !== 'todos') {
+        const colorInfo = await ColorElemento.findByPk(Number(color));
+        doc.text(`Color: ${colorInfo?.nombre_color || color}`);
+      }
+      
+      if (material && material !== 'todos') {
+        const materialInfo = await MaterialElemento.findByPk(Number(material));
+        doc.text(`Material: ${materialInfo?.nombre_material || material}`);
+      }
+
+      if (categoria && categoria !== 'todos') {
+        const categoriaInfo = await CategoriaElemento.findByPk(Number(categoria));
+        doc.text(`Categoría: ${categoriaInfo?.nombre_categoria || categoria}`);
+      }
+
+      if (precio_min || precio_max) {
+        doc.text(`Rango de Precio: ${precio_min ? `Desde RD$${precio_min}` : ''} ${precio_max ? `Hasta RD$${precio_max}` : ''}`);
+      }
+      doc.moveDown();
     }
     
     doc.moveDown(1);
 
     // Encabezado de tabla
-    const tableTop = 120;
-    const colWidths = [40, 150, 100, 100, 100, 100, 100, 100];
+    const tableTop = 200;
+    const colWidths = [30, 110, 90, 80, 80, 80, 80, 80, 80];
     const startX = doc.page.margins.left;
     const endX = doc.page.width - doc.page.margins.right;
 
@@ -120,7 +181,7 @@ export const generarReporteCatalogo = async (req: Request, res: Response) => {
     };
 
     // Dibujar encabezado
-    drawRow(tableTop, ['#', 'Elemento', 'Subcategoría', 'Color', 'Material', 'Cantidad Total', 'Disponibles', 'Estado'], true);
+    drawRow(tableTop, ['#', 'Elemento', 'Categoría', 'Subcategoría', 'Color', 'Material', 'Cantidad Total', 'Disponibles', 'Estado'], true);
     
     // Línea horizontal después del encabezado
     doc.moveTo(startX, tableTop + 15)
@@ -193,6 +254,7 @@ export const generarReporteCatalogo = async (req: Request, res: Response) => {
       const content = [
         rowIndex.toString(),
         elemento.nombre_elemento,
+        elemento.subcategoria?.categoria?.nombre_categoria || 'No especificado',
         elemento.subcategoria?.nombre_subcategoria || 'No especificado',
         elemento.color?.nombre_color || 'No especificado',
         elemento.material?.nombre_material || 'No especificado',
@@ -208,7 +270,7 @@ export const generarReporteCatalogo = async (req: Request, res: Response) => {
       if (y + contentHeight + 20 > 520) {
         doc.addPage({ layout: 'landscape' });
         y = 100;
-        drawRow(y, ['#', 'Elemento', 'Subcategoría', 'Color', 'Material', 'Cantidad Total', 'Disponibles', 'Estado'], true);
+        drawRow(y, ['#', 'Elemento', 'Categoría', 'Subcategoría', 'Color', 'Material', 'Cantidad Total', 'Disponibles', 'Estado'], true);
         y += 35;
       }
 
@@ -224,10 +286,10 @@ export const generarReporteCatalogo = async (req: Request, res: Response) => {
     doc.moveDown(2);
     doc.font('Helvetica-Bold')
        .fontSize(12)
-       .text(`Total de Elementos: ${totalElementos}`, { align: 'right' });
+       .text(`Total de Elementos: ${totalElementos}`, { align: 'right', width: endX - startX });
     doc.font('Helvetica-Bold')
        .fontSize(12)
-       .text(`Total Disponibles: ${totalDisponibles}`, { align: 'right' });
+       .text(`Total Disponibles: ${totalDisponibles}`, { align: 'right', width: endX - startX });
 
     doc.end();
   } catch (error) {
@@ -328,7 +390,7 @@ export const generarReporteDetalleAlquiler = async (req: Request, res: Response)
       doc.fontSize(10).text(`Período: ${fecha_inicio} al ${fecha_fin}`, { align: 'center' });
     }
     
-    doc.moveDown(1);
+    doc.moveDown(5);
 
     // Encabezado de tabla
     const tableTop = 120;
