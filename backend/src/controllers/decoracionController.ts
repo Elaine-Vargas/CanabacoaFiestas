@@ -437,3 +437,91 @@ export const deleteDetalleDecoracion = async (req: Request, res: Response) => {
         });
     }
 };
+
+// Obtener todos los detalles de una decoración específica
+export const getDetallesByDecoracion = async (req: Request, res: Response) => {
+    try {
+        const { id_decoracion } = req.params;
+
+        // Verificar que la decoración existe
+        const decoracion = await DecoracionServicio.findByPk(id_decoracion);
+        if (!decoracion) {
+            return res.status(404).json({ 
+                error: 'Servicio de decoración no encontrado',
+                mensaje: 'El servicio de decoración especificado no existe en el sistema'
+            });
+        }
+
+        const detalles = await DetalleDecoracion.findAll({
+            where: {
+                id_decoracion,
+                estado_detdecoracion: 'Aceptado'
+            },
+            include: [
+                {
+                    model: DecoracionServicio,
+                    include: [
+                        {
+                            model: Evento,
+                            as: 'evento'
+                        }
+                    ]
+                }
+            ],
+            order: [['id_detdecoracion', 'DESC']]
+        });
+
+        if (!detalles || detalles.length === 0) {
+            return res.status(404).json({ 
+                error: 'No se encontraron detalles',
+                mensaje: 'No hay detalles registrados para esta decoración'
+            });
+        }
+
+        res.json(detalles);
+    } catch (error) {
+        console.error('Error al obtener detalles de decoración:', error);
+        res.status(500).json({ 
+            error: 'Error al obtener detalles de decoración',
+            mensaje: 'Ocurrió un error al cargar los detalles de decoración'
+        });
+    }
+};
+
+// Obtener todos los detalles de decoración activos
+export const getAllDetallesDecoracion = async (req: Request, res: Response) => {
+    try {
+        const detalles = await DetalleDecoracion.findAll({
+            where: {
+                estado_detdecoracion: 'Aceptado'
+            },
+            include: [
+                {
+                    model: DecoracionServicio,
+                    include: [
+                        {
+                            model: Evento,
+                            as: 'evento'
+                        }
+                    ]
+                }
+            ],
+            order: [['id_detdecoracion', 'DESC']]
+        });
+
+        if (!detalles || detalles.length === 0) {
+            return res.status(404).json({ 
+                error: 'No se encontraron detalles',
+                mensaje: 'No hay detalles de decoración registrados en el sistema'
+            });
+        }
+
+        res.json(detalles);
+    } catch (error) {
+        console.error('Error al obtener detalles de decoración:', error);
+        res.status(500).json({ 
+            error: 'Error al obtener detalles de decoración',
+            mensaje: 'Ocurrió un error al cargar los detalles de decoración'
+        });
+    }
+};

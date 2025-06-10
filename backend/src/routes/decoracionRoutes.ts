@@ -2,9 +2,12 @@ import { Router, Request, Response, NextFunction, RequestHandler } from 'express
 import {
     createDecoracion,
     getAllDecoraciones,
-    getDecoracionesByTema,
     editDecoracion,
-    deleteDecoracion
+    deleteDecoracion,
+    createDetalleDecoracion,
+    deleteDetalleDecoracion,
+    getDetallesByDecoracion,
+    getAllDetallesDecoracion
 } from '../controllers/decoracionController';
 import { verificarToken } from '../middlewares/authMiddleware';
 
@@ -49,6 +52,43 @@ router.put('/:id_decoracion', async (req: Request, res: Response, next: NextFunc
 router.delete('/:id_decoracion', async (req: Request, res: Response, next: NextFunction) => {
     try {
         await deleteDecoracion(req, res);
+    } catch (error) {
+        next(error);
+    }
+});
+
+// Rutas para detalles de decoración
+// Crear un detalle de decoración
+router.post('/detalle', async (req: Request, res: Response, next: NextFunction) => {
+    try {
+        await createDetalleDecoracion(req, res);
+    } catch (error) {
+        next(error);
+    }
+});
+
+// Obtener todos los detalles de una decoración específica
+router.get('/detalle/:id_decoracion', async (req: Request, res: Response, next: NextFunction) => {
+    try {
+        await getDetallesByDecoracion(req, res);
+    } catch (error) {
+        next(error);
+    }
+});
+
+// Obtener todos los detalles de decoración activos
+router.get('/detalles', async (req: Request, res: Response, next: NextFunction) => {
+    try {
+        await getAllDetallesDecoracion(req, res);
+    } catch (error) {
+        next(error);
+    }
+});
+
+// Eliminar un detalle de decoración (borrado lógico)
+router.delete('/detalle/:id_detalle_decoracion', async (req: Request, res: Response, next: NextFunction) => {
+    try {
+        await deleteDetalleDecoracion(req, res);
     } catch (error) {
         next(error);
     }
