@@ -5,6 +5,8 @@ import {
   getCategorias,
   getColores,
   getMateriales,
+  getSubcategorias,
+  getSubcategoriasByCategoria,
   createElemento,
   searchElementos,
   editElemento,
@@ -17,6 +19,12 @@ const router = Router();
 // Rutas públicas (GET)
 // Obtener todas las categorías
 router.get('/categorias/list', getCategorias as RequestHandler);
+
+// Obtener todas las subcategorías
+router.get('/subcategorias/list', getSubcategorias as RequestHandler);
+
+// Obtener subcategorías por categoría
+router.get('/subcategorias/categoria/:id_categoria', getSubcategoriasByCategoria as RequestHandler);
 
 // Obtener todos los colores
 router.get('/colores/list', getColores as RequestHandler);
