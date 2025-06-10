@@ -621,3 +621,76 @@ $transition-standard: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     }
   }
 } 
+
+.rent-page {
+  .welcome-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2rem;
+    padding: 1rem 2rem;
+
+    h1 {
+      font-family: "Pinyon Script", sans-serif;
+      font-weight: 400;
+      color: var(--gold);
+      font-size: 4rem;
+      letter-spacing: 1px;
+      margin: 0;
+
+      @media screen and (max-width: 768px) {
+        font-size: 3rem;
+      }
+
+      @media screen and (max-width: 480px) {
+        font-size: 2rem;
+      }
+    }
+
+    .cart-button {
+      background-color: var(--gold);
+      color: var(--white);
+      width: 50px;
+      height: 50px;
+      box-shadow: 0 15px 50px var(--color-shadow);
+      transition: all 0.2s ease-in-out;
+
+      &:hover {
+        background-color: var(--dark-gold);
+        transform: scale(1.05);
+      }
+
+      .MuiBadge-badge {
+        background-color: var(--dark-gold);
+        color: var(--white);
+      }
+    }
+  }
+
+  .catalog-section {
+    position: relative;
+    z-index: 1;
+
+    .MuiSnackbar-root {
+      z-index: 9999;
+    }
+
+    .MuiAlert-root {
+      background-color: var(--color-background2);
+      color: var(--color-text);
+      border: 1px solid var(--gold);
+      
+      &.MuiAlert-standardSuccess {
+        background-color: var(--success-light);
+        border-color: var(--success);
+        color: var(--success);
+      }
+      
+      &.MuiAlert-standardError {
+        background-color: var(--error-light);
+        border-color: var(--error);
+        color: var(--error);
+      }
+    }
+  }
+} 

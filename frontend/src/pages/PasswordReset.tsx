@@ -2,6 +2,9 @@ import React, { useState, useEffect } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import axios from "axios";
 import CircularProgress from '@mui/material/CircularProgress';
+import VisibilityOffIcon from '@mui/icons-material/VisibilityOff';
+import VisibilityIcon from '@mui/icons-material/Visibility';
+import '../styles/mainPages/PasswordReset.scss';
 
 interface ResetPasswordResponse {
   success: boolean;
@@ -19,6 +22,8 @@ const PasswordReset: React.FC = () => {
   const [success, setSuccess] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [tokenValid, setTokenValid] = useState<boolean | null>(null);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
@@ -126,91 +131,113 @@ const PasswordReset: React.FC = () => {
     }
   };
 
+  const togglePasswordVisibility = () => {
+    setShowPassword(!showPassword);
+  };
+
+  const toggleConfirmPasswordVisibility = () => {
+    setShowConfirmPassword(!showConfirmPassword);
+  };
+
   if (tokenValid === false) {
     return (
       <div className="reset-password-container">
-        <h2>Error</h2>
-        <div className="error-message">
-          El enlace de recuperación es inválido o ha expirado.
+        <div className="resetBx">
+          <div className="reset-formBx">
+            <h2 className="reset-title">Error</h2>
+            <div className="reset-message error">
+              El enlace de recuperación es inválido o ha expirado.
+            </div>
+            <button 
+              onClick={() => navigate("/password-recovery")}
+              disabled={isLoading}
+              className="reset-submit-btn"
+            >
+              {isLoading ? <CircularProgress size={20} /> : "Solicitar nuevo enlace"}
+            </button>
+          </div>
         </div>
-        <button 
-          onClick={() => navigate("/password-recovery")}
-          disabled={isLoading}
-        >
-          {isLoading ? <CircularProgress size={20} /> : "Solicitar nuevo enlace"}
-        </button>
       </div>
     );
   }
 
   return (
     <div className="reset-password-container">
-      <h2>Restablecer Contraseña</h2>
+      <div className="resetBx">
+        <div className="reset-formBx">
+          <h2 className="reset-title">Restablecer Contraseña</h2>
 
-      {error && (
-        <div className="error-message" style={{ color: 'red', marginBottom: '1rem' }}>
-          {error}
+          {error && (
+            <div className="reset-message error">
+              {error}
+            </div>
+          )}
+
+          {success ? (
+            <div className="reset-message success">
+              <p>¡Contraseña restablecida con éxito!</p>
+              <p>Redirigiendo al inicio de sesión...</p>
+            </div>
+          ) : (
+            <form onSubmit={handleSubmit} className="reset-form">
+              <div className="form-group">
+                <label htmlFor="password" className="reset-label">Nueva Contraseña</label>
+                <div className="password-input-container">
+                  <input
+                    id="password"
+                    type={showPassword ? "text" : "password"}
+                    value={formData.password}
+                    onChange={handleChange}
+                    required
+                    minLength={8}
+                    maxLength={25}
+                    className="reset-input"
+                  />
+                  <span className="password-toggle" onClick={togglePasswordVisibility}>
+                    {showPassword ? <VisibilityOffIcon /> : <VisibilityIcon />}
+                  </span>
+                </div>
+              </div>
+
+              <div className="form-group">
+                <label htmlFor="confirmPassword" className="reset-label">Confirmar Contraseña</label>
+                <div className="password-input-container">
+                  <input
+                    id="confirmPassword"
+                    type={showConfirmPassword ? "text" : "password"}
+                    value={formData.confirmPassword}
+                    onChange={handleChange}
+                    required
+                    minLength={8}
+                    maxLength={25}
+                    className="reset-input"
+                  />
+                  <span className="password-toggle" onClick={toggleConfirmPasswordVisibility}>
+                    {showConfirmPassword ? <VisibilityOffIcon /> : <VisibilityIcon />}
+                  </span>
+                </div>
+              </div>
+
+              <div className="reset-actions">
+                <button 
+                  type="submit" 
+                  disabled={isLoading}
+                  className="reset-submit-btn"
+                >
+                  {isLoading ? (
+                    <>
+                      <CircularProgress size={20} color="inherit" />
+                      <span style={{ marginLeft: "8px" }}>Procesando...</span>
+                    </>
+                  ) : (
+                    "Restablecer Contraseña"
+                  )}
+                </button>
+              </div>
+            </form>
+          )}
         </div>
-      )}
-
-      {success ? (
-        <div className="success-message" style={{ color: 'green' }}>
-          <p>¡Contraseña restablecida con éxito!</p>
-          <p>Redirigiendo al inicio de sesión...</p>
-        </div>
-      ) : (
-        <form onSubmit={handleSubmit}>
-          <div className="form-group" style={{ marginBottom: '1rem' }}>
-            <label htmlFor="password">Nueva Contraseña</label>
-            <input
-              id="password"
-              type="password"
-              value={formData.password}
-              onChange={handleChange}
-              required
-              minLength={8}
-              maxLength={25}
-              style={{ width: '100%', padding: '0.5rem' }}
-            />
-          </div>
-
-          <div className="form-group" style={{ marginBottom: '1.5rem' }}>
-            <label htmlFor="confirmPassword">Confirmar Contraseña</label>
-            <input
-              id="confirmPassword"
-              type="password"
-              value={formData.confirmPassword}
-              onChange={handleChange}
-              required
-              minLength={8}
-              maxLength={25}
-              style={{ width: '100%', padding: '0.5rem' }}
-            />
-          </div>
-
-          <button 
-            type="submit" 
-            disabled={isLoading}
-            style={{
-              padding: '0.5rem 1rem',
-              background: isLoading ? '#ccc' : '#007bff',
-              color: 'white',
-              border: 'none',
-              borderRadius: '4px',
-              cursor: 'pointer'
-            }}
-          >
-            {isLoading ? (
-              <>
-                <CircularProgress size={20} color="inherit" />
-                <span style={{ marginLeft: "8px" }}>Procesando...</span>
-              </>
-            ) : (
-              "Restablecer Contraseña"
-            )}
-          </button>
-        </form>
-      )}
+      </div>
     </div>
   );
 };

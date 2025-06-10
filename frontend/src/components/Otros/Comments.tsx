@@ -32,7 +32,7 @@ const Comments = () => {
       setLoading(true);
       setError(null);
 
-      const response = await axios.get(`${apiUrl}/comentarios`, {
+      const response = await axios.get(`${apiUrl}/comentario`, {
         params: { includeEvent: true }
       });
 

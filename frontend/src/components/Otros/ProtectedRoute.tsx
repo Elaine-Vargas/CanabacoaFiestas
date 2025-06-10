@@ -99,7 +99,7 @@ const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
   }, []);
 
   if (!localStorage.getItem('userData') || !isTokenValid) {
-    return <Navigate to="/Principal" replace />;
+    return <Navigate to="/Login" replace />;
   }
 
   return (

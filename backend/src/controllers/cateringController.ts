@@ -868,8 +868,12 @@ export const getMenusByCatering = async (req: Request, res: Response) => {
 
 export const getMenuCatalog = async (req: Request, res: Response) => {
     try {
+        console.log('Iniciando búsqueda de menús para catálogo');
         const menus = await Menu.findAll({
-            attributes: ['id_menu', 'desc_menu', 'precio_menu'],
+            where: {
+                estado_menu: 'Activo'
+            },
+            attributes: ['id_menu', 'desc_menu', 'precio_menu', 'estado_menu'],
             include: [
                 {
                     model: PlatoMenu,
@@ -890,10 +894,20 @@ export const getMenuCatalog = async (req: Request, res: Response) => {
             ]
         });
 
+        console.log(`Se encontraron ${menus.length} menús activos`);
+
+        if (!menus || menus.length === 0) {
+            return res.status(404).json({
+                error: 'No se encontraron menús',
+                mensaje: 'No hay menús disponibles en el catálogo'
+            });
+        }
+
         const menuCatalog = menus.map(menu => ({
             id_menu: menu.id_menu,
             desc_menu: menu.desc_menu,
             precio_menu: parseFloat(menu.precio_menu.toString()),
+            estado_menu: menu.estado_menu,
             proveedor: menu.proveedor?.nombre_proveedor || 'Sin proveedor',
             platos: menu.platos_menu?.map(pm => ({
                 id: pm.plato?.id_plato,
@@ -901,6 +915,7 @@ export const getMenuCatalog = async (req: Request, res: Response) => {
             })) || []
         }));
 
+        console.log('Enviando catálogo de menús');
         res.json(menuCatalog);
     } catch (error) {
         console.error('Error al obtener catálogo de menús:', error);
