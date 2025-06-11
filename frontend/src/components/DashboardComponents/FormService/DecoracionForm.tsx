@@ -1,24 +1,27 @@
 import React, { useState, useEffect } from 'react';
-import { Modal, Form, Input, Select, InputNumber, Button, Table, message } from 'antd';
-import { PlusOutlined, DeleteOutlined } from '@ant-design/icons';
+import { Modal, Form, Input, Select, InputNumber, Button, Table, message, Descriptions } from 'antd';
+import { PlusOutlined, DeleteOutlined, EyeOutlined } from '@ant-design/icons';
 import axios from 'axios';
 
 interface Evento {
   id_evento: number;
-  nombre_evento: string;
+  nombre_cliente: string;
   fecha_evento: string;
-}
-
-interface Categoria {
-  id_categoria: number;
-  nombre_categoria: string;
-  subcategorias: Subcategoria[];
-}
-
-interface Subcategoria {
-  id_subcategoria: number;
-  nombre_subcategoria: string;
-  id_categoria: number;
+  hora_evento: string;
+  tipo_evento: string | { tipo_evento: string };
+  espacio_evento: string;
+  desea_supervision: boolean;
+  estado_solicitud: string;
+  total_evento: number;
+  nombre_asesor: string | null;
+  cliente?: {
+    nombre_usuario: string;
+    apellido_usuario: string;
+  };
+  asesor?: {
+    nombre_usuario: string;
+    apellido_usuario: string;
+  };
 }
 
 interface ElementoDecoracion {
@@ -27,8 +30,37 @@ interface ElementoDecoracion {
   cantelemento_decoracion: number;
   precio_elemento: number;
   precio_decoracion: number;
-  id_categoria?: number;
-  id_subcategoria?: number;
+}
+
+interface Decoracion {
+  id_decoracion: number;
+  id_evento: number;
+  tema_decoracion: string;
+  colores_decoracion: string;
+  precioneto_decoracion: number;
+  itbis_decoracion: number;
+  total_decoracion: number;
+  estado_decoracion: string;
+  detalle_decoracion?: {
+    id_detdecoracion: number;
+    elemento_decoracion: string;
+    cantelemento_decoracion: number;
+    precio_elemento: number;
+    precio_decoracion: number;
+    estado_detdecoracion: string;
+  }[];
+  evento?: {
+    id_evento: number;
+    fecha_evento: string;
+    tipo_evento: {
+      id_tipo_evento: number;
+      tipo_evento: string;
+    };
+    cliente?: {
+      nombre_usuario: string;
+      apellido_usuario: string;
+    };
+  };
 }
 
 interface DecoracionFormProps {
@@ -36,6 +68,7 @@ interface DecoracionFormProps {
   onCancel: () => void;
   onSubmit: (values: any) => void;
   loading?: boolean;
+  initialValues?: Decoracion | null;
 }
 
 const DecoracionForm: React.FC<DecoracionFormProps> = ({
@@ -43,30 +76,36 @@ const DecoracionForm: React.FC<DecoracionFormProps> = ({
   onCancel,
   onSubmit,
   loading = false,
+  initialValues,
 }) => {
   const [form] = Form.useForm();
   const [eventos, setEventos] = useState<Evento[]>([]);
-  const [elementos, setElementos] = useState<ElementoDecoracion[]>([{
-    elemento_decoracion: '',
-    cantelemento_decoracion: 1,
-    precio_elemento: 0,
-    precio_decoracion: 0,
-    id_categoria: undefined,
-    id_subcategoria: undefined
-  }]);
+  const [selectedEvento, setSelectedEvento] = useState<Evento | null>(null);
+  const [showEventoDetails, setShowEventoDetails] = useState(false);
+  const [elementos, setElementos] = useState<ElementoDecoracion[]>([]);
   const [loadingEventos, setLoadingEventos] = useState(false);
-  const [categorias, setCategorias] = useState<Categoria[]>([]);
-  const [subcategorias, setSubcategorias] = useState<Subcategoria[]>([]);
-  const [loadingCategorias, setLoadingCategorias] = useState(false);
-  const [loadingSubcategorias, setLoadingSubcategorias] = useState(false);
   const apiUrl = import.meta.env.VITE_API_BASE_URL;
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
     if (visible) {
       fetchEventos();
-      fetchCategorias();
     }
   }, [visible]);
+
+  useEffect(() => {
+    if (visible && initialValues) {
+      form.setFieldsValue({
+        tema_decoracion: initialValues.tema_decoracion,
+        colores_decoracion: initialValues.colores_decoracion,
+        id_evento: initialValues.id_evento,
+        estado_decoracion: initialValues.estado_decoracion
+      });
+      if (initialValues.detalle_decoracion) {
+        setElementos(initialValues.detalle_decoracion);
+      }
+    }
+  }, [visible, initialValues, form]);
 
   const fetchEventos = async () => {
     try {
@@ -79,66 +118,82 @@ const DecoracionForm: React.FC<DecoracionFormProps> = ({
       if (!response.ok) {
         throw new Error('Error al cargar los eventos');
       }
+      
       const data = await response.json();
-      setEventos(data);
+      setEventos(Array.isArray(data) ? data : []);
     } catch (error) {
       console.error('Error al cargar eventos:', error);
+      message.error('Error al cargar los eventos');
     } finally {
       setLoadingEventos(false);
     }
   };
 
-  const fetchCategorias = async () => {
-    try {
-      setLoadingCategorias(true);
-      const response = await axios.get(`${apiUrl}/elemento/categorias/list`, {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
-          'Content-Type': 'application/json'
-        }
-      });
-      console.log('Respuesta de categorías:', response.data);
-      if (response.data && Array.isArray(response.data)) {
-        setCategorias(response.data);
-      } else {
-        console.error('Formato de datos inválido para categorías', response.data);
-        message.error('Error al cargar las categorías');
-      }
-    } catch (error) {
-      console.error('Error al cargar categorías:', error);
-      message.error('Error al cargar las categorías');
-      setCategorias([]);
-    } finally {
-      setLoadingCategorias(false);
-    }
+  const calculateTotals = (elementos: ElementoDecoracion[]) => {
+    const precioneto = elementos.reduce((total, elemento) => 
+      total + (elemento.precio_elemento * elemento.cantelemento_decoracion), 0);
+    const itbis = precioneto * 0.18;
+    const total = precioneto + itbis;
+    
+    return { precioneto, itbis, total };
   };
 
-  const fetchSubcategorias = async (idCategoria: number) => {
+  const handleSubmit = async (values: any) => {
     try {
-      setLoadingSubcategorias(true);
-      const categoria = categorias.find(cat => cat.id_categoria === idCategoria);
-      if (categoria) {
-        setSubcategorias(categoria.subcategorias);
-      }
-    } catch (error) {
-      console.error('Error al cargar subcategorías:', error);
-    } finally {
-      setLoadingSubcategorias(false);
-    }
-  };
+      setIsSubmitting(true);
 
-  const handleSubmit = async () => {
-    try {
-      const values = await form.validateFields();
-      const formData = {
-        ...values,
-        elementos: elementos
+      const decoracionData = {
+        id_evento: values.id_evento,
+        tema_decoracion: values.tema_decoracion,
+        colores_decoracion: values.colores_decoracion,
+        detalle_decoracion: elementos.map(elemento => ({
+          elemento_decoracion: elemento.elemento_decoracion,
+          cantelemento_decoracion: elemento.cantelemento_decoracion,
+          precio_elemento: elemento.precio_elemento,
+          precio_decoracion: elemento.precio_decoracion,
+          estado_detdecoracion: 'Activo'
+        }))
       };
-      onSubmit(formData);
+
+      let response;
+      if (initialValues) {
+        // Si estamos editando, actualizamos la decoración existente
+        response = await fetch(`${apiUrl}/decoracion/${initialValues.id_decoracion}`, {
+          method: 'PUT',
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('token')}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(decoracionData)
+        });
+      } else {
+        // Si estamos creando, insertamos una nueva decoración
+        response = await fetch(`${apiUrl}/decoracion`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('token')}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(decoracionData)
+        });
+      }
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.mensaje || `Error al ${initialValues ? 'actualizar' : 'crear'} la decoración`);
+      }
+
+      const data = await response.json();
+      message.success(`Decoración ${initialValues ? 'actualizada' : 'creada'} exitosamente`);
+      onSubmit(data);
       form.resetFields();
       setElementos([]);
+      onCancel();
     } catch (error) {
-      console.error('Error al validar el formulario:', error);
+      console.error(`Error al ${initialValues ? 'actualizar' : 'crear'} decoración:`, error);
+      message.error(error instanceof Error ? error.message : `Error al ${initialValues ? 'actualizar' : 'crear'} la decoración`);
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -147,9 +202,7 @@ const DecoracionForm: React.FC<DecoracionFormProps> = ({
       elemento_decoracion: '',
       cantelemento_decoracion: 1,
       precio_elemento: 0,
-      precio_decoracion: 0,
-      id_categoria: undefined,
-      id_subcategoria: undefined
+      precio_decoracion: 0
     };
     setElementos([...elementos, newElemento]);
   };
@@ -166,18 +219,6 @@ const DecoracionForm: React.FC<DecoracionFormProps> = ({
       ...newElementos[index],
       [field]: value
     };
-
-    // Si se cambia la categoría, actualizar las subcategorías disponibles
-    if (field === 'id_categoria') {
-      const categoriaSeleccionada = categorias.find(cat => cat.id_categoria === value);
-      if (categoriaSeleccionada) {
-        setSubcategorias(categoriaSeleccionada.subcategorias || []);
-        // Limpiar la subcategoría seleccionada
-        newElementos[index].id_subcategoria = undefined;
-      } else {
-        setSubcategorias([]);
-      }
-    }
 
     // Calcular el precio total si cambia la cantidad o el precio unitario
     if (field === 'cantelemento_decoracion' || field === 'precio_elemento') {
@@ -201,51 +242,6 @@ const DecoracionForm: React.FC<DecoracionFormProps> = ({
           placeholder="Nombre del elemento"
           maxLength={50}
         />
-      ),
-    },
-    {
-      title: 'Categoría',
-      dataIndex: 'id_categoria',
-      key: 'id_categoria',
-      render: (_: any, record: ElementoDecoracion, index: number) => (
-        <Select
-          value={record.id_categoria}
-          onChange={(value) => handleElementoChange(index, 'id_categoria', value)}
-          placeholder="Seleccione categoría"
-          style={{ width: '100%' }}
-          loading={loadingCategorias}
-        >
-          <Select.Option value="">Todas las categorías</Select.Option>
-          {categorias.map(categoria => (
-            <Select.Option key={categoria.id_categoria} value={categoria.id_categoria}>
-              {categoria.nombre_categoria}
-            </Select.Option>
-          ))}
-        </Select>
-      ),
-    },
-    {
-      title: 'Subcategoría',
-      dataIndex: 'id_subcategoria',
-      key: 'id_subcategoria',
-      render: (_: any, record: ElementoDecoracion, index: number) => (
-        <Select
-          value={record.id_subcategoria}
-          onChange={(value) => handleElementoChange(index, 'id_subcategoria', value)}
-          placeholder="Seleccione subcategoría"
-          style={{ width: '100%' }}
-          loading={loadingSubcategorias}
-          disabled={!record.id_categoria}
-        >
-          <Select.Option value="">Todas las subcategorías</Select.Option>
-          {subcategorias
-            .filter(sub => !record.id_categoria || sub.id_categoria === record.id_categoria)
-            .map(subcategoria => (
-              <Select.Option key={subcategoria.id_subcategoria} value={subcategoria.id_subcategoria}>
-                {subcategoria.nombre_subcategoria}
-              </Select.Option>
-            ))}
-        </Select>
       ),
     },
     {
@@ -297,99 +293,137 @@ const DecoracionForm: React.FC<DecoracionFormProps> = ({
     },
   ];
 
+  const handleCancel = () => {
+    form.resetFields();
+    setElementos([]);
+    onCancel();
+  };
+
+  // Calcular el total general
+  const { precioneto, itbis, total } = calculateTotals(elementos);
+
+  const handleEventoSelect = (value: number) => {
+    const eventoSeleccionado = eventos.find(evento => evento.id_evento === value);
+    setSelectedEvento(eventoSeleccionado || null);
+  };
+
+  const showEventoDetailsModal = () => {
+    if (selectedEvento) {
+      Modal.info({
+        title: 'Detalles del Evento',
+        width: 600,
+        content: (
+          <Descriptions bordered column={2}>
+            <Descriptions.Item label="Cliente" span={2}>
+              {selectedEvento.cliente?.nombre_usuario} {selectedEvento.cliente?.apellido_usuario}
+            </Descriptions.Item>
+            <Descriptions.Item label="Fecha">{selectedEvento.fecha_evento}</Descriptions.Item>
+            <Descriptions.Item label="Hora">{selectedEvento.hora_evento}</Descriptions.Item>
+            <Descriptions.Item label="Tipo de Evento" span={2}>
+              {typeof selectedEvento.tipo_evento === 'string' 
+                ? selectedEvento.tipo_evento 
+                : selectedEvento.tipo_evento.tipo_evento}
+            </Descriptions.Item>
+            <Descriptions.Item label="Espacio">{selectedEvento.espacio_evento}</Descriptions.Item>
+            <Descriptions.Item label="Supervisión">
+              {selectedEvento.desea_supervision ? 'Sí' : 'No'}
+            </Descriptions.Item>
+          </Descriptions>
+        ),
+      });
+    }
+  };
+
   return (
     <Modal
-      title="Nueva Decoración"
+      title={initialValues ? "Editar Decoración" : "Crear Decoración"}
       open={visible}
-      onCancel={onCancel}
-      footer={[
-        <Button key="cancel" onClick={onCancel} className="cancel-button">
-          Cancelar
-        </Button>,
-        <Button 
-          key="submit" 
-          type="primary" 
-          onClick={handleSubmit}
-          loading={loading}
-          className="submit-button"
-        >
-          Enviar Decoración
-        </Button>
-      ]}
-      width={1000}
-      className="dashboard-modal"
+      onCancel={handleCancel}
+      footer={null}
+      width={800}
     >
       <Form
         form={form}
         layout="vertical"
-        className="dashboard-form"
+        onFinish={handleSubmit}
+        className="decoracion-form"
       >
         <Form.Item
-          name="id_evento"
-          label="Evento"
-          rules={[{ required: true, message: 'Por favor seleccione el evento' }]}
-        >
-          <Select
-            placeholder="Seleccione el evento"
-            loading={loadingEventos}
-            showSearch
-            optionFilterProp="children"
+            name="id_evento"
+            label="Evento"
+            rules={[{ required: true, message: 'Por favor seleccione el evento' }]}
           >
-            {eventos.map(evento => (
-              <Select.Option key={evento.id_evento} value={evento.id_evento}>
-                {`${evento.nombre_evento} - ${new Date(evento.fecha_evento).toLocaleDateString()}`}
-              </Select.Option>
-            ))}
-          </Select>
-        </Form.Item>
-
-        <Form.Item
-          name="tema_decoracion"
-          label="Tema de Decoración"
-          rules={[{ required: true, message: 'Por favor ingrese el tema de decoración' }]}
-        >
-          <Input.TextArea rows={3} placeholder="Describa el tema de la decoración" />
-        </Form.Item>
-
-        <Form.Item
-          name="colores_decoracion"
-          label="Colores"
-          rules={[
-            { required: true, message: 'Por favor ingrese los colores' },
-            { max: 100, message: 'Los colores no pueden exceder los 100 caracteres' }
-          ]}
-        >
-          <Input placeholder="Ingrese los colores de la decoración" maxLength={100} />
-        </Form.Item>
-
-        <Form.Item
-          name="estado_decoracion"
-          label="Estado"
-          initialValue="Solicitado"
-        >
-          <Select>
-            <Select.Option value="Solicitado">Solicitado</Select.Option>
-            <Select.Option value="Aceptado">Aceptado</Select.Option>
-            <Select.Option value="Completado">Completado</Select.Option>
-            <Select.Option value="Cancelado">Cancelado</Select.Option>
-          </Select>
-        </Form.Item>
-
-        <div style={{ marginBottom: 16 }}>
-          <Button
-            type="dashed"
-            onClick={handleAddElemento}
-            icon={<PlusOutlined />}
-            style={{ 
-              width: '100%',
-              borderColor: 'var(--gold)',
-              color: 'var(--gold)'
-            }}
-            className="gold-button"
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <Select
+                placeholder="Seleccione el evento"
+                loading={loadingEventos}
+                showSearch
+                allowClear
+                onChange={(value) => {
+                  form.setFieldsValue({ id_evento: value });
+                  handleEventoSelect(value);
+                }}
+                onClear={() => {
+                  form.setFieldsValue({ id_evento: undefined });
+                  setSelectedEvento(null);
+                  setShowEventoDetails(false);
+                }}
+                filterOption={(input, option) => {
+                  if (typeof option?.label === 'string') {
+                    return option.label.toLowerCase().includes(input.toLowerCase());
+                  }
+                  return false;
+                }}
+                options={eventos.map(evento => ({
+                  value: evento.id_evento,
+                  label: `ID: ${evento.id_evento} - ${evento.cliente?.nombre_usuario || ''} ${evento.cliente?.apellido_usuario || ''}`
+                }))}
+                style={{ flex: 1 }}
+              />
+              {selectedEvento && (
+                <Button
+                  type="text"
+                  icon={<EyeOutlined />}
+                  onClick={showEventoDetailsModal}
+                  title="Ver detalles del evento"
+                />
+              )}
+            </div>
+          </Form.Item>
+          <Form.Item
+            name="tema_decoracion"
+            label="Tema de Decoración"
+            rules={[{ required: true, message: 'Por favor ingrese el tema de decoración' }]}
           >
-            Agregar Elemento
-          </Button>
-        </div>
+            <Input.TextArea rows={3} placeholder="Describa el tema de la decoración" />
+          </Form.Item>
+
+          <Form.Item
+            name="colores_decoracion"
+            label="Colores"
+            rules={[
+              { required: true, message: 'Por favor ingrese los colores' },
+              { max: 100, message: 'Los colores no pueden exceder los 100 caracteres' }
+            ]}
+          >
+            <Input placeholder="Ingrese los colores de la decoración" maxLength={100} />
+          </Form.Item>
+
+          <div style={{ marginBottom: 16 }}>
+            <Button
+              type="dashed"
+              onClick={handleAddElemento}
+              icon={<PlusOutlined />}
+              style={{ 
+                width: '100%',
+                borderColor: 'var(--gold)',
+                color: 'var(--gold)'
+              }}
+              className="gold-button"
+            >
+              Agregar Elemento
+            </Button>
+          </div>
 
         <Table
           columns={columns}
@@ -399,9 +433,17 @@ const DecoracionForm: React.FC<DecoracionFormProps> = ({
           size="small"
           scroll={{ x: 'max-content' }}
         />
+
+        <div style={{ marginTop: 16, textAlign: 'right' }}>
+          <div style={{ marginBottom: 8 }}>
+            <span style={{ marginRight: 16 }}>Subtotal: $ {precioneto.toFixed(2)}</span>
+            <span style={{ marginRight: 16 }}>ITBIS (18%): $ {itbis.toFixed(2)}</span>
+            <span style={{ fontWeight: 'bold' }}>Total: $ {total.toFixed(2)}</span>
+          </div>
+        </div>
       </Form>
     </Modal>
   );
 };
 
-export default DecoracionForm; 
+export default DecoracionForm;

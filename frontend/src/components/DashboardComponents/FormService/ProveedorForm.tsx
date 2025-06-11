@@ -14,11 +14,21 @@ interface Ciudad {
   id_provincia: number;
 }
 
+interface Proveedor {
+  id_proveedor: number;
+  tipo_proveedor: string;
+  nombre_proveedor: string;
+  tel_proveedor: string;
+  correo_proveedor: string;
+  id_direccion: number;
+}
+
 interface ProveedorFormProps {
   visible: boolean;
   onCancel: () => void;
   onSubmit: (values: any) => void;
   loading?: boolean;
+  initialValues?: Proveedor | null;
 }
 
 const ProveedorForm: React.FC<ProveedorFormProps> = ({
@@ -26,6 +36,7 @@ const ProveedorForm: React.FC<ProveedorFormProps> = ({
   onCancel,
   onSubmit,
   loading = false,
+  initialValues,
 }) => {
   const apiUrl = import.meta.env.VITE_API_BASE_URL;
   const [form] = Form.useForm();
@@ -35,6 +46,15 @@ const ProveedorForm: React.FC<ProveedorFormProps> = ({
   const [loadingProvincias, setLoadingProvincias] = useState(false);
   const [loadingCiudades, setLoadingCiudades] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  useEffect(() => {
+    if (visible && initialValues) {
+      form.setFieldsValue(initialValues);
+      if (initialValues.id_provincia) {
+        handleProvinciaChange(initialValues.id_provincia);
+      }
+    }
+  }, [visible, initialValues, form]);
 
   useEffect(() => {
     if (visible) {
@@ -94,14 +114,22 @@ const ProveedorForm: React.FC<ProveedorFormProps> = ({
     form.setFieldsValue({ id_ciudad: undefined });
   };
 
-  const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const formatted = formatPhoneNumber(e.target.value);
-    form.setFieldsValue({ tel_proveedor: formatted });
+  const formatTelefono = (value: string) => {
+    // Eliminar todos los caracteres no numéricos
+    const numbers = value.replace(/\D/g, '');
+    // Aplicar formato XXX-XXX-XXXX
+    if (numbers.length <= 3) return numbers;
+    if (numbers.length <= 6) return `${numbers.slice(0, 3)}-${numbers.slice(3)}`;
+    return `${numbers.slice(0, 3)}-${numbers.slice(3, 6)}-${numbers.slice(6, 10)}`;
   };
 
-  const handleSubmit = async () => {
+  const handleTelefonoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const formattedValue = formatTelefono(e.target.value);
+    form.setFieldValue('telefono_proveedor', formattedValue);
+  };
+
+  const handleSubmit = async (values: any) => {
     try {
-      const values = await form.validateFields();
       setIsSubmitting(true);
 
       // Preparar los datos de la dirección
@@ -113,89 +141,113 @@ const ProveedorForm: React.FC<ProveedorFormProps> = ({
         detalles: values.detalles || null
       };
 
-      // Insertar la dirección
-      const direccionResponse = await fetch(`${apiUrl}/direccion`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(direccionData)
-      });
+      let id_direccion;
 
-      if (!direccionResponse.ok) {
-        const errorData = await direccionResponse.json();
-        throw new Error(errorData.mensaje || 'Error al crear la dirección');
+      if (initialValues) {
+        // Si estamos editando, actualizamos la dirección existente
+        const direccionResponse = await fetch(`${apiUrl}/direccion/${initialValues.id_direccion}`, {
+          method: 'PUT',
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('token')}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(direccionData)
+        });
+
+        if (!direccionResponse.ok) {
+          const errorData = await direccionResponse.json();
+          throw new Error(errorData.mensaje || 'Error al actualizar la dirección');
+        }
+
+        id_direccion = initialValues.id_direccion;
+      } else {
+        // Si estamos creando, insertamos una nueva dirección
+        const direccionResponse = await fetch(`${apiUrl}/direccion`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('token')}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(direccionData)
+        });
+
+        if (!direccionResponse.ok) {
+          const errorData = await direccionResponse.json();
+          throw new Error(errorData.mensaje || 'Error al crear la dirección');
+        }
+
+        const direccionResult = await direccionResponse.json();
+        id_direccion = direccionResult.id_direccion;
       }
-
-      const direccionResult = await direccionResponse.json();
 
       // Preparar los datos del proveedor
       const proveedorData = {
         tipo_proveedor: values.tipo_proveedor,
         nombre_proveedor: values.nombre_proveedor,
-        tel_proveedor: values.tel_proveedor,
+        tel_proveedor: values.telefono_proveedor,
         correo_proveedor: values.correo_proveedor,
-        estado_proveedor: values.estado_proveedor,
-        id_direccion: direccionResult.id_direccion
+        id_direccion: id_direccion
       };
 
-      console.log('Enviando datos del proveedor:', proveedorData);
-
-      // Insertar el proveedor
-      const proveedorResponse = await fetch(`${apiUrl}/proveedor`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(proveedorData)
-      });
+      let proveedorResponse;
+      if (initialValues) {
+        // Si estamos editando, actualizamos el proveedor existente
+        proveedorResponse = await fetch(`${apiUrl}/proveedor/${initialValues.id_proveedor}`, {
+          method: 'PUT',
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('token')}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(proveedorData)
+        });
+      } else {
+        // Si estamos creando, insertamos un nuevo proveedor
+        proveedorResponse = await fetch(`${apiUrl}/proveedor`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('token')}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(proveedorData)
+        });
+      }
 
       if (!proveedorResponse.ok) {
         const errorData = await proveedorResponse.json();
-        throw new Error(errorData.mensaje || 'Error al crear el proveedor');
+        throw new Error(errorData.mensaje || `Error al ${initialValues ? 'actualizar' : 'crear'} el proveedor`);
       }
 
       const data = await proveedorResponse.json();
-      message.success('Proveedor creado exitosamente');
+      message.success(`Proveedor ${initialValues ? 'actualizado' : 'creado'} exitosamente`);
       onSubmit(data.proveedor);
       form.resetFields();
       onCancel();
     } catch (error) {
-      console.error('Error al crear proveedor:', error);
-      message.error(error instanceof Error ? error.message : 'Error al crear el proveedor');
+      console.error(`Error al ${initialValues ? 'actualizar' : 'crear'} proveedor:`, error);
+      message.error(error instanceof Error ? error.message : `Error al ${initialValues ? 'actualizar' : 'crear'} el proveedor`);
     } finally {
       setIsSubmitting(false);
     }
   };
 
+  const handleCancel = () => {
+    form.resetFields();
+    onCancel();
+  };
+
   return (
     <Modal
-      title="Nuevo Proveedor"
+      title={initialValues ? "Editar Proveedor" : "Crear Nuevo Proveedor"}
       open={visible}
-      onCancel={onCancel}
-      footer={[
-        <Button key="cancel" onClick={onCancel} className="cancel-button">
-          Cancelar
-        </Button>,
-        <Button 
-          key="submit" 
-          type="primary" 
-          onClick={handleSubmit}
-          loading={isSubmitting}
-          className="submit-button"
-        >
-          Crear Proveedor
-        </Button>
-      ]}
-      width={600}
-      className="dashboard-modal"
+      onCancel={handleCancel}
+      footer={null}
+      width={800}
     >
-      <Form 
+      <Form
         form={form}
         layout="vertical"
-        className="dashboard-form"
+        onFinish={handleSubmit}
+        className="proveedor-form"
       >
         <Form.Item
           name="tipo_proveedor"
@@ -224,20 +276,17 @@ const ProveedorForm: React.FC<ProveedorFormProps> = ({
         </Form.Item>
 
         <Form.Item
-          name="tel_proveedor"
-          label="Telefono"
+          name="telefono_proveedor"
+          label="Teléfono"
           rules={[
             { required: true, message: 'Por favor ingrese el teléfono' },
-            { validator: (_, value) => {
-              const error = validatePhoneNumber(value);
-              return error ? Promise.reject(error) : Promise.resolve();
-            }}
+            { pattern: /^\d{3}-\d{3}-\d{4}$/, message: 'Formato de teléfono inválido (XXX-XXX-XXXX)' }
           ]}
         >
           <Input 
-            placeholder="Ingrese el telefono (000-000-0000)" 
+            placeholder="XXX-XXX-XXXX" 
             maxLength={12}
-            onChange={handlePhoneChange}
+            onChange={handleTelefonoChange}
           />
         </Form.Item>
 
@@ -352,16 +401,13 @@ const ProveedorForm: React.FC<ProveedorFormProps> = ({
           />
         </Form.Item>
 
-        <Form.Item
-          name="estado_proveedor"
-          label="Estado"
-          initialValue="Activo"
-        >
-          <Select>
-            <Select.Option value="Activo">Activo</Select.Option>
-            <Select.Option value="Inactivo">Inactivo</Select.Option>
-            <Select.Option value="Eliminado">Eliminado</Select.Option>
-          </Select>
+        <Form.Item>
+          <div className="form-buttons">
+            <Button onClick={handleCancel}>Cancelar</Button>
+            <Button type="primary" htmlType="submit" loading={isSubmitting}>
+              {initialValues ? "Actualizar Proveedor" : "Crear Proveedor"}
+            </Button>
+          </div>
         </Form.Item>
       </Form>
     </Modal>

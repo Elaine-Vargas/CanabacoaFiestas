@@ -5,11 +5,16 @@ import {
   DataType,
   ForeignKey,
   BelongsTo,
+  PrimaryKey
 } from 'sequelize-typescript';
 import Evento from './Evento_model';
 import Usuario from './Usuario_model';
 
-@Table({ tableName: 'empleado_evento', timestamps: false })
+@Table({ 
+  tableName: 'empleado_evento', 
+  timestamps: false,
+  modelName: 'EmpleadoEvento'
+})
 export default class EmpleadoEvento extends Model {
  
   @ForeignKey(() => Evento)
@@ -19,6 +24,7 @@ export default class EmpleadoEvento extends Model {
   @BelongsTo(() => Evento)
   evento?: Evento;
 
+  @PrimaryKey
   @ForeignKey(() => Usuario)
   @Column({ type: DataType.CHAR(13), field: 'empleado_evento', allowNull: false })
   empleado_evento!: string;

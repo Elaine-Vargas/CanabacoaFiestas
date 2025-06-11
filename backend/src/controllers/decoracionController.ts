@@ -4,75 +4,112 @@ import DetalleDecoracion from '../models/DetalleDecoracion_model';
 import Evento from '../models/Evento_model';
 import { Op, Transaction } from 'sequelize';
 import { sequelize } from '../database/database';
+import Usuario from '../models/Usuario_model';
+import TipoEvento from '../models/TipoEvento_model';
 
 export const createDecoracion = async (req: Request, res: Response) => {
-    const t: Transaction = await sequelize.transaction();
     try {
-        const {
-            id_evento,
-            tema_decoracion,
-            precioneto_decoracion,
-            itbis_decoracion,
-            total_decoracion,
-            detalles // Array de detalles de decoración
-        } = req.body;
+        const decoracionCompleta = await sequelize.transaction(async (t) => {
+            const {
+                id_evento,
+                tema_decoracion,
+                colores_decoracion,
+                detalles // Array de detalles de decoración
+            } = req.body;
 
-        // Verificar que el evento existe
-        const evento = await Evento.findByPk(id_evento);
-        if (!evento) {
-            await t.rollback();
-            return res.status(404).json({ 
+            // Verificar que el evento existe
+            const evento = await Evento.findByPk(id_evento, { transaction: t });
+            if (!evento) {
+                // Lanzamos un error, lo que hará que Sequelize revierta la transacción automáticamente
+                throw new Error('Evento no encontrado');
+            }
+
+            // Calcular totales asegurando que los valores son números
+            const precioneto = detalles.reduce((total: number, elemento: any) => 
+                total + (Number(elemento.precio_elemento || 0) * Number(elemento.cantelemento_decoracion || 0)), 0);
+            const itbis = precioneto * 0.18; // 18% ITBIS
+            const total = precioneto + itbis;
+
+            // Crear el servicio de decoración
+            const decoracion = await DecoracionServicio.create({
+                id_evento,
+                tema_decoracion,
+                colores_decoracion,
+                precioneto_decoracion: precioneto,
+                itbis_decoracion: itbis,
+                total_decoracion: total,
+                estado_decoracion: 'Solicitado'
+            }, { transaction: t });
+
+            // Crear los detalles de decoración
+            if (detalles && detalles.length > 0) {
+                const detallesPromises = detalles.map((detalle: any) => 
+                    DetalleDecoracion.create({
+                        id_decoracion: decoracion.id_decoracion,
+                        elemento_decoracion: detalle.elemento_decoracion,
+                        cantelemento_decoracion: Number(detalle.cantelemento_decoracion || 0),
+                        precio_elemento: Number(detalle.precio_elemento || 0),
+                        precio_decoracion: Number(detalle.precio_elemento || 0) * Number(detalle.cantelemento_decoracion || 0),
+                        estado_detdecoracion: 'Aceptado'
+                    }, { transaction: t })
+                );
+                await Promise.all(detallesPromises);
+            }
+
+            // Obtener la decoración con sus detalles dentro de la misma transacción
+            const completeDecoracion = await DecoracionServicio.findByPk(decoracion.id_decoracion, {
+                include: [
+                    {
+                        model: DetalleDecoracion,
+                        as: 'detalles_decoracion',
+                        where: {
+                            estado_detdecoracion: 'Aceptado'
+                        },
+                        required: false
+                    },
+                    {
+                        model: Evento,
+                        include: [
+                            {
+                                model: Usuario,
+                                as: 'cliente'
+                            },
+                            {
+                                model: TipoEvento,
+                                as: 'tipo_evento'
+                            }
+                        ]
+                    }
+                ],
+                transaction: t // Asegurar que esta operación también es parte de la transacción
+            });
+
+            return completeDecoracion; // Devolver el resultado de la transacción
+        });
+
+        // Enviar respuesta exitosa
+        return res.status(201).json({
+            success: true,
+            mensaje: 'Decoración creada exitosamente',
+            decoracion: decoracionCompleta ? decoracionCompleta.get({ plain: true }) : null
+        });
+
+    } catch (error: any) {
+        console.error('Error al crear servicio de decoración:', error);
+
+        if (error.message === 'Evento no encontrado') {
+            return res.status(404).json({
+                success: false,
                 error: 'Evento no encontrado',
                 mensaje: 'El evento especificado no existe en el sistema'
             });
         }
-
-        // Crear el servicio de decoración
-        const decoracion = await DecoracionServicio.create({
-            id_evento,
-            tema_decoracion,
-            precioneto_decoracion: precioneto_decoracion || 0,
-            itbis_decoracion: itbis_decoracion || 0,
-            total_decoracion: total_decoracion || 0,
-            estado_decoracion: 'En proceso'
-        }, { transaction: t });
-
-        // Crear los detalles de decoración
-        if (detalles && detalles.length > 0) {
-            const detallesPromises = detalles.map((detalle: any) => 
-                DetalleDecoracion.create({
-                    id_decoracion: decoracion.id_decoracion,
-                    elemento_decoracion: detalle.elemento_decoracion,
-                    cantelemento_decoracion: detalle.cantelemento_decoracion,
-                    precio_elemento: detalle.precio_elemento,
-                    precio_decoracion: detalle.precio_elemento * detalle.cantelemento_decoracion,
-                    estado_detdecoracion: 'Aceptado'
-                }, { transaction: t })
-            );
-            await Promise.all(detallesPromises);
-        }
-
-        await t.commit();
-
-        // Obtener la decoración con sus detalles
-        const decoracionCompleta = await DecoracionServicio.findByPk(decoracion.id_decoracion, {
-            include: [
-                {
-                    model: DetalleDecoracion
-                },
-                {
-                    model: Evento
-                }
-            ]
-        });
-
-        res.status(201).json(decoracionCompleta);
-    } catch (error) {
-        await t.rollback();
-        console.error('Error al crear servicio de decoración:', error);
-        res.status(500).json({ 
+        
+        // Manejo de errores genérico
+        return res.status(500).json({ 
+            success: false,
             error: 'Error al crear servicio de decoración',
-            mensaje: 'Ocurrió un error al procesar el servicio de decoración'
+            mensaje: error.message
         });
     }
 };
@@ -87,33 +124,38 @@ export const getAllDecoraciones = async (req: Request, res: Response) => {
             },
             include: [
                 {
+                    model: Evento,
+                    as: 'evento',
+                    include: [
+                        {
+                            model: Usuario,
+                            as: 'cliente'
+                        },
+                        {
+                            model: TipoEvento,
+                            as: 'tipo_evento'
+                        }
+                    ]
+                },
+                {
                     model: DetalleDecoracion,
+                    as: 'detalles_decoracion', // Usar el alias correcto
                     where: {
                         estado_detdecoracion: 'Aceptado'
                     },
                     required: false
-                },
-                {
-                    model: Evento,
-                    as: 'evento'
                 }
             ],
             order: [['id_decoracion', 'DESC']]
         });
 
-        if (!decoraciones || decoraciones.length === 0) {
-            return res.status(404).json({ 
-                error: 'No se encontraron decoraciones',
-                mensaje: 'No hay servicios de decoración registrados en el sistema'
-            });
-        }
-
-        res.json(decoraciones);
-    } catch (error) {
+        // No devolver 404 si no hay decoraciones
+        res.json(decoraciones.map(d => d ? d.get({ plain: true }) : null).filter(Boolean) || []); // Asegurar que la respuesta sea un objeto plano y filtrar nulos
+    } catch (error: any) {
         console.error('Error al obtener servicios de decoración:', error);
-        res.status(500).json({ 
+        res.status(500).json({
             error: 'Error al obtener servicios de decoración',
-            mensaje: 'Ocurrió un error al cargar los servicios de decoración'
+            mensaje: error.message || 'Ocurrió un error al cargar los servicios de decoración' // Mensaje de error más detallado
         });
     }
 };
@@ -209,9 +251,9 @@ export const editDecoracion = async (req: Request, res: Response) => {
                     DetalleDecoracion.create({
                         id_decoracion,
                         elemento_decoracion: detalle.elemento_decoracion,
-                        cantelemento_decoracion: detalle.cantelemento_decoracion,
-                        precio_elemento: detalle.precio_elemento,
-                        precio_decoracion: detalle.precio_elemento * detalle.cantelemento_decoracion,
+                        cantelemento_decoracion: Number(detalle.cantelemento_decoracion || 0),
+                        precio_elemento: Number(detalle.precio_elemento || 0),
+                        precio_decoracion: Number(detalle.precio_elemento || 0) * Number(detalle.cantelemento_decoracion || 0),
                         estado_detdecoracion: 'Aceptado'
                     }, { transaction: t })
                 );

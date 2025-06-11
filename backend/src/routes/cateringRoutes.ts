@@ -167,7 +167,13 @@ router.get('/menu/catering/:id_catering/menus', async (req: Request, res: Respon
 });
 
 // Obtener catálogo de menús
-router.get('/menu/catalogo', getMenuCatalog);
+router.get('/menu/catalogo', async (req: Request, res: Response, next: NextFunction) => {
+    try {
+        await getMenuCatalog(req, res);
+    } catch (error) {
+        next(error);
+    }
+});
 
 // Rutas para Plato
 // Obtener todos los platos

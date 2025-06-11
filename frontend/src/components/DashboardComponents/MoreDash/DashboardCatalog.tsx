@@ -132,7 +132,7 @@ interface CatalogProps {
   onComprarCarrito?: (carrito: CarritoItem[]) => void;
 }
 
-const Catalog: React.FC<CatalogProps> = ({ onAddToCart = true, onComprarCarrito }) => {
+const Catalog: React.FC<CatalogProps> = ({ onAddToCart, onComprarCarrito }) => {
   const navigate = useNavigate();
   const [elementos, setElementos] = useState<Elemento[]>([]);
   const [categorias, setCategorias] = useState<CategoriaElemento[]>([]);
@@ -346,25 +346,47 @@ const Catalog: React.FC<CatalogProps> = ({ onAddToCart = true, onComprarCarrito 
 
   const handleAddToCart = (item: Elemento) => {
     const cantidad = cantidadesSeleccionadas[item.id_elemento] || 1;
+    
+    // Verificar stock disponible
+    if (cantidad > item.cantidad_disponible) {
+      setNotificacion({
+        abierta: true,
+        mensaje: 'No hay suficiente stock disponible',
+        tipo: 'error'
+      });
+      return;
+    }
+
     const itemConCantidad = { ...item, cantidad };
     
+    if (onAddToCart) {
+      onAddToCart(item);
+    }
+
     setCarrito(prev => {
       const itemExistente = prev.find(i => i.id_elemento === item.id_elemento);
       if (itemExistente) {
         return prev.map(i => 
           i.id_elemento === item.id_elemento 
-            ? { ...i, cantidad: cantidad }
+            ? { ...i, cantidad: i.cantidad + cantidad }
             : i
         );
       }
       return [...prev, itemConCantidad];
     });
     
+    // Mostrar notificación
     setNotificacion({
       abierta: true,
-      mensaje: 'Producto agregado al carrito',
+      mensaje: `${item.nombre_elemento} agregado al carrito`,
       tipo: 'success'
     });
+
+    // Limpiar la cantidad seleccionada
+    setCantidadesSeleccionadas(prev => ({
+      ...prev,
+      [item.id_elemento]: 0
+    }));
   };
 
   const actualizarCantidadCarrito = (id: number, nuevaCantidad: number) => {
@@ -1491,19 +1513,13 @@ const Catalog: React.FC<CatalogProps> = ({ onAddToCart = true, onComprarCarrito 
           <Snackbar
             open={notificacion.abierta}
             autoHideDuration={3000}
-            onClose={() => setNotificacion(prev => ({ ...prev, abierta: false }))}
-            anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+            onClose={() => setNotificacion({ ...notificacion, abierta: false })}
+            anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
           >
             <Alert 
-              onClose={() => setNotificacion(prev => ({ ...prev, abierta: false }))} 
+              onClose={() => setNotificacion({ ...notificacion, abierta: false })} 
               severity={notificacion.tipo}
-              sx={{
-                backgroundColor: notificacion.tipo === 'success' ? '#2e7d32' : '#d32f2f',
-                color: 'var(--white)',
-                '& .MuiAlert-icon': {
-                  color: 'var(--white)'
-                }
-              }}
+              sx={{ width: '100%' }}
             >
               {notificacion.mensaje}
             </Alert>

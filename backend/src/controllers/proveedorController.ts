@@ -2,6 +2,8 @@ import { Request, Response } from 'express';
 import { Op } from 'sequelize';
 import Proveedor from '../models/Proveedor_model';
 import Direccion from '../models/Direccion_model';
+import Ciudad from '../models/Ciudad_model';
+import Provincia from '../models/Provincia_model';
 
 // Obtener todos los proveedores
 export const getProveedores = async (req: Request, res: Response) => {
@@ -10,14 +12,21 @@ export const getProveedores = async (req: Request, res: Response) => {
       include: [
         {
           model: Direccion,
-          attributes: ['id_direccion', 'sector', 'calle', 'detalles']
+          attributes: ['id_direccion', 'sector', 'calle', 'detalles'],
+          include: [
+            {
+              model: Ciudad,
+              attributes: ['nombre_ciudad'],
+              include: [
+                {
+                  model: Provincia,
+                  attributes: ['nombre_provincia']
+                }
+              ]
+            }
+          ]
         }
       ],
-      where: {
-        estado_proveedor: {
-          [Op.ne]: 'Eliminado'
-        }
-      },
       order: [['nombre_proveedor', 'ASC']]
     });
 
@@ -43,11 +52,7 @@ export const searchProveedores = async (req: Request, res: Response) => {
   try {
     const { nombre, tipo } = req.query;
 
-    const whereClause: any = {
-      estado_proveedor: {
-        [Op.ne]: 'Eliminado'
-      }
-    };
+    const whereClause: any = {};
 
     if (nombre) {
       whereClause.nombre_proveedor = {
@@ -64,7 +69,19 @@ export const searchProveedores = async (req: Request, res: Response) => {
       include: [
         {
           model: Direccion,
-          attributes: ['id_direccion', 'sector', 'calle', 'detalles']
+          attributes: ['id_direccion', 'sector', 'calle', 'detalles'],
+          include: [
+            {
+              model: Ciudad,
+              attributes: ['nombre_ciudad'],
+              include: [
+                {
+                  model: Provincia,
+                  attributes: ['nombre_provincia']
+                }
+              ]
+            }
+          ]
         }
       ],
       order: [['nombre_proveedor', 'ASC']]
@@ -244,6 +261,38 @@ export const deleteProveedor = async (req: Request, res: Response) => {
     res.status(500).json({ 
       error: 'Error al eliminar proveedor',
       mensaje: 'Ocurrió un error al eliminar el proveedor'
+    });
+  }
+};
+
+// Actualizar estado de un proveedor
+export const updateProveedorEstado = async (req: Request, res: Response) => {
+  try {
+    const { id_proveedor } = req.params;
+    const { estado_proveedor } = req.body;
+
+    const proveedor = await Proveedor.findByPk(id_proveedor);
+    if (!proveedor) {
+      return res.status(404).json({ error: 'Proveedor no encontrado' });
+    }
+
+    // Validar estado
+    if (!['Activo', 'Inactivo', 'Eliminado'].includes(estado_proveedor)) {
+      return res.status(400).json({ error: 'Estado de proveedor inválido' });
+    }
+
+    // Actualizar el estado
+    await proveedor.update({ estado_proveedor });
+
+    res.json({ 
+      mensaje: 'Estado del proveedor actualizado exitosamente',
+      proveedor 
+    });
+  } catch (error) {
+    console.error('Error al actualizar estado del proveedor:', error);
+    res.status(500).json({ 
+      error: 'Error al actualizar estado del proveedor',
+      mensaje: 'Ocurrió un error al actualizar el estado'
     });
   }
 }; 
