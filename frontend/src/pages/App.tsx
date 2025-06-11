@@ -120,8 +120,7 @@ function App() {
             <Route path="Alquiler" element={<RoleBasedRedirect />} />
             <Route path="Alquileres-Compras" element={<Rent />} />
             <Route path="Catering" element={<Catering />} />
-            <Route path="Facturas" element={<RoleBasedRedirect />} />
-            <Route path="Reportes-Facturas" element={<Report />} />
+            <Route path="Facturas" element={<Report />} />
           </Route>
         </Routes>
       </BrowserRouter>

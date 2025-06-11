@@ -880,65 +880,120 @@ export const generarReporteEventosPersonal = async (req: Request, res: Response)
 
 export const generarReporteEquipos = async (req: Request, res: Response) => {
   try {
+    const { cedula_asesor } = req.params;
     const { evento_id, empleado_id, puesto } = req.query;
 
-    const whereClause: any = {};
-    const conditions: any[] = [];
+    // Verificar si el asesor existe si se especificó uno
+    if (cedula_asesor) {
+      const asesor = await Usuario.findOne({
+        where: { 
+          cedula_usuario: cedula_asesor,
+          id_rol: 3 // Verificar que sea un asesor
+        }
+      });
 
-    if (evento_id && evento_id !== 'todos') {
-      conditions.push({ id_evento: evento_id });
+      if (!asesor) {
+        return res.status(404).json({ 
+          mensaje: `No se encontró un asesor con la cédula ${cedula_asesor}`
+        });
+      }
     }
 
+    // Verificar si el empleado existe si se especificó uno
     if (empleado_id && empleado_id !== 'todos') {
-      conditions.push({ empleado_evento: empleado_id });
+      const empleado = await Usuario.findOne({
+        where: { 
+          cedula_usuario: empleado_id,
+          id_rol: 3, // Verificar que sea un empleado
+          estado_usuario: 'Activo' // Verificar que esté activo
+        }
+      });
+
+      if (!empleado) {
+        return res.status(404).json({ 
+          mensaje: `No se encontró un empleado activo con la cédula ${empleado_id}`
+        });
+      }
+
+      // Verificar si el empleado tiene asignaciones en eventos
+      const asignacionesEmpleado = await EmpleadoEvento.findAll({
+        where: {
+          empleado_evento: empleado_id,
+          ...(puesto && puesto !== 'todos' ? { puesto_evento: puesto } : {})
+        },
+        include: [{
+          model: Evento,
+          where: evento_id && evento_id !== 'todos' ? { id_evento: evento_id } : {},
+          required: true
+        }]
+      });
+
+      if (!asignacionesEmpleado || asignacionesEmpleado.length === 0) {
+        let mensaje = `El empleado ${empleado.nombre_usuario} ${empleado.apellido_usuario} no tiene asignaciones`;
+        if (puesto && puesto !== 'todos') {
+          mensaje += ` como ${puesto}`;
+        }
+        if (evento_id && evento_id !== 'todos') {
+          mensaje += ` en el evento ${evento_id}`;
+        }
+        return res.status(404).json({ mensaje });
+      }
     }
 
+    // Verificar si el evento existe si se especificó uno
+    if (evento_id && evento_id !== 'todos') {
+      const evento = await Evento.findByPk(Number(evento_id));
+      if (!evento) {
+        return res.status(404).json({ 
+          mensaje: `No se encontró un evento con el ID ${evento_id}`
+        });
+      }
+    }
+
+    // Construir la consulta base
+    const whereClause: any = {};
+    const includeClause = [
+      {
+        model: Evento,
+        include: [
+          {
+            model: Usuario,
+            as: 'cliente',
+            attributes: ['nombre_usuario', 'apellido_usuario']
+          },
+          {
+            model: Usuario,
+            as: 'asesor',
+            attributes: ['nombre_usuario', 'apellido_usuario']
+          }
+        ],
+        where: {
+          ...(evento_id && evento_id !== 'todos' ? { id_evento: evento_id } : {}),
+          ...(cedula_asesor ? { cedula_asesor: cedula_asesor } : {})
+        }
+      },
+      {
+        model: Usuario,
+        as: 'empleado',
+        attributes: ['nombre_usuario', 'apellido_usuario', 'cedula_usuario'],
+        where: {
+          id_rol: 3, // Solo incluir usuarios con rol de empleado
+          estado_usuario: 'Activo', // Solo empleados activos
+          ...(empleado_id && empleado_id !== 'todos' ? { cedula_usuario: empleado_id } : {})
+        },
+        required: true
+      }
+    ];
+
+    // Agregar filtro de puesto si está especificado
     if (puesto && puesto !== 'todos') {
-      conditions.push({ puesto_evento: puesto });
+      whereClause.puesto_evento = puesto;
     }
-
-    if (conditions.length > 0) {
-      whereClause[Op.and] = conditions;
-    }
-
-    console.log('Filtros aplicados:', whereClause);
 
     // Obtener los empleados con sus eventos
     const empleadosEventos = await EmpleadoEvento.findAll({
       where: whereClause,
-      include: [
-        {
-          model: Evento,
-          include: [
-            {
-              model: Usuario,
-              as: 'cliente',
-              attributes: ['nombre_usuario', 'apellido_usuario']
-            },
-            {
-              model: Usuario,
-              as: 'asesor',
-              attributes: ['nombre_usuario', 'apellido_usuario']
-            }
-          ],
-          // Si se especifica un evento, asegurarse de que solo se incluya ese evento
-          ...(evento_id && evento_id !== 'todos' ? {
-            where: {
-              id_evento: evento_id
-            }
-          } : {})
-        },
-        {
-          model: Usuario,
-          as: 'empleado',
-          attributes: ['nombre_usuario', 'apellido_usuario', 'cedula_usuario'],
-          where: {
-            id_rol: 3, // Solo incluir usuarios con rol de empleado (id_rol = 3)
-            ...(empleado_id && empleado_id !== 'todos' ? { cedula_usuario: empleado_id } : {})
-          },
-          required: true
-        }
-      ],
+      include: includeClause,
       order: [
         ['id_evento', 'ASC'],
         ['puesto_evento', 'ASC']
@@ -946,44 +1001,79 @@ export const generarReporteEquipos = async (req: Request, res: Response) => {
     });
 
     if (!empleadosEventos || empleadosEventos.length === 0) {
-      let mensaje = 'No se encontraron registros de equipos para los criterios especificados.';
+      let mensaje = 'No se encontraron registros de equipos';
       
       if (evento_id && evento_id !== 'todos') {
-        mensaje = `No se encontraron empleados asignados al evento ${evento_id}`;
+        mensaje += ` para el evento ${evento_id}`;
       }
       if (empleado_id && empleado_id !== 'todos') {
-        if (puesto && puesto !== 'todos') {
-          mensaje = `No se encontró el empleado con ID ${empleado_id} en el puesto ${puesto} para los eventos.`;
-        } else {
-          mensaje = `No se encontraron eventos asignados al empleado ${empleado_id}`;
-        }
+        mensaje += ` para el empleado ${empleado_id}`;
       }
-      if (puesto && puesto !== 'todos' && !empleado_id) {
-        mensaje = `No se encontraron empleados con el puesto ${puesto}`;
+      if (puesto && puesto !== 'todos') {
+        mensaje += ` con el puesto ${puesto}`;
+      }
+      if (cedula_asesor) {
+        mensaje += ` asignados al asesor ${cedula_asesor}`;
       }
       
-      return res.status(404).json({ 
-        mensaje: mensaje
-      });
+      return res.status(404).json({ mensaje });
     }
 
-    // Crear el documento PDF en formato horizontal
+    // Crear el documento PDF
     const doc = new PDFDocument({ 
       size: 'A4', 
       layout: 'landscape',
       margin: 50
     });
+
     res.setHeader('Content-Type', 'application/pdf');
-    res.setHeader('Content-Disposition', 'attachment; filename=reporte_equipos.pdf');
+    res.setHeader('Content-Disposition', 'inline; filename=reporte_equipos.pdf');
     doc.pipe(res);
 
     // Título del reporte
-    doc.fontSize(20).text('Reporte de Equipos', { align: 'center' });
+    doc.fontSize(20).text('Reporte de Equipos de Trabajo', { align: 'center' });
     doc.moveDown();
 
     // Fecha de generación
     doc.fontSize(12).text(`Fecha de generación: ${new Date().toLocaleDateString()}`, { align: 'right' });
     doc.moveDown();
+
+    // Información del asesor si está presente
+    if (cedula_asesor) {
+      const asesor = await Usuario.findOne({
+        where: { 
+          cedula_usuario: cedula_asesor,
+          id_rol: 2
+        },
+        attributes: ['nombre_usuario', 'apellido_usuario']
+      });
+      if (asesor) {
+        doc.fontSize(14).text('Información del Asesor:', { underline: true });
+        doc.fontSize(12).text(`Nombre: ${asesor.nombre_usuario} ${asesor.apellido_usuario}`);
+        doc.moveDown();
+      }
+    }
+
+    // Información del empleado si está presente
+    if (empleado_id && empleado_id !== 'todos') {
+      const empleado = await Usuario.findOne({
+        where: { 
+          cedula_usuario: empleado_id,
+          id_rol: 3,
+          estado_usuario: 'Activo'
+        },
+        attributes: ['nombre_usuario', 'apellido_usuario', 'cedula_usuario']
+      });
+      if (empleado) {
+        doc.fontSize(14).text('Información del Empleado:', { underline: true });
+        doc.fontSize(12).text(`Nombre: ${empleado.nombre_usuario} ${empleado.apellido_usuario}`);
+        doc.fontSize(12).text(`Cédula: ${empleado.cedula_usuario}`);
+        if (puesto && puesto !== 'todos') {
+          doc.fontSize(12).text(`Puesto: ${puesto}`);
+        }
+        doc.moveDown();
+      }
+    }
 
     // Información específica del evento si se seleccionó uno
     if (evento_id && evento_id !== 'todos' && empleadosEventos.length > 0) {
@@ -994,32 +1084,8 @@ export const generarReporteEquipos = async (req: Request, res: Response) => {
         doc.text(`ID del Evento: ${evento.id_evento}`);
         doc.text(`Fecha: ${new Date(evento.fecha_evento).toLocaleDateString()}`);
         doc.text(`Cliente: ${evento.cliente?.nombre_usuario} ${evento.cliente?.apellido_usuario}`);
-        doc.text(`Asesor: ${evento.asesor?.nombre_usuario} ${evento.asesor?.apellido_usuario}`);
         doc.moveDown();
       }
-    }
-
-    // Información específica del empleado si se seleccionó uno
-    if (empleado_id && empleado_id !== 'todos' && empleadosEventos.length > 0) {
-      const empleado = empleadosEventos[0].empleado;
-      if (empleado) {
-        doc.fontSize(14).text('Información del Empleado:', { underline: true });
-        doc.fontSize(12);
-        doc.text(`Nombre: ${empleado.nombre_usuario} ${empleado.apellido_usuario}`);
-        doc.text(`Cédula: ${empleado.cedula_usuario}`);
-        doc.moveDown();
-      }
-    }
-
-    // Filtros aplicados (solo si hay filtros adicionales)
-    const hasFilters = (puesto && puesto !== 'todos');
-
-    if (hasFilters) {
-      doc.fontSize(12).text('Filtros aplicados:', { underline: true });
-      if (puesto && puesto !== 'todos') {
-        doc.text(`Puesto: ${puesto}`);
-      }
-      doc.moveDown();
     }
 
     // Tabla de empleados
@@ -1027,22 +1093,19 @@ export const generarReporteEquipos = async (req: Request, res: Response) => {
     const tableLeft = 50;
     const rowHeight = 30;
     
-    // Determinar las columnas basadas en los filtros
+    // Definir columnas basadas en el contexto
     let headers: string[] = [];
     let colWidths: number[] = [];
     
     if (evento_id && evento_id !== 'todos') {
-      // Si hay un evento específico, solo mostrar empleado y puesto
-      headers = ['Empleado', 'Puesto'];
-      colWidths = [300, 300];
-    } else if (empleado_id && empleado_id !== 'todos') {
-      // Si hay un empleado específico, mostrar evento y puesto
-      headers = ['Evento', 'Fecha', 'Puesto'];
+      headers = ['Empleado', 'Cédula', 'Puesto'];
       colWidths = [200, 150, 250];
+    } else if (empleado_id && empleado_id !== 'todos') {
+      headers = ['ID Evento', 'Fecha Evento', 'Cliente', 'Puesto'];
+      colWidths = [80, 120, 200, 200];
     } else {
-      // Si no hay filtros específicos, mostrar todas las columnas
-      headers = ['ID Evento', 'Fecha Evento', 'Cliente', 'Asesor', 'Empleado', 'Puesto'];
-      colWidths = [80, 120, 120, 120, 120, 120];
+      headers = ['ID Evento', 'Fecha Evento', 'Cliente', 'Asesor', 'Empleado', 'Cédula', 'Puesto'];
+      colWidths = [60, 100, 120, 120, 120, 100, 100];
     }
 
     let currentY = tableTop;
@@ -1069,32 +1132,30 @@ export const generarReporteEquipos = async (req: Request, res: Response) => {
 
       const evento = empleadoEvento.evento;
       const empleado = empleadoEvento.empleado;
-      const cliente = evento?.cliente;
-      const asesor = evento?.asesor;
 
       let rowData: string[] = [];
       
       if (evento_id && evento_id !== 'todos') {
-        // Si hay un evento específico
         rowData = [
-          empleado ? `${empleado.nombre_usuario} ${empleado.apellido_usuario}` : '',
+          `${empleado?.nombre_usuario} ${empleado?.apellido_usuario}`,
+          empleado?.cedula_usuario || '',
           empleadoEvento.puesto_evento
         ];
       } else if (empleado_id && empleado_id !== 'todos') {
-        // Si hay un empleado específico
-        rowData = [
-          evento ? `Evento #${evento.id_evento}` : '',
-          evento?.fecha_evento ? new Date(evento.fecha_evento).toLocaleDateString() : '',
-          empleadoEvento.puesto_evento
-        ];
-      } else {
-        // Si no hay filtros específicos
         rowData = [
           evento?.id_evento.toString() || '',
           evento?.fecha_evento ? new Date(evento.fecha_evento).toLocaleDateString() : '',
-          cliente ? `${cliente.nombre_usuario} ${cliente.apellido_usuario}` : '',
-          asesor ? `${asesor.nombre_usuario} ${asesor.apellido_usuario}` : '',
-          empleado ? `${empleado.nombre_usuario} ${empleado.apellido_usuario}` : '',
+          `${evento?.cliente?.nombre_usuario} ${evento?.cliente?.apellido_usuario}`,
+          empleadoEvento.puesto_evento
+        ];
+      } else {
+        rowData = [
+          evento?.id_evento.toString() || '',
+          evento?.fecha_evento ? new Date(evento.fecha_evento).toLocaleDateString() : '',
+          `${evento?.cliente?.nombre_usuario} ${evento?.cliente?.apellido_usuario}`,
+          `${evento?.asesor?.nombre_usuario} ${evento?.asesor?.apellido_usuario}`,
+          `${empleado?.nombre_usuario} ${empleado?.apellido_usuario}`,
+          empleado?.cedula_usuario || '',
           empleadoEvento.puesto_evento
         ];
       }
@@ -1110,6 +1171,9 @@ export const generarReporteEquipos = async (req: Request, res: Response) => {
     doc.end();
   } catch (error) {
     console.error('Error al generar el reporte de equipos:', error);
-    res.status(500).json({ mensaje: 'Error al generar el reporte de equipos' });
+    res.status(500).json({ 
+      mensaje: 'Error al generar el reporte de equipos',
+      error: error instanceof Error ? error.message : 'Error desconocido'
+    });
   }
 }; 

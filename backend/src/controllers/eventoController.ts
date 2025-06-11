@@ -157,9 +157,34 @@ export const showAllEvents = async (req: Request, res: Response) => {
     try {
         const eventos = await Evento.findAll({
             include: [
-                { model: Usuario, as: 'cliente' },
-                { model: Usuario, as: 'asesor' },
-                { model: TipoEvento, as: 'tipo_evento' }
+                { 
+                    model: Usuario, 
+                    as: 'cliente',
+                    attributes: ['nombre_usuario', 'apellido_usuario']
+                },
+                { 
+                    model: Usuario, 
+                    as: 'asesor',
+                    attributes: ['nombre_usuario', 'apellido_usuario']
+                },
+                { 
+                    model: TipoEvento, 
+                    attributes: ['tipo_evento']
+                },
+                {
+                    model: Direccion,
+                    include: [
+                        {
+                            model: Ciudad,
+                            include: [
+                                {
+                                    model: Provincia,
+                                    attributes: ['nombre_provincia']
+                                }
+                            ]
+                        }
+                    ]
+                }
             ]
         });
 
@@ -398,21 +423,31 @@ export const getTiposEventos = async (req: Request, res: Response) => {
 export const assignEmployeeToEvent = async (req: Request, res: Response) => {
     try {
         const { id_evento, empleado_evento, puesto_evento } = req.body;
+        console.log('Datos recibidos en el controlador:', { id_evento, empleado_evento, puesto_evento });
+
+        if (!id_evento || !empleado_evento || !puesto_evento) {
+            return res.status(400).json({
+                error: 'Datos incompletos',
+                mensaje: 'Faltan datos requeridos para la asignación'
+            });
+        }
 
         // Verificar que el evento existe
         const evento = await Evento.findByPk(id_evento);
         if (!evento) {
+            console.log('Evento no encontrado:', id_evento);
             return res.status(404).json({
                 error: 'Evento no encontrado',
                 mensaje: 'El evento especificado no existe'
             });
         }
 
-        // Verificar que el empleado existe y tiene rol de empleado (id_rol: 4)
+        // Verificar que el empleado existe y tiene rol de empleado (id_rol: 3)
         const empleado = await Usuario.findOne({
             where: { cedula_usuario: empleado_evento, id_rol: 3 }
         });
         if (!empleado) {
+            console.log('Empleado no encontrado o rol incorrecto:', empleado_evento);
             return res.status(404).json({
                 error: 'Empleado no encontrado',
                 mensaje: 'El empleado especificado no existe o no tiene el rol correcto'
@@ -421,28 +456,44 @@ export const assignEmployeeToEvent = async (req: Request, res: Response) => {
 
         // Verificar si el empleado ya está asignado al evento
         const existingAssignment = await EmpleadoEvento.findOne({
-            where: { id_evento, empleado_evento }
+            where: { 
+                id_evento: id_evento,
+                empleado_evento: empleado_evento
+            },
+            attributes: ['id_evento', 'empleado_evento', 'puesto_evento']
         });
         if (existingAssignment) {
+            console.log('Asignación duplicada encontrada:', { id_evento, empleado_evento });
             return res.status(400).json({
                 error: 'Asignación duplicada',
                 mensaje: 'Este empleado ya está asignado a este evento'
             });
         }
 
+        // Validar que el puesto_evento sea válido
+        const puestosValidos = ['Decorador', 'Camarero', 'Conductor', 'Supervisor', 'Encargado de Logística', 'Encargado de Limpieza'];
+        if (!puestosValidos.includes(puesto_evento)) {
+            console.log('Puesto inválido:', puesto_evento);
+            return res.status(400).json({
+                error: 'Puesto inválido',
+                mensaje: 'El puesto especificado no es válido'
+            });
+        }
+
+        console.log('Creando nueva asignación...');
         const empleadoEvento = await EmpleadoEvento.create({
             id_evento,
             empleado_evento,
             puesto_evento
+        }, {
+            fields: ['id_evento', 'empleado_evento', 'puesto_evento']
         });
+        console.log('Asignación creada exitosamente:', empleadoEvento);
 
         res.status(201).json(empleadoEvento);
     } catch (error) {
-        console.error('Error al asignar empleado al evento:', error);
-        res.status(500).json({
-            error: 'Error al asignar empleado',
-            mensaje: 'Ocurrió un error al asignar el empleado al evento'
-        });
+        console.error('Error detallado al asignar empleado al evento:', error);
+        throw error;
     }
 };
 
@@ -530,6 +581,46 @@ export const removeEmployeeFromEvent = async (req: Request, res: Response) => {
             mensaje: 'Ocurrió un error al remover el empleado del evento'
         });
     }
+};
+
+export const updateEventStatus = async (req: Request, res: Response) => {
+  try {
+    const { id_evento } = req.params;
+    const { estado } = req.body;
+
+    if (!estado) {
+      return res.status(400).json({
+        error: 'Estado requerido',
+        mensaje: 'Se requiere especificar el nuevo estado del evento'
+      });
+    }
+
+    const evento = await Evento.findByPk(id_evento);
+
+    if (!evento) {
+      return res.status(404).json({
+        error: 'Evento no encontrado',
+        mensaje: `No existe un evento con el ID: ${id_evento}`
+      });
+    }
+
+    await evento.update({ estado_solicitud: estado });
+
+    res.json({
+      mensaje: 'Estado del evento actualizado exitosamente',
+      evento: {
+        id_evento: evento.id_evento,
+        estado_solicitud: evento.estado_solicitud
+      }
+    });
+
+  } catch (error) {
+    console.error('Error al actualizar estado del evento:', error);
+    res.status(500).json({
+      error: 'Error al actualizar estado del evento',
+      mensaje: 'Ocurrió un error al actualizar el estado del evento'
+    });
+  }
 };
 
   

@@ -1,4 +1,4 @@
-import { Router } from 'express';
+import { Router, Request, Response, NextFunction } from 'express';
 import { 
   Login, 
   RegisterClient, 
@@ -29,7 +29,20 @@ const asyncHandler = (fn: Function) => (req: any, res: any, next: any) => {
 
 // Rutas públicas
 router.post('/login', asyncHandler(Login));
-router.post('/send-verification', asyncHandler(sendVerificationEmail));
+router.post('/send-verification', asyncHandler(async (req: Request, res: Response) => {
+  const { correo_usuario } = req.body;
+  if (!correo_usuario) {
+    return res.status(400).json({ error: 'El correo es requerido' });
+  }
+  const verificationCode = Math.floor(100000 + Math.random() * 900000).toString();
+  await sendVerificationEmail(correo_usuario, verificationCode);
+  res.status(200).json({ 
+    success: true,
+    message: 'Código de verificación enviado exitosamente',
+    requiresVerification: true,
+    verificationCode // Solo para desarrollo, quitar en producción
+  });
+}));
 
 router.post('/verify-code', async (req, res, next) => {
   try {

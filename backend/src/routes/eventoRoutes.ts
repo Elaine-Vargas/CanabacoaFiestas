@@ -11,9 +11,13 @@ import {
     assignEmployeeToEvent,
     getEventEmployees,
     updateEmployeeRole,
-    removeEmployeeFromEvent
+    removeEmployeeFromEvent,
+    updateEventStatus
 } from '../controllers/eventoController';
 import { verificarToken } from '../middlewares/authMiddleware';
+import EmpleadoEvento from '../models/EmpleadoEvento_model';
+import Evento from '../models/Evento_model';
+import Usuario from '../models/Usuario_model';
 
 const router = Router();
 
@@ -91,11 +95,47 @@ router.delete('/:id_evento', async (req: Request, res: Response, next: NextFunct
 router.get('/tipo-eventos/list', getTiposEventos as RequestHandler);
 
 // Rutas para empleado-evento
+// Obtener todas las asignaciones de empleados
+router.get('/asignar-empleados', async (req, res, next) => {
+    try {
+        console.log('Intentando obtener asignaciones de empleados...');
+        const asignaciones = await EmpleadoEvento.findAll({
+            include: [
+                { 
+                    model: Evento, 
+                    as: 'evento',
+                    attributes: ['id_evento', 'fecha_evento', 'hora_evento'],
+                    include: [
+                        { 
+                            model: Usuario, 
+                            as: 'cliente',
+                            attributes: ['nombre_usuario', 'apellido_usuario']
+                        }
+                    ]
+                },
+                { 
+                    model: Usuario, 
+                    as: 'empleado',
+                    attributes: ['cedula_usuario', 'nombre_usuario', 'apellido_usuario']
+                }
+            ],
+            logging: console.log
+        });
+        console.log('Asignaciones encontradas:', asignaciones.length);
+        res.json(asignaciones);
+    } catch (error) {
+        console.error('Error detallado al obtener asignaciones:', error);
+        next(error);
+    }
+});
+
 // Asignar empleado a un evento
 router.post('/asignar-empleados', async (req: Request, res: Response, next: NextFunction) => {
     try {
+        console.log('Datos recibidos para asignación:', req.body);
         await assignEmployeeToEvent(req, res);
     } catch (error) {
+        console.error('Error detallado al asignar empleado:', error);
         next(error);
     }
 });
@@ -111,6 +151,7 @@ router.get('/:id_evento/empleados', async (req: Request, res: Response, next: Ne
 
 // Actualizar rol de empleado en un evento
 router.put('/:id_evento/empleados/:empleado_evento', async (req: Request, res: Response, next: NextFunction) => {
+    console.log('Datos recibidos para actualizar rol de empleado:', req.body);
     try {
         await updateEmployeeRole(req, res);
     } catch (error) {
@@ -122,6 +163,15 @@ router.put('/:id_evento/empleados/:empleado_evento', async (req: Request, res: R
 router.delete('/:id_evento/empleados/:empleado_evento', async (req: Request, res: Response, next: NextFunction) => {
     try {
         await removeEmployeeFromEvent(req, res);
+    } catch (error) {
+        next(error);
+    }
+});
+
+// Actualizar estado de un evento
+router.patch('/:id_evento/estado', async (req: Request, res: Response, next: NextFunction) => {
+    try {
+        await updateEventStatus(req, res);
     } catch (error) {
         next(error);
     }

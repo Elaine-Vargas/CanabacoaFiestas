@@ -63,7 +63,7 @@ export default class Evento extends Model {
   @Column({ type: DataType.INTEGER, field: 'id_tipo_evento', allowNull: false })
   id_tipo_evento!: number;
 
-  @BelongsTo(() => TipoEvento)
+  @BelongsTo(() => TipoEvento, { as: 'tipo_evento' })
   tipo_evento?: TipoEvento;
 
   @ForeignKey(() => Direccion)
@@ -106,6 +106,16 @@ export default class Evento extends Model {
 
   @Column({ type: DataType.DECIMAL(10, 2), field: 'total_evento', defaultValue: 0 })
   total_evento!: number;
+
+  @Column(DataType.VIRTUAL)
+  get nombre_cliente(): string | undefined {
+    return this.cliente?.nombre_usuario;
+  }
+
+  @Column(DataType.VIRTUAL)
+  get nombre_asesor(): string | undefined {
+    return this.asesor?.nombre_usuario;
+  }
 
   // Relaciones
   @HasMany(() => Comentario)

@@ -4,7 +4,8 @@ import {
   searchProveedores,
   createProveedor,
   editProveedor,
-  deleteProveedor
+  deleteProveedor,
+  updateProveedorEstado
 } from '../controllers/proveedorController';
 import { verificarToken } from '../middlewares/authMiddleware';
 
@@ -19,5 +20,6 @@ router.get('/search', searchProveedores as RequestHandler);
 router.post('/', createProveedor as RequestHandler);
 router.put('/:id_proveedor', editProveedor as RequestHandler);
 router.delete('/:id_proveedor', deleteProveedor as RequestHandler);
+router.patch('/:id_proveedor/estado', updateProveedorEstado as RequestHandler);
 
 export default router; 

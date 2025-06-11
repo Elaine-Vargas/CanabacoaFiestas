@@ -9,6 +9,22 @@ interface Cliente {
   apellido_usuario: string;
 }
 
+interface Evento {
+id_evento: number;
+  cedula_cliente: string;
+  cedula_asesor: string;
+  id_tipo_evento: number;
+  fecha_evento: Dayjs | null;
+  hora_evento: Dayjs | null;
+  id_direccion: number;
+  espacio_evento: string;
+  desea_supervision: boolean;
+  nota_cliente: string;
+  sector: string;
+  calle: string;
+  detalles: string;
+}
+
 interface Asesor {
   cedula_usuario: string;
   nombre_usuario: string;
@@ -36,6 +52,17 @@ interface EventoFormProps {
   onCancel: () => void;
   onSubmit: (values: any) => void;
   loading?: boolean;
+  clientes: Cliente[];
+  asesores: Asesor[];
+  tiposEvento: TipoEvento[];
+  provincias: Provincia[];
+  ciudades: Ciudad[];
+  loadingClientes?: boolean;
+  loadingAsesores?: boolean;
+  loadingTipos?: boolean;
+  loadingProvincias?: boolean;
+  loadingCiudades?: boolean;
+  initialValues: Evento;
 }
 
 const EventoForm: React.FC<EventoFormProps> = ({
@@ -43,142 +70,38 @@ const EventoForm: React.FC<EventoFormProps> = ({
   onCancel,
   onSubmit,
   loading = false,
+  clientes,
+  asesores,
+  tiposEvento,
+  provincias,
+  ciudades,
+  loadingClientes = false,
+  loadingAsesores = false,
+  loadingTipos = false,
+  loadingProvincias = false,
+  loadingCiudades = false,
+  initialValues,
 }) => {
   const apiUrl = import.meta.env.VITE_API_BASE_URL;
   const [form] = Form.useForm();
-  const [clientes, setClientes] = useState<Cliente[]>([]);
-  const [asesores, setAsesores] = useState<Asesor[]>([]);
-  const [tiposEvento, setTiposEvento] = useState<TipoEvento[]>([]);
-  const [provincias, setProvincias] = useState<Provincia[]>([]);
-  const [ciudades, setCiudades] = useState<Ciudad[]>([]);
   const [ciudadesFiltradas, setCiudadesFiltradas] = useState<Ciudad[]>([]);
-  const [loadingClientes, setLoadingClientes] = useState(false);
-  const [loadingAsesores, setLoadingAsesores] = useState(false);
-  const [loadingTipos, setLoadingTipos] = useState(false);
-  const [loadingProvincias, setLoadingProvincias] = useState(false);
-  const [loadingCiudades, setLoadingCiudades] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
+    if (visible && initialValues) {
+      form.setFieldsValue({
+        ...initialValues,
+        fecha_evento: initialValues.fecha_evento ? dayjs(initialValues.fecha_evento) : undefined,
+        hora_evento: initialValues.hora_evento ? dayjs(initialValues.hora_evento) : undefined
+      });
+    }
+  }, [visible, initialValues, form]);
+
+  useEffect(() => {
     if (visible) {
-      fetchClientes();
-      fetchAsesores();
-      fetchTiposEvento();
-      fetchProvincias();
-      fetchCiudades();
+      setCiudadesFiltradas(ciudades);
     }
-  }, [visible]);
-
-  const fetchClientes = async () => {
-    try {
-      setLoadingClientes(true);
-      const response = await fetch(`${apiUrl}/usuario?rol=2`, {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
-          'Content-Type': 'application/json'
-        }
-      });
-      if (!response.ok) {
-        throw new Error('Error al cargar los clientes');
-      }
-      const data = await response.json();
-      setClientes(data.usuarios);
-    } catch (error) {
-      console.error('Error al cargar clientes:', error);
-      message.error('Error al cargar los clientes');
-    } finally {
-      setLoadingClientes(false);
-    }
-  };
-
-  const fetchAsesores = async () => {
-    try {
-      setLoadingAsesores(true);
-      const response = await fetch(`${apiUrl}/usuario/rol/3`, {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
-          'Content-Type': 'application/json'
-        }
-      });
-      if (!response.ok) {
-        throw new Error('Error al cargar los empleados');
-      }
-      const data = await response.json();
-      setAsesores(data.usuarios);
-    } catch (error) {
-      console.error('Error al cargar empleados:', error);
-      message.error('Error al cargar los empleados');
-    } finally {
-      setLoadingAsesores(false);
-    }
-  };
-
-  const fetchTiposEvento = async () => {
-    try {
-      setLoadingTipos(true);
-      const response = await fetch(`${apiUrl}/evento/tipo-eventos/list`, {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
-          'Content-Type': 'application/json'
-        }
-      });
-      if (!response.ok) {
-        throw new Error('Error al cargar los tipos de evento');
-      }
-      const data = await response.json();
-      setTiposEvento(data);
-    } catch (error) {
-      console.error('Error al cargar tipos de evento:', error);
-      message.error('Error al cargar los tipos de evento');
-    } finally {
-      setLoadingTipos(false);
-    }
-  };
-
-  const fetchProvincias = async () => {
-    try {
-      setLoadingProvincias(true);
-      const response = await fetch(`${apiUrl}/direccion/provincias`, {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
-          'Content-Type': 'application/json'
-        }
-      });
-      if (!response.ok) {
-        throw new Error('Error al cargar las provincias');
-      }
-      const data = await response.json();
-      setProvincias(data);
-    } catch (error) {
-      console.error('Error al cargar provincias:', error);
-      message.error('Error al cargar las provincias');
-    } finally {
-      setLoadingProvincias(false);
-    }
-  };
-
-  const fetchCiudades = async () => {
-    try {
-      setLoadingCiudades(true);
-      const response = await fetch(`${apiUrl}/direccion/ciudades`, {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
-          'Content-Type': 'application/json'
-        }
-      });
-      if (!response.ok) {
-        throw new Error('Error al cargar las ciudades');
-      }
-      const data = await response.json();
-      setCiudades(data);
-      setCiudadesFiltradas(data);
-    } catch (error) {
-      console.error('Error al cargar ciudades:', error);
-      message.error('Error al cargar las ciudades');
-    } finally {
-      setLoadingCiudades(false);
-    }
-  };
+  }, [visible, ciudades]);
 
   const handleProvinciaChange = (value: number) => {
     const ciudadesFiltradas = ciudades.filter(ciudad => ciudad.id_provincia === value);
@@ -186,78 +109,130 @@ const EventoForm: React.FC<EventoFormProps> = ({
     form.setFieldsValue({ id_ciudad: undefined });
   };
 
-  const handleSubmit = async () => {
+  const handleSubmit = async (values: any) => {
     try {
-      const values = await form.validateFields();
       setIsSubmitting(true);
 
-      // Formatear la fecha y hora
-      const fechaEvento = values.fecha_evento.format('YYYY-MM-DD');
-      const horaEvento = values.hora_evento.format('HH:mm:ss');
-
-      // Preparar los datos para enviar
-      const eventoData = {
-        ...values,
-        fecha_evento: fechaEvento,
-        hora_evento: horaEvento,
-        desea_supervision: values.desea_supervision === 1
+      // Preparar los datos de la dirección
+      const direccionData = {
+        id_provincia: values.id_provincia,
+        id_ciudad: values.id_ciudad,
+        sector: values.sector,
+        calle: values.calle,
+        detalles: values.detalles || null
       };
 
-      console.log('Enviando datos:', eventoData);
+      let id_direccion;
 
-      const response = await fetch(`${apiUrl}/evento`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(eventoData)
-      });
+      if (initialValues) {
+        // Si estamos editando, actualizamos la dirección existente
+        const direccionResponse = await fetch(`${apiUrl}/direccion/${initialValues.id_direccion}`, {
+          method: 'PUT',
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('token')}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(direccionData)
+        });
 
-      const data = await response.json();
+        if (!direccionResponse.ok) {
+          const errorData = await direccionResponse.json();
+          throw new Error(errorData.mensaje || 'Error al actualizar la dirección');
+        }
 
-      if (!response.ok) {
-        throw new Error(data.mensaje || 'Error al crear el evento');
+        id_direccion = initialValues.id_direccion;
+      } else {
+        // Si estamos creando, insertamos una nueva dirección
+        const direccionResponse = await fetch(`${apiUrl}/direccion`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('token')}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(direccionData)
+        });
+
+        if (!direccionResponse.ok) {
+          const errorData = await direccionResponse.json();
+          throw new Error(errorData.mensaje || 'Error al crear la dirección');
+        }
+
+        const direccionResult = await direccionResponse.json();
+        id_direccion = direccionResult.id_direccion;
       }
 
-      message.success('Evento creado exitosamente');
+      // Preparar los datos del evento
+      const eventoData = {
+        cedula_cliente: values.cedula_cliente,
+        cedula_asesor: values.cedula_asesor,
+        id_tipo_evento: values.id_tipo_evento,
+        fecha_evento: values.fecha_evento.format('YYYY-MM-DD'),
+        hora_evento: values.hora_evento.format('HH:mm:ss'),
+        espacio_evento: values.espacio_evento,
+        desea_supervision: values.desea_supervision === 1,
+        nota_cliente: values.nota_cliente,
+        id_direccion: id_direccion
+      };
+
+      let eventoResponse;
+      if (initialValues) {
+        // Si estamos editando, actualizamos el evento existente
+        eventoResponse = await fetch(`${apiUrl}/evento/${initialValues.id_evento}`, {
+          method: 'PUT',
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('token')}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(eventoData)
+        });
+      } else {
+        // Si estamos creando, insertamos un nuevo evento
+        eventoResponse = await fetch(`${apiUrl}/evento`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('token')}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(eventoData)
+        });
+      }
+
+      if (!eventoResponse.ok) {
+        const errorData = await eventoResponse.json();
+        throw new Error(errorData.mensaje || `Error al ${initialValues ? 'actualizar' : 'crear'} el evento`);
+      }
+
+      const data = await eventoResponse.json();
+      message.success(`Evento ${initialValues ? 'actualizado' : 'creado'} exitosamente`);
       onSubmit(data.evento);
       form.resetFields();
       onCancel();
     } catch (error) {
-      console.error('Error al crear evento:', error);
-      message.error(error instanceof Error ? error.message : 'Error al crear el evento');
+      console.error(`Error al ${initialValues ? 'actualizar' : 'crear'} evento:`, error);
+      message.error(error instanceof Error ? error.message : `Error al ${initialValues ? 'actualizar' : 'crear'} el evento`);
     } finally {
       setIsSubmitting(false);
     }
   };
 
+  const handleCancel = () => {
+    form.resetFields();
+    onCancel();
+  };
+
   return (
     <Modal
-      title="Nuevo Evento"
+      title={initialValues ? "Editar Evento" : "Crear Nuevo Evento"}
       open={visible}
-      onCancel={onCancel}
-      footer={[
-        <Button key="cancel" onClick={onCancel} className="cancel-button">
-          Cancelar
-        </Button>,
-        <Button 
-          key="submit" 
-          type="primary" 
-          onClick={handleSubmit}
-          loading={isSubmitting}
-          className="submit-button"
-        >
-          Crear Evento
-        </Button>
-      ]}
-      width={600}
-      className="dashboard-modal"
+      onCancel={handleCancel}
+      footer={null}
+      width={800}
     >
       <Form
         form={form}
         layout="vertical"
-        className="dashboard-form"
+        onFinish={handleSubmit}
+        className="evento-form"
       >
         <Form.Item
           name="cedula_cliente"
@@ -438,7 +413,6 @@ const EventoForm: React.FC<EventoFormProps> = ({
           name="desea_supervision"
           label="¿Desea supervisión?"
           valuePropName="checked"
-          initialValue={0}
         >
           <Select>
             <Select.Option value={1}>Sí</Select.Option>
@@ -447,36 +421,19 @@ const EventoForm: React.FC<EventoFormProps> = ({
         </Form.Item>
 
         <Form.Item
-          name="estado_solicitud"
-          label="Estado de la Solicitud"
-          initialValue="Pendiente"
-        >
-          <Select>
-            <Select.Option value="Pendiente">Pendiente</Select.Option>
-            <Select.Option value="Aceptada">Aceptada</Select.Option>
-            <Select.Option value="Rechazada">Rechazada</Select.Option>
-            <Select.Option value="Completada">Completada</Select.Option>
-            <Select.Option value="Cancelada">Cancelada</Select.Option>
-          </Select>
-        </Form.Item>
-
-        <Form.Item
-          name="estado_solicitud"
-          label="Estado del Evento"
-          initialValue="Pendiente"
-        >
-          <Select>
-            <Select.Option value="Pendiente">Pendiente</Select.Option>
-            <Select.Option value="Completado">Completado</Select.Option>
-            <Select.Option value="Cancelado">Cancelado</Select.Option>
-          </Select>
-        </Form.Item>
-
-        <Form.Item
           name="nota_cliente"
-          label="Notas del Cliente"
+          label="Nota del Cliente"
         >
-          <Input.TextArea rows={4} placeholder="Ingrese notas del cliente" />
+          <Input.TextArea rows={4} placeholder="Ingrese cualquier nota o detalle adicional" />
+        </Form.Item>
+
+        <Form.Item>
+          <div className="form-buttons">
+            <Button onClick={handleCancel}>Cancelar</Button>
+            <Button type="primary" htmlType="submit" loading={isSubmitting}>
+              {initialValues ? "Actualizar Evento" : "Crear Evento"}
+            </Button>
+          </div>
         </Form.Item>
       </Form>
     </Modal>

@@ -1,7 +1,7 @@
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
-import sequelize from './config';
+import sequelize from './database/database';
 import { syncDatabase } from './config/syncDatabase';
 import path from 'path';
 import morgan from 'morgan';
@@ -72,6 +72,15 @@ app.use('/api/reporte', reporteRoutes);
 // Ruta de prueba
 app.get('/', (req, res) => {
   res.send('Servidor funcionando correctamente');
+});
+
+// Middleware de manejo de errores global
+app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
+  console.error('Error en el servidor:', err);
+  res.status(500).json({
+    error: 'Error interno del servidor',
+    mensaje: err.message || 'Ocurrió un error en el servidor'
+  });
 });
 
 // Iniciar servidor
