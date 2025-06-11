@@ -419,7 +419,39 @@ export const editAlquilerServicio = async (req: Request, res: Response) => {
       });
     }
 
-    // Actualizar el alquiler
+    // Si solo estamos actualizando el estado, no necesitamos procesar elementos
+    if (!elementos || elementos.length === 0) {
+      await alquiler.update({
+        estado_alquiler
+      }, { transaction: t });
+      await t.commit();
+
+      // Obtener el alquiler actualizado con sus detalles
+      const alquilerActualizado = await AlquilerServicio.findByPk(id_alquiler, {
+        include: [
+          {
+            model: DetalleAlquiler,
+            where: {
+              estado_detalquiler: 'Aceptado'
+            },
+            required: false,
+            include: [
+              {
+                model: Elemento
+              }
+            ]
+          },
+          {
+            model: Evento,
+            as: 'evento'
+          }
+        ]
+      });
+
+      return res.json(alquilerActualizado);
+    }
+
+    // Si hay elementos, proceder con la actualización completa
     await alquiler.update({
       cant_elementos_alquiler,
       precioneto_alquiler,
@@ -459,55 +491,52 @@ export const editAlquilerServicio = async (req: Request, res: Response) => {
       }
     );
 
-    // Crear los nuevos detalles
-    if (elementos && elementos.length > 0) {
-      // Validar que todos los elementos existen y tienen suficiente cantidad disponible
-      for (const elem of elementos) {
-        const elemento = await Elemento.findByPk(elem.id_elemento);
-        if (!elemento) {
-          await t.rollback();
-          return res.status(404).json({
-            error: 'Elemento no encontrado',
-            mensaje: `El elemento con ID ${elem.id_elemento} no existe en el sistema`
-          });
-        }
-
-        if (elemento.cantidad_disponible < elem.cantidad) {
-          await t.rollback();
-          return res.status(400).json({
-            error: 'Cantidad insuficiente',
-            mensaje: `No hay suficiente cantidad disponible del elemento ${elemento.nombre_elemento}. Disponible: ${elemento.cantidad_disponible}, Solicitado: ${elem.cantidad}`
-          });
-        }
+    // Validar que todos los elementos existen y tienen suficiente cantidad disponible
+    for (const elem of elementos) {
+      const elemento = await Elemento.findByPk(elem.id_elemento);
+      if (!elemento) {
+        await t.rollback();
+        return res.status(404).json({
+          error: 'Elemento no encontrado',
+          mensaje: `El elemento con ID ${elem.id_elemento} no existe en el sistema`
+        });
       }
 
-      // Crear los nuevos detalles y actualizar cantidades
-      await Promise.all(elementos.map(async (elem: any) => {
-        console.log(`Procesando elemento ${elem.id_elemento} con cantidad ${elem.cantidad}`);
-        
-        // Crear el detalle
-        const nuevoDetalle = await DetalleAlquiler.create({
-          id_alquiler,
-          id_elemento: elem.id_elemento,
-          cantidad_alquiler: elem.cantidad,
-          precio_unitario: elem.precio_unitario,
-          total_alquiler: elem.subtotal,
-          estado_detalquiler: 'Aceptado'
-        }, { transaction: t });
-
-        console.log('Detalle creado:', nuevoDetalle);
-
-        // Actualizar la cantidad disponible del elemento
-        const elemento = await Elemento.findByPk(elem.id_elemento);
-        if (elemento) {
-          const nuevaCantidad = elemento.cantidad_disponible - elem.cantidad;
-          console.log(`Actualizando cantidad para elemento ${elem.id_elemento}: ${elemento.cantidad_disponible} - ${elem.cantidad} = ${nuevaCantidad}`);
-          await elemento.update({
-            cantidad_disponible: nuevaCantidad
-          }, { transaction: t });
-        }
-      }));
+      if (elemento.cantidad_disponible < elem.cantidad) {
+        await t.rollback();
+        return res.status(400).json({
+          error: 'Cantidad insuficiente',
+          mensaje: `No hay suficiente cantidad disponible del elemento ${elemento.nombre_elemento}. Disponible: ${elemento.cantidad_disponible}, Solicitado: ${elem.cantidad}`
+        });
+      }
     }
+
+    // Crear los nuevos detalles y actualizar cantidades
+    await Promise.all(elementos.map(async (elem: any) => {
+      console.log(`Procesando elemento ${elem.id_elemento} con cantidad ${elem.cantidad}`);
+      
+      // Crear el detalle
+      const nuevoDetalle = await DetalleAlquiler.create({
+        id_alquiler,
+        id_elemento: elem.id_elemento,
+        cantidad_alquiler: elem.cantidad,
+        precio_unitario: elem.precio_unitario,
+        total_alquiler: elem.subtotal,
+        estado_detalquiler: 'Aceptado'
+      }, { transaction: t });
+
+      console.log('Detalle creado:', nuevoDetalle);
+
+      // Actualizar la cantidad disponible del elemento
+      const elemento = await Elemento.findByPk(elem.id_elemento);
+      if (elemento) {
+        const nuevaCantidad = elemento.cantidad_disponible - elem.cantidad;
+        console.log(`Actualizando cantidad para elemento ${elem.id_elemento}: ${elemento.cantidad_disponible} - ${elem.cantidad} = ${nuevaCantidad}`);
+        await elemento.update({
+          cantidad_disponible: nuevaCantidad
+        }, { transaction: t });
+      }
+    }));
 
     await t.commit();
 
