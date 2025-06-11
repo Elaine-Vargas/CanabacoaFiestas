@@ -456,11 +456,6 @@ const ReportEmployee = () => {
     }
   };
 
-  const handleEventTypeChange = (value: string) => {
-    setSelectedEventType(value);
-    setCedula('');
-  };
-
   const showElementoModal = () => {
     setIsElementoModalVisible(true);
   };
@@ -679,70 +674,6 @@ const ReportEmployee = () => {
     }
   };
 
-  const handleDetalleAlquilerReport = async () => {
-    try {
-      setLoading(true);
-      let url = `${apiUrl}/reporte/elementos/alquiler/todos`;
-      const params = new URLSearchParams();
-
-      if (dateRange[0] && dateRange[1]) {
-        params.append('fecha_inicio', dateRange[0].format('YYYY-MM-DD'));
-        params.append('fecha_fin', dateRange[1].format('YYYY-MM-DD'));
-      }
-
-      if (params.toString()) {
-        url += `?${params.toString()}`;
-      }
-
-      const response = await axios.get(url, {
-        responseType: 'blob',
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        }
-      });
-      
-      const file = new Blob([response.data], { type: 'application/pdf' });
-      const fileURL = window.URL.createObjectURL(file);
-      window.open(fileURL);
-    } catch (error) {
-      if (axios.isAxiosError(error)) {
-        const { response } = error;
-        if (response && response.data instanceof Blob) {
-          try {
-            const blobText = await new Promise<string>((resolve, reject) => {
-              const reader = new FileReader();
-              reader.onloadend = () => {
-                if (reader.result) {
-                  resolve(reader.result as string);
-                } else {
-                  reject(new Error('Failed to read blob as text.'));
-                }
-              };
-              reader.onerror = reject;
-              reader.readAsText(response.data);
-            });
-
-            const errorData = JSON.parse(blobText);
-            if (errorData.mensaje) {
-              message.error(errorData.mensaje);
-            } else {
-              message.error('Error al generar el reporte de detalles de alquiler');
-            }
-          } catch (parseError) {
-            console.error('Error parsing error response:', parseError);
-            message.error('Error al generar el reporte de detalles de alquiler');
-          }
-        } else {
-          message.error('Error al generar el reporte de detalles de alquiler');
-        }
-      } else {
-        message.error('Error al generar el reporte de detalles de alquiler');
-      }
-    } finally {
-      setLoading(false);
-    }
-  };
-
   const showEquipoModal = () => {
     setIsEquipoModalVisible(true);
   };
@@ -800,34 +731,6 @@ const ReportEmployee = () => {
       message.error('Error al cargar los eventos');
     } finally {
       setLoadingEventos(false);
-    }
-  };
-
-  const fetchCompras = async () => {
-    try {
-      setLoadingCompras(true);
-      const response = await axios.get(`${apiUrl}/compra`, {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
-          'Content-Type': 'application/json'
-        }
-      });
-
-      if (response.data && Array.isArray(response.data)) {
-        // Ordenar las compras por ID de forma descendente (más recientes primero)
-        const comprasOrdenadas = response.data.sort((a: Compra, b: Compra) => b.id_compra - a.id_compra);
-        console.log('Compras cargadas:', comprasOrdenadas); // Para debugging
-        setCompras(comprasOrdenadas);
-      } else {
-        console.error('La respuesta no es un array:', response.data);
-        setCompras([]);
-      }
-    } catch (error) {
-      console.error('Error al cargar compras:', error);
-      message.error('Error al cargar las compras');
-      setCompras([]);
-    } finally {
-      setLoadingCompras(false);
     }
   };
 
@@ -1075,63 +978,6 @@ const ReportEmployee = () => {
     setFilteredCompras([]);
     setFilteredProveedores([]);
   };
-
-  const fetchElementosCompra = async () => {
-    try {
-      setLoadingElementosCompra(true);
-      const response = await axios.get(`${apiUrl}/elemento/list`, {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
-          'Content-Type': 'application/json'
-        }
-      });
-      if (response.data) {
-        setElementosCompra(response.data);
-      }
-    } catch (error) {
-      console.error('Error al cargar elementos:', error);
-      message.error('Error al cargar los elementos');
-    } finally {
-      setLoadingElementosCompra(false);
-    }
-  };
-
-  useEffect(() => {
-    if (isCompraModalVisible) {
-      fetchProveedores();
-      fetchCompras();
-    }
-  }, [isCompraModalVisible]);
-
-  useEffect(() => {
-    if (selectedProveedorCompra && selectedProveedorCompra !== 'todos') {
-      const comprasFiltradas = compras.filter(compra => 
-        compra.id_proveedor.toString() === selectedProveedorCompra
-      );
-      setFilteredCompras(comprasFiltradas);
-    } else {
-      setFilteredCompras(compras);
-    }
-  }, [selectedProveedorCompra, compras]);
-
-  useEffect(() => {
-    if (selectedCompraId && selectedCompraId !== 'todos') {
-      const compraSeleccionada = compras.find(compra => 
-        compra.id_compra.toString() === selectedCompraId
-      );
-      if (compraSeleccionada) {
-        const proveedorCompra = proveedores.find(prov => 
-          prov.id_proveedor === compraSeleccionada.id_proveedor
-        );
-        if (proveedorCompra) {
-          setFilteredProveedores([proveedorCompra]);
-          setSelectedProveedorCompra(proveedorCompra.id_proveedor.toString());
-        }
-      }
-    } else {
-      setFilteredProveedores(proveedores);
-    }
-  }, [selectedCompraId, compras, proveedores]);
 
   const handleCompraReport = async () => {
     try {
