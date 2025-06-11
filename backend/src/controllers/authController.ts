@@ -4,6 +4,9 @@ import jwt from 'jsonwebtoken';
 import { Op } from 'sequelize';
 import { sendVerificationEmail } from '../controllers/mailController';
 
+// Define el tiempo de expiración para registros y actualizaciones pendientes (30 minutos)
+const PENDING_REGISTRATION_EXPIRATION_MS = 30 * 60 * 1000;
+
 // Variable global para almacenar datos de registro pendientes
 declare global {
   var pendingRegistrations: Map<string, PendingRegistration>;
@@ -152,24 +155,24 @@ export const RegisterClient = async (req: Request, res: Response) => {
     }
 
     // Verificar si ya existe un registro pendiente para este correo
-    if (global.pendingRegistrations?.has(correo_usuario)) {
-      const pendingRegistration = global.pendingRegistrations.get(correo_usuario);
+    if (global.pendingRegistrations?.has(correo_usuario.toLowerCase())) {
+      const pendingRegistration = global.pendingRegistrations.get(correo_usuario.toLowerCase());
       const now = Date.now();
       
-      // Si el registro pendiente ha expirado, eliminarlo
-      if (pendingRegistration && (now - pendingRegistration.timestamp) > 15 * 60 * 1000) {
-        global.pendingRegistrations.delete(correo_usuario);
-      } else {
+      // Si el registro pendiente no ha expirado, devolver un error indicando que ya existe uno
+      if (pendingRegistration && (now - pendingRegistration.timestamp) < 15 * 60 * 1000) {
         return res.status(400).json({ 
           error: 'Ya existe un registro pendiente para este correo',
           details: 'Por favor verifica tu correo electrónico o espera 15 minutos para intentar nuevamente'
         });
       }
+      // Si el registro pendiente ha expirado, lo eliminamos para crear uno nuevo
+      global.pendingRegistrations.delete(correo_usuario.toLowerCase());
     }
 
-    // Verificar si hay registros pendientes con los mismos datos únicos
+    // Verificar si hay registros pendientes con los mismos datos únicos (después de limpiar expirados)
     for (const [email, registration] of global.pendingRegistrations?.entries() || []) {
-      // Verificar si el registro pendiente ha expirado
+      // Asegurarse de que el registro pendiente no haya expirado ya
       const now = Date.now();
       if ((now - registration.timestamp) > 15 * 60 * 1000) {
         global.pendingRegistrations.delete(email);
@@ -182,27 +185,25 @@ export const RegisterClient = async (req: Request, res: Response) => {
       if (registration.data.cedula_usuario === cedula_usuario) {
         return res.status(400).json({ error: 'Ya existe un registro pendiente con esa cédula' });
       }
-      if (registration.data.correo_usuario === correo_usuario) {
-        return res.status(400).json({ error: 'Ya existe un registro pendiente con ese correo electrónico' });
-      }
+      // No es necesario verificar correo_usuario aquí, ya que se maneja arriba para registros pendientes.
     }
 
-    // Si todas las validaciones pasan, proceder con el registro
-    // Almacenar datos de registro pendientes antes de enviar el correo
+    // Si todas las validaciones pasan, proceder con el registro o re-registro
     global.pendingRegistrations = global.pendingRegistrations || new Map();
-    const verificationCode = Math.floor(100000 + Math.random() * 900000).toString(); // Generate code here
-    global.pendingRegistrations.set(correo_usuario, {
+    const verificationCode = Math.floor(100000 + Math.random() * 900000).toString();
+
+    global.pendingRegistrations.set(correo_usuario.toLowerCase(), {
       data: {
         nombre_usuario,
         apellido_usuario,
         cedula_usuario,
-        correo_usuario,
+        correo_usuario: correo_usuario.toLowerCase(),
         tel_usuario,
         contrasena_login,
         usuario_login,
-        id_rol: 2 // Rol de cliente
+        id_rol: 2 // Rol de cliente por defecto
       },
-      verificationCode: verificationCode, // Set the generated code
+      verificationCode: verificationCode,
       timestamp: Date.now()
     });
 
@@ -212,11 +213,12 @@ export const RegisterClient = async (req: Request, res: Response) => {
       
       res.status(200).json({
         mensaje: 'Por favor verifica tu correo electrónico para completar el registro.',
-        correo_usuario
+        correo_usuario,
+        requiresVerification: true // Añadir esta bandera para el frontend
       });
     } catch (error) {
       // Si falla el envío del correo, eliminar el registro pendiente
-      global.pendingRegistrations.delete(correo_usuario);
+      global.pendingRegistrations.delete(correo_usuario.toLowerCase());
       console.error('Error al enviar correo de verificación:', error);
       res.status(500).json({ error: 'Error al enviar correo de verificación' });
     }
@@ -376,11 +378,11 @@ export const sendUpdateEmailVerification = async (req: Request, res: Response) =
     }
 
     // Limpiar registros pendientes expirados para este correo
-    if (global.pendingRegistrations?.has(correo_usuario)) {
-      const pendingRegistration = global.pendingRegistrations.get(correo_usuario);
+    if (global.pendingRegistrations?.has(correo_usuario.toLowerCase())) {
+      const pendingRegistration = global.pendingRegistrations.get(correo_usuario.toLowerCase());
       const now = Date.now();
       if (pendingRegistration && (now - pendingRegistration.timestamp) > 15 * 60 * 1000) { // 15 minutos en milisegundos
-        global.pendingRegistrations.delete(correo_usuario);
+        global.pendingRegistrations.delete(correo_usuario.toLowerCase());
       }
     }
 
@@ -398,9 +400,9 @@ export const sendUpdateEmailVerification = async (req: Request, res: Response) =
 
     // Almacenar datos de actualización pendientes
     global.pendingRegistrations = global.pendingRegistrations || new Map();
-    global.pendingRegistrations.set(correo_usuario, {
+    global.pendingRegistrations.set(correo_usuario.toLowerCase(), {
       data: {
-        correo_usuario,
+        correo_usuario: correo_usuario.toLowerCase(),
         usuario_login: decoded.usuario_login || '',
         cedula_usuario: decoded.cedula_usuario || '',
         nombre_usuario: '', // Placeholder
@@ -422,7 +424,7 @@ export const sendUpdateEmailVerification = async (req: Request, res: Response) =
         correo_usuario
       });
     } catch (emailError) {
-      global.pendingRegistrations.delete(correo_usuario); // Eliminar el registro pendiente si falla el envío
+      global.pendingRegistrations.delete(correo_usuario.toLowerCase()); // Eliminar el registro pendiente si falla el envío
       console.error('Error al enviar correo de verificación:', emailError);
       res.status(500).json({ error: 'Error al enviar correo de verificación' });
     }
@@ -449,7 +451,7 @@ export const verifyUpdateEmail = async (req: Request, res: Response) => {
     }
 
     // Verificar que exista un registro pendiente
-    const pendingRegistration = global.pendingRegistrations?.get(correo_usuario);
+    const pendingRegistration = global.pendingRegistrations?.get(correo_usuario.toLowerCase());
     
     if (!pendingRegistration) {
       return res.status(400).json({ 
@@ -466,10 +468,10 @@ export const verifyUpdateEmail = async (req: Request, res: Response) => {
       });
     }
 
-    // Verificar si el código ha expirado (15 minutos)
+    // Verificar si el código ha expirado (30 minutos)
     const now = Date.now();
     if ((now - pendingRegistration.timestamp) > 15 * 60 * 1000) {
-      global.pendingRegistrations.delete(correo_usuario);
+      global.pendingRegistrations.delete(correo_usuario.toLowerCase());
       return res.status(400).json({ 
         error: 'Código de verificación expirado',
         details: 'Por favor solicita un nuevo código'
@@ -494,7 +496,7 @@ export const verifyUpdateEmail = async (req: Request, res: Response) => {
     await usuario.update({ correo_usuario });
 
     // Eliminar el registro pendiente
-    global.pendingRegistrations.delete(correo_usuario);
+    global.pendingRegistrations.delete(correo_usuario.toLowerCase());
 
     return res.json({
       success: true,
@@ -647,7 +649,7 @@ export const completeRegistration = async (req: Request, res: Response) => {
 
   try {
     // Verificar que exista un registro pendiente
-    const pendingRegistration = global.pendingRegistrations?.get(correo_usuario);
+    const pendingRegistration = global.pendingRegistrations?.get(correo_usuario.toLowerCase());
     
     if (!pendingRegistration) {
       return res.status(400).json({ 
@@ -669,7 +671,7 @@ export const completeRegistration = async (req: Request, res: Response) => {
 
     if (usuarioExistente) {
       // Limpiar el registro pendiente
-      global.pendingRegistrations.delete(correo_usuario);
+      global.pendingRegistrations.delete(correo_usuario.toLowerCase());
       
       let errorMessage = 'Ya existe un usuario con ';
       if (usuarioExistente.usuario_login === pendingRegistration.data.usuario_login) {
@@ -690,10 +692,10 @@ export const completeRegistration = async (req: Request, res: Response) => {
       });
     }
 
-    // Verificar si el código ha expirado (15 minutos)
+    // Verificar si el código ha expirado (30 minutos)
     const now = Date.now();
     if ((now - pendingRegistration.timestamp) > 15 * 60 * 1000) {
-      global.pendingRegistrations.delete(correo_usuario);
+      global.pendingRegistrations.delete(correo_usuario.toLowerCase());
       return res.status(400).json({ 
         error: 'Código de verificación expirado',
         details: 'Por favor solicita un nuevo código'
@@ -712,7 +714,7 @@ export const completeRegistration = async (req: Request, res: Response) => {
     });
 
     // Eliminar el registro pendiente
-    global.pendingRegistrations.delete(correo_usuario);
+    global.pendingRegistrations.delete(correo_usuario.toLowerCase());
 
     // Generar token JWT
     const token = jwt.sign(
@@ -777,7 +779,7 @@ export const validateRegistration = async (req: Request, res: Response) => {
     }
 
     // Verificar si ya existe un registro pendiente para este correo
-    if (global.pendingRegistrations?.has(correo_usuario)) {
+    if (global.pendingRegistrations?.has(correo_usuario.toLowerCase())) {
       return res.status(400).json({ 
         error: 'Ya existe un registro pendiente para este correo',
         details: 'Por favor verifica tu correo electrónico o espera 15 minutos para intentar nuevamente'
@@ -792,7 +794,7 @@ export const validateRegistration = async (req: Request, res: Response) => {
       if (registration.data.cedula_usuario === cedula_usuario) {
         return res.status(400).json({ error: 'Ya existe un registro pendiente con esa cédula' });
       }
-      if (registration.data.correo_usuario === correo_usuario) {
+      if (registration.data.correo_usuario === correo_usuario.toLowerCase()) {
         return res.status(400).json({ error: 'Ya existe un registro pendiente con ese correo electrónico' });
       }
     }

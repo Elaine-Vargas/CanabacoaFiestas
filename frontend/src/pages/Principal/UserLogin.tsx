@@ -246,45 +246,23 @@ const UserLogin = () => {
       setIsRegistering(true);
       const { confirmar_contrasena, ...userData } = signupData;
       
-      // Primero validar si el usuario ya existe
-      const validateResponse = await fetch(`${apiUrl}/auth/validate-registration`, {
+      // Enviar datos de registro al backend
+      const response = await fetch(`${apiUrl}/auth/register-client`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          usuario_login: signupData.usuario_login,
-          cedula_usuario: signupData.cedula_usuario,
-          correo_usuario: signupData.correo_usuario
-        }),
+        body: JSON.stringify(userData),
         credentials: 'include'
       });
 
-      const validateData = await validateResponse.json();
+      const data = await response.json();
 
-      if (!validateResponse.ok) {
-        throw new Error(validateData.error || 'Error al validar los datos de registro');
+      if (!response.ok) {
+        throw new Error(data.error || 'Error al registrar usuario');
       }
 
-      // Si la validación es exitosa, proceder con el envío del código de verificación
-      const verifyResponse = await fetch(`${apiUrl}/auth/send-verification`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          correo_usuario: signupData.correo_usuario
-        }),
-        credentials: 'include'
-      });
-  
-      const verifyData = await verifyResponse.json();
-  
-      if (!verifyResponse.ok) {
-        throw new Error(verifyData.error || 'Error al enviar código de verificación');
-      }
-  
-      // Siempre mostrar la pantalla de verificación después de enviar el código
+      // Si el registro es exitoso (significa que el registro pendiente se almacenó y el correo se envió)
       setVerificationStep('verify');
       showModal('Verificación Requerida', 'Se ha enviado un código de verificación a tu correo electrónico.', 'info');
     } catch (error) {
@@ -423,15 +401,13 @@ const UserLogin = () => {
 
   const handleResendCode = async () => {
     try {
-      const response = await fetch(`${apiUrl}/auth/send-verification`, {
+      const response = await fetch(`${apiUrl}/auth/register-client`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Accept': 'application/json'
         },
-        body: JSON.stringify({
-          correo_usuario: signupData.correo_usuario
-        }),
+        body: JSON.stringify(signupData),
         credentials: 'include'
       });
 
