@@ -9,6 +9,8 @@ import MaterialElemento from '../models/MaterialElemento_model';
 export const getElementos = async (req: Request, res: Response) => {
   try {
     console.log('Intentando obtener elementos...');
+    console.log('Headers recibidos:', req.headers);
+    
     const elementos = await Elemento.findAll({
       attributes: [
         'id_elemento',
@@ -45,6 +47,7 @@ export const getElementos = async (req: Request, res: Response) => {
       }
     });
 
+    console.log('Query ejecutada correctamente');
     console.log('Elementos encontrados:', elementos.length);
     if (elementos.length > 0) {
       console.log('Primer elemento:', JSON.stringify(elementos[0].toJSON(), null, 2));
@@ -58,12 +61,13 @@ export const getElementos = async (req: Request, res: Response) => {
       });
     }
 
+    console.log('Enviando respuesta con elementos...');
     res.json(elementos);
   } catch (error) {
     console.error('Error detallado al obtener elementos:', error);
     res.status(500).json({ 
       error: 'Error al obtener los elementos',
-      mensaje: 'Ocurrió un error al cargar el catálogo. Por favor, intente más tarde.'
+      mensaje: 'Ocurrió un error al cargar los elementos. Por favor, intente más tarde.'
     });
   }
 };
