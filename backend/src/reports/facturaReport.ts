@@ -8,6 +8,9 @@ import CateringServicio from '../models/CateringServicio_model';
 import TransporteServicio from '../models/TransporteServicio_model';
 import CostoAgregadoEvento from '../models/CostoAgregadoEvento_model';
 import Usuario from '../models/Usuario_model';
+import DetalleDecoracion from '../models/DetalleDecoracion_model';
+import DetalleAlquiler from '../models/DetalleAlquiler_model';
+import Elemento from '../models/Elemento_model';
 
 export const ReporteFacturaEvento = async (req: Request, res: Response) => {
   try {
@@ -30,13 +33,24 @@ export const ReporteFacturaEvento = async (req: Request, res: Response) => {
       return res.status(404).json({ mensaje: 'Información del cliente no encontrada' });
     }
 
-    // Obtener todos los servicios relacionados
+    // Obtener todos los servicios relacionados con sus detalles
     const decoracion = await DecoracionServicio.findOne({
       where: { id_evento: id_evento }
     });
 
+    const detallesDecoracion = decoracion ? await DetalleDecoracion.findAll({
+      where: { id_decoracion: decoracion.id_decoracion }
+    }) : [];
+
     const alquiler = await AlquilerServicio.findOne({
-      where: { id_evento: id_evento }
+      where: { id_evento: id_evento },
+      include: [{
+        model: DetalleAlquiler,
+        include: [{
+          model: Elemento,
+          attributes: ['nombre_elemento']
+        }]
+      }]
     });
 
     const catering = await CateringServicio.findOne({
@@ -108,18 +122,33 @@ export const ReporteFacturaEvento = async (req: Request, res: Response) => {
       }).format(monto);
     };
 
-    // Decoración
+    // Decoración con detalles
     if (decoracion) {
       doc.fontSize(12).text('Decoración:');
+      doc.text(`Tema: ${decoracion.tema_decoracion}`);
+      doc.text(`Colores: ${decoracion.colores_decoracion}`);
+      
+      if (detallesDecoracion.length > 0) {
+        doc.text('Elementos decorativos:');
+        detallesDecoracion.forEach(detalle => {
+          doc.text(`- ${detalle.elemento_decoracion}: ${formatearMoneda(Number(detalle.precio_elemento))} x ${detalle.cantelemento_decoracion} = ${formatearMoneda(Number(detalle.precio_decoracion))}`);
+        });
+      }
       doc.text(`Subtotal: ${formatearMoneda(subtotalDecoracion)}`);
       doc.text(`ITBIS (18%): ${formatearMoneda(itbisDecoracion)}`);
       doc.text(`Total: ${formatearMoneda(totalDecoracion)}`);
       doc.moveDown();
     }
 
-    // Alquiler
+    // Alquiler con detalles
     if (alquiler) {
       doc.text('Alquiler:');
+      if (alquiler.detalles && alquiler.detalles.length > 0) {
+        doc.text('Elementos alquilados:');
+        alquiler.detalles.forEach(detalle => {
+          doc.text(`- ${detalle.elemento?.nombre_elemento || 'Elemento no especificado'}: ${formatearMoneda(Number(detalle.precio_unitario))} x ${detalle.cantidad_alquiler} = ${formatearMoneda(Number(detalle.total_alquiler))}`);
+        });
+      }
       doc.text(`Subtotal: ${formatearMoneda(subtotalAlquiler)}`);
       doc.text(`ITBIS (18%): ${formatearMoneda(itbisAlquiler)}`);
       doc.text(`Total: ${formatearMoneda(totalAlquiler)}`);

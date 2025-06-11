@@ -24,6 +24,7 @@ router.get('/eventos/cliente/:cedula_cliente', generarReporteEventosCliente as R
 router.get('/eventos/asesor/:cedula_asesor', generarReporteEventosAsesor as RequestHandler);
 router.get('/eventos/personal/:cedula_personal', generarReporteEventosPersonal as RequestHandler);
 router.get('/equipos', generarReporteEquipos as RequestHandler);
+router.get('/equipos/asesor/:cedula_asesor', generarReporteEquipos as RequestHandler);
 
 router.get('/elementos', generarReporteCatalogo as RequestHandler);
 router.get('/elementos/alquiler/todos', generarReporteDetalleAlquiler as RequestHandler);

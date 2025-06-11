@@ -273,9 +273,7 @@ const UserLogin = () => {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          correo_usuario: signupData.correo_usuario,
-          nombre_usuario: signupData.nombre_usuario,
-          userData
+          correo_usuario: signupData.correo_usuario
         }),
         credentials: 'include'
       });
@@ -286,12 +284,9 @@ const UserLogin = () => {
         throw new Error(verifyData.error || 'Error al enviar código de verificación');
       }
   
-      if (verifyData.requiresVerification) {
-        setVerificationStep('verify');
-        showModal('Verificación Requerida', 'Se ha enviado un código de verificación a tu correo electrónico.', 'info');
-      } else {
-        await completeRegistration(verifyData);
-      }
+      // Siempre mostrar la pantalla de verificación después de enviar el código
+      setVerificationStep('verify');
+      showModal('Verificación Requerida', 'Se ha enviado un código de verificación a tu correo electrónico.', 'info');
     } catch (error) {
       console.error('Error completo (registro):', error);
       showModal('Error', error instanceof Error ? error.message : 'Error al registrar usuario', 'error');
@@ -435,8 +430,7 @@ const UserLogin = () => {
           'Accept': 'application/json'
         },
         body: JSON.stringify({
-          correo_usuario: signupData.correo_usuario,
-          nombre_usuario: signupData.nombre_usuario
+          correo_usuario: signupData.correo_usuario
         }),
         credentials: 'include'
       });

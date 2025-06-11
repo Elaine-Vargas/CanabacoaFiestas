@@ -68,7 +68,7 @@ export default function ServicesMenu({ selectedService }: ServicesMenuProps) {
           </li>
           <li
             className={selectedService === "Reportes" ? "active" : ""}
-            onClick={() => handleNavigation("/Menu-Servicios/Reportes")}
+            onClick={() => handleNavigation("/Menu-Servicios/Facturas")}
           >
             <FaFileInvoiceDollar /> Reportes y Facturas
           </li>
@@ -116,7 +116,7 @@ export default function ServicesMenu({ selectedService }: ServicesMenuProps) {
     if (rolId === 3) {
       menuItems = [
         { text: "Bienvenida", path: "/Menu-Servicios/Bienvenida", icon: <FaTachometerAlt /> },
-        { text: "Reportes y Facturas", path: "/Menu-Servicios/Reportes", icon: <FaFileInvoiceDollar /> }
+        { text: "Reportes y Facturas", path: "/Menu-Servicios/Facturas", icon: <FaFileInvoiceDollar /> }
       ];
     }
     // Menú para admin y cliente
