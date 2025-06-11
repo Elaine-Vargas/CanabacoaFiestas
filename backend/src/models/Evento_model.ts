@@ -132,7 +132,10 @@ export default class Evento extends Model {
 
   @HasMany(() => CateringServicio)
   catering_servicios!: CateringServicio[];
-  
+
+  @HasOne(() => TransporteServicio)
+  transporte_servicio?: TransporteServicio;
+
   @HasMany(() => SupervisionServicio)
   supervision_servicios!: SupervisionServicio[];
 

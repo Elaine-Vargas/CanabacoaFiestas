@@ -113,7 +113,7 @@ export default class Usuario extends Model {
   usuario_login!: string;
 
   @Column({
-    type: DataType.STRING(255),
+    type: DataType.STRING(60),
     allowNull: false,
     field: 'contrasena_login',
     validate: {
@@ -156,10 +156,7 @@ export default class Usuario extends Model {
   }
 
   async compararContrasena(contrasena: string): Promise<boolean> {
-    console.log('[Usuario_model] Comparando:', { input: contrasena, storedHash: this.contrasena_login });
-    const result = await bcrypt.compare(contrasena, this.contrasena_login);
-    console.log('[Usuario_model] Resultado de comparación:', result);
-    return result;
+    return bcrypt.compare(contrasena, this.contrasena_login);
   }
 
   @Column({

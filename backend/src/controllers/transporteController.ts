@@ -1,8 +1,9 @@
 import { Request, Response } from 'express';
 import TransporteServicio from '../models/TransporteServicio_model';
 import DetalleTransporte from '../models/DetalleTransporte_model';
-import AlquilerServicio from '../models/AlquilerServicio_model';
+import Evento from '../models/Evento_model';
 import Vehiculo from '../models/Vehiculo_model';
+import AlquilerServicio from '../models/AlquilerServicio_model';
 import { Transaction } from 'sequelize';
 import { sequelize } from '../database/database';
 import { Op } from 'sequelize';
@@ -12,6 +13,7 @@ export const createTransporte = async (req: Request, res: Response) => {
   const t: Transaction = await sequelize.transaction();
   try {
     const {
+      id_evento,
       id_alquiler,
       distancia_km,
       precioneto_transporte,
@@ -20,6 +22,16 @@ export const createTransporte = async (req: Request, res: Response) => {
       estado_transporte = 'Solicitado',
       detalles // Array de detalles de transporte
     } = req.body;
+
+    // Verificar que el evento existe
+    const evento = await Evento.findByPk(id_evento);
+    if (!evento) {
+      await t.rollback();
+      return res.status(404).json({ 
+        error: 'Evento no encontrado',
+        mensaje: 'No se encontró el evento solicitado'
+      });
+    }
 
     // Verificar que el alquiler existe
     const alquiler = await AlquilerServicio.findByPk(id_alquiler);
@@ -33,6 +45,7 @@ export const createTransporte = async (req: Request, res: Response) => {
 
     // Crear el servicio de transporte
     const transporte = await TransporteServicio.create({
+      id_evento,
       id_alquiler,
       distancia_km,
       precioneto_transporte,
@@ -106,6 +119,9 @@ export const createTransporte = async (req: Request, res: Response) => {
           ]
         },
         {
+          model: Evento
+        },
+        {
           model: AlquilerServicio,
           as: 'alquilerServicio'
         }
@@ -147,9 +163,11 @@ export const getTransportes = async (req: Request, res: Response) => {
           ]
         },
         {
+          model: Evento
+        },
+        {
           model: AlquilerServicio,
-          as: 'alquilerServicio',
-          attributes: ['id_alquiler', 'cant_elementos_alquiler', 'precioneto_alquiler', 'itbis_alquiler', 'total_alquiler', 'estado_alquiler']
+          as: 'alquilerServicio'
         }
       ],
       order: [['id_transporte', 'DESC']]
@@ -288,9 +306,11 @@ export const editTransporte = async (req: Request, res: Response) => {
           ]
         },
         {
+          model: Evento
+        },
+        {
           model: AlquilerServicio,
-          as: 'alquilerServicio',
-          attributes: ['id_alquiler', 'cant_elementos_alquiler', 'precioneto_alquiler', 'itbis_alquiler', 'total_alquiler', 'estado_alquiler']
+          as: 'alquilerServicio'
         }
       ]
     });
@@ -350,9 +370,11 @@ export const deleteTransporte = async (req: Request, res: Response) => {
           ]
         },
         {
+          model: Evento
+        },
+        {
           model: AlquilerServicio,
-          as: 'alquilerServicio',
-          attributes: ['id_alquiler', 'cant_elementos_alquiler', 'precioneto_alquiler', 'itbis_alquiler', 'total_alquiler', 'estado_alquiler']
+          as: 'alquilerServicio'
         }
       ]
     });

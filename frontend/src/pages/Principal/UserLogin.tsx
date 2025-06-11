@@ -255,24 +255,18 @@ const UserLogin = () => {
         body: JSON.stringify(userData),
         credentials: 'include'
       });
-      
+
       const data = await response.json();
-      
+
       if (!response.ok) {
         throw new Error(data.error || 'Error al registrar usuario');
       }
 
-      if (data.requiresVerification) {
-        setVerificationStep('verify');
-        showModal('Verificación Requerida', data.mensaje, 'info');
-      } else {
-        showModal('Éxito', data.mensaje, 'success');
-        setTimeout(() => {
-          navigate('/Menu-Servicios/Bienvenida');
-        }, 1500);
-      }
+      // Si el registro es exitoso (significa que el registro pendiente se almacenó y el correo se envió)
+      setVerificationStep('verify');
+      showModal('Verificación Requerida', 'Se ha enviado un código de verificación a tu correo electrónico.', 'info');
     } catch (error) {
-      console.error('Error completo:', error);
+      console.error('Error completo (registro):', error);
       showModal('Error', error instanceof Error ? error.message : 'Error al registrar usuario', 'error');
     } finally {
       setIsRegistering(false);

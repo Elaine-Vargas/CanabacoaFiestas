@@ -48,9 +48,7 @@ export const sendVerificationEmail = async (correo_usuario: string, verification
   };
 
   try {
-    // Mask the verification code in logs
-    const maskedCode = verificationCode.replace(/./g, '*');
-    console.log(`[Verification] Solicitud de verificación para: ${correo_usuario} con código: ${maskedCode}`);
+    console.log(`[Verification] Solicitud de verificación para: ${correo_usuario}`);
     await transporter.sendMail(mailOptions);
     console.log(`[Verification] Correo de verificación enviado a: ${correo_usuario}`);
     return "Correo de verificación enviado exitosamente";
