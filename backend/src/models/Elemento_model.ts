@@ -45,7 +45,7 @@ export default class Elemento extends Model {
   @Column({ type: DataType.INTEGER, allowNull: true, defaultValue: 0 })
   cantidad_disponible!: number;
 
-  @Column({ type: DataType.STRING(255), allowNull: true })
+  @Column({ type: DataType.TEXT, allowNull: true })
   imagen_url!: string;
 
   @Column({

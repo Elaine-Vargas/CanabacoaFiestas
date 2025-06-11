@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { useSearchParams, useNavigate } from "react-router-dom";
+import { useSearchParams, useNavigate, redirect } from "react-router-dom";
 import axios from "axios";
 import CircularProgress from '@mui/material/CircularProgress';
 import VisibilityOffIcon from '@mui/icons-material/VisibilityOff';
@@ -76,7 +76,7 @@ const PasswordReset: React.FC = () => {
     e.preventDefault();
     setError("");
 
-    // Validaciones
+    // Validar que las contraseñas escritas en el formulario coincidan
     if (formData.password !== formData.confirmPassword) {
       setError("Las contraseñas no coinciden");
       return;
@@ -114,6 +114,7 @@ const PasswordReset: React.FC = () => {
         setSuccess(true);
         setTimeout(() => navigate("/Login", { replace: true }), 3000);
       } else {
+        // Aquí se mostrará el error del backend si la contraseña es igual a la anterior
         setError(response.data.error || "Error al restablecer la contraseña");
       }
     } catch (err: any) {

@@ -128,8 +128,6 @@ const ReportAdmin = () => {
   const [selectedEmpleadoId, setSelectedEmpleadoId] = useState<string>('todos');
   const [selectedFacturaReport, setSelectedFacturaReport] = useState<string>('');
   const [selectedClienteId, setSelectedClienteId] = useState<string>('');
-  const [selectedMetodoPago, setSelectedMetodoPago] = useState<string>('');
-  const [precioRange, setPrecioRange] = useState<[number, number]>([0, 0]);
   const [selectedTipoProveedor, setSelectedTipoProveedor] = useState<string>('todos');
   const [selectedEstadoProveedor, setSelectedEstadoProveedor] = useState<string>('todos');
   const [eventos, setEventos] = useState<Evento[]>([]);

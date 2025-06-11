@@ -3,9 +3,22 @@ import Usuario from '../models/Usuario_model';
 import jwt from 'jsonwebtoken';
 import { Op } from 'sequelize';
 import { sendVerificationEmail } from '../controllers/mailController';
+import nodemailer from 'nodemailer';
 
 // Define el tiempo de expiración para registros y actualizaciones pendientes (30 minutos)
 const PENDING_REGISTRATION_EXPIRATION_MS = 30 * 60 * 1000;
+
+// Configurar el transporter
+const transporter = nodemailer.createTransport({
+  service: process.env.EMAIL_SERVICE,
+  auth: {
+    user: process.env.EMAIL_USER,
+    pass: process.env.EMAIL_PASS,
+  },
+  tls: {
+    rejectUnauthorized: false
+  }
+});
 
 // Variable global para almacenar datos de registro pendientes
 declare global {
@@ -27,6 +40,19 @@ interface PendingRegistration {
   verificationCode: string;
   timestamp: number;
 }
+
+// Add this utility function at the top of the file, after the imports
+const maskSensitiveData = (data: any) => {
+  const masked = { ...data };
+  if (masked.contrasena_login) masked.contrasena_login = '********';
+  if (masked.correo_usuario) masked.correo_usuario = '********';
+  if (masked.cedula_usuario) masked.cedula_usuario = '********';
+  if (masked.tel_usuario) masked.tel_usuario = '********';
+  return masked;
+};
+
+// Add this at the top of the file after the imports
+const usedTokens = new Set<string>();
 
 export const Login = async (req: Request, res: Response) => {
   const { usuario_login, contrasena } = req.body;
@@ -90,10 +116,7 @@ export const Login = async (req: Request, res: Response) => {
       { expiresIn: '24h' }
     );
 
-    // Mostrar token en consola
-    console.log('Token generado:', token);
-
-    // Respuesta exitosa
+    // Solo enviar datos no sensibles en la respuesta
     res.json({
       mensaje: `Inicio de sesión exitoso, ¡Bienvenido/a ${usuario.nombre_usuario} ${usuario.apellido_usuario}!`,
       token,
@@ -727,6 +750,7 @@ export const completeRegistration = async (req: Request, res: Response) => {
       { expiresIn: '1d' }
     );
 
+    // Solo enviar datos no sensibles en la respuesta
     return res.json({
       success: true,
       message: 'Registro completado exitosamente',
@@ -735,10 +759,7 @@ export const completeRegistration = async (req: Request, res: Response) => {
         nombre_usuario: usuario.nombre_usuario,
         apellido_usuario: usuario.apellido_usuario,
         usuario_login: usuario.usuario_login,
-        rol: usuario.id_rol,
-        cedula_usuario: usuario.cedula_usuario,
-        correo_usuario: usuario.correo_usuario,
-        tel_usuario: usuario.tel_usuario
+        rol: usuario.id_rol
       }
     });
 
@@ -805,6 +826,152 @@ export const validateRegistration = async (req: Request, res: Response) => {
   } catch (error) {
     console.error('Error en validación de registro:', error);
     res.status(500).json({ error: 'Error al validar datos de registro' });
+  }
+};
+
+export const resetPassword = async (req: Request, res: Response) => {
+  const { token, nueva_contrasena } = req.body;
+
+  try {
+    // Verificar si el token ya fue usado
+    if (usedTokens.has(token)) {
+      return res.status(400).json({ 
+        error: 'Token ya utilizado',
+        details: 'Este enlace de recuperación ya fue utilizado. Por favor, solicita un nuevo enlace.'
+      });
+    }
+
+    // Verificar y decodificar el token
+    const decoded = jwt.verify(token, process.env.JWT_SECRET!) as { id: string, correo: string };
+    
+    // Buscar el usuario por correo
+    const usuario = await Usuario.findOne({ 
+      where: { 
+        correo_usuario: decoded.correo
+      } 
+    });
+
+    if (!usuario) {
+      return res.status(404).json({ error: 'Usuario no encontrado' });
+    }
+
+    // Verificar si la nueva contraseña es igual a la actual
+    const contrasenaActual = await usuario.compararContrasena(nueva_contrasena);
+    if (contrasenaActual) {
+      return res.status(400).json({ 
+        error: 'La nueva contraseña no puede ser igual a la actual',
+        details: 'Si recuerdas tu contraseña :D'
+      });
+    }
+
+    // Marcar el token como usado ANTES de cualquier actualización
+    usedTokens.add(token);
+
+    // Actualizar la contraseña y el usuario_login
+    await usuario.update({ 
+      contrasena_login: nueva_contrasena,
+      usuario_login: nueva_contrasena, // Actualizar también el usuario_login
+      codigo_recuperacion: null,
+      expiracion_codigo: null
+    });
+
+    res.status(200).json({ 
+      success: true,
+      message: 'Contraseña restablecida exitosamente'
+    });
+
+  } catch (error) {
+    console.error('Error en resetPassword:', error);
+    if (error instanceof jwt.JsonWebTokenError) {
+      return res.status(400).json({ error: 'Token inválido o expirado' });
+    }
+    res.status(500).json({ error: 'Error al restablecer contraseña' });
+  }
+};
+
+export const sendRecoveryEmail = async (req: Request, res: Response) => {
+  const { correo_usuario } = req.body;
+  console.log('[Recovery] Solicitud recibida para:', correo_usuario);
+
+  if (!correo_usuario) {
+    console.log('[Recovery] Error: Correo no proporcionado');
+    return res.status(400).json({ error: 'El correo es requerido' });
+  }
+
+  try {
+    // Buscar usuario activo (case-insensitive)
+    console.log('[Recovery] Buscando usuario en BD...');
+    const usuario = await Usuario.findOne({
+      where: {
+        correo_usuario: {
+          [Op.like]: correo_usuario
+        },
+        estado_usuario: 'Activo'
+      }
+    });
+
+    if (!usuario) {
+      console.log('[Recovery] Usuario no encontrado o inactivo');
+      return res.status(404).json({ 
+        error: 'No existe una cuenta activa con ese correo electrónico',
+        details: 'Verifica que el correo esté correctamente escrito'
+      });
+    }
+
+    // Generar token JWT con marca de tiempo
+    const token = jwt.sign(
+      {
+        id: usuario.cedula_usuario,
+        correo: usuario.correo_usuario,
+        timestamp: Date.now() // Agregar marca de tiempo
+      },
+      process.env.JWT_SECRET!,
+      { expiresIn: '15m' }
+    );
+
+    // URL de recuperación
+    const recoveryUrl = `${process.env.FRONTEND_URL}Login/Recuperar-Contrasena/Restablecer?token=${encodeURIComponent(token)}`;
+
+    // Configurar el correo
+    const mailOptions = {
+      from: `"Soporte de Canabacoa Fiestas" <${process.env.EMAIL_USER}>`,
+      to: correo_usuario,
+      subject: 'Recuperación de contraseña',
+      html: `
+        <div style="font-family: 'Century Gothic', sans-serif; max-width: 600px; margin: 0 auto;">
+          <h2 style="color: #c49a44;">¡Hola!, ${usuario.nombre_usuario},</h2>
+          <p>Hemos recibido una solicitud para restablecer tu contraseña.</p>
+          <p>Haz clic en el siguiente enlace para continuar:</p>
+          <p style="margin: 20px 0;">
+            <a href="${recoveryUrl}" 
+               style="background-color: #e0c55a; color: white; padding: 10px 15px; text-decoration: none; border-radius: 5px;">
+               Restablecer contraseña
+            </a>
+          </p>
+          <p><small>Este enlace expirará en 15 minutos y solo podrá ser utilizado una vez.</small></p>
+          <p style="color:rgb(100, 100, 100); font-size: 0.9em;">
+            Si no solicitaste este cambio, por favor ignora este mensaje y considera cambiar tu contraseña.
+          </p>
+        </div>
+      `
+    };
+
+    // Enviar el correo
+    const info = await transporter.sendMail(mailOptions);
+    console.log('[Recovery] Correo enviado con ID:', info.messageId);
+
+    return res.json({ 
+      success: true,
+      message: 'Correo de recuperación enviado con éxito',
+      email: correo_usuario
+    });
+
+  } catch (error) {
+    console.error('[Recovery] Error completo:', error);
+    return res.status(500).json({ 
+      error: 'Ocurrió un error al intentar enviar el correo de recuperación',
+      details: process.env.NODE_ENV === 'development' ? (error as Error).message : undefined
+    });
   }
 };
 
