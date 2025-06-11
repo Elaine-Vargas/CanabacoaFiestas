@@ -417,8 +417,17 @@ const RentAdmin: React.FC = () => {
         cancelText: 'No',
         onOk: async () => {
           try {
-            await axios.delete(
+            const updateData = {
+              estado_alquiler: 'Cancelado',
+              precioneto_alquiler: record.precioneto_alquiler,
+              itbis_alquiler: record.itbis_alquiler,
+              total_alquiler: record.total_alquiler,
+              cant_elementos_alquiler: record.cant_elementos_alquiler
+            };
+
+            await axios.patch(
               `${apiUrl}/alquiler/${record.id_alquiler}`,
+              updateData,
               {
                 headers: {
                   'Authorization': `Bearer ${token}`,
@@ -505,33 +514,33 @@ const RentAdmin: React.FC = () => {
         message.error('No hay sesión activa');
         return;
       }
-
-      // Calcular subtotales y totales solo si hay elementos nuevos
-      let updateData: any = {
-        estado_alquiler: values.estado_alquiler
-      };
-
-      if (elementosSeleccionados.length > 0) {
-        const precioNeto = elementosSeleccionados.reduce((sum, elem) => 
-          sum + (elem.precio_elemento * elem.cantidad_seleccionada), 0
-        );
-        const itbis = precioNeto * 0.18;
-        const total = precioNeto + itbis;
-
-        updateData = {
-          ...updateData,
-          precioneto_alquiler: precioNeto.toFixed(2),
-          itbis_alquiler: itbis.toFixed(2),
-          total_alquiler: total.toFixed(2),
-          cant_elementos_alquiler: elementosSeleccionados.reduce((sum, elem) => sum + elem.cantidad_seleccionada, 0),
-          elementos: elementosSeleccionados.map(elem => ({
-            id_elemento: elem.id_elemento,
-            cantidad: elem.cantidad_seleccionada,
-            precio_unitario: elem.precio_elemento,
-            subtotal: (elem.precio_elemento * elem.cantidad_seleccionada).toFixed(2)
-          }))
-        };
+      
+      if (elementosSeleccionados.length === 0) {
+        message.error('Por favor seleccione al menos un elemento');
+        return;
       }
+
+      // Calcular subtotales y totales
+      const precioNeto = elementosSeleccionados.reduce((sum, elem) => 
+        sum + (elem.precio_elemento * elem.cantidad_seleccionada), 0
+      );
+      const itbis = precioNeto * 0.18;
+      const total = precioNeto + itbis;
+
+      const updateData = {
+        estado_alquiler: values.estado_alquiler,
+        precioneto_alquiler: precioNeto.toFixed(2),
+        itbis_alquiler: itbis.toFixed(2),
+        total_alquiler: total.toFixed(2),
+        cant_elementos_alquiler: elementosSeleccionados.reduce((sum, elem) => sum + elem.cantidad_seleccionada, 0),
+        elementos: elementosSeleccionados.map(elem => ({
+          id_elemento: elem.id_elemento,
+          cantidad: elem.cantidad_seleccionada,
+          precio_unitario: elem.precio_elemento,
+          subtotal: (elem.precio_elemento * elem.cantidad_seleccionada).toFixed(2),
+          estado_detalquiler: 'Aceptado'
+        }))
+      };
 
       console.log('Enviando datos de actualización:', JSON.stringify(updateData, null, 2));
 
@@ -970,7 +979,7 @@ const RentAdmin: React.FC = () => {
               )}
             />
 
-            <Space style={{ marginTop: 16, marginBottom: 16 }}>
+            <Space style={{ marginBottom: 16 }}>
               <Button
                 type="primary"
                 onClick={() => setShowCatalogo(true)}
@@ -981,10 +990,10 @@ const RentAdmin: React.FC = () => {
               </Button>
             </Space>
 
-            {/* Lista de elementos seleccionados */}
+            {/* Lista de nuevos elementos seleccionados */}
             {elementosSeleccionados.length > 0 && (
               <>
-                <Divider>Elementos Adicionales</Divider>
+                <Divider>Nuevos Elementos Seleccionados</Divider>
                 <List
                   dataSource={elementosSeleccionados}
                   renderItem={(elemento) => (
@@ -992,15 +1001,17 @@ const RentAdmin: React.FC = () => {
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
                         <div>
                           <Typography.Text strong>{elemento.nombre_elemento}</Typography.Text>
-                          <div>
-                            <Typography.Text type="secondary">
-                              Cantidad: {elemento.cantidad_seleccionada} | 
-                              Precio unitario: ${elemento.precio_elemento} |
-                              Subtotal: ${(elemento.precio_elemento * elemento.cantidad_seleccionada).toFixed(2)}
-                            </Typography.Text>
-                          </div>
+                          <div>Subtotal: ${(elemento.precio_elemento * elemento.cantidad_seleccionada).toFixed(2)}</div>
                         </div>
                         <Space>
+                          <Typography.Text>Cantidad:</Typography.Text>
+                          <InputNumber
+                            min={0}
+                            max={elemento.cantidad_disponible}
+                            value={elemento.cantidad_seleccionada}
+                            onChange={(value) => handleCantidadChange(elemento, value || 0)}
+                            style={{ width: 80 }}
+                          />
                           <Button
                             type="text"
                             danger
@@ -1012,16 +1023,16 @@ const RentAdmin: React.FC = () => {
                     </ListItem>
                   )}
                 />
-
-                <div style={{ marginTop: 16, marginBottom: 16 }}>
-                  <Typography.Text strong>
-                    Total Adicional: $
-                    {elementosSeleccionados.reduce((total, elem) => 
-                      total + (elem.precio_elemento * elem.cantidad_seleccionada), 0).toFixed(2)}
-                  </Typography.Text>
-                </div>
               </>
             )}
+
+            <div style={{ marginTop: 16, marginBottom: 16 }}>
+              <Typography.Text strong>
+                Total: $
+                {elementosSeleccionados.reduce((total, elem) => 
+                  total + (elem.precio_elemento * elem.cantidad_seleccionada), 0).toFixed(2)}
+              </Typography.Text>
+            </div>
 
             <Form.Item>
               <Button 
