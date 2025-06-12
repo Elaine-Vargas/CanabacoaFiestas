@@ -16,10 +16,9 @@ import {
   Divider,
   message,
   Card,
-  Table,
-  Upload
+  Table
 } from 'antd';
-import { PlusOutlined, RightOutlined, CloseOutlined, ReloadOutlined, EditOutlined, DeleteOutlined, EyeOutlined, InboxOutlined, UploadOutlined } from '@ant-design/icons';
+import { PlusOutlined, RightOutlined, CloseOutlined, ReloadOutlined, EditOutlined, DeleteOutlined, EyeOutlined, InboxOutlined } from '@ant-design/icons';
 import axios from 'axios';
 import styled from 'styled-components';
 import dayjs from 'dayjs';
@@ -209,7 +208,6 @@ interface Elemento {
   precio_elemento: number;
   cantidad_disponible: number;
   imagen_url?: string;
-  estado_elemento: string;
   subcategoria: {
     nombre_subcategoria: string;
     categoria: {
@@ -267,15 +265,6 @@ const RentAdmin: React.FC = () => {
   const [filterEstado, setFilterEstado] = useState<string | null>(null);
   const [showViewModal, setShowViewModal] = useState(false);
   const [viewingAlquiler, setViewingAlquiler] = useState<Alquiler | null>(null);
-
-  // New states for elements management
-  const [showElementModal, setShowElementModal] = useState(false);
-  const [editingElement, setEditingElement] = useState<Elemento | null>(null);
-  const [elementForm] = Form.useForm();
-  const [searchElement, setSearchElement] = useState('');
-  const [filterElementCategoria, setFilterElementCategoria] = useState<string | null>(null);
-  const [filterElementEstado, setFilterElementEstado] = useState<string | null>(null);
-  const [loadingElement, setLoadingElement] = useState(false);
 
   useEffect(() => {
     fetchAlquileres();
@@ -977,9 +966,8 @@ const RentAdmin: React.FC = () => {
   ];
 
   const handleReset = () => {
-    setSearchText('');
-    setFilterCategoria('');
     setElementosSeleccionados([]);
+    message.success('Selección reiniciada');
   };
 
   const filteredElementos = elementos.filter(elemento => {
@@ -1006,369 +994,8 @@ const RentAdmin: React.FC = () => {
     return matchesSearch && matchesEvento && matchesEstado;
   });
 
-  // Element management functions
-  const handleElementStatusChange = async (elementId: number, newStatus: string) => {
-    try {
-      const token = localStorage.getItem('token');
-      if (!token) {
-        message.error('No hay sesión activa');
-        return;
-      }
-
-      await axios.put(`${apiUrl}/elemento/${elementId}`, 
-        { estado_elemento: newStatus },
-        {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
-          }
-        }
-      );
-
-      message.success('Estado del elemento actualizado correctamente');
-      fetchElementos();
-    } catch (error) {
-      console.error('Error al actualizar el estado del elemento:', error);
-      message.error('Error al actualizar el estado del elemento');
-    }
-  };
-
-  const handleElementSubmit = async (values: any) => {
-    try {
-      setLoadingElement(true);
-      const token = localStorage.getItem('token');
-      if (!token) {
-        message.error('No hay sesión activa');
-        return;
-      }
-
-      const elementData = {
-        nombre_elemento: values.nombre_elemento,
-        id_subcategoria: values.id_subcategoria,
-        precio_elemento: values.precio_elemento,
-        cantidad_disponible: values.cantidad_disponible,
-        imagen_url: values.imagen_url || null
-      };
-
-      if (editingElement) {
-        await axios.put(`${apiUrl}/elemento/${editingElement.id_elemento}`, elementData, {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
-          }
-        });
-        message.success('Elemento actualizado correctamente');
-      } else {
-        await axios.post(`${apiUrl}/elemento`, elementData, {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
-          }
-        });
-        message.success('Elemento creado correctamente');
-      }
-
-      setShowElementModal(false);
-      elementForm.resetFields();
-      fetchElementos();
-    } catch (error) {
-      console.error('Error al guardar el elemento:', error);
-      message.error('Error al guardar el elemento');
-    } finally {
-      setLoadingElement(false);
-    }
-  };
-
-  // Columns for elements table
-  const elementColumns = [
-    {
-      title: 'ID',
-      dataIndex: 'id_elemento',
-      key: 'id_elemento',
-    },
-    {
-      title: 'Nombre',
-      dataIndex: 'nombre_elemento',
-      key: 'nombre_elemento',
-    },
-    {
-      title: 'Categoría',
-      dataIndex: ['subcategoria', 'categoria', 'nombre_categoria'],
-      key: 'categoria',
-    },
-    {
-      title: 'Subcategoría',
-      dataIndex: ['subcategoria', 'nombre_subcategoria'],
-      key: 'subcategoria',
-    },
-    {
-      title: 'Precio',
-      dataIndex: 'precio_elemento',
-      key: 'precio_elemento',
-      render: (precio: number) => `$${Number(precio).toFixed(2)}`,
-    },
-    {
-      title: 'Cantidad Disponible',
-      dataIndex: 'cantidad_disponible',
-      key: 'cantidad_disponible',
-    },
-    {
-      title: 'Estado',
-      dataIndex: 'estado_elemento',
-      key: 'estado_elemento',
-      render: (estado: string) => {
-        let color = 'default';
-        switch (estado) {
-          case 'Activo':
-            color = 'success';
-            break;
-          case 'Inactivo':
-            color = 'warning';
-            break;
-          case 'Eliminado':
-            color = 'error';
-            break;
-        }
-        return <Tag color={color}>{estado}</Tag>;
-      },
-    },
-    {
-      title: 'Acciones',
-      key: 'acciones',
-      render: (_: any, record: Elemento) => (
-        <Space>
-          <Tooltip title="Ver">
-            <Button
-              icon={<EyeOutlined />}
-              onClick={() => {
-                setEditingElement(null);
-                elementForm.setFieldsValue(record);
-                elementForm.setFieldsValue({ readOnly: true });
-                setShowElementModal(true);
-              }}
-            />
-          </Tooltip>
-          <Tooltip title="Editar">
-            <Button
-              type="primary"
-              icon={<EditOutlined />}
-              onClick={() => {
-                setEditingElement(record);
-                elementForm.setFieldsValue(record);
-                elementForm.setFieldsValue({ readOnly: false });
-                setShowElementModal(true);
-              }}
-            />
-          </Tooltip>
-          <Tooltip title="Eliminar">
-            <Button
-              danger
-              icon={<DeleteOutlined />}
-              onClick={() => handleElementStatusChange(record.id_elemento, 'Eliminado')}
-            />
-          </Tooltip>
-        </Space>
-      ),
-    },
-  ];
-
-  // Function to filter elements
-  const filterElements = (elements: Elemento[]) => {
-    return elements.filter(elemento => {
-      const matchesSearch = searchElement
-        ? elemento.nombre_elemento.toLowerCase().includes(searchElement.toLowerCase()) ||
-          elemento.subcategoria.nombre_subcategoria.toLowerCase().includes(searchElement.toLowerCase())
-        : true;
-
-      const matchesCategoria = filterElementCategoria
-        ? elemento.subcategoria.categoria.id_categoria.toString() === filterElementCategoria
-        : true;
-
-      const matchesEstado = filterElementEstado
-        ? elemento.estado_elemento === filterElementEstado
-        : true;
-
-      return matchesSearch && matchesCategoria && matchesEstado;
-    });
-  };
-
   return (
     <>
-      {/* Elements Section */}
-      <StyledCard
-        title="Gestión de Elementos"
-        extra={
-          <Space>
-            <Search
-              placeholder="Buscar elementos..."
-              onChange={(e) => setSearchElement(e.target.value)}
-              style={{ width: 200 }}
-            />
-            <Select
-              style={{ width: 200 }}
-              placeholder="Filtrar por categoría"
-              allowClear
-              value={filterElementCategoria}
-              onChange={setFilterElementCategoria}
-            >
-              {categorias.map((categoria: any) => (
-                <Option key={categoria.id_categoria} value={categoria.id_categoria.toString()}>
-                  {categoria.nombre_categoria}
-                </Option>
-              ))}
-            </Select>
-            <Select
-              style={{ width: 150 }}
-              placeholder="Filtrar por estado"
-              allowClear
-              value={filterElementEstado}
-              onChange={setFilterElementEstado}
-            >
-              <Option value="Activo">Activo</Option>
-              <Option value="Inactivo">Inactivo</Option>
-              <Option value="Eliminado">Eliminado</Option>
-            </Select>
-            <Button
-              type="primary"
-              icon={<PlusOutlined />}
-              onClick={() => {
-                setEditingElement(null);
-                elementForm.resetFields();
-                setShowElementModal(true);
-              }}
-            >
-              Nuevo Elemento
-            </Button>
-          </Space>
-        }
-      >
-        <Table
-          columns={elementColumns}
-          dataSource={elementos.filter((elemento: Elemento) => {
-            const matchesSearch = searchElement
-              ? elemento.nombre_elemento.toLowerCase().includes(searchElement.toLowerCase()) ||
-                elemento.subcategoria.nombre_subcategoria.toLowerCase().includes(searchElement.toLowerCase())
-              : true;
-
-            const matchesCategoria = filterElementCategoria
-              ? elemento.subcategoria.categoria.id_categoria.toString() === filterElementCategoria
-              : true;
-
-            const matchesEstado = filterElementEstado
-              ? elemento.estado_elemento === filterElementEstado
-              : true;
-
-            return matchesSearch && matchesCategoria && matchesEstado;
-          })}
-          loading={loadingElement}
-          rowKey="id_elemento"
-          pagination={{ pageSize: 10 }}
-          locale={{ emptyText: 'No hay elementos registrados' }}
-        />
-      </StyledCard>
-
-      {/* Element Modal */}
-      <Modal
-        title={editingElement ? "Editar Elemento" : editingElement === null ? "Ver Elemento" : "Nuevo Elemento"}
-        open={showElementModal}
-        onCancel={() => {
-          setShowElementModal(false);
-          setEditingElement(undefined);
-          elementForm.resetFields();
-        }}
-        footer={null}
-      >
-        <Form
-          form={elementForm}
-          layout="vertical"
-          onFinish={handleElementSubmit}
-        >
-          <Form.Item
-            name="nombre_elemento"
-            label="Nombre"
-            rules={[{ required: true, message: 'Por favor ingrese el nombre del elemento' }]}
-          >
-            <Input disabled={editingElement === null} />
-          </Form.Item>
-
-          <Form.Item
-            name="id_subcategoria"
-            label="Subcategoría"
-            rules={[{ required: true, message: 'Por favor seleccione la subcategoría' }]}
-          >
-            <Select disabled={editingElement === null}>
-              {categorias.flatMap((categoria: any) =>
-                categoria.subcategorias.map((sub: any) => (
-                  <Option key={sub.id_subcategoria} value={sub.id_subcategoria}>
-                    {`${categoria.nombre_categoria} - ${sub.nombre_subcategoria}`}
-                  </Option>
-                ))
-              )}
-            </Select>
-          </Form.Item>
-
-          <Form.Item
-            name="precio_elemento"
-            label="Precio"
-            rules={[{ required: true, message: 'Por favor ingrese el precio' }]}
-          >
-            <InputNumber
-              disabled={editingElement === null}
-              min={0}
-              step={0.01}
-              style={{ width: '100%' }}
-              formatter={value => `$ ${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
-              parser={value => Number(value!.replace(/\$\s?|(,*)/g, ''))}
-            />
-          </Form.Item>
-
-          <Form.Item
-            name="cantidad_disponible"
-            label="Cantidad Disponible"
-            rules={[{ required: true, message: 'Por favor ingrese la cantidad disponible' }]}
-          >
-            <InputNumber 
-              disabled={editingElement === null}
-              min={0} 
-              style={{ width: '100%' }} 
-            />
-          </Form.Item>
-
-          <Form.Item
-            name="imagen_url"
-            label="URL de la Imagen"
-            rules={[
-              { 
-                type: 'url',
-                message: 'Por favor ingrese una URL válida'
-              }
-            ]}
-          >
-            <Input 
-              disabled={editingElement === null}
-              placeholder="https://ejemplo.com/imagen.jpg" 
-            />
-          </Form.Item>
-
-          {editingElement !== null && (
-            <Form.Item>
-              <Space style={{ width: '100%', justifyContent: 'flex-end' }}>
-                <Button onClick={() => {
-                  setShowElementModal(false);
-                  setEditingElement(undefined);
-                  elementForm.resetFields();
-                }}>
-                  Cancelar
-                </Button>
-                <Button type="primary" htmlType="submit" loading={loadingElement}>
-                  {editingElement ? 'Actualizar' : 'Crear'}
-                </Button>
-              </Space>
-            </Form.Item>
-          )}
-        </Form>
-      </Modal>
-
       <StyledCard title="Gestión de Alquileres">
         <Space direction="vertical" style={{ width: '100%', marginBottom: 16 }}>
           <Space wrap>
@@ -1476,7 +1103,7 @@ const RentAdmin: React.FC = () => {
             dataSource={elementos.filter((elemento: Elemento) => {
               const matchesSearch = elemento.nombre_elemento.toLowerCase().includes(searchText.toLowerCase());
               const matchesCategoria = !filterCategoria || 
-                elemento.subcategoria.categoria.nombre_categoria === filterCategoria;
+                elemento.subcategoria?.categoria?.id_categoria.toString() === filterCategoria;
               return matchesSearch && matchesCategoria;
             })}
             renderItem={(elemento: Elemento) => {

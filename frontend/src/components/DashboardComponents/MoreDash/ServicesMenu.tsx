@@ -86,7 +86,11 @@ export default function ServicesMenu({ selectedService }: ServicesMenuProps) {
           <FaTachometerAlt /> Bienvenida
         </li>
         <li
-          className={selectedService === "Alquiler" ? "active" : ""}
+          className={
+            selectedService === "Alquiler" || 
+            selectedService === "Alquileres-Compras" ? 
+            "active" : ""
+          }
           onClick={() => handleNavigation("/Menu-Servicios/Alquiler")}
         >
           <FaBoxOpen /> {rolId === 1 ? 'Alquileres y Compras' : 'Alquiler'}

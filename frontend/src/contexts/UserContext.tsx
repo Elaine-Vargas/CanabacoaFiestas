@@ -19,6 +19,24 @@ export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
   const [userRole, setUserRole] = useState<UserRole>(null);
   const [isUserLoading, setIsUserLoading] = useState(true);
 
+  const updateUserRole = (storedUserData: any) => {
+    let role: UserRole = null;
+    switch (storedUserData?.rol) {
+      case 1:
+        role = 'admin';
+        break;
+      case 2:
+        role = 'cliente';
+        break;
+      case 3:
+        role = 'empleado';
+        break;
+      default:
+        role = null;
+    }
+    setUserRole(role);
+  };
+
   useEffect(() => {
     const fetchUserData = async () => {
       try {
@@ -28,6 +46,9 @@ export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
           setIsUserLoading(false);
           return;
         }
+
+        const storedUserData = JSON.parse(localStorage.getItem('userData') || '{}');
+        updateUserRole(storedUserData);
 
         const response = await fetch(`${apiUrl}/auth/current`, {
           headers: {
@@ -41,55 +62,31 @@ export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
         }
 
         const data = await response.json();
-        const storedUserData = JSON.parse(localStorage.getItem('userData') || '{}');
-        
-        // Mapear el rol numérico al tipo UserRole
-        let role: UserRole = null;
-        switch (storedUserData.rol) {
-          case 1:
-            role = 'admin';
-            break;
-          case 2:
-            role = 'cliente';
-            break;
-          case 3:
-            role = 'empleado';
-            break;
-          default:
-            role = null;
-        }
-        
-        setUserRole(role);
+        updateUserRole(data);
       } catch (error) {
         console.error('Error al obtener datos del usuario:', error);
         setUserRole(null);
+        // Limpiar datos de usuario en caso de error
+        localStorage.removeItem('token');
+        localStorage.removeItem('userData');
       } finally {
         setIsUserLoading(false);
       }
     };
 
     fetchUserData();
-  }, []);
+  }, [apiUrl]);
 
   // Escuchar cambios en localStorage
   useEffect(() => {
     const handleStorageChange = () => {
-      const storedUserData = JSON.parse(localStorage.getItem('userData') || '{}');
-      let role: UserRole = null;
-      switch (storedUserData.rol) {
-        case 1:
-          role = 'admin';
-          break;
-        case 2:
-          role = 'cliente';
-          break;
-        case 3:
-          role = 'empleado';
-          break;
-        default:
-          role = null;
+      try {
+        const storedUserData = JSON.parse(localStorage.getItem('userData') || '{}');
+        updateUserRole(storedUserData);
+      } catch (error) {
+        console.error('Error al procesar datos del usuario:', error);
+        setUserRole(null);
       }
-      setUserRole(role);
     };
 
     window.addEventListener('storage', handleStorageChange);

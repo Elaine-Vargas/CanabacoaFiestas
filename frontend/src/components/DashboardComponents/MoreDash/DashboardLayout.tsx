@@ -7,7 +7,11 @@ export default function DashboardLayout() {
   const location = useLocation();
   const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(true);
-  const currentPath = location.pathname.split("/").pop() || "Bienvenida";
+  const pathSegments = location.pathname.split("/");
+  const currentPath = pathSegments[pathSegments.length - 1] || "Bienvenida";
+  
+  // Map Alquileres-Compras back to Alquiler for menu highlighting
+  const selectedService = currentPath === "Alquileres-Compras" ? "Alquiler" : currentPath;
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -15,7 +19,7 @@ export default function DashboardLayout() {
       const userRole = localStorage.getItem('userRole');
       
       if (!token) {
-        navigate('/login');
+        navigate('/Login');
         return;
       }
 
@@ -40,7 +44,7 @@ export default function DashboardLayout() {
 
   return (
     <div className="dashboard-container">
-      <ServicesMenu selectedService={currentPath} />
+      <ServicesMenu selectedService={selectedService} />
       <div className="content-area">
         <Outlet />
       </div>
