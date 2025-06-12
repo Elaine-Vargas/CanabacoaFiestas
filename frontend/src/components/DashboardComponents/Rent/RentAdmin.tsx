@@ -879,7 +879,7 @@ const RentAdmin: React.FC = () => {
       key: 'evento',
       render: (id_evento: number, record: any) => (
         <span>
-          {id_evento} - {record.evento?.nombre_evento || 'N/A'}
+          {id_evento}
         </span>
       ),
     },
