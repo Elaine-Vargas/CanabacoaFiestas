@@ -222,20 +222,45 @@ interface ElementoSeleccionado extends Elemento {
   cantidad_seleccionada: number;
 }
 
+interface DetalleAlquiler {
+  id_elemento: number;
+  elemento: Elemento;
+  cantidad_alquiler: number;
+  precio_unitario: number;
+  total_alquiler: number;
+  estado_detalquiler: string;
+}
+
+interface Alquiler {
+  id_alquiler: number;
+  estado_alquiler: string;
+  precioneto_alquiler: number;
+  itbis_alquiler: number;
+  total_alquiler: number;
+  cant_elementos_alquiler: number;
+  evento?: {
+    id_evento: number;
+    nombre_evento: string;
+    fecha_evento: string;
+  };
+  detalles?: DetalleAlquiler[];
+}
+
 const RentAdmin: React.FC = () => {
-  const [alquileres, setAlquileres] = useState([]);
+  const [alquileres, setAlquileres] = useState<Alquiler[]>([]);
   const [elementos, setElementos] = useState<Elemento[]>([]);
   const [elementosSeleccionados, setElementosSeleccionados] = useState<ElementoSeleccionado[]>([]);
   const [showCatalogo, setShowCatalogo] = useState(false);
   const [showFormulario, setShowFormulario] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [eventos, setEventos] = useState([]);
+  const [loadingSubmit, setLoadingSubmit] = useState(false);
+  const [eventos, setEventos] = useState<any[]>([]);
   const [form] = Form.useForm();
   const [searchText, setSearchText] = useState('');
   const [filterCategoria, setFilterCategoria] = useState('');
-  const [categorias, setCategorias] = useState([]);
+  const [categorias, setCategorias] = useState<any[]>([]);
   const [showEditModal, setShowEditModal] = useState(false);
-  const [editingAlquiler, setEditingAlquiler] = useState<any>(null);
+  const [editingAlquiler, setEditingAlquiler] = useState<Alquiler | null>(null);
   const [searchAlquiler, setSearchAlquiler] = useState('');
   const [filterEvento, setFilterEvento] = useState<string | null>(null);
   const [filterEstado, setFilterEstado] = useState<string | null>(null);
@@ -365,13 +390,26 @@ const RentAdmin: React.FC = () => {
   const calcularCantidadDisponible = (elemento: Elemento, fecha: string) => {
     if (!fecha) return elemento.cantidad_disponible;
 
-    // Encontrar todos los alquileres activos para la misma fecha que usan este elemento
-    const cantidadReservada = alquileres
-      .filter(alquiler => alquiler.fecha_evento === fecha)
-      .reduce((total, alquiler) => {
-        const elementoEnAlquiler = alquiler.elementos.find(e => e.id_elemento === elemento.id_elemento);
-        return total + (elementoEnAlquiler?.cantidad_alquiler || 0);
-      }, 0);
+    // Filtrar alquileres por fecha y estado
+    const alquileresEnFecha = alquileres.filter((alquiler: any) => {
+      const fechaEvento = alquiler.evento?.fecha_evento;
+      return fechaEvento === fecha && 
+             alquiler.estado_alquiler !== 'Cancelado' &&
+             alquiler.estado_alquiler !== 'Completado';
+    });
+
+    // Calcular cantidad reservada
+    let cantidadReservada = 0;
+    alquileresEnFecha.forEach((alquiler: any) => {
+      if (alquiler.detalles) {
+        const detalle = alquiler.detalles.find((d: any) => 
+          d.elemento.id_elemento === elemento.id_elemento
+        );
+        if (detalle) {
+          cantidadReservada += detalle.cantidad_alquiler;
+        }
+      }
+    });
 
     return elemento.cantidad_disponible - cantidadReservada;
   };
@@ -395,7 +433,7 @@ const RentAdmin: React.FC = () => {
             ...newDetalles[index],
             cantidad_alquiler: cantidad,
             precio_unitario: elemento.precio_elemento,
-            total_alquiler: subtotal.toFixed(2)
+            total_alquiler: Number(subtotal.toFixed(2))
           };
         } else {
           // Si no existe, crear uno nuevo
@@ -404,19 +442,19 @@ const RentAdmin: React.FC = () => {
             elemento: elemento,
             cantidad_alquiler: cantidad,
             precio_unitario: elemento.precio_elemento,
-            total_alquiler: subtotal.toFixed(2),
+            total_alquiler: Number(subtotal.toFixed(2)),
             estado_detalquiler: 'Aceptado'
           });
         }
       }
 
       // Calcular totales
-      const precioNeto = newDetalles.reduce((sum, detalle) => 
+      const precioNeto = newDetalles.reduce<number>((sum, detalle) => 
         sum + (detalle.cantidad_alquiler * detalle.precio_unitario), 0
       );
       const itbis = precioNeto * 0.18;
       const total = precioNeto + itbis;
-      const cantTotal = newDetalles.reduce((sum, detalle) => sum + detalle.cantidad_alquiler, 0);
+      const cantTotal = newDetalles.reduce<number>((sum, detalle) => sum + detalle.cantidad_alquiler, 0);
 
       console.log('Nuevos totales:', {
         precioNeto,
@@ -430,9 +468,9 @@ const RentAdmin: React.FC = () => {
       setEditingAlquiler({
         ...editingAlquiler,
         detalles: newDetalles,
-        precioneto_alquiler: precioNeto.toFixed(2),
-        itbis_alquiler: itbis.toFixed(2),
-        total_alquiler: total.toFixed(2),
+        precioneto_alquiler: Number(precioNeto.toFixed(2)),
+        itbis_alquiler: Number(itbis.toFixed(2)),
+        total_alquiler: Number(total.toFixed(2)),
         cant_elementos_alquiler: cantTotal
       });
     } else {
@@ -549,24 +587,8 @@ const RentAdmin: React.FC = () => {
         return;
       }
 
-      // Obtener la fecha del evento seleccionado
-      const eventoSeleccionado = eventos.find(e => e.id_evento === values.id_evento);
-      if (!eventoSeleccionado) {
-        message.error('Evento no encontrado');
-        return;
-      }
-
-      // Verificar disponibilidad final antes de enviar
-      for (const elemento of elementosSeleccionados) {
-        const cantidadDisponible = calcularCantidadDisponible(elemento, eventoSeleccionado.fecha_evento);
-        if (elemento.cantidad_seleccionada > cantidadDisponible) {
-          message.error(`No hay suficientes unidades disponibles de ${elemento.nombre_elemento} para la fecha seleccionada`);
-          return;
-        }
-      }
-
       // Calcular subtotales y totales
-      const precioNeto = elementosSeleccionados.reduce((sum, elem) => 
+      const precioNeto = elementosSeleccionados.reduce<number>((sum, elem) => 
         sum + (elem.precio_elemento * elem.cantidad_seleccionada), 0
       );
       const itbis = precioNeto * 0.18; // 18% ITBIS
@@ -575,10 +597,10 @@ const RentAdmin: React.FC = () => {
       const alquilerData = {
         id_evento: values.id_evento,
         estado_alquiler: 'Solicitado',
-        precioneto_alquiler: precioNeto.toFixed(2),
-        itbis_alquiler: itbis.toFixed(2),
-        total_alquiler: total.toFixed(2),
-        cant_elementos_alquiler: elementosSeleccionados.reduce((sum, elem) => sum + elem.cantidad_seleccionada, 0),
+        precioneto_alquiler: Number(precioNeto.toFixed(2)),
+        itbis_alquiler: Number(itbis.toFixed(2)),
+        total_alquiler: Number(total.toFixed(2)),
+        cant_elementos_alquiler: elementosSeleccionados.reduce<number>((sum, elem) => sum + elem.cantidad_seleccionada, 0),
         elementos: elementosSeleccionados.map(elem => ({
           id_elemento: elem.id_elemento,
           cantidad: elem.cantidad_seleccionada,
@@ -637,8 +659,17 @@ const RentAdmin: React.FC = () => {
         cancelText: 'No',
         onOk: async () => {
           try {
-            await axios.delete(
+            const updateData = {
+              estado_alquiler: 'Cancelado',
+              precioneto_alquiler: record.precioneto_alquiler,
+              itbis_alquiler: record.itbis_alquiler,
+              total_alquiler: record.total_alquiler,
+              cant_elementos_alquiler: record.cant_elementos_alquiler
+            };
+
+            await axios.patch(
               `${apiUrl}/alquiler/${record.id_alquiler}`,
+              updateData,
               {
                 headers: {
                   'Authorization': `Bearer ${token}`,
@@ -666,6 +697,8 @@ const RentAdmin: React.FC = () => {
   };
 
   const handleEditSubmit = async (values: any) => {
+    console.log("Iniciando handleEditSubmit con valores:", values);
+    setLoadingSubmit(true);
     try {
       const token = localStorage.getItem('token');
       if (!token) {
@@ -673,39 +706,44 @@ const RentAdmin: React.FC = () => {
         return;
       }
 
-      if (!editingAlquiler.detalles || editingAlquiler.detalles.length === 0) {
+      if (!editingAlquiler?.detalles || editingAlquiler.detalles.length === 0) {
         message.error('El alquiler debe tener al menos un elemento');
         return;
       }
 
       // Preparar los datos de actualización
-      const detalles = editingAlquiler.detalles.map((detalle: any) => ({
-        id_elemento: detalle.elemento.id_elemento,
-        cantidad: detalle.cantidad_alquiler,
-        precio_unitario: detalle.precio_unitario,
-        subtotal: (detalle.cantidad_alquiler * detalle.precio_unitario).toFixed(2)
-      }));
+      const detalles = editingAlquiler.detalles.map((detalle: DetalleAlquiler) => {
+        const subtotal = Number((detalle.cantidad_alquiler * detalle.precio_unitario).toFixed(2));
+        return {
+          id_elemento: detalle.elemento.id_elemento,
+          cantidad: detalle.cantidad_alquiler,
+          precio_unitario: detalle.precio_unitario,
+          subtotal: subtotal
+        };
+      });
 
       // Calcular totales
-      const precioNeto = detalles.reduce((sum, detalle) => 
-        sum + (detalle.cantidad * detalle.precio_unitario), 0
+      const precioNeto = Number(detalles.reduce<number>((sum, detalle) => 
+        sum + detalle.subtotal, 0).toFixed(2)
       );
-      const itbis = precioNeto * 0.18;
-      const total = precioNeto + itbis;
-      const cantTotal = detalles.reduce((sum, detalle) => sum + detalle.cantidad, 0);
+      const itbis = Number((precioNeto * 0.18).toFixed(2));
+      const total = Number((precioNeto + itbis).toFixed(2));
+      const cantTotal = detalles.reduce<number>((sum, detalle) => sum + detalle.cantidad, 0);
 
       const updateData = {
-        estado_alquiler: values.estado_alquiler,
-        precioneto_alquiler: precioNeto.toFixed(2),
-        itbis_alquiler: itbis.toFixed(2),
-        total_alquiler: total.toFixed(2),
+        estado_alquiler: values.estado_alquiler || editingAlquiler.estado_alquiler,
+        precioneto_alquiler: precioNeto,
+        itbis_alquiler: itbis,
+        total_alquiler: total,
         cant_elementos_alquiler: cantTotal,
         elementos: detalles
       };
 
-      console.log('Enviando datos de actualización:', JSON.stringify(updateData, null, 2));
+      console.log('ID del alquiler a actualizar:', editingAlquiler.id_alquiler);
+      console.log('Datos de actualización:', updateData);
 
-      const response = await axios.patch(`${apiUrl}/alquiler/${editingAlquiler.id_alquiler}`, 
+      const response = await axios.patch(
+        `${apiUrl}/alquiler/${editingAlquiler.id_alquiler}`, 
         updateData,
         {
           headers: {
@@ -715,24 +753,40 @@ const RentAdmin: React.FC = () => {
         }
       );
 
-      console.log('Respuesta de actualización:', response.data);
-      message.success('Alquiler actualizado correctamente');
-      
-      // Limpiar estados
-      setShowEditModal(false);
-      setEditingAlquiler(null);
-      setElementosSeleccionados([]);
-      setShowFormulario(false);
-      setShowCatalogo(false);
-      
-      // Recargar datos
-      await fetchAlquileres();
-      await fetchElementos();
+      console.log('Respuesta completa:', response);
 
+      if (response.data) {
+        console.log('Respuesta de actualización:', response.data);
+        message.success('Alquiler actualizado correctamente');
+        
+        // Limpiar estados
+        setShowEditModal(false);
+        setEditingAlquiler(null);
+        setElementosSeleccionados([]);
+        setShowFormulario(false);
+        setShowCatalogo(false);
+        form.resetFields();
+        
+        // Recargar datos
+        await fetchAlquileres();
+        await fetchElementos();
+      } else {
+        throw new Error('No se recibió respuesta del servidor');
+      }
     } catch (error: any) {
       console.error('Error al actualizar el alquiler:', error);
-      console.error('Error response:', error.response?.data);
-      message.error(error.response?.data?.mensaje || 'Error al actualizar el alquiler');
+      if (error.response) {
+        console.error('Error response:', error.response.data);
+        message.error(error.response.data.mensaje || 'Error al actualizar el alquiler');
+      } else if (error.request) {
+        console.error('Error request:', error.request);
+        message.error('Error de conexión al actualizar el alquiler. Verifica que el servidor esté funcionando.');
+      } else {
+        console.error('Error:', error.message);
+        message.error('Error al actualizar el alquiler');
+      }
+    } finally {
+      setLoadingSubmit(false);
     }
   };
 
@@ -851,7 +905,7 @@ const RentAdmin: React.FC = () => {
     return matchesSearch && matchesCategoria;
   });
 
-  const filteredAlquileres = alquileres.filter((alquiler: any) => {
+  const filteredAlquileres = alquileres.filter((alquiler: Alquiler) => {
     const matchesSearch = searchAlquiler 
       ? alquiler.id_alquiler.toString().includes(searchAlquiler) ||
         (alquiler.evento?.id_evento.toString() || '').includes(searchAlquiler)
@@ -972,21 +1026,19 @@ const RentAdmin: React.FC = () => {
           </Button>
         </Space>
 
-        <ModalContent hasSelection={elementosSeleccionados.length > 0 || (editingAlquiler?.detalles?.length > 0)}>
+        <ModalContent hasSelection={elementosSeleccionados.length > 0 || (editingAlquiler?.detalles?.length ?? 0) > 0}>
           <List
             dataSource={elementos.filter((elemento: Elemento) => {
               const matchesSearch = elemento.nombre_elemento.toLowerCase().includes(searchText.toLowerCase());
               const matchesCategoria = !filterCategoria || 
-                elemento.subcategoria?.categoria?.id_categoria === filterCategoria;
+                elemento.subcategoria?.categoria?.id_categoria.toString() === filterCategoria;
               return matchesSearch && matchesCategoria;
             })}
             renderItem={(elemento: Elemento) => {
-              // Si estamos editando, buscar el elemento en los detalles del alquiler
               const detalleExistente = editingAlquiler?.detalles?.find(
                 (d: any) => d.id_elemento === elemento.id_elemento && d.estado_detalquiler === 'Aceptado'
               );
               
-              // Si no estamos editando o el elemento no está en el alquiler, buscar en elementosSeleccionados
               const elementoSeleccionado = !editingAlquiler 
                 ? elementosSeleccionados.find(e => e.id_elemento === elemento.id_elemento)
                 : null;
@@ -1017,34 +1069,31 @@ const RentAdmin: React.FC = () => {
                         min={0}
                         max={typeof elemento.cantidad_disponible === 'number' ? elemento.cantidad_disponible : 0}
                         value={cantidad}
-                        onChange={(value) => {
+                        onChange={(value: number | null) => {
                           if (editingAlquiler) {
-                            // Si estamos editando, actualizar los detalles del alquiler
                             const newDetalles = [...(editingAlquiler.detalles || [])];
                             const index = newDetalles.findIndex(d => d.id_elemento === elemento.id_elemento);
                             
-                            if (value === 0) {
-                              // Si la cantidad es 0, eliminar el detalle
+                            if (!value || value === 0) {
                               if (index !== -1) {
                                 newDetalles.splice(index, 1);
                               }
                             } else {
-                              // Si ya existe el detalle, actualizarlo
+                              const subtotal = Number((value * elemento.precio_elemento).toFixed(2));
                               if (index !== -1) {
                                 newDetalles[index] = {
                                   ...newDetalles[index],
                                   cantidad_alquiler: value,
                                   precio_unitario: elemento.precio_elemento,
-                                  total_alquiler: (value * elemento.precio_elemento).toFixed(2)
+                                  total_alquiler: subtotal
                                 };
                               } else {
-                                // Si no existe, crear uno nuevo
                                 newDetalles.push({
                                   id_elemento: elemento.id_elemento,
                                   elemento: elemento,
                                   cantidad_alquiler: value,
                                   precio_unitario: elemento.precio_elemento,
-                                  total_alquiler: (value * elemento.precio_elemento).toFixed(2),
+                                  total_alquiler: subtotal,
                                   estado_detalquiler: 'Aceptado'
                                 });
                               }
@@ -1054,7 +1103,6 @@ const RentAdmin: React.FC = () => {
                               detalles: newDetalles
                             });
                           } else {
-                            // Si estamos creando, usar el manejo normal
                             handleCantidadChange(elemento, value || 0);
                           }
                         }}
@@ -1069,7 +1117,7 @@ const RentAdmin: React.FC = () => {
           />
         </ModalContent>
         
-        {(elementosSeleccionados.length > 0 || (editingAlquiler?.detalles?.length > 0)) && (
+        {(elementosSeleccionados.length > 0 || (editingAlquiler?.detalles?.length ?? 0) > 0) && (
           <ContinueButton onClick={handleContinuar}>
             Continuar <RightOutlined />
           </ContinueButton>
@@ -1140,116 +1188,121 @@ const RentAdmin: React.FC = () => {
         onCancel={() => {
           setShowEditModal(false);
           setEditingAlquiler(null);
+          setElementosSeleccionados([]);
+          form.resetFields();
         }}
         footer={null}
         width={800}
       >
-        <Form
-          form={form}
-          onFinish={handleEditSubmit}
-          initialValues={{
-            estado_alquiler: editingAlquiler?.estado_alquiler
-          }}
-        >
-          <Form.Item
-            name="estado_alquiler"
-            label="Estado"
-            rules={[{ required: true, message: 'Por favor seleccione el estado' }]}
+        {editingAlquiler && (
+          <Form
+            form={form}
+            onFinish={handleEditSubmit}
+            initialValues={{
+              estado_alquiler: editingAlquiler.estado_alquiler
+            }}
           >
-            <Select>
-              <Option value="Solicitado">Solicitado</Option>
-              <Option value="Aceptado">Aceptado</Option>
-              <Option value="Completado">Completado</Option>
-            </Select>
-          </Form.Item>
-
-          <Divider>Elementos del Alquiler</Divider>
-
-          {/* Lista de elementos actuales */}
-          <List
-            dataSource={editingAlquiler?.detalles?.filter((detalle: any) => detalle.estado_detalquiler === 'Aceptado') || []}
-            renderItem={(detalle: any) => (
-              <ListItem>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
-                  <div>
-                    <Typography.Text strong>{detalle.elemento.nombre_elemento}</Typography.Text>
-                    <div>
-                      <Typography.Text type="secondary">
-                        Precio unitario: ${detalle.precio_unitario}
-                      </Typography.Text>
-                    </div>
-                  </div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-                    {(editingAlquiler?.estado_alquiler === 'Solicitado' || editingAlquiler?.estado_alquiler === 'Aceptado') && (
-                      <>
-                        <InputNumber
-                          min={1}
-                          max={detalle.elemento.cantidad_disponible + detalle.cantidad_alquiler}
-                          value={detalle.cantidad_alquiler}
-                          onChange={(value) => {
-                            const newDetalles = editingAlquiler.detalles.map((d: any) => {
-                              if (d.id_elemento === detalle.id_elemento) {
-                                return {
-                                  ...d,
-                                  cantidad_alquiler: value,
-                                  total_alquiler: value * detalle.precio_unitario
-                                };
-                              }
-                              return d;
-                            });
-                            setEditingAlquiler({
-                              ...editingAlquiler,
-                              detalles: newDetalles
-                            });
-                          }}
-                        />
-                        <Button
-                          type="text"
-                          danger
-                          icon={<DeleteOutlined />}
-                          onClick={() => {
-                            const newDetalles = editingAlquiler.detalles.filter(
-                              (d: any) => d.id_elemento !== detalle.id_elemento
-                            );
-                            setEditingAlquiler({
-                              ...editingAlquiler,
-                              detalles: newDetalles
-                            });
-                          }}
-                        />
-                      </>
-                    )}
-                    <Typography.Text>
-                      Subtotal: ${detalle.total_alquiler}
-                    </Typography.Text>
-                  </div>
-                </div>
-              </ListItem>
-            )}
-          />
-
-          {(editingAlquiler?.estado_alquiler === 'Solicitado' || editingAlquiler?.estado_alquiler === 'Aceptado') && (
-            <Space style={{ marginTop: 16, marginBottom: 16 }}>
-              <Button
-                type="primary"
-                onClick={() => setShowCatalogo(true)}
-                icon={<PlusOutlined />}
-              >
-                Agregar Elementos
-              </Button>
-            </Space>
-          )}
-
-          <Form.Item>
-            <Button 
-              type="primary" 
-              htmlType="submit"
-              disabled={editingAlquiler?.estado_alquiler === 'Cancelado'}
+            <Form.Item
+              name="estado_alquiler"
+              label="Estado del Alquiler"
+              rules={[{ required: true, message: 'Por favor seleccione un estado' }]}
             >
-              Guardar Cambios
-            </Button>
-          </Form.Item>
-        </Form>
+              <Select disabled={editingAlquiler.estado_alquiler === 'Cancelado'}>
+                <Option value="Solicitado">Solicitado</Option>
+                <Option value="Aceptado">Aceptado</Option>
+                <Option value="Completado">Completado</Option>
+              </Select>
+            </Form.Item>
+
+            {(editingAlquiler?.estado_alquiler === 'Solicitado' || editingAlquiler?.estado_alquiler === 'Aceptado') && (
+              <Space style={{ marginTop: 16, marginBottom: 16 }}>
+                <Button
+                  type="primary"
+                  onClick={() => setShowCatalogo(true)}
+                  icon={<PlusOutlined />}
+                >
+                  Agregar Elementos
+                </Button>
+              </Space>
+            )}
+
+            {/* Lista de elementos actuales */}
+            {editingAlquiler.detalles && editingAlquiler.detalles.length > 0 && (
+              <>
+                <Divider>Elementos del Alquiler</Divider>
+                <List
+                  dataSource={editingAlquiler.detalles}
+                  renderItem={(detalle: any) => (
+                    <ListItem>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
+                        <div>
+                          <Typography.Text strong>{detalle.elemento.nombre_elemento}</Typography.Text>
+                          <div>Subtotal: ${detalle.total_alquiler}</div>
+                        </div>
+                        <Space>
+                          <Typography.Text>Cantidad:</Typography.Text>
+                          <InputNumber
+                            min={0}
+                            max={detalle.elemento.cantidad_disponible + detalle.cantidad_alquiler}
+                            value={detalle.cantidad_alquiler}
+                            onChange={(value) => handleCantidadChange(detalle.elemento, value || 0)}
+                            style={{ width: 80 }}
+                            disabled={editingAlquiler.estado_alquiler === 'Cancelado'}
+                          />
+                          {editingAlquiler.estado_alquiler !== 'Cancelado' && (
+                            <Button
+                              type="text"
+                              danger
+                              icon={<DeleteOutlined />}
+                              onClick={() => handleCantidadChange(detalle.elemento, 0)}
+                            />
+                          )}
+                        </Space>
+                      </div>
+                    </ListItem>
+                  )}
+                />
+              </>
+            )}
+
+            <div style={{ marginTop: 16, marginBottom: 16 }}>
+              <Typography.Text strong>
+                Precio Neto: ${editingAlquiler.precioneto_alquiler}
+              </Typography.Text>
+              <br />
+              <Typography.Text strong>
+                ITBIS: ${editingAlquiler.itbis_alquiler}
+              </Typography.Text>
+              <br />
+              <Typography.Text strong>
+                Total: ${editingAlquiler.total_alquiler}
+              </Typography.Text>
+            </div>
+
+            <Form.Item>
+              <Space>
+                <Button 
+                  type="primary" 
+                  htmlType="submit"
+                  disabled={editingAlquiler.estado_alquiler === 'Cancelado'}
+                  loading={loadingSubmit}
+                >
+                  Guardar Cambios
+                </Button>
+                <Button 
+                  onClick={() => {
+                    setShowEditModal(false);
+                    setEditingAlquiler(null);
+                    setElementosSeleccionados([]);
+                    form.resetFields();
+                  }}
+                >
+                  Cancelar
+                </Button>
+              </Space>
+            </Form.Item>
+          </Form>
+        )}
       </StyledModal>
     </>
   );

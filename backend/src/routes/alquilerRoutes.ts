@@ -10,7 +10,6 @@ import {
     getElementosAlquiler
 } from '../controllers/alquilerServicioController';
 import { verificarToken } from '../middlewares/authMiddleware';
-import cors from 'cors';
 
 const router = Router();
 
@@ -19,20 +18,8 @@ const authMiddleware = (req: Request, res: Response, next: NextFunction) => {
     verificarToken(req, res, next);
 };
 
-// Configuración de CORS específica para las rutas de alquiler
-const corsOptions = {
-    origin: ['http://localhost:5173', 'http://127.0.0.1:5173'],
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization'],
-    credentials: true
-};
-
-// Aplicar CORS y autenticación a todas las rutas
-router.use(cors(corsOptions));
+// Aplicar autenticación a todas las rutas
 router.use(authMiddleware);
-
-// Habilitar preflight para todas las rutas
-router.options('*', cors(corsOptions));
 
 // Crear un nuevo alquiler
 router.post('/', async (req: Request, res: Response, next: NextFunction) => {
