@@ -196,6 +196,8 @@ const UserLogin = () => {
       }
 
       const data = JSON.parse(responseText);
+      console.log('UserLogin - Datos de respuesta:', data);
+      
       localStorage.setItem('token', data.token);
       const userData = {
         nombre_usuario: data.nombre_usuario,
@@ -204,7 +206,27 @@ const UserLogin = () => {
         rol: data.rol,
         cedula_usuario: data.cedula_usuario
       };
+      console.log('UserLogin - Datos del usuario a almacenar:', userData);
       localStorage.setItem('userData', JSON.stringify(userData));
+      
+      // Establecer el rol de usuario según el número de rol
+      let role: 'admin' | 'cliente' | 'empleado' | null = null;
+      const rolNumero = Number(data.rol);
+      console.log('UserLogin - Número de rol:', rolNumero);
+      
+      switch (rolNumero) {
+        case 1:
+          role = 'admin';
+          break;
+        case 2:
+          role = 'cliente';
+          break;
+        case 3:
+          role = 'empleado';
+          break;
+      }
+      console.log('UserLogin - Rol mapeado:', role);
+      setUserRole(role);
       
       // Disparar un evento de storage para actualizar el contexto
       window.dispatchEvent(new Event('storage'));
@@ -287,8 +309,20 @@ const UserLogin = () => {
       };
       localStorage.setItem('userData', JSON.stringify(userInfo));
       
-      // Establecer el rol de usuario como cliente
-      setUserRole('cliente');
+      // Establecer el rol de usuario según el número de rol
+      let role: 'admin' | 'cliente' | 'empleado' | null = null;
+      switch (Number(data.rol)) {
+        case 1:
+          role = 'admin';
+          break;
+        case 2:
+          role = 'cliente';
+          break;
+        case 3:
+          role = 'empleado';
+          break;
+      }
+      setUserRole(role);
       
       // Disparar un evento de storage para actualizar el contexto
       window.dispatchEvent(new Event('storage'));
@@ -363,8 +397,20 @@ const UserLogin = () => {
       };
       localStorage.setItem('userData', JSON.stringify(userInfo));
       
-      // Establecer el rol de usuario como cliente
-      setUserRole('cliente');
+      // Establecer el rol de usuario según el número de rol
+      let role: 'admin' | 'cliente' | 'empleado' | null = null;
+      switch (Number(completeData.rol)) {
+        case 1:
+          role = 'admin';
+          break;
+        case 2:
+          role = 'cliente';
+          break;
+        case 3:
+          role = 'empleado';
+          break;
+      }
+      setUserRole(role);
       
       // Disparar un evento de storage para actualizar el contexto
       window.dispatchEvent(new Event('storage'));

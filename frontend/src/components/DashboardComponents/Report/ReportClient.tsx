@@ -288,7 +288,7 @@ const ReportClient = () => {
   const fetchEmpleados = async () => {
     try {
       setLoadingEmpleados(true);
-      const response = await fetch(`${apiUrl}/usuario?rol=3`, {
+      const response = await fetch(`${apiUrl}/usuario`, {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`,
           'Content-Type': 'application/json'
@@ -299,7 +299,7 @@ const ReportClient = () => {
       }
       const data = await response.json();
       if (data.usuarios && Array.isArray(data.usuarios)) {
-        setEmpleados(data.usuarios);
+        setEmpleados(data.usuarios.filter((u: any) => u.rol_usuario === '3'));
       } else {
         throw new Error('Formato de datos inválido');
       }

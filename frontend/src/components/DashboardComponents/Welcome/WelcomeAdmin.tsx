@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import '../../../styles/dashboard/ServicesSubpages.scss';
 import { Card, Button, Table, Tag, Space, Typography, Input, Select, Dropdown, Modal, Descriptions, message } from 'antd';
-import type { ColumnsType } from 'antd/es/table';
 import { PlusOutlined, EditOutlined, DeleteOutlined, EyeOutlined, SearchOutlined, FilterOutlined } from '@ant-design/icons';
 import EventoForm from '../FormService/EventoForm';
 import UsuarioForm from '../FormService/UsuarioForm';
@@ -1678,7 +1677,6 @@ const WelcomeAdmin: React.FC = () => {
         loadingTipos={loadingTipos}
         loadingProvincias={loadingProvincias}
         loadingCiudades={loadingCiudades}
-        initialValues={eventoSeleccionado}
       />
 
       {/* Formulario de Edición de Usuario */}
@@ -1801,7 +1799,6 @@ const WelcomeAdmin: React.FC = () => {
           }
         }}
         loading={loading}
-        initialValues={asignacionSeleccionada}
       />
 
       {/* Formulario de Edición de Decoración */}

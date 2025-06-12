@@ -12,7 +12,7 @@ export const updateEventoEstado = async (id_evento: number): Promise<boolean> =>
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${token}`
       },
-      body: JSON.stringify({ estado_solicitud: 'Cancelada' })
+      body: JSON.stringify({ estado: 'Cancelada' })
     });
 
     if (!response.ok) {

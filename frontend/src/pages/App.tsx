@@ -43,7 +43,7 @@ const RoleBasedRedirect = () => {
   const routeMappings: RouteMappings = {
     'Alquiler': {
       1: 'Alquileres-Compras', // Admin
-      2: 'Alquileres-Compras', // Cliente - Cambiado para que use la misma ruta
+      2: 'Alquileres-Compras', // Cliente
       3: 'Alquileres-Compras', // Empleado
     },
     'Facturas': {
