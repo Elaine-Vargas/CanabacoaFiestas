@@ -10,13 +10,6 @@ export default class TransporteServicio extends Model {
   @Column({ type: DataType.INTEGER, field: 'id_transporte' })
   id_transporte!: number;
 
-  @ForeignKey(() => Evento)
-  @Column({ type: DataType.INTEGER, allowNull: false })
-  id_evento!: number;
-
-  @BelongsTo(() => Evento)
-  evento!: Evento;
-
   @ForeignKey(() => AlquilerServicio)
   @Column({ type: DataType.INTEGER, allowNull: false })
   id_alquiler!: number;

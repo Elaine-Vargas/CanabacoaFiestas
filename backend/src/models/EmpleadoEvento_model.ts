@@ -42,4 +42,12 @@ export default class EmpleadoEvento extends Model {
     allowNull: false
   })
   puesto_evento!: 'Decorador' | 'Camarero' | 'Conductor' | 'Supervisor' | 'Encargado de Logística' | 'Encargado de Limpieza';
+
+  @Column({
+    type: DataType.ENUM('Activo', 'Eliminado', 'Completado'),
+    field: 'estado_empevento',
+    allowNull: false
+  })
+  estado_empevento!: 'Activo' | 'Eliminado' | 'Completado';
+
 } 

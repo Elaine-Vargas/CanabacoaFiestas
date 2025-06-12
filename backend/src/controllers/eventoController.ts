@@ -458,7 +458,8 @@ export const assignEmployeeToEvent = async (req: Request, res: Response) => {
         const existingAssignment = await EmpleadoEvento.findOne({
             where: { 
                 id_evento: id_evento,
-                empleado_evento: empleado_evento
+                empleado_evento: empleado_evento,
+                estado_empevento: 'Activo'
             },
             attributes: ['id_evento', 'empleado_evento', 'puesto_evento']
         });
@@ -484,9 +485,10 @@ export const assignEmployeeToEvent = async (req: Request, res: Response) => {
         const empleadoEvento = await EmpleadoEvento.create({
             id_evento,
             empleado_evento,
-            puesto_evento
+            puesto_evento,
+            estado_empevento: 'Activo'
         }, {
-            fields: ['id_evento', 'empleado_evento', 'puesto_evento']
+            fields: ['id_evento', 'empleado_evento', 'puesto_evento', 'estado_empevento']
         });
         console.log('Asignación creada exitosamente:', empleadoEvento);
 
@@ -502,7 +504,10 @@ export const getEventEmployees = async (req: Request, res: Response) => {
         const { id_evento } = req.params;
 
         const empleados = await EmpleadoEvento.findAll({
-            where: { id_evento },
+            where: { 
+                id_evento,
+                estado_empevento: 'Activo'
+            },
             include: [
                 { model: Usuario, as: 'empleado' }
             ]
@@ -531,7 +536,11 @@ export const updateEmployeeRole = async (req: Request, res: Response) => {
         const { puesto_evento } = req.body;
 
         const empleadoEvento = await EmpleadoEvento.findOne({
-            where: { id_evento, empleado_evento }
+            where: { 
+                id_evento, 
+                empleado_evento,
+                estado_empevento: 'Activo'
+            }
         });
 
         if (!empleadoEvento) {
@@ -558,7 +567,11 @@ export const removeEmployeeFromEvent = async (req: Request, res: Response) => {
         const { id_evento, empleado_evento } = req.params;
 
         const empleadoEvento = await EmpleadoEvento.findOne({
-            where: { id_evento, empleado_evento }
+            where: { 
+                id_evento, 
+                empleado_evento,
+                estado_empevento: 'Activo'
+            }
         });
 
         if (!empleadoEvento) {
@@ -568,7 +581,10 @@ export const removeEmployeeFromEvent = async (req: Request, res: Response) => {
             });
         }
 
-        await empleadoEvento.destroy();
+        // En lugar de eliminar, actualizamos el estado a 'Eliminado'
+        await empleadoEvento.update({
+            estado_empevento: 'Eliminado'
+        });
 
         res.json({
             error: null,
