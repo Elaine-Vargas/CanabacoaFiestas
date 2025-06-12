@@ -15,7 +15,7 @@ import { Drawer, IconButton, List, ListItem, ListItemButton, ListItemText } from
 import MenuRoundedIcon from "@mui/icons-material/MenuRounded";
 import { useUser } from '../../../contexts/UserContext';
 
-export type UserRole = 'admin' | 'client' | 'employee' ;
+export type UserRole = 'admin' | 'cliente' | 'empleado';
 
 interface ServicesMenuProps {
   selectedService: string;
@@ -56,27 +56,7 @@ export default function ServicesMenu({ selectedService }: ServicesMenuProps) {
   const renderMenuItems = () => {
     const rolId = Number(userData.rol);
 
-    // Menú para empleado
-    if (rolId === 3) {
-      return (
-        <ul>
-          <li
-            className={selectedService === "Bienvenida" ? "active" : ""}
-            onClick={() => handleNavigation("/Menu-Servicios/Bienvenida")}
-          >
-            <FaTachometerAlt /> Bienvenida
-          </li>
-          <li
-            className={selectedService === "Reportes" ? "active" : ""}
-            onClick={() => handleNavigation("/Menu-Servicios/Facturas")}
-          >
-            <FaFileInvoiceDollar /> Reportes y Facturas
-          </li>
-        </ul>
-      );
-    }
-
-    // Menú para admin y cliente
+    // Menú para todos los roles
     return (
       <ul>
         <li
@@ -115,23 +95,13 @@ export default function ServicesMenu({ selectedService }: ServicesMenuProps) {
     const rolId = Number(userData.rol);
     let menuItems = [];
 
-  
-    // Menú para empleado
-    if (rolId === 3) {
-      menuItems = [
-        { text: "Bienvenida", path: "/Menu-Servicios/Bienvenida", icon: <FaTachometerAlt /> },
-        { text: "Reportes y Facturas", path: "/Menu-Servicios/Facturas", icon: <FaFileInvoiceDollar /> }
-      ];
-    }
-    // Menú para admin y cliente
-    else {
-      menuItems = [
-        { text: "Bienvenida", path: "/Menu-Servicios/Bienvenida", icon: <FaTachometerAlt /> },
-        { text: rolId === 1 ? "Alquileres y Compras" : "Alquiler", path: "/Menu-Servicios/Alquiler", icon: <FaBoxOpen /> },
-        { text: "Catering", path: "/Menu-Servicios/Catering", icon: <FaConciergeBell /> },
-        { text: rolId === 1 ? "Reportes y Facturas" : "Facturas", path: "/Menu-Servicios/Facturas", icon: <FaFileInvoiceDollar /> }
-      ];
-    }
+    // Menú para todos los roles
+    menuItems = [
+      { text: "Bienvenida", path: "/Menu-Servicios/Bienvenida", icon: <FaTachometerAlt /> },
+      { text: rolId === 1 ? "Alquileres y Compras" : "Alquiler", path: "/Menu-Servicios/Alquiler", icon: <FaBoxOpen /> },
+      { text: "Catering", path: "/Menu-Servicios/Catering", icon: <FaConciergeBell /> },
+      { text: rolId === 1 ? "Reportes y Facturas" : "Facturas", path: "/Menu-Servicios/Facturas", icon: <FaFileInvoiceDollar /> }
+    ];
 
     return (
       <Drawer
