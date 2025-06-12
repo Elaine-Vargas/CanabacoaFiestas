@@ -12,30 +12,31 @@ export default class CostoAgregadoEvento extends Model {
   @Column({ type: DataType.INTEGER, allowNull: false })
   id_evento!: number;
 
-  @BelongsTo(() => Evento, { as: 'evento' })
+  @BelongsTo(() => Evento)
   evento!: Evento;
 
   @Column({ type: DataType.TEXT, allowNull: false })
   desc_costo!: string;
 
-  @Column({ type: DataType.DECIMAL(10, 2), allowNull: false })
+  @Column({ type: DataType.DECIMAL(10, 2), allowNull: false, defaultValue: 0 })
   monto!: number;
 
   @Column({
     type: DataType.ENUM('Extra', 'Descuento', 'Penalidad', 'Otro'),
-    defaultValue: 'Otro'
+    allowNull: false
   })
   tipo_costo!: 'Extra' | 'Descuento' | 'Penalidad' | 'Otro';
 
   @Column({
     type: DataType.ENUM('Activo', 'Eliminado'),
+    allowNull: false,
     defaultValue: 'Activo'
   })
-  estado_costo_adicional!: 'Activo' | 'Eliminado';
+  estado_costo_agregado!: 'Activo' | 'Eliminado';
 
   @Column({
     type: DataType.DATE,
-    allowNull: true,
+    allowNull: false,
     defaultValue: DataType.NOW
   })
   fecha_registro!: Date;

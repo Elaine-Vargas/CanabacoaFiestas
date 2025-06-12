@@ -24,7 +24,7 @@ export default class DetalleTransporte extends Model {
   @BelongsTo(() => Vehiculo)
   vehiculo!: Vehiculo;
 
-  @Column({ type: DataType.INTEGER, allowNull: false })
+  @Column({ type: DataType.CHAR(13), allowNull: false })
   id_usuarioconductor!: number;
 
   @Column({

@@ -11,7 +11,7 @@ export const createCostoAgregado = async (req: Request, res: Response) => {
       desc_costo,
       monto,
       tipo_costo,
-      estado_costo_adicional
+      estado_costo_agregado
     } = req.body;
 
     // Validar campos requeridos
@@ -22,7 +22,7 @@ export const createCostoAgregado = async (req: Request, res: Response) => {
       });
     }
 
-    // Validar tipo_costo y estado_costo_adicional
+    // Validar tipo_costo y estado_costo_agregado
     const tiposValidos = ['Extra', 'Descuento', 'Penalidad', 'Otro'];
     const estadosValidos = ['Activo', 'Eliminado'];
 
@@ -33,7 +33,7 @@ export const createCostoAgregado = async (req: Request, res: Response) => {
       });
     }
 
-    if (estado_costo_adicional && !estadosValidos.includes(estado_costo_adicional)) {
+    if (estado_costo_agregado && !estadosValidos.includes(estado_costo_agregado)) {
       return res.status(400).json({
         error: 'Estado inválido',
         mensaje: 'El estado debe ser Activo o Eliminado'
@@ -60,7 +60,7 @@ export const createCostoAgregado = async (req: Request, res: Response) => {
       desc_costo,
       monto: parseFloat(monto),
       tipo_costo: tipo_costo || 'Otro',
-      estado_costo_adicional: estado_costo_adicional || 'Activo',
+      estado_costo_agregado: estado_costo_agregado || 'Activo',
     });
 
     const costoCompleto = await CostoAgregadoEvento.findByPk(costoAgregado.id_costo_agregado, {
@@ -103,7 +103,7 @@ export const getCostosByEvento = async (req: Request, res: Response) => {
     const costos = await CostoAgregadoEvento.findAll({
       where: {
         id_evento,
-        estado_costo_adicional: 'Activo'
+        estado_costo_agregado: 'Activo'
       },
       include: [{ model: Evento, as: 'evento' }],
       order: [['fecha_registro', 'DESC']]
@@ -137,7 +137,7 @@ export const editCostoAgregado = async (req: Request, res: Response) => {
       desc_costo,
       monto,
       tipo_costo,
-      estado_costo_adicional
+      estado_costo_agregado
     } = req.body;
 
     if (isNaN(Number(id_costo_agregado))) {
@@ -164,7 +164,7 @@ export const editCostoAgregado = async (req: Request, res: Response) => {
       });
     }
 
-    if (estado_costo_adicional && !estadosValidos.includes(estado_costo_adicional)) {
+    if (estado_costo_agregado && !estadosValidos.includes(estado_costo_agregado)) {
       return res.status(400).json({
         error: 'Estado inválido',
         mensaje: 'El estado debe ser Activo o Eliminado'
@@ -179,7 +179,7 @@ export const editCostoAgregado = async (req: Request, res: Response) => {
       });
     }
 
-    if (costo.estado_costo_adicional === 'Eliminado') {
+    if (costo.estado_costo_agregado === 'Eliminado') {
       return res.status(400).json({
         error: 'Costo eliminado',
         mensaje: 'No se puede editar un costo que ha sido eliminado'
@@ -190,7 +190,7 @@ export const editCostoAgregado = async (req: Request, res: Response) => {
       desc_costo: desc_costo ?? costo.desc_costo,
       monto: monto ? parseFloat(monto) : costo.monto,
       tipo_costo: tipo_costo ?? costo.tipo_costo,
-      estado_costo_adicional: estado_costo_adicional ?? costo.estado_costo_adicional
+      estado_costo_agregado: estado_costo_agregado ?? costo.estado_costo_agregado
     });
 
     const costoActualizado = await CostoAgregadoEvento.findByPk(id_costo_agregado, {
@@ -230,7 +230,7 @@ export const deleteCostoAgregado = async (req: Request, res: Response) => {
       });
     }
 
-    if (costo.estado_costo_adicional === 'Eliminado') {
+    if (costo.estado_costo_agregado === 'Eliminado') {
       return res.status(400).json({
         error: 'Costo ya eliminado',
         mensaje: 'Este costo ya ha sido eliminado anteriormente'
@@ -238,7 +238,7 @@ export const deleteCostoAgregado = async (req: Request, res: Response) => {
     }
 
     await costo.update({
-      estado_costo_adicional: 'Eliminado'
+      estado_costo_agregado: 'Eliminado'
     });
 
     res.json({
@@ -264,11 +264,11 @@ export const getAllCostosAgregados = async (req: Request, res: Response) => {
         'desc_costo',
         'monto',
         'tipo_costo',
-        'estado_costo_adicional',
+        'estado_costo_agregado',
         'fecha_registro'
       ],
       where: {
-        estado_costo_adicional: 'Activo'
+        estado_costo_agregado: 'Activo'
       },
       include: [
         {
