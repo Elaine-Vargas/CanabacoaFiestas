@@ -649,10 +649,9 @@ const RentAdmin: React.FC = () => {
             <p>Al cancelar el alquiler:</p>
             <ul>
               <li>El estado cambiará a "Cancelado"</li>
-              <li>No se podrá editar posteriormente</li>
               <li>Los elementos volverán a estar disponibles</li>
+              <li>Podrás reactivar el alquiler más tarde si lo necesitas</li>
             </ul>
-            <p>Esta acción no se puede deshacer.</p>
           </div>
         ),
         okText: 'Sí, cancelar',
@@ -668,7 +667,7 @@ const RentAdmin: React.FC = () => {
               cant_elementos_alquiler: record.cant_elementos_alquiler
             };
 
-            await axios.patch(
+            const response = await axios.patch(
               `${apiUrl}/alquiler/${record.id_alquiler}`,
               updateData,
               {
@@ -679,12 +678,17 @@ const RentAdmin: React.FC = () => {
               }
             );
             
-            message.success('Alquiler cancelado correctamente');
-            // Esperar un momento antes de recargar los datos
-            setTimeout(() => {
-              fetchAlquileres();
-              fetchElementos(); // Actualizar también la lista de elementos disponibles
-            }, 500);
+            if (response.data) {
+              message.success('Alquiler cancelado correctamente');
+              // Actualizar el alquiler en la lista local
+              setAlquileres(prevAlquileres => 
+                prevAlquileres.map(alq => 
+                  alq.id_alquiler === record.id_alquiler ? response.data : alq
+                )
+              );
+              // Recargar elementos para actualizar cantidades disponibles
+              await fetchElementos();
+            }
           } catch (error) {
             console.error('Error al cancelar el alquiler:', error);
             message.error('Error al cancelar el alquiler');
@@ -859,28 +863,16 @@ const RentAdmin: React.FC = () => {
     {
       title: 'Acciones',
       key: 'acciones',
-      render: (_: any, record: any) => {
-        // Si el alquiler está cancelado, mostrar mensaje informativo
-        if (record.estado_alquiler === 'Cancelado') {
-          return (
-            <Tooltip title="Los alquileres cancelados no pueden ser modificados">
-              <Typography.Text type="secondary">
-                <CloseOutlined style={{ marginRight: 8 }} />
-                Alquiler cancelado
-              </Typography.Text>
-            </Tooltip>
-          );
-        }
-
-        return (
-          <Space>
-            <Tooltip title="Editar alquiler">
-              <Button 
-                type="text" 
-                icon={<EditOutlined />} 
-                onClick={() => handleEdit(record)}
-              />
-            </Tooltip>
+      render: (_: any, record: any) => (
+        <Space>
+          <Tooltip title="Editar alquiler">
+            <Button 
+              type="text" 
+              icon={<EditOutlined />} 
+              onClick={() => handleEdit(record)}
+            />
+          </Tooltip>
+          {record.estado_alquiler !== 'Cancelado' && (
             <Tooltip title="Cancelar alquiler">
               <Button 
                 type="text" 
@@ -889,9 +881,9 @@ const RentAdmin: React.FC = () => {
                 onClick={() => handleDelete(record)}
               />
             </Tooltip>
-          </Space>
-        );
-      },
+          )}
+        </Space>
+      ),
     },
   ];
 
@@ -1209,14 +1201,17 @@ const RentAdmin: React.FC = () => {
               label="Estado del Alquiler"
               rules={[{ required: true, message: 'Por favor seleccione un estado' }]}
             >
-              <Select disabled={editingAlquiler.estado_alquiler === 'Cancelado'}>
+              <Select>
                 <Option value="Solicitado">Solicitado</Option>
                 <Option value="Aceptado">Aceptado</Option>
                 <Option value="Completado">Completado</Option>
+                <Option value="Cancelado">Cancelado</Option>
               </Select>
             </Form.Item>
 
-            {(editingAlquiler?.estado_alquiler === 'Solicitado' || editingAlquiler?.estado_alquiler === 'Aceptado') && (
+            {(editingAlquiler?.estado_alquiler === 'Solicitado' || 
+              editingAlquiler?.estado_alquiler === 'Aceptado' || 
+              editingAlquiler?.estado_alquiler === 'Cancelado') && (
               <Space style={{ marginTop: 16, marginBottom: 16 }}>
                 <Button
                   type="primary"
@@ -1249,16 +1244,13 @@ const RentAdmin: React.FC = () => {
                             value={detalle.cantidad_alquiler}
                             onChange={(value) => handleCantidadChange(detalle.elemento, value || 0)}
                             style={{ width: 80 }}
-                            disabled={editingAlquiler.estado_alquiler === 'Cancelado'}
                           />
-                          {editingAlquiler.estado_alquiler !== 'Cancelado' && (
-                            <Button
-                              type="text"
-                              danger
-                              icon={<DeleteOutlined />}
-                              onClick={() => handleCantidadChange(detalle.elemento, 0)}
-                            />
-                          )}
+                          <Button
+                            type="text"
+                            danger
+                            icon={<DeleteOutlined />}
+                            onClick={() => handleCantidadChange(detalle.elemento, 0)}
+                          />
                         </Space>
                       </div>
                     </ListItem>
@@ -1286,7 +1278,6 @@ const RentAdmin: React.FC = () => {
                 <Button 
                   type="primary" 
                   htmlType="submit"
-                  disabled={editingAlquiler.estado_alquiler === 'Cancelado'}
                   loading={loadingSubmit}
                 >
                   Guardar Cambios
