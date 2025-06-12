@@ -1,33 +1,32 @@
 import React, { useState, useEffect } from 'react';
 import {
-  Table,
   Button,
-  Modal,
-  Input,
-  Select,
   Form,
-  message,
-  List,
-  Card,
+  Input,
   InputNumber,
+  List,
+  Modal,
+  Select,
   Space,
-  DatePicker,
-  Typography,
-  Popconfirm,
-  Divider,
   Tag,
   Tooltip,
+  Avatar,
+  Descriptions,
+  Typography,
+  Divider,
+  message,
+  Card,
+  Table
 } from 'antd';
-import { PlusOutlined, RightOutlined, CloseOutlined, ReloadOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons';
+import { PlusOutlined, RightOutlined, CloseOutlined, ReloadOutlined, EditOutlined, DeleteOutlined, EyeOutlined, InboxOutlined } from '@ant-design/icons';
 import axios from 'axios';
 import styled from 'styled-components';
 import dayjs from 'dayjs';
+import { apiUrl } from '../../../config';
 
 const { Search } = Input;
 const { Option } = Select;
 const { Title } = Typography;
-
-const apiUrl = import.meta.env.VITE_API_BASE_URL;
 
 const StyledCard = styled(Card)`
   margin: 20px;
@@ -136,7 +135,7 @@ const ListItem = styled(List.Item)`
   border-radius: 8px;
   border: 1px solid var(--beige);
   transition: all 0.3s ease;
-
+  
   &:hover {
     transform: translateY(-2px);
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
@@ -264,6 +263,8 @@ const RentAdmin: React.FC = () => {
   const [searchAlquiler, setSearchAlquiler] = useState('');
   const [filterEvento, setFilterEvento] = useState<string | null>(null);
   const [filterEstado, setFilterEstado] = useState<string | null>(null);
+  const [showViewModal, setShowViewModal] = useState(false);
+  const [viewingAlquiler, setViewingAlquiler] = useState<Alquiler | null>(null);
 
   useEffect(() => {
     fetchAlquileres();
@@ -796,6 +797,76 @@ const RentAdmin: React.FC = () => {
     }
   };
 
+  const handleView = async (record: any) => {
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        message.error('No hay sesión activa');
+        return;
+      }
+
+      console.log('Obteniendo detalles del alquiler:', record.id_alquiler);
+
+      const response = await axios.get(`${apiUrl}/alquiler/${record.id_alquiler}/elementos`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      console.log('Respuesta de elementos:', response.data);
+
+      if (!response.data || !Array.isArray(response.data)) {
+        message.error('Error: Los datos recibidos no tienen el formato esperado');
+        return;
+      }
+
+      const detalles = response.data.map((detalle: any) => ({
+        id_elemento: detalle.id_elemento,
+        elemento: {
+          id_elemento: detalle.id_elemento,
+          nombre_elemento: detalle.nombre_elemento || 'Sin nombre',
+          precio_elemento: Number(detalle.precio_elemento || 0),
+          cantidad_disponible: Number(detalle.cantidad_disponible || 0),
+          imagen_url: detalle.imagen_url || null,
+          subcategoria: detalle.subcategoria || {
+            nombre_subcategoria: 'N/A',
+            categoria: {
+              nombre_categoria: 'N/A'
+            }
+          }
+        },
+        cantidad_alquiler: Number(detalle.cantidad_alquiler || 0),
+        precio_unitario: Number(detalle.precio_unitario || 0),
+        total_alquiler: Number(detalle.total_alquiler || 0),
+        estado_detalquiler: detalle.estado_detalquiler || 'N/A'
+      }));
+
+      console.log('Detalles procesados:', detalles);
+
+      const alquilerConDetalles = {
+        ...record,
+        detalles: detalles,
+        // Asegurarse de que los valores numéricos sean números
+        precioneto_alquiler: Number(record.precioneto_alquiler || 0),
+        itbis_alquiler: Number(record.itbis_alquiler || 0),
+        total_alquiler: Number(record.total_alquiler || 0),
+        cant_elementos_alquiler: Number(record.cant_elementos_alquiler || 0)
+      };
+
+      console.log('Alquiler con detalles:', alquilerConDetalles);
+
+      setViewingAlquiler(alquilerConDetalles);
+      setShowViewModal(true);
+    } catch (error) {
+      console.error('Error al obtener detalles del alquiler:', error);
+      if (axios.isAxiosError(error) && error.response) {
+        message.error(`Error: ${error.response.data.mensaje || 'Error al cargar los detalles del alquiler'}`);
+      } else {
+        message.error('Error al cargar los detalles del alquiler');
+      }
+    }
+  };
+
   const columns = [
     {
       title: 'ID',
@@ -865,6 +936,13 @@ const RentAdmin: React.FC = () => {
       key: 'acciones',
       render: (_: any, record: any) => (
         <Space>
+          <Tooltip title="Ver detalles">
+            <Button
+              type="text"
+              icon={<EyeOutlined />}
+              onClick={() => handleView(record)}
+            />
+          </Tooltip>
           <Tooltip title="Editar alquiler">
             <Button 
               type="text" 
@@ -1297,6 +1375,96 @@ const RentAdmin: React.FC = () => {
           </Form>
         )}
       </StyledModal>
+
+      {/* Modal de Vista Detallada */}
+      <Modal
+        title="Detalles del Alquiler"
+        open={showViewModal}
+        onCancel={() => {
+          setShowViewModal(false);
+          setViewingAlquiler(null);
+        }}
+        footer={[
+          <Button key="close" onClick={() => {
+            setShowViewModal(false);
+            setViewingAlquiler(null);
+          }}>
+            Cerrar
+          </Button>
+        ]}
+        width={800}
+      >
+        {viewingAlquiler && (
+          <div>
+            <Descriptions title="Información General" bordered column={2}>
+              <Descriptions.Item label="ID Alquiler">
+                {viewingAlquiler.id_alquiler}
+              </Descriptions.Item>
+              <Descriptions.Item label="Estado">
+                <Tag color={
+                  viewingAlquiler.estado_alquiler === 'Solicitado' ? 'processing' :
+                  viewingAlquiler.estado_alquiler === 'Aceptado' ? 'warning' :
+                  viewingAlquiler.estado_alquiler === 'Completado' ? 'success' :
+                  'error'
+                }>
+                  {viewingAlquiler.estado_alquiler}
+                </Tag>
+              </Descriptions.Item>
+              <Descriptions.Item label="Evento">
+                {viewingAlquiler.evento?.nombre_evento || 'N/A'}
+              </Descriptions.Item>
+              <Descriptions.Item label="Fecha del Evento">
+                {viewingAlquiler.evento?.fecha_evento ? 
+                  new Date(viewingAlquiler.evento.fecha_evento).toLocaleDateString() : 
+                  'N/A'}
+              </Descriptions.Item>
+              <Descriptions.Item label="Cantidad de Elementos">
+                {viewingAlquiler.cant_elementos_alquiler}
+              </Descriptions.Item>
+              <Descriptions.Item label="Precio Neto">
+                ${viewingAlquiler.precioneto_alquiler.toFixed(2)}
+              </Descriptions.Item>
+              <Descriptions.Item label="ITBIS">
+                ${viewingAlquiler.itbis_alquiler.toFixed(2)}
+              </Descriptions.Item>
+              <Descriptions.Item label="Total">
+                ${viewingAlquiler.total_alquiler.toFixed(2)}
+              </Descriptions.Item>
+            </Descriptions>
+
+            <Divider>Elementos del Alquiler</Divider>
+            
+            <List
+              itemLayout="horizontal"
+              dataSource={viewingAlquiler.detalles}
+              renderItem={(detalle: any) => (
+                <List.Item>
+                  <List.Item.Meta
+                    avatar={
+                      detalle.elemento.imagen_url ? (
+                        <Avatar shape="square" size={64} src={detalle.elemento.imagen_url} />
+                      ) : (
+                        <Avatar shape="square" size={64} icon={<InboxOutlined />} />
+                      )
+                    }
+                    title={detalle.elemento.nombre_elemento}
+                    description={
+                      <Space direction="vertical">
+                        <Typography.Text>Cantidad: {detalle.cantidad_alquiler}</Typography.Text>
+                        <Typography.Text>Precio Unitario: ${detalle.precio_unitario.toFixed(2)}</Typography.Text>
+                        <Typography.Text>Subtotal: ${detalle.total_alquiler.toFixed(2)}</Typography.Text>
+                        {detalle.elemento.subcategoria && (
+                          <Typography.Text>Categoría: {detalle.elemento.subcategoria.categoria?.nombre_categoria} - {detalle.elemento.subcategoria.nombre_subcategoria}</Typography.Text>
+                        )}
+                      </Space>
+                    }
+                  />
+                </List.Item>
+              )}
+            />
+          </div>
+        )}
+      </Modal>
     </>
   );
 };
