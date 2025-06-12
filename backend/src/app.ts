@@ -14,6 +14,11 @@ import eventoRoutes from './routes/eventoRoutes';
 import alquilerRoutes from './routes/alquilerRoutes';
 import decoracionRoutes from './routes/decoracionRoutes';
 import cateringRoutes from './routes/cateringRoutes';
+import menuRoutes from './routes/MenuRoutes';
+import platoRoutes from './routes/platoRoutes';
+import menuCateringRoutes from './routes/menuCateringRoutes';
+
+
 import direccionRoutes from './routes/direccionRoutes'
 import transporteRoutes from './routes/transporteRoutes';
 import supervisionRoutes from './routes/supervisionRoutes'
@@ -59,6 +64,9 @@ app.use('/api/tarjeta', tarjetaRoutes);
 app.use('/api/transporte',transporteRoutes);
 app.use('/api/supervision',supervisionRoutes);
 app.use('/api/catering', cateringRoutes);
+app.use('/api/menucatering', menuCateringRoutes);
+app.use('/api/menu', menuRoutes);
+app.use('/api/plato', platoRoutes);
 app.use('/api/compra', compraRoutes);
 app.use('/api/costo-agregado', costoAgregadoRoutes);  
 app.use('/api/pago', pagoRoutes);

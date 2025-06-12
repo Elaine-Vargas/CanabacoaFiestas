@@ -377,6 +377,28 @@ export const sendUpdateEmailVerification = async (req: Request, res: Response) =
       return res.status(400).json({ error: 'Token inválido' });
     }
 
+    // Buscar usuario actual
+    const usuario = await Usuario.findOne({
+      where: {
+        [Op.or]: [
+          { usuario_login: decoded.usuario_login },
+          { cedula_usuario: decoded.cedula_usuario }
+        ]
+      }
+    });
+    if (!usuario) {
+      return res.status(404).json({ error: 'Usuario no encontrado' });
+    }
+
+    // Si el correo no cambió, no hacer nada
+    if (correo_usuario.toLowerCase() === usuario.correo_usuario.toLowerCase()) {
+      return res.status(200).json({
+        mensaje: 'El correo electrónico no ha cambiado, no es necesario verificar.',
+        correo_usuario,
+        requiresVerification: false
+      });
+    }
+
     // Limpiar registros pendientes expirados para este correo
     if (global.pendingRegistrations?.has(correo_usuario.toLowerCase())) {
       const pendingRegistration = global.pendingRegistrations.get(correo_usuario.toLowerCase());
@@ -421,7 +443,8 @@ export const sendUpdateEmailVerification = async (req: Request, res: Response) =
       
       res.status(200).json({
         mensaje: 'Por favor verifica tu nuevo correo electrónico para completar la actualización.',
-        correo_usuario
+        correo_usuario,
+        requiresVerification: true
       });
     } catch (emailError) {
       global.pendingRegistrations.delete(correo_usuario.toLowerCase()); // Eliminar el registro pendiente si falla el envío
@@ -528,7 +551,7 @@ export const UpdateUserData = async (req: Request, res: Response) => {
       return res.status(400).json({ error: 'Token inválido' });
     }
 
-    const { tel_usuario, usuario_login, contrasena_login, contrasena_actual } = req.body;
+    const { tel_usuario, usuario_login, contrasena_login, contrasena_actual, correo_usuario } = req.body;
 
     // Buscar usuario
     const usuario = await Usuario.findOne({
@@ -560,11 +583,23 @@ export const UpdateUserData = async (req: Request, res: Response) => {
       }
     }
 
-    // Actualizar datos
-    const updateData: any = {};
+    // Verificar si el correo cambia y si ya existe en otro usuario
+    let updateData: any = {};
     if (tel_usuario) updateData.tel_usuario = tel_usuario;
     if (usuario_login) updateData.usuario_login = usuario_login;
     if (contrasena_login) updateData.contrasena_login = contrasena_login;
+    if (correo_usuario && correo_usuario !== usuario.correo_usuario) {
+      const correoExistente = await Usuario.findOne({
+        where: {
+          correo_usuario,
+          cedula_usuario: { [Op.ne]: usuario.cedula_usuario }
+        }
+      });
+      if (correoExistente) {
+        return res.status(400).json({ error: 'El correo electrónico ya está en uso' });
+      }
+      updateData.correo_usuario = correo_usuario;
+    }
 
     await usuario.update(updateData);
 
@@ -573,7 +608,7 @@ export const UpdateUserData = async (req: Request, res: Response) => {
       usuario: {
         nombre_usuario: usuario.nombre_usuario,
         apellido_usuario: usuario.apellido_usuario,
-        correo_usuario: usuario.correo_usuario,
+        correo_usuario: updateData.correo_usuario || usuario.correo_usuario,
         tel_usuario: usuario.tel_usuario,
         usuario_login: usuario.usuario_login
       }

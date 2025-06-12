@@ -10,6 +10,7 @@ import {
     getTiposEventos,
     assignEmployeeToEvent,
     getEventEmployees,
+    getEmployeeEvents,
     updateEmployeeRole,
     removeEmployeeFromEvent,
     updateEventStatus
@@ -144,6 +145,16 @@ router.post('/asignar-empleados', async (req: Request, res: Response, next: Next
 router.get('/:id_evento/empleados', async (req: Request, res: Response, next: NextFunction) => {
     try {
         await getEventEmployees(req, res);
+    } catch (error) {
+        next(error);
+    }
+});
+
+
+// Obtener eventos de un empleado
+router.get('/empleado/:id_empleado/eventos', async (req: Request, res: Response, next: NextFunction) => {
+    try {
+        await getEmployeeEvents(req, res);
     } catch (error) {
         next(error);
     }

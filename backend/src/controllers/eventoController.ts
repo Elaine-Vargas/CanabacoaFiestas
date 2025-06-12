@@ -530,6 +530,37 @@ export const getEventEmployees = async (req: Request, res: Response) => {
     }
 };
 
+export const getEmployeeEvents = async (req: Request, res: Response) => {
+    try {
+        const { id_empleado } = req.params;
+
+        const eventos = await EmpleadoEvento.findAll({
+            where: { 
+                empleado_evento: id_empleado,
+                estado_empevento: 'Activo'
+            },
+            include: [
+                { model: Usuario, as: 'empleado' }
+            ]
+        });
+
+        if (!eventos || eventos.length === 0) {
+            return res.status(404).json({
+                error: 'No se encontraron empleados',
+                mensaje: 'No hay empleados asignados a este evento'
+            });
+        }
+
+        res.json(eventos);
+    } catch (error) {
+        console.error('Error al obtener empleados del evento:', error);
+        res.status(500).json({
+            error: 'Error al obtener empleados',
+            mensaje: 'Ocurrió un error al cargar los empleados del evento'
+        });
+    }
+};
+
 export const updateEmployeeRole = async (req: Request, res: Response) => {
     try {
         const { id_evento, empleado_evento } = req.params;

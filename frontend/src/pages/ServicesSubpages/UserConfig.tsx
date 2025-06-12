@@ -259,8 +259,18 @@ export default function UserConfig() {
         throw new Error(data.error || 'Error al enviar verificación');
       }
 
-      setShowEmailVerification(true);
-      setSuccess('Se ha enviado un código de verificación a tu nuevo correo electrónico');
+      if (data.requiresVerification) {
+        setShowEmailVerification(true);
+        setSuccess('Se ha enviado un código de verificación a tu nuevo correo electrónico');
+      } else {
+        setShowEmailVerification(false);
+        setSuccess(data.mensaje || 'El correo electrónico no ha cambiado.');
+        // Actualizar initialData para reflejar el nuevo correo (aunque no cambió, para evitar loops)
+        setInitialData(prev => ({
+          ...prev,
+          correo_usuario: userData.correo_usuario
+        }));
+      }
     } catch (error) {
       setError(error instanceof Error ? error.message : 'Error al enviar verificación');
     }
@@ -368,19 +378,24 @@ export default function UserConfig() {
         throw new Error('No hay sesión activa');
       }
 
+      // Solo incluir correo_usuario si cambió
+      const updateBody: any = {
+        tel_usuario: userData.tel_usuario,
+        usuario_login: userData.usuario_login,
+        contrasena_login: userData.contrasena_login || undefined,
+        contrasena_actual: userData.contrasena_actual
+      };
+      if (userData.correo_usuario !== initialData.correo_usuario) {
+        updateBody.correo_usuario = userData.correo_usuario;
+      }
+
       const response = await fetch('/api/auth/update-user', {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
         },
-        body: JSON.stringify({
-          correo_usuario: userData.correo_usuario,
-          tel_usuario: userData.tel_usuario,
-          usuario_login: userData.usuario_login,
-          contrasena_login: userData.contrasena_login || undefined,
-          contrasena_actual: userData.contrasena_actual
-        }),
+        body: JSON.stringify(updateBody),
       });
 
       const data = await response.json();

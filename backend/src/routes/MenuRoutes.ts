@@ -1,13 +1,12 @@
 import { Router, Request, Response, NextFunction } from 'express';
 import {
-    // Catering controllers
-    createCatering,
-    getAllCaterings,
-    getCateringById,
-    editCatering,
-    deleteCatering,
-} from '../controllers/cateringController';
-
+    // Menu controllers
+    createMenu,
+    getMenuCatalog,
+    getMenuById,
+    updateMenu,
+    deleteMenu,
+} from '../controllers/menuController';
 import { verificarToken } from '../middlewares/authMiddleware';
 
 const router = Router();
@@ -20,53 +19,50 @@ const authMiddleware = (req: Request, res: Response, next: NextFunction) => {
 // Aplicar autenticación a todas las rutas
 router.use(authMiddleware);
 
-// Rutas para Catering
-// Crear un nuevo servicio de catering
+// Rutas para Menu
+// Crear un nuevo menú
 router.post('/', async (req: Request, res: Response, next: NextFunction) => {
     try {
-        await createCatering(req, res);
+        await createMenu(req, res);
     } catch (error) {
         next(error);
     }
 });
 
-// Obtener todos los servicios de catering
+// Obtener todos los menús
 router.get('/', async (req: Request, res: Response, next: NextFunction) => {
     try {
-        await getAllCaterings(req, res);
+        await getMenuCatalog(req, res);
     } catch (error) {
         next(error);
     }
 });
 
-// Obtener un servicio de catering por ID
-router.get('/:id_catering', async (req: Request, res: Response, next: NextFunction) => {
+// Obtener un menú por ID
+router.get('/:id', async (req: Request, res: Response, next: NextFunction) => {
     try {
-        await getCateringById(req, res);
+        await getMenuById(req, res);
     } catch (error) {
         next(error);
     }
 });
 
-// Editar un servicio de catering
-router.put('/:id_catering', async (req: Request, res: Response, next: NextFunction) => {
+// Editar un menú
+router.put('/:id', async (req: Request, res: Response, next: NextFunction) => {
     try {
-        await editCatering(req, res);
+        await updateMenu(req, res);
     } catch (error) {
         next(error);
     }
 });
 
-// Eliminar un servicio de catering (borrado lógico)
-router.delete('/:id_catering', async (req: Request, res: Response, next: NextFunction) => {
+// Eliminar un menú (borrado lógico)
+router.delete('/:id', async (req: Request, res: Response, next: NextFunction) => {
     try {
-        await deleteCatering(req, res);
+        await deleteMenu(req, res);
     } catch (error) {
         next(error);
     }
 });
-
-
-
 
 export default router;
