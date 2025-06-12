@@ -11,6 +11,12 @@ export const sequelize = new Sequelize({
   database: process.env.DB_NAME || 'canabacoa_fiestas',
   logging: false,
   models: [__dirname + '/../models'],
+  pool: {
+    max: 10,
+    min: 0,
+    acquire: 30000,
+    idle: 10000
+  }
 });
 
 export default sequelize; 

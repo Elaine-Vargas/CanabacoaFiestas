@@ -430,48 +430,8 @@ export const editAlquilerServicio = async (req: Request, res: Response) => {
       });
     }
 
-    // Actualizar el alquiler
-    const estadoAnterior = alquiler.estado_alquiler;
-
     // Si solo estamos actualizando el estado
     if (!elementos || elementos.length === 0) {
-      // Manejar cambios de estado
-      if (estado_alquiler === 'Aceptado' && estadoAnterior === 'Solicitado' && alquiler.detalles) {
-        // Validar y reducir stock al aceptar
-        for (const detalle of alquiler.detalles) {
-          const elemento = await Elemento.findByPk(detalle.id_elemento);
-          if (!elemento) {
-            await t.rollback();
-            return res.status(404).json({
-              error: 'Elemento no encontrado',
-              mensaje: `El elemento con ID ${detalle.id_elemento} no existe en el sistema`
-            });
-          }
-
-          if (elemento.cantidad_disponible < detalle.cantidad_alquiler) {
-            await t.rollback();
-            return res.status(400).json({
-              error: 'Cantidad insuficiente',
-              mensaje: `No hay suficiente cantidad disponible del elemento ${elemento.nombre_elemento}`
-            });
-          }
-
-          await elemento.update({
-            cantidad_disponible: elemento.cantidad_disponible - detalle.cantidad_alquiler
-          }, { transaction: t });
-        }
-      } else if (estado_alquiler === 'Completado' && estadoAnterior === 'Aceptado' && alquiler.detalles) {
-        // Devolver stock al completar
-        for (const detalle of alquiler.detalles) {
-          const elemento = await Elemento.findByPk(detalle.id_elemento);
-          if (elemento) {
-            await elemento.update({
-              cantidad_disponible: elemento.cantidad_disponible + detalle.cantidad_alquiler
-            }, { transaction: t });
-          }
-        }
-      }
-
       await alquiler.update({
         estado_alquiler
       }, { transaction: t });
@@ -511,18 +471,6 @@ export const editAlquilerServicio = async (req: Request, res: Response) => {
       estado_alquiler
     }, { transaction: t });
 
-    // Restaurar stock de elementos actuales si el estado anterior era Aceptado
-    if (estadoAnterior === 'Aceptado' && alquiler.detalles) {
-      for (const detalle of alquiler.detalles) {
-        const elemento = await Elemento.findByPk(detalle.id_elemento);
-        if (elemento) {
-          await elemento.update({
-            cantidad_disponible: elemento.cantidad_disponible + detalle.cantidad_alquiler
-          }, { transaction: t });
-        }
-      }
-    }
-
     // Marcar detalles existentes como cancelados
     await DetalleAlquiler.update(
       { estado_detalquiler: 'Cancelado' },
@@ -534,7 +482,7 @@ export const editAlquilerServicio = async (req: Request, res: Response) => {
 
     // Crear los nuevos detalles
     if (elementos && elementos.length > 0) {
-      // Validar que todos los elementos existen y tienen suficiente cantidad disponible
+      // Validar que todos los elementos existen
       for (const elem of elementos) {
         const elemento = await Elemento.findByPk(elem.id_elemento);
         if (!elemento) {
@@ -544,51 +492,8 @@ export const editAlquilerServicio = async (req: Request, res: Response) => {
             mensaje: `El elemento con ID ${elem.id_elemento} no existe en el sistema`
           });
         }
-    // Crear nuevos detalles y actualizar stock si es necesario
-    if (elementos.length > 0) {
-      // Validar stock si el nuevo estado es Aceptado
-      if (estado_alquiler === 'Aceptado') {
-        for (const elem of elementos) {
-          const elemento = await Elemento.findByPk(elem.id_elemento);
-          if (!elemento) {
-            await t.rollback();
-            return res.status(404).json({
-              error: 'Elemento no encontrado',
-              mensaje: `El elemento con ID ${elem.id_elemento} no existe en el sistema`
-            });
-          }
-
-        if (elemento.cantidad_disponible < elem.cantidad) {
-          await t.rollback();
-          return res.status(400).json({
-            error: 'Cantidad insuficiente',
-            mensaje: `No hay suficiente cantidad disponible del elemento ${elemento.nombre_elemento}. Disponible: ${elemento.cantidad_disponible}, Solicitado: ${elem.cantidad}`
-          });
-        }
-      }
-          if (elemento.cantidad_disponible < elem.cantidad) {
-            await t.rollback();
-            return res.status(400).json({
-              error: 'Cantidad insuficiente',
-              mensaje: `No hay suficiente cantidad disponible del elemento ${elemento.nombre_elemento}`
-            });
-          }
-        }
       }
 
-      // Crear los nuevos detalles y actualizar cantidades
-      await Promise.all(elementos.map(async (elem: any) => {
-        console.log(`Procesando elemento ${elem.id_elemento} con cantidad ${elem.cantidad}`);
-        
-        // Crear el detalle
-        const nuevoDetalle = await DetalleAlquiler.create({
-          id_alquiler,
-          id_elemento: elem.id_elemento,
-          cantidad_alquiler: elem.cantidad,
-          precio_unitario: elem.precio_unitario,
-          total_alquiler: elem.subtotal,
-          estado_detalquiler: 'Aceptado'
-        }, { transaction: t });
       // Crear los nuevos detalles
       await Promise.all(elementos.map(async (elem: any) => {
         await DetalleAlquiler.create({
@@ -599,29 +504,6 @@ export const editAlquilerServicio = async (req: Request, res: Response) => {
           total_alquiler: elem.subtotal,
           estado_detalquiler: 'Aceptado'
         }, { transaction: t });
-
-        console.log('Detalle creado:', nuevoDetalle);
-
-        // Actualizar la cantidad disponible del elemento
-        const elemento = await Elemento.findByPk(elem.id_elemento);
-        if (elemento) {
-          const nuevaCantidad = elemento.cantidad_disponible - elem.cantidad;
-          console.log(`Actualizando cantidad para elemento ${elem.id_elemento}: ${elemento.cantidad_disponible} - ${elem.cantidad} = ${nuevaCantidad}`);
-          await elemento.update({
-            cantidad_disponible: nuevaCantidad
-          }, { transaction: t });
-        }
-      }));
-    }
-        // Actualizar stock solo si el estado es Aceptado
-        if (estado_alquiler === 'Aceptado') {
-          const elemento = await Elemento.findByPk(elem.id_elemento);
-          if (elemento) {
-            await elemento.update({
-              cantidad_disponible: elemento.cantidad_disponible - elem.cantidad
-            }, { transaction: t });
-          }
-        }
       }));
     }
 
