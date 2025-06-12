@@ -413,11 +413,10 @@ export const editAlquilerServicio = async (req: Request, res: Response) => {
       elementos
     });
 
+    // Buscar el alquiler con sus detalles actuales
     const alquiler = await AlquilerServicio.findByPk(id_alquiler, {
       include: [{
         model: DetalleAlquiler,
-        where: { estado_detalquiler: 'Aceptado' },
-        required: false,
         include: [{ model: Elemento }]
       }]
     });
@@ -430,81 +429,44 @@ export const editAlquilerServicio = async (req: Request, res: Response) => {
       });
     }
 
-    // Si solo estamos actualizando el estado
-    if (!elementos || elementos.length === 0) {
-      await alquiler.update({
-        estado_alquiler
-      }, { transaction: t });
-      await t.commit();
-
-      // Obtener el alquiler actualizado con sus detalles
-      const alquilerActualizado = await AlquilerServicio.findByPk(id_alquiler, {
-        include: [
-          {
-            model: DetalleAlquiler,
-            where: {
-              estado_detalquiler: 'Aceptado'
-            },
-            required: false,
-            include: [
-              {
-                model: Elemento
-              }
-            ]
-          },
-          {
-            model: Evento,
-            as: 'evento'
-          }
-        ]
-      });
-
-      return res.json(alquilerActualizado);
-    }
-
-    // Si hay elementos nuevos o modificados
+    // Actualizar el alquiler principal
     await alquiler.update({
+      estado_alquiler,
       cant_elementos_alquiler,
       precioneto_alquiler,
       itbis_alquiler,
-      total_alquiler,
-      estado_alquiler
+      total_alquiler
     }, { transaction: t });
 
-    // Marcar detalles existentes como cancelados
-    await DetalleAlquiler.update(
-      { estado_detalquiler: 'Cancelado' },
-      { 
-        where: { id_alquiler },
-        transaction: t
-      }
-    );
-
-    // Crear los nuevos detalles
     if (elementos && elementos.length > 0) {
-      // Validar que todos los elementos existen
-      for (const elem of elementos) {
-        const elemento = await Elemento.findByPk(elem.id_elemento);
-        if (!elemento) {
-          await t.rollback();
-          return res.status(404).json({
-            error: 'Elemento no encontrado',
-            mensaje: `El elemento con ID ${elem.id_elemento} no existe en el sistema`
-          });
+      // Marcar todos los detalles actuales como 'Cancelado'
+      await DetalleAlquiler.update(
+        { estado_detalquiler: 'Cancelado' },
+        { 
+          where: { id_alquiler: alquiler.id_alquiler },
+          transaction: t
         }
-      }
+      );
 
-      // Crear los nuevos detalles
-      await Promise.all(elementos.map(async (elem: any) => {
+      // Crear nuevos detalles
+      for (const elemento of elementos) {
         await DetalleAlquiler.create({
-          id_alquiler,
-          id_elemento: elem.id_elemento,
-          cantidad_alquiler: elem.cantidad,
-          precio_unitario: elem.precio_unitario,
-          total_alquiler: elem.subtotal,
+          id_alquiler: alquiler.id_alquiler,
+          id_elemento: elemento.id_elemento,
+          cantidad_alquiler: elemento.cantidad,
+          precio_unitario: elemento.precio_unitario,
+          total_alquiler: elemento.subtotal,
           estado_detalquiler: 'Aceptado'
         }, { transaction: t });
-      }));
+
+        // Actualizar la cantidad disponible del elemento
+        const elementoActual = await Elemento.findByPk(elemento.id_elemento, { transaction: t });
+        if (elementoActual) {
+          await elementoActual.update({
+            cantidad_disponible: elementoActual.cantidad_disponible - elemento.cantidad
+          }, { transaction: t });
+        }
+      }
     }
 
     await t.commit();
@@ -531,12 +493,12 @@ export const editAlquilerServicio = async (req: Request, res: Response) => {
       ]
     });
 
-    res.json(alquilerActualizado);
+    return res.json(alquilerActualizado);
   } catch (error) {
     await t.rollback();
-    console.error('Error al editar alquiler:', error);
-    res.status(500).json({ 
-      error: 'Error al editar alquiler',
+    console.error('Error al editar el alquiler:', error);
+    return res.status(500).json({
+      error: 'Error interno del servidor',
       mensaje: 'Ocurrió un error al actualizar el alquiler'
     });
   }

@@ -490,9 +490,10 @@ const RentAdmin: React.FC = () => {
     }
   };
 
-  const handleEdit = (record: any) => {
+  const handleEdit = async (record: any) => {
     setShowFormulario(false);
     setShowCatalogo(false);
+    setEditingAlquiler(null);
     
     // Obtener los elementos actuales del alquiler
     const fetchElementosAlquiler = async () => {
@@ -712,15 +713,12 @@ const RentAdmin: React.FC = () => {
       }
 
       // Preparar los datos de actualización
-      const detalles = editingAlquiler.detalles.map((detalle: DetalleAlquiler) => {
-        const subtotal = Number((detalle.cantidad_alquiler * detalle.precio_unitario).toFixed(2));
-        return {
-          id_elemento: detalle.elemento.id_elemento,
-          cantidad: detalle.cantidad_alquiler,
-          precio_unitario: detalle.precio_unitario,
-          subtotal: subtotal
-        };
-      });
+      const detalles = editingAlquiler.detalles.map((detalle: DetalleAlquiler) => ({
+        id_elemento: detalle.elemento.id_elemento,
+        cantidad: detalle.cantidad_alquiler,
+        precio_unitario: detalle.precio_unitario,
+        subtotal: Number((detalle.cantidad_alquiler * detalle.precio_unitario).toFixed(2))
+      }));
 
       // Calcular totales
       const precioNeto = Number(detalles.reduce<number>((sum, detalle) => 
@@ -731,7 +729,7 @@ const RentAdmin: React.FC = () => {
       const cantTotal = detalles.reduce<number>((sum, detalle) => sum + detalle.cantidad, 0);
 
       const updateData = {
-        estado_alquiler: values.estado_alquiler || editingAlquiler.estado_alquiler,
+        estado_alquiler: values.estado_alquiler,
         precioneto_alquiler: precioNeto,
         itbis_alquiler: itbis,
         total_alquiler: total,
@@ -753,11 +751,16 @@ const RentAdmin: React.FC = () => {
         }
       );
 
-      console.log('Respuesta completa:', response);
-
       if (response.data) {
         console.log('Respuesta de actualización:', response.data);
         message.success('Alquiler actualizado correctamente');
+        
+        // Actualizar el alquiler en la lista local
+        setAlquileres(prevAlquileres => 
+          prevAlquileres.map(alq => 
+            alq.id_alquiler === editingAlquiler.id_alquiler ? response.data : alq
+          )
+        );
         
         // Limpiar estados
         setShowEditModal(false);
@@ -767,8 +770,7 @@ const RentAdmin: React.FC = () => {
         setShowCatalogo(false);
         form.resetFields();
         
-        // Recargar datos
-        await fetchAlquileres();
+        // Recargar elementos para actualizar cantidades disponibles
         await fetchElementos();
       } else {
         throw new Error('No se recibió respuesta del servidor');
@@ -780,7 +782,7 @@ const RentAdmin: React.FC = () => {
         message.error(error.response.data.mensaje || 'Error al actualizar el alquiler');
       } else if (error.request) {
         console.error('Error request:', error.request);
-        message.error('Error de conexión al actualizar el alquiler. Verifica que el servidor esté funcionando.');
+        message.error('Error de conexión al actualizar el alquiler');
       } else {
         console.error('Error:', error.message);
         message.error('Error al actualizar el alquiler');
