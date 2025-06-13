@@ -6,11 +6,15 @@ import ColorElemento from '../models/ColorElemento_model';
 import CategoriaElemento from '../models/CategoriaElemento_model';
 import MaterialElemento from '../models/MaterialElemento_model';
 
+interface EstadoCount {
+  [key: string]: number;
+}
+
 export const getElementos = async (req: Request, res: Response) => {
   try {
-    console.log('Intentando obtener elementos...');
-    console.log('Headers recibidos:', req.headers);
-    
+    const { includeDeleted } = req.query;
+    console.log('Obteniendo elementos, includeDeleted:', includeDeleted);
+
     const elementos = await Elemento.findAll({
       attributes: [
         'id_elemento',
@@ -36,11 +40,10 @@ export const getElementos = async (req: Request, res: Response) => {
         },
         {
           model: MaterialElemento,
-          as: 'material',
-          attributes: ['id_material', 'nombre_material']
+          as: 'material'
         }
       ],
-      where: {
+      where: includeDeleted ? {} : {
         estado_elemento: {
           [Op.ne]: 'Eliminado'
         }
@@ -49,6 +52,12 @@ export const getElementos = async (req: Request, res: Response) => {
 
     console.log('Query ejecutada correctamente');
     console.log('Elementos encontrados:', elementos.length);
+    const estadosPorElemento = elementos.reduce<EstadoCount>((acc, e) => {
+      const estado = e.estado_elemento;
+      acc[estado] = (acc[estado] || 0) + 1;
+      return acc;
+    }, {});
+    console.log('Elementos por estado:', estadosPorElemento);
     if (elementos.length > 0) {
       console.log('Primer elemento:', JSON.stringify(elementos[0].toJSON(), null, 2));
     }
@@ -430,10 +439,6 @@ export const editElemento = async (req: Request, res: Response) => {
       return res.status(404).json({ error: 'Elemento no encontrado' });
     }
 
-    if (elemento.estado_elemento === 'Eliminado') {
-      return res.status(404).json({ error: 'Elemento no encontrado' });
-    }
-
     // Verificar que la subcategoría existe si se proporciona
     if (id_subcategoria) {
       const subcategoria = await SubcategoriaElemento.findByPk(id_subcategoria);
@@ -458,18 +463,21 @@ export const editElemento = async (req: Request, res: Response) => {
       }
     }
 
+    // Preparar los datos de actualización
+    const updateData = {
+      nombre_elemento: nombre_elemento === undefined ? elemento.nombre_elemento : nombre_elemento,
+      id_subcategoria: id_subcategoria === undefined ? elemento.id_subcategoria : id_subcategoria,
+      id_material: id_material === undefined ? elemento.id_material : id_material,
+      id_color: id_color === undefined ? elemento.id_color : id_color,
+      precio_elemento: precio_elemento === undefined ? elemento.precio_elemento : precio_elemento,
+      cantidad_total: cantidad_total === undefined ? elemento.cantidad_total : cantidad_total,
+      cantidad_disponible: cantidad_disponible === undefined ? elemento.cantidad_disponible : cantidad_disponible,
+      imagen_url: imagen_url === undefined ? elemento.imagen_url : imagen_url,
+      estado_elemento: estado_elemento === undefined ? elemento.estado_elemento : estado_elemento
+    };
+
     // Actualizar el elemento
-    await elemento.update({
-      nombre_elemento: nombre_elemento || elemento.nombre_elemento,
-      id_subcategoria: id_subcategoria || elemento.id_subcategoria,
-      id_material: id_material || elemento.id_material,
-      id_color: id_color || elemento.id_color,
-      precio_elemento: precio_elemento || elemento.precio_elemento,
-      cantidad_total: cantidad_total || elemento.cantidad_total,
-      cantidad_disponible: cantidad_disponible || elemento.cantidad_disponible,
-      imagen_url: imagen_url || elemento.imagen_url,
-      estado_elemento: estado_elemento || elemento.estado_elemento
-    });
+    await elemento.update(updateData);
 
     // Obtener el elemento actualizado con sus relaciones
     const elementoActualizado = await Elemento.findByPk(id_elemento, {

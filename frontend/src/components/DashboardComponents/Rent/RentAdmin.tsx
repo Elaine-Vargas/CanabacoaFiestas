@@ -17,7 +17,8 @@ import {
   message,
   Card,
   Table,
-  Upload
+  Upload,
+  Radio
 } from 'antd';
 import { PlusOutlined, RightOutlined, CloseOutlined, ReloadOutlined, EditOutlined, DeleteOutlined, EyeOutlined, InboxOutlined, UploadOutlined } from '@ant-design/icons';
 import axios from 'axios';
@@ -208,9 +209,19 @@ interface Elemento {
   nombre_elemento: string;
   precio_elemento: number;
   cantidad_disponible: number;
+  cantidad_total: number;
   imagen_url?: string;
   estado_elemento: string;
+  material: {
+    id_material: number;
+    nombre_material: string;
+  };
+  color: {
+    id_color: number;
+    nombre_color: string;
+  };
   subcategoria: {
+    id_subcategoria: number;
     nombre_subcategoria: string;
     categoria: {
       id_categoria: number;
@@ -265,7 +276,7 @@ const RentAdmin: React.FC = () => {
   const [searchAlquiler, setSearchAlquiler] = useState('');
   const [filterEvento, setFilterEvento] = useState<string | null>(null);
   const [filterEstado, setFilterEstado] = useState<string | null>(null);
-  const [showViewModal, setShowViewModal] = useState(false);
+  const [showViewAlquilerModal, setShowViewAlquilerModal] = useState(false);
   const [viewingAlquiler, setViewingAlquiler] = useState<Alquiler | null>(null);
 
   // New states for elements management
@@ -276,12 +287,18 @@ const RentAdmin: React.FC = () => {
   const [filterElementCategoria, setFilterElementCategoria] = useState<string | null>(null);
   const [filterElementEstado, setFilterElementEstado] = useState<string | null>(null);
   const [loadingElement, setLoadingElement] = useState(false);
+  const [materiales, setMateriales] = useState<any[]>([]);
+  const [colores, setColores] = useState<any[]>([]);
+  const [showViewElementModal, setShowViewElementModal] = useState(false);
+  const [viewingElement, setViewingElement] = useState<Elemento | null>(null);
 
   useEffect(() => {
     fetchAlquileres();
     fetchElementos();
     fetchEventos();
     fetchCategorias();
+    fetchMateriales();
+    fetchColores();
   }, []);
 
   const fetchAlquileres = async () => {
@@ -320,21 +337,16 @@ const RentAdmin: React.FC = () => {
         message.error('No hay sesión activa');
         return;
       }
-      console.log('API URL:', apiUrl);
-      console.log('Token:', token);
-      console.log('Fetching elementos...');
       
       const response = await axios.get(`${apiUrl}/elemento`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
+        },
+        params: {
+          includeDeleted: true
         }
       });
-      
-      console.log('Respuesta completa:', response);
-      console.log('Status:', response.status);
-      console.log('Headers:', response.headers);
-      console.log('Elementos recibidos:', response.data);
       
       if (Array.isArray(response.data)) {
         const elementosFormateados = response.data.map(elemento => ({
@@ -342,7 +354,6 @@ const RentAdmin: React.FC = () => {
           cantidad_disponible: elemento.cantidad_disponible ?? 0,
           precio_elemento: elemento.precio_elemento ?? 0
         }));
-        console.log('Elementos formateados:', elementosFormateados);
         setElementos(elementosFormateados);
       } else {
         console.error('La respuesta no es un array:', response.data);
@@ -350,11 +361,8 @@ const RentAdmin: React.FC = () => {
         setElementos([]);
       }
     } catch (error: any) {
-      console.error('Error completo al cargar los elementos:', error);
+      console.error('Error al cargar los elementos:', error);
       if (axios.isAxiosError(error)) {
-        console.error('Status:', error.response?.status);
-        console.error('Data:', error.response?.data);
-        console.error('Headers:', error.response?.headers);
         message.error(`Error al cargar los elementos: ${error.response?.data?.mensaje || error.message}`);
       } else {
         message.error('Error al cargar los elementos');
@@ -396,6 +404,38 @@ const RentAdmin: React.FC = () => {
       setCategorias(response.data);
     } catch (error) {
       message.error('Error al cargar las categorías');
+    }
+  };
+
+  const fetchMateriales = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await axios.get(`${apiUrl}/elemento/materiales/list`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      setMateriales(response.data);
+    } catch (error) {
+      console.error('Error al obtener materiales:', error);
+      message.error('Error al cargar los materiales');
+    }
+  };
+
+  const fetchColores = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await axios.get(`${apiUrl}/elemento/colores/list`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      setColores(response.data);
+    } catch (error) {
+      console.error('Error al obtener colores:', error);
+      message.error('Error al cargar los colores');
     }
   };
 
@@ -844,6 +884,12 @@ const RentAdmin: React.FC = () => {
             categoria: {
               nombre_categoria: 'N/A'
             }
+          },
+          material: detalle.material || {
+            nombre_material: 'N/A'
+          },
+          color: detalle.color || {
+            nombre_color: 'N/A'
           }
         },
         cantidad_alquiler: Number(detalle.cantidad_alquiler || 0),
@@ -857,7 +903,6 @@ const RentAdmin: React.FC = () => {
       const alquilerConDetalles = {
         ...record,
         detalles: detalles,
-        // Asegurarse de que los valores numéricos sean números
         precioneto_alquiler: Number(record.precioneto_alquiler || 0),
         itbis_alquiler: Number(record.itbis_alquiler || 0),
         total_alquiler: Number(record.total_alquiler || 0),
@@ -867,7 +912,7 @@ const RentAdmin: React.FC = () => {
       console.log('Alquiler con detalles:', alquilerConDetalles);
 
       setViewingAlquiler(alquilerConDetalles);
-      setShowViewModal(true);
+      setShowViewAlquilerModal(true);
     } catch (error) {
       console.error('Error al obtener detalles del alquiler:', error);
       if (axios.isAxiosError(error) && error.response) {
@@ -947,11 +992,15 @@ const RentAdmin: React.FC = () => {
       key: 'acciones',
       render: (_: any, record: any) => (
         <Space>
-          <Tooltip title="Ver detalles">
+          <Tooltip title="Ver alquiler">
             <Button
               type="text"
               icon={<EyeOutlined />}
-              onClick={() => handleView(record)}
+              onClick={() => {
+                setViewingAlquiler(null);
+                handleView(record);
+                setShowViewAlquilerModal(true);
+              }}
             />
           </Tooltip>
           <Tooltip title="Editar alquiler">
@@ -1007,7 +1056,7 @@ const RentAdmin: React.FC = () => {
   });
 
   // Element management functions
-  const handleElementStatusChange = async (elementId: number, newStatus: string) => {
+  const handleElementStatusChange = async (elementId: number) => {
     try {
       const token = localStorage.getItem('token');
       if (!token) {
@@ -1015,21 +1064,83 @@ const RentAdmin: React.FC = () => {
         return;
       }
 
-      await axios.put(`${apiUrl}/elemento/${elementId}`, 
-        { estado_elemento: newStatus },
-        {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
-          }
-        }
-      );
+      const elemento = elementos.find(e => e.id_elemento === elementId);
+      if (!elemento) {
+        message.error('Elemento no encontrado');
+        return;
+      }
 
-      message.success('Estado del elemento actualizado correctamente');
-      fetchElementos();
+      if (elemento.estado_elemento === 'Eliminado') {
+        let selectedState = 'Activo';
+        Modal.confirm({
+          title: 'Cambiar Estado del Elemento',
+          content: (
+            <div>
+              <p>¿A qué estado deseas cambiar este elemento?</p>
+              <Radio.Group 
+                defaultValue="Activo"
+                onChange={(e) => {
+                  selectedState = e.target.value;
+                }}
+              >
+                <Space direction="vertical">
+                  <Radio value="Activo">Activo</Radio>
+                  <Radio value="Inactivo">Inactivo</Radio>
+                </Space>
+              </Radio.Group>
+            </div>
+          ),
+          okText: 'Cambiar Estado',
+          cancelText: 'Cancelar',
+          onOk: async () => {
+            try {
+              await axios.put(`${apiUrl}/elemento/${elementId}`, 
+                { estado_elemento: selectedState },
+                {
+                  headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                  }
+                }
+              );
+              message.success(`Estado del elemento cambiado a ${selectedState}`);
+              fetchElementos();
+            } catch (error) {
+              console.error('Error al cambiar el estado del elemento:', error);
+              message.error('Error al cambiar el estado del elemento');
+            }
+          }
+        });
+      } else {
+        Modal.confirm({
+          title: '¿Estás seguro de eliminar este elemento?',
+          content: 'Esta acción cambiará el estado del elemento a "Eliminado". El elemento seguirá visible en la tabla pero marcado como eliminado.',
+          okText: 'Sí, eliminar',
+          cancelText: 'No, cancelar',
+          okType: 'danger',
+          onOk: async () => {
+            try {
+              await axios.put(`${apiUrl}/elemento/${elementId}`, 
+                { estado_elemento: 'Eliminado' },
+                {
+                  headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                  }
+                }
+              );
+              message.success('Elemento eliminado correctamente');
+              fetchElementos();
+            } catch (error) {
+              console.error('Error al eliminar el elemento:', error);
+              message.error('Error al eliminar el elemento');
+            }
+          }
+        });
+      }
     } catch (error) {
-      console.error('Error al actualizar el estado del elemento:', error);
-      message.error('Error al actualizar el estado del elemento');
+      console.error('Error al cambiar el estado del elemento:', error);
+      message.error('Error al cambiar el estado del elemento');
     }
   };
 
@@ -1042,38 +1153,77 @@ const RentAdmin: React.FC = () => {
         return;
       }
 
+      // Usar el estado del formulario si está presente, de lo contrario mantener el estado actual
+      const estado = values.estado_elemento || editingElement?.estado_elemento || 'Activo';
+
       const elementData = {
         nombre_elemento: values.nombre_elemento,
         id_subcategoria: values.id_subcategoria,
+        id_material: values.id_material,
+        id_color: values.id_color,
         precio_elemento: values.precio_elemento,
         cantidad_disponible: values.cantidad_disponible,
-        imagen_url: values.imagen_url || null
+        cantidad_total: values.cantidad_disponible,
+        imagen_url: values.imagen_url || null,
+        estado_elemento: estado
       };
 
+      console.log('Intentando actualizar elemento:', editingElement?.id_elemento);
+      console.log('URL:', `${apiUrl}/elemento/${editingElement?.id_elemento}`);
+      console.log('Datos:', elementData);
+      
       if (editingElement) {
-        await axios.put(`${apiUrl}/elemento/${editingElement.id_elemento}`, elementData, {
+        const response = await axios.put(`${apiUrl}/elemento/${editingElement.id_elemento}`, elementData, {
           headers: {
             'Authorization': `Bearer ${token}`,
             'Content-Type': 'application/json'
           }
         });
-        message.success('Elemento actualizado correctamente');
+        
+        console.log('Respuesta:', response.data);
+        
+        if (response.data) {
+          message.success('Elemento actualizado correctamente');
+          await fetchElementos();
+          setShowElementModal(false);
+          setEditingElement(null);
+          elementForm.resetFields();
+        }
       } else {
-        await axios.post(`${apiUrl}/elemento`, elementData, {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
+        try {
+          const response = await axios.post(`${apiUrl}/elemento`, elementData, {
+            headers: {
+              'Authorization': `Bearer ${token}`,
+              'Content-Type': 'application/json'
+            }
+          });
+          
+          if (response.data) {
+            message.success('Elemento creado correctamente');
+            await fetchElementos();
+            setShowElementModal(false);
+            elementForm.resetFields();
           }
-        });
-        message.success('Elemento creado correctamente');
+        } catch (error: any) {
+          console.error('Error al crear:', error);
+          if (error.response) {
+            console.error('Error response:', error.response.data);
+            message.error(error.response.data.mensaje || 'Error al crear el elemento');
+          } else {
+            message.error('Error al crear el elemento');
+          }
+        }
       }
-
-      setShowElementModal(false);
-      elementForm.resetFields();
-      fetchElementos();
-    } catch (error) {
-      console.error('Error al guardar el elemento:', error);
-      message.error('Error al guardar el elemento');
+    } catch (error: any) {
+      console.error('Error al actualizar:', error);
+      if (error.response) {
+        console.error('Error response:', error.response.data);
+        console.error('Status:', error.response.status);
+        console.error('Headers:', error.response.headers);
+        message.error(error.response.data.mensaje || 'Error al actualizar el elemento');
+      } else {
+        message.error('Error al actualizar el elemento');
+      }
     } finally {
       setLoadingElement(false);
     }
@@ -1100,6 +1250,16 @@ const RentAdmin: React.FC = () => {
       title: 'Subcategoría',
       dataIndex: ['subcategoria', 'nombre_subcategoria'],
       key: 'subcategoria',
+    },
+    {
+      title: 'Material',
+      dataIndex: ['material', 'nombre_material'],
+      key: 'material',
+    },
+    {
+      title: 'Color',
+      dataIndex: ['color', 'nombre_color'],
+      key: 'color',
     },
     {
       title: 'Precio',
@@ -1141,10 +1301,8 @@ const RentAdmin: React.FC = () => {
             <Button
               icon={<EyeOutlined />}
               onClick={() => {
-                setEditingElement(null);
-                elementForm.setFieldsValue(record);
-                elementForm.setFieldsValue({ readOnly: true });
-                setShowElementModal(true);
+                setViewingElement(record);
+                setShowViewElementModal(true);
               }}
             />
           </Tooltip>
@@ -1154,19 +1312,33 @@ const RentAdmin: React.FC = () => {
               icon={<EditOutlined />}
               onClick={() => {
                 setEditingElement(record);
-                elementForm.setFieldsValue(record);
-                elementForm.setFieldsValue({ readOnly: false });
+                elementForm.resetFields();
+                // Asegurarse de que todos los campos se establezcan correctamente
+                const formValues = {
+                  nombre_elemento: record.nombre_elemento,
+                  id_subcategoria: record.subcategoria.id_subcategoria,
+                  id_material: record.material.id_material,
+                  id_color: record.color.id_color,
+                  precio_elemento: record.precio_elemento,
+                  cantidad_disponible: record.cantidad_disponible,
+                  imagen_url: record.imagen_url,
+                  estado_elemento: record.estado_elemento // Mantener el estado actual del elemento
+                };
+                console.log('Valores del formulario:', formValues);
+                elementForm.setFieldsValue(formValues);
                 setShowElementModal(true);
               }}
             />
           </Tooltip>
-          <Tooltip title="Eliminar">
-            <Button
-              danger
-              icon={<DeleteOutlined />}
-              onClick={() => handleElementStatusChange(record.id_elemento, 'Eliminado')}
-            />
-          </Tooltip>
+          {record.estado_elemento !== 'Eliminado' && (
+            <Tooltip title="Eliminar">
+              <Button
+                danger
+                icon={<DeleteOutlined />}
+                onClick={() => handleElementStatusChange(record.id_elemento)}
+              />
+            </Tooltip>
+          )}
         </Space>
       ),
     },
@@ -1175,19 +1347,23 @@ const RentAdmin: React.FC = () => {
   // Function to filter elements
   const filterElements = (elements: Elemento[]) => {
     return elements.filter(elemento => {
-      const matchesSearch = searchElement
-        ? elemento.nombre_elemento.toLowerCase().includes(searchElement.toLowerCase()) ||
-          elemento.subcategoria.nombre_subcategoria.toLowerCase().includes(searchElement.toLowerCase())
-        : true;
+      // Búsqueda por nombre, subcategoría, material o color
+      const searchLower = searchElement ? searchElement.toLowerCase() : '';
+      const matchesSearch = !searchElement || 
+        elemento.nombre_elemento.toLowerCase().includes(searchLower) ||
+        elemento.subcategoria.nombre_subcategoria.toLowerCase().includes(searchLower) ||
+        elemento.material.nombre_material.toLowerCase().includes(searchLower) ||
+        elemento.color.nombre_color.toLowerCase().includes(searchLower);
 
-      const matchesCategoria = filterElementCategoria
-        ? elemento.subcategoria.categoria.id_categoria.toString() === filterElementCategoria
-        : true;
+      // Filtro por categoría
+      const matchesCategoria = !filterElementCategoria ||
+        elemento.subcategoria.categoria.id_categoria.toString() === filterElementCategoria;
 
-      const matchesEstado = filterElementEstado
-        ? elemento.estado_elemento === filterElementEstado
-        : true;
+      // Filtro por estado (mostramos todos los estados si no hay filtro)
+      const matchesEstado = !filterElementEstado ||
+        elemento.estado_elemento === filterElementEstado;
 
+      // Mostramos todos los elementos, incluyendo los eliminados
       return matchesSearch && matchesCategoria && matchesEstado;
     });
   };
@@ -1244,22 +1420,7 @@ const RentAdmin: React.FC = () => {
       >
         <Table
           columns={elementColumns}
-          dataSource={elementos.filter((elemento: Elemento) => {
-            const matchesSearch = searchElement
-              ? elemento.nombre_elemento.toLowerCase().includes(searchElement.toLowerCase()) ||
-                elemento.subcategoria.nombre_subcategoria.toLowerCase().includes(searchElement.toLowerCase())
-              : true;
-
-            const matchesCategoria = filterElementCategoria
-              ? elemento.subcategoria.categoria.id_categoria.toString() === filterElementCategoria
-              : true;
-
-            const matchesEstado = filterElementEstado
-              ? elemento.estado_elemento === filterElementEstado
-              : true;
-
-            return matchesSearch && matchesCategoria && matchesEstado;
-          })}
+          dataSource={filterElements(elementos)}
           loading={loadingElement}
           rowKey="id_elemento"
           pagination={{ pageSize: 10 }}
@@ -1267,13 +1428,115 @@ const RentAdmin: React.FC = () => {
         />
       </StyledCard>
 
-      {/* Element Modal */}
+      {/* View Element Modal */}
       <Modal
-        title={editingElement ? "Editar Elemento" : editingElement === null ? "Ver Elemento" : "Nuevo Elemento"}
+        title="Ver Elemento"
+        open={showViewElementModal}
+        onCancel={() => {
+          setShowViewElementModal(false);
+          setViewingElement(null);
+        }}
+        footer={[
+          <Button key="close" onClick={() => {
+            setShowViewElementModal(false);
+            setViewingElement(null);
+          }}>
+            Cerrar
+          </Button>
+        ]}
+      >
+        {viewingElement && (
+          <Descriptions column={1}>
+            <Descriptions.Item label="Nombre">{viewingElement.nombre_elemento}</Descriptions.Item>
+            <Descriptions.Item label="Categoría">{viewingElement.subcategoria.categoria.nombre_categoria}</Descriptions.Item>
+            <Descriptions.Item label="Subcategoría">{viewingElement.subcategoria.nombre_subcategoria}</Descriptions.Item>
+            <Descriptions.Item label="Material">{viewingElement.material?.nombre_material}</Descriptions.Item>
+            <Descriptions.Item label="Color">{viewingElement.color?.nombre_color}</Descriptions.Item>
+            <Descriptions.Item label="Precio">${Number(viewingElement.precio_elemento).toFixed(2)}</Descriptions.Item>
+            <Descriptions.Item label="Cantidad Total">{viewingElement.cantidad_total}</Descriptions.Item>
+            <Descriptions.Item label="Cantidad Disponible">{viewingElement.cantidad_disponible}</Descriptions.Item>
+            <Descriptions.Item label="Estado">
+              <Tag color={
+                viewingElement.estado_elemento === 'Activo' ? 'success' :
+                viewingElement.estado_elemento === 'Inactivo' ? 'warning' : 'error'
+              }>
+                {viewingElement.estado_elemento}
+              </Tag>
+            </Descriptions.Item>
+            {viewingElement.imagen_url && (
+              <Descriptions.Item label="Imagen">
+                <img src={viewingElement.imagen_url} alt={viewingElement.nombre_elemento} style={{ maxWidth: '100%', height: 'auto' }} />
+              </Descriptions.Item>
+            )}
+          </Descriptions>
+        )}
+      </Modal>
+
+      {/* View Rent Modal */}
+      <Modal
+        title="Ver Alquiler"
+        open={showViewAlquilerModal}
+        onCancel={() => {
+          setShowViewAlquilerModal(false);
+          setViewingAlquiler(null);
+        }}
+        footer={[
+          <Button key="close" onClick={() => {
+            setShowViewAlquilerModal(false);
+            setViewingAlquiler(null);
+          }}>
+            Cerrar
+          </Button>
+        ]}
+      >
+        {viewingAlquiler && (
+          <Descriptions column={1}>
+            <Descriptions.Item label="ID Alquiler">{viewingAlquiler.id_alquiler}</Descriptions.Item>
+            <Descriptions.Item label="ID Evento">{viewingAlquiler.evento?.id_evento}</Descriptions.Item>
+            <Descriptions.Item label="Nombre Evento">{viewingAlquiler.evento?.nombre_evento}</Descriptions.Item>
+            <Descriptions.Item label="Fecha Evento">{viewingAlquiler.evento?.fecha_evento}</Descriptions.Item>
+            <Descriptions.Item label="Estado">
+              <Tag color={
+                viewingAlquiler.estado_alquiler === 'Solicitado' ? 'processing' :
+                viewingAlquiler.estado_alquiler === 'Aceptado' ? 'warning' :
+                viewingAlquiler.estado_alquiler === 'Completado' ? 'success' : 'error'
+              }>
+                {viewingAlquiler.estado_alquiler}
+              </Tag>
+            </Descriptions.Item>
+            <Descriptions.Item label="Precio Neto">${Number(viewingAlquiler.precioneto_alquiler).toFixed(2)}</Descriptions.Item>
+            <Descriptions.Item label="ITBIS">${Number(viewingAlquiler.itbis_alquiler).toFixed(2)}</Descriptions.Item>
+            <Descriptions.Item label="Total">${Number(viewingAlquiler.total_alquiler).toFixed(2)}</Descriptions.Item>
+            <Descriptions.Item label="Cantidad de Elementos">{viewingAlquiler.cant_elementos_alquiler}</Descriptions.Item>
+            
+            {viewingAlquiler.detalles && viewingAlquiler.detalles.length > 0 && (
+              <Descriptions.Item label="Elementos">
+                <List
+                  dataSource={viewingAlquiler.detalles}
+                  renderItem={(detalle: DetalleAlquiler) => (
+                    <List.Item>
+                      <div style={{ width: '100%' }}>
+                        <Typography.Text strong>{detalle.elemento.nombre_elemento}</Typography.Text>
+                        <div>Cantidad: {detalle.cantidad_alquiler}</div>
+                        <div>Precio Unitario: ${Number(detalle.precio_unitario).toFixed(2)}</div>
+                        <div>Total: ${Number(detalle.total_alquiler).toFixed(2)}</div>
+                      </div>
+                    </List.Item>
+                  )}
+                />
+              </Descriptions.Item>
+            )}
+          </Descriptions>
+        )}
+      </Modal>
+
+      {/* Edit/Create Element Modal */}
+      <Modal
+        title={editingElement ? "Editar Elemento" : "Nuevo Elemento"}
         open={showElementModal}
         onCancel={() => {
           setShowElementModal(false);
-          setEditingElement(undefined);
+          setEditingElement(null);
           elementForm.resetFields();
         }}
         footer={null}
@@ -1288,7 +1551,7 @@ const RentAdmin: React.FC = () => {
             label="Nombre"
             rules={[{ required: true, message: 'Por favor ingrese el nombre del elemento' }]}
           >
-            <Input disabled={editingElement === null} />
+            <Input />
           </Form.Item>
 
           <Form.Item
@@ -1296,7 +1559,7 @@ const RentAdmin: React.FC = () => {
             label="Subcategoría"
             rules={[{ required: true, message: 'Por favor seleccione la subcategoría' }]}
           >
-            <Select disabled={editingElement === null}>
+            <Select>
               {categorias.flatMap((categoria: any) =>
                 categoria.subcategorias.map((sub: any) => (
                   <Option key={sub.id_subcategoria} value={sub.id_subcategoria}>
@@ -1308,17 +1571,44 @@ const RentAdmin: React.FC = () => {
           </Form.Item>
 
           <Form.Item
+            name="id_material"
+            label="Material"
+            rules={[{ required: true, message: 'Por favor seleccione el material' }]}
+          >
+            <Select>
+              {materiales.map((material: any) => (
+                <Option key={material.id_material} value={material.id_material}>
+                  {material.nombre_material}
+                </Option>
+              ))}
+            </Select>
+          </Form.Item>
+
+          <Form.Item
+            name="id_color"
+            label="Color"
+            rules={[{ required: true, message: 'Por favor seleccione el color' }]}
+          >
+            <Select>
+              {colores.map((color: any) => (
+                <Option key={color.id_color} value={color.id_color}>
+                  {color.nombre_color}
+                </Option>
+              ))}
+            </Select>
+          </Form.Item>
+
+          <Form.Item
             name="precio_elemento"
             label="Precio"
             rules={[{ required: true, message: 'Por favor ingrese el precio' }]}
           >
             <InputNumber
-              disabled={editingElement === null}
               min={0}
               step={0.01}
               style={{ width: '100%' }}
-              formatter={value => `$ ${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
-              parser={value => Number(value!.replace(/\$\s?|(,*)/g, ''))}
+              formatter={(value) => `$ ${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
+              parser={(value: string | undefined): number => value ? Number(value.replace(/\$\s?|(,*)/g, '')) : 0}
             />
           </Form.Item>
 
@@ -1327,45 +1617,46 @@ const RentAdmin: React.FC = () => {
             label="Cantidad Disponible"
             rules={[{ required: true, message: 'Por favor ingrese la cantidad disponible' }]}
           >
-            <InputNumber 
-              disabled={editingElement === null}
-              min={0} 
-              style={{ width: '100%' }} 
-            />
+            <InputNumber min={0} style={{ width: '100%' }} />
           </Form.Item>
 
           <Form.Item
             name="imagen_url"
             label="URL de la Imagen"
-            rules={[
-              { 
-                type: 'url',
-                message: 'Por favor ingrese una URL válida'
-              }
-            ]}
           >
-            <Input 
-              disabled={editingElement === null}
-              placeholder="https://ejemplo.com/imagen.jpg" 
-            />
+            <Input placeholder="https://ejemplo.com/imagen.jpg" />
           </Form.Item>
 
-          {editingElement !== null && (
-            <Form.Item>
-              <Space style={{ width: '100%', justifyContent: 'flex-end' }}>
-                <Button onClick={() => {
-                  setShowElementModal(false);
-                  setEditingElement(undefined);
-                  elementForm.resetFields();
-                }}>
-                  Cancelar
-                </Button>
-                <Button type="primary" htmlType="submit" loading={loadingElement}>
-                  {editingElement ? 'Actualizar' : 'Crear'}
-                </Button>
-              </Space>
+          {/* Campo de estado siempre visible en edición */}
+          {editingElement && (
+            <Form.Item
+              name="estado_elemento"
+              label="Estado"
+              rules={[{ required: true, message: 'Por favor seleccione el estado' }]}
+              initialValue={editingElement?.estado_elemento || 'Activo'}
+            >
+              <Select>
+                <Option value="Activo">Activo</Option>
+                <Option value="Inactivo">Inactivo</Option>
+                <Option value="Eliminado">Eliminado</Option>
+              </Select>
             </Form.Item>
           )}
+
+          <Form.Item>
+            <Space style={{ width: '100%', justifyContent: 'flex-end' }}>
+              <Button onClick={() => {
+                setShowElementModal(false);
+                setEditingElement(null);
+                elementForm.resetFields();
+              }}>
+                Cancelar
+              </Button>
+              <Button type="primary" htmlType="submit" loading={loadingElement}>
+                {editingElement ? 'Actualizar' : 'Crear'}
+              </Button>
+            </Space>
+          </Form.Item>
         </Form>
       </Modal>
 
@@ -1748,96 +2039,6 @@ const RentAdmin: React.FC = () => {
           </Form>
         )}
       </StyledModal>
-
-      {/* Modal de Vista Detallada */}
-      <Modal
-        title="Detalles del Alquiler"
-        open={showViewModal}
-        onCancel={() => {
-          setShowViewModal(false);
-          setViewingAlquiler(null);
-        }}
-        footer={[
-          <Button key="close" onClick={() => {
-            setShowViewModal(false);
-            setViewingAlquiler(null);
-          }}>
-            Cerrar
-          </Button>
-        ]}
-        width={800}
-      >
-        {viewingAlquiler && (
-          <div>
-            <Descriptions title="Información General" bordered column={2}>
-              <Descriptions.Item label="ID Alquiler">
-                {viewingAlquiler.id_alquiler}
-              </Descriptions.Item>
-              <Descriptions.Item label="Estado">
-                <Tag color={
-                  viewingAlquiler.estado_alquiler === 'Solicitado' ? 'processing' :
-                  viewingAlquiler.estado_alquiler === 'Aceptado' ? 'warning' :
-                  viewingAlquiler.estado_alquiler === 'Completado' ? 'success' :
-                  'error'
-                }>
-                  {viewingAlquiler.estado_alquiler}
-                </Tag>
-              </Descriptions.Item>
-              <Descriptions.Item label="Evento">
-                {viewingAlquiler.evento?.nombre_evento || 'N/A'}
-              </Descriptions.Item>
-              <Descriptions.Item label="Fecha del Evento">
-                {viewingAlquiler.evento?.fecha_evento ? 
-                  new Date(viewingAlquiler.evento.fecha_evento).toLocaleDateString() : 
-                  'N/A'}
-              </Descriptions.Item>
-              <Descriptions.Item label="Cantidad de Elementos">
-                {viewingAlquiler.cant_elementos_alquiler}
-              </Descriptions.Item>
-              <Descriptions.Item label="Precio Neto">
-                ${viewingAlquiler.precioneto_alquiler.toFixed(2)}
-              </Descriptions.Item>
-              <Descriptions.Item label="ITBIS">
-                ${viewingAlquiler.itbis_alquiler.toFixed(2)}
-              </Descriptions.Item>
-              <Descriptions.Item label="Total">
-                ${viewingAlquiler.total_alquiler.toFixed(2)}
-              </Descriptions.Item>
-            </Descriptions>
-
-            <Divider>Elementos del Alquiler</Divider>
-            
-            <List
-              itemLayout="horizontal"
-              dataSource={viewingAlquiler.detalles}
-              renderItem={(detalle: any) => (
-                <List.Item>
-                  <List.Item.Meta
-                    avatar={
-                      detalle.elemento.imagen_url ? (
-                        <Avatar shape="square" size={64} src={detalle.elemento.imagen_url} />
-                      ) : (
-                        <Avatar shape="square" size={64} icon={<InboxOutlined />} />
-                      )
-                    }
-                    title={detalle.elemento.nombre_elemento}
-                    description={
-                      <Space direction="vertical">
-                        <Typography.Text>Cantidad: {detalle.cantidad_alquiler}</Typography.Text>
-                        <Typography.Text>Precio Unitario: ${detalle.precio_unitario.toFixed(2)}</Typography.Text>
-                        <Typography.Text>Subtotal: ${detalle.total_alquiler.toFixed(2)}</Typography.Text>
-                        {detalle.elemento.subcategoria && (
-                          <Typography.Text>Categoría: {detalle.elemento.subcategoria.categoria?.nombre_categoria} - {detalle.elemento.subcategoria.nombre_subcategoria}</Typography.Text>
-                        )}
-                      </Space>
-                    }
-                  />
-                </List.Item>
-              )}
-            />
-          </div>
-        )}
-      </Modal>
     </>
   );
 };
