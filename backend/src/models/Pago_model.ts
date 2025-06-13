@@ -1,6 +1,5 @@
 import { Table, Model, Column, PrimaryKey, AutoIncrement, DataType, ForeignKey, BelongsTo } from 'sequelize-typescript';
 import Evento from './Evento_model';
-import Tarjeta from './Tarjeta_model';
 
 @Table({ tableName: 'pago', timestamps: false })
 export default class Pago extends Model {
@@ -17,17 +16,13 @@ export default class Pago extends Model {
   evento!: Evento;
 
   @Column({
-    type: DataType.ENUM('Efectivo', 'Tarjeta'),
+    type: DataType.ENUM('Efectivo', 'Transferencia'),
     allowNull: false
   })
   modo_pago!: string;
 
-  @ForeignKey(() => Tarjeta)
-  @Column({ type: DataType.INTEGER })
-  id_tarjeta!: number;
 
-  @BelongsTo(() => Tarjeta)
-  tarjeta!: Tarjeta;
+
 
   @Column({ 
     type: DataType.DATEONLY, 
