@@ -8,7 +8,7 @@ interface CustomModalProps {
   open: boolean;
   onClose: () => void;
   title: string;
-  message: string;
+  message: React.ReactNode;
   type?: 'success' | 'error' | 'info';
 }
 
@@ -93,4 +93,4 @@ const CustomModal: React.FC<CustomModalProps> = ({ open, onClose, title, message
   );
 };
 
-export default CustomModal; 
+export default CustomModal;

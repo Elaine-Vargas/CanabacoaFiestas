@@ -539,7 +539,7 @@ const UserLogin = () => {
                 <input 
                   type="text" 
                   id="login-username" 
-                  placeholder="Usuario / Cédula" 
+                  placeholder="Usuario / Cédula (con guiones)" 
                   required 
                   value={loginData.usuario_login}
                   onChange={handleInputChange}

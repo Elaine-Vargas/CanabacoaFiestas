@@ -18,6 +18,7 @@ const Catalogo = lazy(() => import('./Principal/Catalog'));
 const Principal = lazy(() => import('./Principal/Principal'));
 const PasswordRecovery = lazy(() => import ('./PassRecovery'));
 const PasswordReset = lazy(() => import('./PasswordReset'));
+const NotFoundModal = lazy(() => import('./NotFoundModal'));
 
 import ProtectedRoute from '../components/Otros/ProtectedRoute';
 import PublicRoute from '../components/Otros/PublicRoute';
@@ -121,7 +122,20 @@ function App() {
             <Route path="Alquileres-Compras" element={<Rent />} />
             <Route path="Catering" element={<Catering />} />
             <Route path="Facturas" element={<Report />} />
+            {/* Catch-all para subrutas inexistentes de Menu-Servicios */}
+            <Route path="*" element={
+              <Suspense fallback={<LoadingScreen />}>
+                <NotFoundModal />
+              </Suspense>
+            } />
           </Route>
+
+          {/* Catch-all para rutas inexistentes */}
+          <Route path="*" element={
+            <Suspense fallback={<LoadingScreen />}>
+              <NotFoundModal />
+            </Suspense>
+          } />
         </Routes>
       </BrowserRouter>
     </UserProvider>
