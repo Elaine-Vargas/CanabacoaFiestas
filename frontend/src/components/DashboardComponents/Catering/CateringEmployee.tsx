@@ -109,6 +109,28 @@ const ContinueButton = styled(Button)`
   }
 `;
 
+const StyledButton = styled(Button)`
+  &.ant-btn-primary {
+    background-color: var(--dark-gold);
+    border-color: var(--dark-gold);
+    
+    &:hover {
+      background-color: var(--gold);
+      border-color: var(--gold);
+    }
+  }
+`;
+
+const StyledLinkButton = styled(Button)`
+  &.ant-btn-link {
+    color: var(--dark-gold);
+    
+    &:hover {
+      color: var(--gold);
+    }
+  }
+`;
+
 // Interfaces
 interface CateringService {
   id_catering: number;
@@ -858,11 +880,6 @@ const CateringAdmin = () => {
             ))}
           </Select>
         ),
-        okText: 'Guardar',
-        cancelText: 'Cancelar',
-        okButtonProps: {
-          style: { backgroundColor: 'var(--dark-gold)', borderColor: 'var(--dark-gold)' }
-        },
         onOk() {
           return Promise.resolve();
         }
@@ -941,6 +958,7 @@ const CateringAdmin = () => {
       key: 'actions',
       render: (_: any, record: CateringService) => {
         const isCanceled = record.estado_catering.toLowerCase() === 'cancelado';
+        const isCompleted = record.estado_catering.toLowerCase() === 'completado';
         
         return (
           <Space>
@@ -948,6 +966,7 @@ const CateringAdmin = () => {
               icon={<EditOutlined />}
               type="link"
               onClick={() => handleEdit(record)}
+              disabled={isCompleted}
               style={{ color: 'var(--dark-gold)' }}
             />
             {!isCanceled && (
@@ -956,6 +975,7 @@ const CateringAdmin = () => {
                 type="link"
                 danger
                 onClick={() => handleDelete(record)}
+                disabled={isCompleted}
                 style={{ color: 'var(--dark-gold)' }}
               />
             )}
@@ -987,43 +1007,10 @@ const CateringAdmin = () => {
       ),
     },
     {
-      title: 'Estado',
-      dataIndex: 'estado_menu',
-      key: 'estado_menu',
-      render: (estado: string) => {
-        let color = 'default';
-        const estadoFinal = (estado || 'Activo');
-        switch (estadoFinal.toLowerCase()) {
-          case 'activo':
-            color = 'success';
-            break;
-          case 'inactivo':
-            color = 'error';
-            break;
-          default:
-            color = 'default';
-        }
-        return <Tag color={color}>{estadoFinal}</Tag>;
-      },
-    },
-    {
       title: 'Acciones',
       key: 'actions',
       render: (_: any, record: Menu) => (
         <Space>
-          <Button
-            icon={<EditOutlined />}
-            type="link"
-            onClick={() => handleEditMenu(record)}
-            style={{ color: 'var(--dark-gold)' }}
-          />
-          <Button
-            icon={<DeleteOutlined />}
-            type="link"
-            danger
-            onClick={() => handleDeleteMenu(record)}
-            style={{ color: 'var(--dark-gold)' }}
-          />
           <Button
             icon={<ArrowRightOutlined />}
             type="link"
@@ -1052,7 +1039,6 @@ const CateringAdmin = () => {
             icon={<EditOutlined />}
             type="link"
             onClick={() => handleEditPlato(record)}
-            style={{ color: 'var(--dark-gold)' }}
           />
         </Space>
       ),
@@ -1118,16 +1104,6 @@ const CateringAdmin = () => {
               {proveedor.nombre_proveedor}
             </Option>
           ))}
-        </Select>
-      </Form.Item>
-      <Form.Item
-        name="estado_menu"
-        label="Estado"
-        rules={[{ required: true, message: 'Por favor seleccione un estado' }]}
-      >
-        <Select placeholder="Seleccione un estado">
-          <Option value="Activo">Activo</Option>
-          <Option value="Inactivo">Inactivo</Option>
         </Select>
       </Form.Item>
       <Form.Item
@@ -1276,7 +1252,11 @@ const CateringAdmin = () => {
         />
       )}
       <Form.Item>
-        <Button type="primary" htmlType="submit">
+        <Button 
+          type="primary" 
+          htmlType="submit"
+          style={{ backgroundColor: 'var(--dark-gold)', borderColor: 'var(--dark-gold)' }}
+        >
           {formData.id_catering ? 'Actualizar Servicio' : 'Crear Servicio'}
         </Button>
       </Form.Item>
@@ -1370,27 +1350,7 @@ const CateringAdmin = () => {
                       </Option>
                     ))}
                   </Select>
-                  <Select
-                    placeholder="Filtrar por estado"
-                    allowClear
-                    style={{ width: 200 }}
-                    value={menuStatusFilter || undefined}
-                    onChange={value => setMenuStatusFilter(value || '')}
-                  >
-                    <Option key="menu-filter-activo" value="Activo">Activo</Option>
-                    <Option key="menu-filter-inactivo" value="Inactivo">Inactivo</Option>
-                  </Select>
                 </FilterContainer>
-                <Button
-                  type="primary"
-                  icon={<PlusOutlined />}
-                  onClick={() => {
-                    form.resetFields();
-                    setShowMenuForm(true);
-                  }}
-                >
-                  Nuevo Menú
-                </Button>
               </TableActions>
               <Table
                 columns={menuColumns}
@@ -1400,43 +1360,8 @@ const CateringAdmin = () => {
               />
             </StyledCard>
           ),
-        },
-        {
-          key: 'platos',
-          label: 'Platos',
-          children: (
-            <StyledCard title="Platos">
-              <TableActions>
-                <FilterContainer>
-                  <Search
-                    placeholder="Buscar plato"
-                    allowClear
-                    onSearch={value => setPlatoSearchText(value)}
-                    style={{ width: 200 }}
-                  />
-                </FilterContainer>
-                <Button
-                  type="primary"
-                  icon={<PlusOutlined />}
-                  onClick={() => {
-                    form.resetFields();
-                    setShowPlatoForm(true);
-                  }}
-                  style={{ backgroundColor: 'var(--dark-gold)', borderColor: 'var(--dark-gold)' }}
-                >
-                  Nuevo Plato
-                </Button>
-              </TableActions>
-              <Table
-                columns={platoColumns}
-                dataSource={getFilteredPlatos()}
-                loading={loadingPlatos}
-                rowKey="id_plato"
-              />
-            </StyledCard>
-          ),
-        },
-      ]} style={{ color: 'var(--dark-gold)' }} />
+        }
+      ]} />
       
       {/* Modal para crear/editar menú */}
       <Modal

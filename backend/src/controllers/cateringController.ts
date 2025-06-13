@@ -117,11 +117,6 @@ export const createCatering = async (req: Request, res: Response) => {
 export const getAllCaterings = async (req: Request, res: Response) => {
     try {
         const caterings = await CateringServicio.findAll({
-            where: {
-                estado_catering: {
-                    [Op.ne]: 'Cancelado'
-                }
-            },
             include: [
                 {
                     model: Evento,
@@ -130,10 +125,6 @@ export const getAllCaterings = async (req: Request, res: Response) => {
                 {
                     model: MenuCatering,
                     as: 'menus_catering',
-                    where: {
-                        estado_menucatering: 'Aceptado'
-                    },
-                    required: false,
                     include: [
                         {
                             model: Menu,
@@ -245,10 +236,31 @@ export const editCatering = async (req: Request, res: Response) => {
             precioneto_catering,
             itbis_catering,
             total_catering,
-            menus // Array de IDs de menús
+            menus,
+            estado_catering
         } = req.body;
 
-        const catering = await CateringServicio.findByPk(id_catering);
+        console.log('Datos recibidos:', {
+            id_catering,
+            personas_catering,
+            precioneto_catering,
+            itbis_catering,
+            total_catering,
+            menus,
+            estado_catering
+        });
+
+        // Validar que el ID es un número
+        const cateringId = parseInt(id_catering);
+        if (isNaN(cateringId)) {
+            await t.rollback();
+            return res.status(400).json({ 
+                error: 'ID inválido',
+                mensaje: 'El ID del catering debe ser un número'
+            });
+        }
+
+        const catering = await CateringServicio.findByPk(cateringId);
         if (!catering) {
             await t.rollback();
             return res.status(404).json({ 
@@ -257,21 +269,38 @@ export const editCatering = async (req: Request, res: Response) => {
             });
         }
 
+        console.log('Catering encontrado:', catering.toJSON());
+
+        // Validar el estado
+        const estadosValidos = ['Solicitado', 'Aceptado', 'Completado', 'Cancelado'];
+        if (!estado_catering || !estadosValidos.includes(estado_catering)) {
+            await t.rollback();
+            return res.status(400).json({ 
+                error: 'Estado inválido',
+                mensaje: `El estado debe ser uno de: ${estadosValidos.join(', ')}`
+            });
+        }
+
         // Actualizar el servicio de catering
-        await catering.update({
+        const updateData = {
             personas_catering: personas_catering || catering.personas_catering,
             precioneto_catering: precioneto_catering || catering.precioneto_catering,
             itbis_catering: itbis_catering || catering.itbis_catering,
-            total_catering: total_catering || catering.total_catering
-        }, { transaction: t });
+            total_catering: total_catering || catering.total_catering,
+            estado_catering: estado_catering
+        };
+
+        console.log('Datos a actualizar:', updateData);
+
+        await catering.update(updateData, { transaction: t });
 
         // Si se proporcionaron nuevos menús, actualizar la lista
-        if (menus) {
+        if (menus && Array.isArray(menus)) {
             // Marcar menús existentes como cancelados
             await MenuCatering.update(
                 { estado_menucatering: 'Cancelado' },
                 { 
-                    where: { id_catering },
+                    where: { id_catering: cateringId },
                     transaction: t
                 }
             );
@@ -292,7 +321,7 @@ export const editCatering = async (req: Request, res: Response) => {
 
                 await Promise.all(menus.map((menuId: number) => 
                     MenuCatering.create({
-                        id_catering: catering.id_catering,
+                        id_catering: cateringId,
                         id_menu: menuId,
                         estado_menucatering: 'Aceptado'
                     }, { transaction: t })
@@ -303,15 +332,11 @@ export const editCatering = async (req: Request, res: Response) => {
         await t.commit();
 
         // Obtener el catering actualizado con sus menús
-        const cateringActualizado = await CateringServicio.findByPk(id_catering, {
+        const cateringActualizado = await CateringServicio.findByPk(cateringId, {
             include: [
                 {
                     model: MenuCatering,
                     as: 'menus_catering',
-                    where: {
-                        estado_menucatering: 'Aceptado'
-                    },
-                    required: false,
                     include: [
                         {
                             model: Menu,
@@ -338,13 +363,16 @@ export const editCatering = async (req: Request, res: Response) => {
             ]
         });
 
+        console.log('Catering actualizado:', cateringActualizado?.toJSON());
+
         res.json(cateringActualizado);
     } catch (error) {
         await t.rollback();
-        console.error('Error al editar servicio de catering:', error);
+        console.error('Error detallado al editar servicio de catering:', error);
         res.status(500).json({ 
             error: 'Error al editar servicio de catering',
-            mensaje: 'Ocurrió un error al actualizar el servicio de catering'
+            mensaje: 'Ocurrió un error al actualizar el servicio de catering',
+            detalles: error instanceof Error ? error.message : 'Error desconocido'
         });
     }
 };

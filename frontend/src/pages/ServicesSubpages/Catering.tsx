@@ -1,6 +1,7 @@
 import React from 'react';
-import CateringAdmin from '../../components/DashboardComponents/catering/CateringAdmin';
+import CateringAdmin from '../../components/DashboardComponents/Catering/CateringAdmin';
 import CateringClient from '../../components/DashboardComponents/Catering/CateringClient';
+import CateringEmployee from '../../components/DashboardComponents/Catering/CateringEmployee';
 
 const Catering = () => {
   // Obtener el rol del usuario del localStorage
@@ -14,7 +15,7 @@ const Catering = () => {
     } else if (rolId === 2) { // Cliente
       return <CateringClient />;
     } else if (rolId === 3) { // Organizador
-      return <CateringAdmin />;
+      return <CateringEmployee />;
     }
     return null;
   };
