@@ -1,1051 +1,1017 @@
 import React, { useState, useEffect } from 'react';
-import type { FormEvent } from 'react';
-import '../../../../src/styles/dashboard/ServicesSubpages.scss';
-import { useUser } from '../../../../src/contexts/UserContext';
-import '../../../../src/styles/dashboard/MenuCatalogoCards.scss';
+import {
+  Table,
+  Input,
+  Select,
+  Button,
+  Card,
+  Row,
+  Col,
+  message,
+  Modal,
+  Form,
+  DatePicker,
+  Space,
+  Tabs,
+  InputNumber,
+  Typography,
+  Tag,
+  List
+} from 'antd';
+import {
+  PlusOutlined,
+  EditOutlined,
+  DeleteOutlined,
+  ArrowRightOutlined,
+  ReloadOutlined
+} from '@ant-design/icons';
+import styled from 'styled-components';
+import axios from 'axios';
+import dayjs from 'dayjs';
+import { apiUrl } from '../../../config';
 
-export type UserRole = 'admin' | 'client' | 'supervisor';
+const { Search } = Input;
+const { Option } = Select;
 
-export type Permission = {
-  id: string;
-  name: string;
-  description: string;
-};
+const { Title } = Typography;
 
-export type RolePermissions = {
-  [key in UserRole]: Permission[];
-};
+// Styled Components
+const StyledCard = styled(Card)`
+  margin: 20px;
+  border-radius: 15px;
+  box-shadow: 0 4px 8px var(--color-shadow);
+  background-color: var(--color-background2);
+  overflow: hidden;
+  
+  .ant-card-head {
+    background-color: var(--beige);
+    border-radius: 15px 15px 0 0;
+    border-bottom: 2px solid var(--dark-gold);
+  }
 
-interface Plato {
-  id_plato: number;
-  nombre: string;
-  descripcion: string;
+  .ant-card-head-title {
+    color: var(--color-text2);
+    font-family: "Montserrat Alternates", sans-serif;
+    font-weight: 600;
+  }
+  
+  .ant-card-body {
+    color: var(--color-text);
+    overflow: hidden;
+  }
+`;
+
+const TableActions = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+  gap: 10px;
+  
+  @media (max-width: 768px) {
+    flex-direction: column;
+    align-items: stretch;
+  }
+`;
+
+const FilterContainer = styled.div`
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  
+  @media (max-width: 768px) {
+    width: 100%;
+  }
+`;
+
+const ContinueButton = styled(Button)`
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  border-radius: 25px;
+  padding: 0 25px;
+  height: 50px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  background-color: var(--dark-gold);
+  border-color: var(--gold);
+  color: var(--white);
+  font-family: "Montserrat Alternates", sans-serif;
+  font-weight: 600;
+  
+  &:hover {
+    background-color: var(--gold);
+    border-color: var(--dark-gold);
+    color: var(--white);
+  }
+`;
+
+// Interfaces
+interface CateringService {
+  id_catering: number;
+  id_evento: number;
+  personas_catering: number;
+  precioneto_catering: number;
+  itbis_catering: number;
+  total_catering: number;
+  estado_catering: string;
+  fecha_catering?: string;
+  evento?: {
+    nombre_evento: string;
+    id_cliente: number;
+  };
+  menus_catering?: Array<{
+    menu: Menu;
+  }>;
 }
 
 interface Menu {
   id_menu: number;
   desc_menu: string;
-  id_proveedor: number;
   precio_menu: number;
-  platos: Plato[];
-  proveedor: string;
+  id_proveedor: number;
+  proveedor: {
+    nombre_proveedor: string;
+    nombre?: string;
+  };
+  platos_menu: Array<{
+    plato: Plato;
+  }>;
+  platos?: Array<{
+    id: number;
+    nombre: string;
+  }>;
+  estado_menu: string;
 }
 
-interface Catering {
+interface Plato {
+  id_plato: number;
+  desc_plato: string;
+  platos_menu?: Array<{
+    menu: Menu;
+  }>;
+}
+
+interface Event {
+  id_evento: number;
+  nombre_evento: string;
+  id_cliente: number;
+}
+
+interface Proveedor {
+  id_proveedor: number;
+  nombre_proveedor: string;
+  tipo_proveedor: string;
+}
+
+interface MenuWithQuantity extends Menu {
+  quantity?: number;
+}
+
+interface FormData {
   id_catering?: number;
   id_evento: number;
   personas_catering: number;
   precioneto_catering: number;
   itbis_catering: number;
   total_catering: number;
-  menus?: Menu[];
+  estado_catering: string;
+  menus: number[];
 }
 
-interface Evento {
-  id_evento: number;
-  fecha_evento: string;
-  tipo_evento: string;
-  nombre_evento?: string;
-  nombre_cliente?: string;
-  lugar?: string;
-  decoracion_solicitada?: string;
-}
-
-// Nueva interfaz para el catálogo
-interface MenuCatalogo {
-  id_menu: number;
-  desc_menu: string;
-  proveedor: string;
-  precio_menu: number;
-  platos: { 
-    id?: number;
-    nombre: string;
-    descripcion?: string;
-  }[];
-}
-
-export default function CateringClient() {
-  const { userRole } = useUser();
-  const userData = JSON.parse(localStorage.getItem('userData') || '{}');
-  const [showModal, setShowModal] = useState(false);
-  const [showCreateMenuModal, setShowCreateMenuModal] = useState(false);
+const CateringClient = () => {
+  // Estados
+  const [cateringServices, setCateringServices] = useState<CateringService[]>([]);
   const [menus, setMenus] = useState<Menu[]>([]);
-  const [platos, setPlatos] = useState<Plato[]>([]);
-  const [selectedCategory, setSelectedCategory] = useState('todos');
-  const [searchTerm, setSearchTerm] = useState('');
-
-  const [formData, setFormData] = useState<Partial<Catering>>({
+  const [events, setEvents] = useState<Event[]>([]);
+  const [proveedores, setProveedores] = useState<Proveedor[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [loadingMenus, setLoadingMenus] = useState(false);
+  const [showMenuSelection, setShowMenuSelection] = useState(false);
+  const [showCateringForm, setShowCateringForm] = useState(false);
+  const [selectedMenus, setSelectedMenus] = useState<MenuWithQuantity[]>([]);
+  const [searchText, setSearchText] = useState('');
+  const [statusFilter, setStatusFilter] = useState('');
+  const [proveedorFilter, setProveedorFilter] = useState('');
+  const [form] = Form.useForm();
+  const [showViewMenuModal, setShowViewMenuModal] = useState(false);
+  const [viewMenu, setViewMenu] = useState<Menu | null>(null);
+  const [formData, setFormData] = useState<FormData>({
+    id_catering: 0,
     id_evento: 0,
     personas_catering: 0,
     precioneto_catering: 0,
     itbis_catering: 0,
     total_catering: 0,
+    estado_catering: 'Solicitado',
     menus: []
   });
-  const [newMenuData, setNewMenuData] = useState({
-    desc_menu: '',
-    selectedPlatos: [] as Plato[]
-  });
-  const [caterings, setCaterings] = useState<Catering[]>([]);
-  const [eventos, setEventos] = useState<Evento[]>([]);
-  const [editId, setEditId] = useState<number | null>(null);
-  const [showPedidosModal, setShowPedidosModal] = useState(false);
-  const [showPendientesModal, setShowPendientesModal] = useState(false);
-  const [showProveedoresModal, setShowProveedoresModal] = useState(false);
-  const [pedidos, setPedidos] = useState<any[]>([]);
-  const [pedidosPendientes, setPedidosPendientes] = useState<any[]>([]);
-  const [proveedores, setProveedores] = useState<any[]>([]);
-  const [showMenusModal, setShowMenusModal] = useState(false);
-  const [showEventosModal, setShowEventosModal] = useState(false);
-  const [menusCatalogo, setMenusCatalogo] = useState<MenuCatalogo[]>([]);
   const [error, setError] = useState<string | null>(null);
-  const [selectedMenu, setSelectedMenu] = useState<MenuCatalogo | null>(null);
-  const [showCateringForm, setShowCateringForm] = useState(false);
-  const [bandejaMenus, setBandejaMenus] = useState<MenuCatalogo[]>([]);
-  const [showBandeja, setShowBandeja] = useState(false);
+  const [clientId, setClientId] = useState<number | null>(null);
 
+  // Efectos
   useEffect(() => {
-    const rolId = Number(userData.rol);
-    if (rolId === 2) { // Si es cliente
+    const fetchData = async () => {
+      setLoading(true);
+      setLoadingMenus(true);
+      try {
+        // Primero obtenemos el ID del cliente del token
+        const token = localStorage.getItem('token');
+        if (!token) {
+          message.error('No hay sesión activa');
+          return;
+        }
+
+        // Decodificar el token para obtener el ID del cliente
+        try {
+          const tokenData = JSON.parse(atob(token.split('.')[1]));
+          setClientId(tokenData.id_cliente);
+          
+          // Obtener los eventos del cliente usando su cédula
+          const eventosResponse = await axios.get(`${apiUrl}/evento/cliente/${tokenData.cedula_usuario}`, {
+            headers: { Authorization: `Bearer ${token}` }
+          });
+
+          if (eventosResponse.data) {
+            setEvents(eventosResponse.data);
+            
+            // Obtener los IDs de los eventos del cliente
+            const eventosClienteIds = eventosResponse.data.map((evento: any) => evento.id_evento);
+
+            // Obtener todos los catering
+            const cateringResponse = await axios.get(`${apiUrl}/catering`, {
+              headers: { Authorization: `Bearer ${token}` }
+            });
+
+            if (cateringResponse.data) {
+              // Filtrar los catering para mantener solo aquellos cuyo evento pertenece al cliente
+              const cateringFiltrados = cateringResponse.data.filter((catering: CateringService) => 
+                eventosClienteIds.includes(catering.id_evento)
+              );
+              setCateringServices(cateringFiltrados);
+            }
+          }
+
+          // Cargar menús y proveedores
+        await Promise.all([
+          fetchMenus(),
+          fetchProveedores()
+        ]);
+        } catch (error) {
+          console.error('Error al decodificar el token:', error);
+          message.error('Error al obtener información del cliente');
+          return;
+        }
+      } catch (error) {
+        console.error('Error al cargar datos:', error);
+      } finally {
+        setLoading(false);
+        setLoadingMenus(false);
+      }
+    };
+    
+    fetchData();
+  }, []);
+
+  // Funciones de fetch
+  const fetchMenus = async () => {
+    try {
+      setLoadingMenus(true);
       const token = localStorage.getItem('token');
       if (!token) {
-        console.error('No hay token de autenticación');
+        message.error('No hay sesión activa');
         return;
       }
 
-      const headers = {
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json'
-      };
-
-      // Cargar catálogo de menús
-      fetch('/api/catering/menu/catalogo', { headers })
-        .then(res => {
-          if (!res.ok) {
-            throw new Error(`Error HTTP: ${res.status}`);
-          }
-          return res.json();
-        })
-        .then(data => {
-          console.log('Menús recibidos:', data);
-          if (Array.isArray(data)) {
-            setMenusCatalogo(data);
-          } else {
-            console.error('Los datos recibidos no son un array:', data);
-            setMenusCatalogo([]);
-          }
-        })
-        .catch(err => {
-          console.error('Error al cargar catálogo de menús:', err);
-          setMenusCatalogo([]);
-        });
-
-      // Cargar eventos del cliente
-      fetch('/api/evento', { headers })
-        .then(res => res.json())
-        .then(data => {
-          if (Array.isArray(data)) {
-            setEventos(data);
-          }
-        })
-        .catch(err => console.error('Error al cargar eventos:', err));
-    }
-  }, [userData.rol]);
-
-  useEffect(() => {
-    const ensureArray = (data: any) => Array.isArray(data) ? data : [];
-  
-    const fetchPedidos = async () => {
-      try {
-        const token = localStorage.getItem('token');
-        if (!token) {
-          throw new Error('No hay token de autenticación');
+      // Modificamos la URL para asegurarnos de obtener todos los menús, incluyendo inactivos
+      const response = await axios.get(`${apiUrl}/menu`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        },
+        params: {
+          includeInactive: true // Añadimos este parámetro para indicar que queremos todos los menús
         }
-
-        const response = await fetch('/api/catering/pedidos', {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
-          }
-        });
-
-        if (!response.ok) {
-          const errorData = await response.json().catch(() => null);
-          throw new Error(errorData?.message || `Error HTTP: ${response.status}`);
-        }
-
-        const data = await response.json();
-        setPedidos(ensureArray(data));
-      } catch (error) {
-        console.error('Error al cargar pedidos:', error);
-        setPedidos([]); // fallback seguro
-        setError(error instanceof Error ? error.message : 'Error al cargar pedidos. Por favor, intente nuevamente.');
-      }
-    };
-  
-    const fetchPedidosPendientes = async () => {
-      try {
-        const token = localStorage.getItem('token');
-        if (!token) {
-          throw new Error('No hay token de autenticación');
-        }
-
-        const response = await fetch('/api/catering/pendientes', {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
-          }
-        });
-
-        if (!response.ok) {
-          const errorData = await response.json().catch(() => null);
-          throw new Error(errorData?.message || `Error HTTP: ${response.status}`);
-        }
-
-        const data = await response.json();
-        setPedidosPendientes(ensureArray(data));
-      } catch (error) {
-        console.error('Error al cargar pedidos pendientes:', error);
-        setPedidosPendientes([]); // fallback seguro
-        setError(error instanceof Error ? error.message : 'Error al cargar pedidos pendientes. Por favor, intente nuevamente.');
-      }
-    };
-  
-    const fetchProveedores = async () => {
-      try {
-        const token = localStorage.getItem('token');
-        if (!token) {
-          throw new Error('No hay token de autenticación');
-        }
-
-        const response = await fetch('/api/catering/proveedores', {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
-          }
-        });
-
-        if (!response.ok) {
-          const errorData = await response.json().catch(() => null);
-          throw new Error(errorData?.message || `Error HTTP: ${response.status}`);
-        }
-
-        const data = await response.json();
-        setProveedores(ensureArray(data));
-      } catch (error) {
-        console.error('Error al cargar proveedores:', error);
-        setProveedores([]); // fallback seguro
-        setError(error instanceof Error ? error.message : 'Error al cargar proveedores. Por favor, intente nuevamente.');
-      }
-    };
-  
-    if (showPedidosModal) {
-      fetchPedidos();
-    }
-    if (showPendientesModal) {
-      fetchPedidosPendientes();
-    }
-    if (showProveedoresModal) {
-      fetchProveedores();
-    }
-  }, [showPedidosModal, showPendientesModal, showProveedoresModal]);
-
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
-    const { name, value } = e.target;
-    
-    if (name === 'precioneto_catering') {
-      const precioNeto = parseFloat(value) || 0;
-      const itbis = precioNeto * 0.18; // 18% de ITBIS
-      const total = precioNeto + itbis;
+      });
       
-      setFormData(prev => ({
-        ...prev,
-        [name]: precioNeto,
-        itbis_catering: itbis,
-        total_catering: total
-      }));
-    } else if (name === 'id_evento') {
-      setFormData(prev => ({
-        ...prev,
-        [name]: parseInt(value)
-      }));
-    } else {
-      setFormData(prev => ({
-        ...prev,
-        [name]: value
-      }));
+      // Normaliza la estructura de los menús para que siempre tengan platos_menu y platos
+      let menusData = Array.isArray(response.data) ? response.data : 
+                     Array.isArray(response.data.data) ? response.data.data : [];
+
+      // Asegurarse de que cada menú tenga un estado definido
+      menusData = menusData.map((menu: any) => {
+        const menuWithState = {
+          ...menu,
+          estado_menu: menu.estado_menu || 'Activo' // Asignar 'Activo' si no tiene estado
+        };
+
+        // Si la API devuelve platos_menu, úsalo para crear un array de platos
+        if (Array.isArray(menu.platos_menu) && menu.platos_menu.length > 0) {
+          menuWithState.platos = menu.platos_menu
+            .filter((pm: any) => pm.plato)
+            .map((pm: any) => ({
+              id: pm.plato.id_plato,
+              nombre: pm.plato.desc_plato
+            }));
+        }
+        // Si la API devuelve platos, úsalo para crear platos_menu
+        if (Array.isArray(menu.platos) && menu.platos.length > 0) {
+          menuWithState.platos_menu = menu.platos.map((plato: any) => ({
+            plato: {
+              id_plato: plato.id || plato.id_plato,
+              desc_plato: plato.nombre || plato.desc_plato
+            }
+          }));
+        }
+        return menuWithState;
+      });
+
+      console.log('Menús cargados (incluyendo inactivos):', menusData); // Para debug
+      setMenus(menusData);
+    } catch (error) {
+      console.error('Error al cargar los menús:', error);
+      message.error('Error al cargar los menús');
+      setMenus([]);
+    } finally {
+      setLoadingMenus(false);
     }
   };
 
-  const handleMenuSelect = (menu: Menu) => {
-    setFormData(prev => {
-      const newMenus = prev.menus?.includes(menu) 
-        ? prev.menus.filter(m => m.id_menu !== menu.id_menu)
-        : [...(prev.menus || []), menu];
+  const fetchProveedores = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        message.error('No hay sesión activa');
+        return;
+      }
+
+      const response = await axios.get(`${apiUrl}/proveedor`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
       
-      // Calcular el precio neto basado en los menús seleccionados
-      const precioNeto = newMenus.reduce((total, menu) => {
-        const menuCatalogo = menusCatalogo.find(m => m.id_menu === menu.id_menu);
-        return total + (menuCatalogo?.precio_menu || 0);
-      }, 0);
+      // Ensure we're setting an array and filter for Catering providers
+      const proveedoresData = Array.isArray(response.data) ? response.data : 
+                            Array.isArray(response.data.data) ? response.data.data : [];
       
-      const itbis = precioNeto * 0.18;
-      const total = precioNeto + itbis;
+      // Filter only Catering providers
+      const proveedoresCatering = proveedoresData.filter(
+        (proveedor: Proveedor) => proveedor.tipo_proveedor === 'Catering'
+      );
       
-      return {
-        ...prev,
-        menus: newMenus,
-        precioneto_catering: precioNeto,
-        itbis_catering: itbis,
-        total_catering: total
-      };
+      setProveedores(proveedoresCatering);
+    } catch (error) {
+      console.error('Error al cargar los proveedores:', error);
+      message.error('Error al cargar los proveedores');
+      setProveedores([]);
+    }
+  };
+
+  const reloadData = async () => {
+    setLoading(true);
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        message.error('No hay sesión activa');
+        return;
+      }
+
+      // Decodificar el token para obtener la cédula del cliente
+      const tokenData = JSON.parse(atob(token.split('.')[1]));
+      const clientCedula = tokenData.cedula_usuario;
+
+      // Obtener los eventos del cliente
+      const eventosResponse = await axios.get(`${apiUrl}/evento/cliente/${clientCedula}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+
+      if (eventosResponse.data) {
+        setEvents(eventosResponse.data);
+        
+        // Obtener los IDs de los eventos del cliente
+        const eventosClienteIds = eventosResponse.data.map((evento: any) => evento.id_evento);
+
+        // Obtener todos los catering
+        const cateringResponse = await axios.get(`${apiUrl}/catering`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+
+        if (cateringResponse.data) {
+          // Filtrar los catering para mantener solo aquellos cuyo evento pertenece al cliente
+          const cateringFiltrados = cateringResponse.data.filter((catering: CateringService) => 
+            eventosClienteIds.includes(catering.id_evento)
+          );
+          setCateringServices(cateringFiltrados);
+        }
+      }
+    } catch (error) {
+      console.error('Error al recargar datos:', error);
+      message.error('Error al recargar los datos');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Handlers
+  const handleStatusChange = async (id: number, newStatus: string) => {
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        message.error('No hay sesión activa');
+        return;
+      }
+
+      // Actualizar el estado en el servidor
+      const response = await axios.put(`${apiUrl}/catering/${id}`, 
+        { estado_catering: newStatus },
+        {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        }
+      );
+
+      // Actualizar el estado local inmediatamente
+      setCateringServices(prev => 
+        prev.map(c => c.id_catering === id ? { ...c, estado_catering: newStatus } : c)
+      );
+
+      message.success('Estado actualizado correctamente');
+
+      // Recargar los datos después de un breve retraso
+      setTimeout(async () => {
+        await reloadData();
+      }, 500);
+
+    } catch (error) {
+      console.error('Error al actualizar el estado:', error);
+      message.error('Error al actualizar el estado');
+    }
+  };
+
+  const handleCreateCatering = () => {
+    setSelectedMenus([]);
+    form.resetFields();
+    setShowCateringForm(true);
+  };
+
+  const handleDelete = async (record: CateringService) => {
+    Modal.confirm({
+      title: '¿Está seguro que desea cancelar este servicio de catering?',
+      content: 'Esta acción cambiará el estado del servicio a "Cancelado". ¿Desea continuar?',
+      okText: 'Sí, cancelar',
+      okType: 'danger',
+      cancelText: 'No',
+      onOk: async () => {
+        try {
+          const token = localStorage.getItem('token');
+          if (!token) {
+            message.error('No hay sesión activa');
+            return;
+          }
+
+          await axios.delete(`${apiUrl}/catering/${record.id_catering}`, {
+            headers: {
+              'Authorization': `Bearer ${token}`
+            }
+          });
+          message.success('Servicio de catering cancelado correctamente');
+          await reloadData();
+        } catch (error) {
+          console.error('Error al cancelar el servicio:', error);
+          message.error('Error al cancelar el servicio');
+        }
+      }
     });
   };
 
-  const handlePlatoSelect = (plato: Plato) => {
-    setNewMenuData(prev => ({
-      ...prev,
-      selectedPlatos: prev.selectedPlatos.includes(plato)
-        ? prev.selectedPlatos.filter(p => p.id_plato !== plato.id_plato)
-        : [...prev.selectedPlatos, plato]
-    }));
+  const handleEdit = (catering: CateringService) => {
+    form.resetFields();
+
+    // Eliminar duplicados de los IDs de menús
+    const menuIds = (catering.menus_catering?.map(mc => mc.menu.id_menu) || []);
+    const uniqueMenuIds = [...new Set(menuIds)];
+
+    form.setFieldsValue({
+      id_catering: catering.id_catering,
+      id_evento: catering.id_evento,
+      personas_catering: catering.personas_catering,
+      estado_catering: catering.estado_catering,
+      menus: uniqueMenuIds
+    });
+
+    setFormData({
+      id_catering: catering.id_catering,
+      id_evento: catering.id_evento,
+      personas_catering: catering.personas_catering,
+      precioneto_catering: catering.precioneto_catering,
+      itbis_catering: catering.itbis_catering,
+      total_catering: catering.total_catering,
+      estado_catering: catering.estado_catering,
+      menus: uniqueMenuIds
+    });
+
+    const selectedMenus = menus.filter(menu => uniqueMenuIds.includes(menu.id_menu)).map(menu => ({ ...menu, quantity: 1 }));
+    const uniqueSelectedMenus = Array.from(
+      new Map(selectedMenus.map(menu => [menu.id_menu, menu])).values()
+    );
+    setSelectedMenus(uniqueSelectedMenus);
+    setShowCateringForm(true);
   };
 
-  const handleCreateMenu = async (e: FormEvent) => {
-    e.preventDefault();
-    try {
-      const response = await fetch('/api/menus', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          desc_menu: newMenuData.desc_menu,
-          platos: newMenuData.selectedPlatos.map(p => p.id_plato)
-        })
-      });
+  const handleMenuQuantityChange = (menuId: number, quantity: number) => {
+    setSelectedMenus(prev => 
+      prev.map(menu => 
+        menu.id_menu === menuId 
+          ? { ...menu, quantity: quantity }
+          : menu
+      )
+    );
+  };
 
-      if (response.ok) {
-        const updatedMenus = await fetch('/api/menus').then(res => res.json());
-        setMenus(updatedMenus);
-        setShowCreateMenuModal(false);
-        setNewMenuData({ desc_menu: '', selectedPlatos: [] });
-      }
-    } catch (error) {
-      console.error('Error al crear menú:', error);
+  const handleMenuSelect = (menu: Menu) => {
+    const menuIndex = selectedMenus.findIndex(m => m.id_menu === menu.id_menu);
+    if (menuIndex === -1) {
+      setSelectedMenus([...selectedMenus, { ...menu, quantity: 1 }]);
+    } else {
+      const newSelectedMenus = [...selectedMenus];
+      newSelectedMenus.splice(menuIndex, 1);
+      setSelectedMenus(newSelectedMenus);
     }
   };
 
-  const handleSubmit = async (e: FormEvent) => {
-    e.preventDefault();
+  const handleContinueToForm = () => {
+    if (selectedMenus.length === 0) {
+      message.warning('Por favor, seleccione al menos un menú');
+      return;
+    }
+    setShowMenuSelection(false);
+    setShowCateringForm(true);
+  };
+
+  const handleCateringFormSubmit = async (values: any) => {
     try {
-      if (editId) {
-        await fetch(`/api/catering/${editId}`, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(formData)
-        });
-      } else {
-        await fetch('/api/catering', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(formData)
-        });
+      console.log('Valores del formulario:', values);
+      
+      // Usar los valores del formulario en lugar de formData
+      const cateringData = {
+        id_catering: values.id_catering || formData.id_catering,
+        id_evento: values.id_evento,
+        personas_catering: values.personas_catering,
+        estado_catering: values.estado_catering,
+        menus: values.menus || formData.menus
+      };
+
+      // Calcular precios basados en los menús seleccionados
+      const selectedMenus = menus.filter(menu => cateringData.menus.includes(menu.id_menu));
+      const totalNeto = selectedMenus.reduce((sum, menu) => sum + menu.precio_menu, 0);
+      const itbis = totalNeto * 0.18;
+      const total = totalNeto + itbis;
+
+      // Agregar los precios calculados
+      const finalData = {
+        ...cateringData,
+        precioneto_catering: totalNeto,
+        itbis_catering: itbis,
+        total_catering: total
+      };
+
+      console.log('Datos a enviar:', finalData);
+
+      const token = localStorage.getItem('token');
+      if (!token) {
+        message.error('No hay sesión activa');
+        return;
       }
 
-      const response = await fetch('/api/catering');
-      const data = await response.json();
-      setCaterings(data);
-      setShowModal(false);
+      if (finalData.id_catering) {
+        // Actualizar catering existente
+        const response = await axios.put(`${apiUrl}/catering/${finalData.id_catering}`, finalData, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        console.log('Respuesta del servidor:', response.data);
+        message.success('Servicio de catering actualizado correctamente');
+        
+        // Actualizar el estado local inmediatamente
+        setCateringServices(prev => 
+          prev.map(c => c.id_catering === finalData.id_catering ? response.data : c)
+        );
+      } else {
+        // Crear nuevo catering
+        const response = await axios.post(`${apiUrl}/catering`, finalData, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        console.log('Respuesta del servidor:', response.data);
+        message.success('Servicio de catering creado correctamente');
+        setCateringServices(prev => [...prev, response.data]);
+      }
+
+      // Cerrar el modal y limpiar el formulario
+      setShowCateringForm(false);
       setFormData({
+        id_catering: 0,
         id_evento: 0,
         personas_catering: 0,
         precioneto_catering: 0,
         itbis_catering: 0,
         total_catering: 0,
+        estado_catering: 'Solicitado',
         menus: []
       });
-      setEditId(null);
+      form.resetFields();
+
+      // Recargar los datos después de un breve retraso
+      setTimeout(async () => {
+        await reloadData();
+      }, 500);
+
     } catch (error) {
-      console.error('Error al guardar:', error);
-    }
-  };
-
-  const handleSolicitarMenu = (menuId: number) => {
-    const menu = menusCatalogo.find(m => m.id_menu === menuId) || null;
-    setSelectedMenu(menu);
-    setShowCateringForm(true);
-    if (menu) {
-      setFormData(prev => ({
-        ...prev,
-        precioneto_catering: menu.precio_menu,
-        itbis_catering: +(menu.precio_menu * 0.18).toFixed(2),
-        total_catering: +(menu.precio_menu * 1.18).toFixed(2),
-        personas_catering: 1,
-        menus: [{
-          id_menu: menu.id_menu,
-          desc_menu: menu.desc_menu,
-          id_proveedor: 0,
-          precio_menu: menu.precio_menu,
-          proveedor: menu.proveedor || '',
-          platos: (menu.platos || []).map((p, idx) => ({
-            id_plato: p.id || idx,
-            nombre: p.nombre,
-            descripcion: p.descripcion || '',
-          })),
-        }],
-      }));
-    }
-  };
-
-  const closeCateringForm = () => {
-    setShowCateringForm(false);
-    setSelectedMenu(null);
-  };
-
-  const renderPedidosModal = () => (
-    <div className="modal-overlay">
-      <div className="modal-container">
-        <button className="close-btn" onClick={() => setShowPedidosModal(false)}>×</button>
-        <div className="modal-content">
-          <h3>Todos los Pedidos</h3>
-          <div className="table-container">
-            <table>
-              <thead>
-                <tr>
-                  <th>ID</th>
-                  <th>Evento</th>
-                  <th>Personas</th>
-                  <th>Precio Neto</th>
-                  <th>ITBIS</th>
-                  <th>Total</th>
-                  <th>Estado</th>
-                  <th>Acciones</th>
-                </tr>
-              </thead>
-              <tbody>
-                {Array.isArray(pedidos) && pedidos.map((pedido) => (
-                  <tr key={pedido.id_catering}>
-                    <td>{pedido.id_catering}</td>
-                    <td>{pedido.nombre_evento}</td>
-                    <td>{pedido.personas_catering}</td>
-                    <td>${pedido.precioneto_catering}</td>
-                    <td>${pedido.itbis_catering}</td>
-                    <td>${pedido.total_catering}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-
-  const renderPendientesModal = () => (
-    <div className="modal-overlay">
-      <div className="modal-container">
-        <button className="close-btn" onClick={() => setShowPendientesModal(false)}>×</button>
-        <div className="modal-content">
-          <h3>Pedidos Pendientes</h3>
-          <div className="table-container">
-            <table>
-              <thead>
-                <tr>
-                  <th>ID</th>
-                  <th>Evento</th>
-                  <th>Personas</th>
-                  <th>Precio Neto</th>
-                  <th>ITBIS</th>
-                  <th>Total</th>
-                  <th>Estado</th>
-                  <th>Acciones</th>
-                </tr>
-              </thead>
-              <tbody>
-              {Array.isArray(pedidosPendientes) && pedidosPendientes.map((pedido) => (
-                  <tr key={pedido.id_catering}>
-                    <td>{pedido.id_catering}</td>
-                    <td>{pedido.nombre_evento}</td>
-                    <td>{pedido.personas_catering}</td>
-                    <td>${pedido.precioneto_catering}</td>
-                    <td>${pedido.itbis_catering}</td>
-                    <td>${pedido.total_catering}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-
-  const renderProveedoresModal = () => (
-    <div className="modal-overlay">
-      <div className="modal-container">
-        <button className="close-btn" onClick={() => setShowProveedoresModal(false)}>×</button>
-        <div className="modal-content">
-          <h3>Proveedores de Catering Activos</h3>
-          <div className="table-container">
-            <table>
-              <thead>
-                <tr>
-                  <th>Nombre</th>
-                  <th>Teléfono</th>
-                  <th>Correo</th>
-                  <th>Estado</th>
-                  <th>Acciones</th>
-                </tr>
-              </thead>
-              <tbody>
-              {Array.isArray(proveedores) && proveedores.map((proveedor) => (
-                  <tr key={proveedor.id_proveedor}>
-                    <td>{proveedor.nombre}</td>
-                    <td>{proveedor.telefono}</td>
-                    <td>{proveedor.correo}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-
-  const filteredMenus = menusCatalogo.filter((menu) => {
-    const searchTermLower = searchTerm.toLowerCase().trim();
-    
-    // Si no hay término de búsqueda, solo filtrar por categoría
-    if (!searchTermLower) {
-      const precio = Number(menu.precio_menu);
-      if (selectedCategory === 'todos') return true;
-      if (selectedCategory === 'economico') return precio <= 250;
-      if (selectedCategory === 'premium') return precio > 250;
-      return true;
-    }
-
-    // Buscar en todos los campos
-    const menuMatch = menu.desc_menu.toLowerCase().includes(searchTermLower);
-    const proveedorMatch = menu.proveedor.toLowerCase().includes(searchTermLower);
-    const platosMatch = menu.platos.some(plato => 
-      plato.nombre.toLowerCase().includes(searchTermLower)
-    );
-
-    const matchesSearch = menuMatch || proveedorMatch || platosMatch;
-
-    // Aplicar filtro de categoría
-    const precio = Number(menu.precio_menu);
-    if (selectedCategory === 'todos') {
-      return matchesSearch;
-    } else if (selectedCategory === 'economico') {
-      return matchesSearch && precio <= 250;
-    } else if (selectedCategory === 'premium') {
-      return matchesSearch && precio > 250;
-    }
-
-    return matchesSearch;
-  });
-
-  const toggleBandejaMenu = (menu: MenuCatalogo) => {
-    setBandejaMenus(prev => {
-      const exists = prev.some(m => m.id_menu === menu.id_menu);
-      if (exists) {
-        return prev.filter(m => m.id_menu !== menu.id_menu);
+      console.error('Error al guardar el catering:', error);
+      if (axios.isAxiosError(error)) {
+        message.error(error.response?.data?.mensaje || 'Error al guardar el catering');
       } else {
-        return [...prev, menu];
+        message.error('Error al guardar el catering');
       }
+    }
+  };
+
+  // Columnas para las tablas
+  const cateringColumns = [
+    {
+      title: 'ID',
+      dataIndex: 'id_catering',
+      key: 'id_catering',
+    },
+    {
+      title: 'Evento',
+      dataIndex: ['evento', 'nombre_evento'],
+      key: 'evento',
+      render: (nombre: string, record: CateringService) => (
+        <span>
+          {record.id_evento}{nombre ? ` - ${nombre}` : ''}
+        </span>
+      ),
+    },
+    {
+      title: 'Estado',
+      dataIndex: 'estado_catering',
+      key: 'estado_catering',
+      render: (estado: string) => {
+        let color = 'default';
+        switch (estado.toLowerCase()) {
+          case 'solicitado':
+            color = 'processing';
+            break;
+          case 'confirmado':
+            color = 'warning';
+            break;
+          case 'completado':
+            color = 'success';
+            break;
+          case 'cancelado':
+            color = 'error';
+            break;
+        }
+        return <Tag color={color}>{estado}</Tag>;
+      },
+    },
+    {
+      title: 'Personas',
+      dataIndex: 'personas_catering',
+      key: 'personas_catering',
+    },
+    {
+      title: 'Precio Neto',
+      dataIndex: 'precioneto_catering',
+      key: 'precioneto_catering',
+      render: (precio: number) => `$${Number(precio).toFixed(2)}`,
+    },
+    {
+      title: 'ITBIS',
+      dataIndex: 'itbis_catering',
+      key: 'itbis_catering',
+      render: (itbis: number) => `$${Number(itbis).toFixed(2)}`,
+    },
+    {
+      title: 'Total',
+      dataIndex: 'total_catering',
+      key: 'total_catering',
+      render: (total: number) => `$${Number(total).toFixed(2)}`,
+    },
+    {
+      title: 'Acciones',
+      key: 'actions',
+      render: (_: any, record: CateringService) => {
+        const isCanceled = record.estado_catering.toLowerCase() === 'cancelado';
+        const isCompleted = record.estado_catering.toLowerCase() === 'completado';
+        
+        return (
+          <Space>
+            <Button
+              icon={<EditOutlined />}
+              type="link"
+              onClick={() => handleEdit(record)}
+              disabled={isCompleted}
+              style={{ color: 'var(--dark-gold)' }}
+            />
+            {!isCanceled && (
+              <Button
+                icon={<DeleteOutlined />}
+                type="link"
+                danger
+                onClick={() => handleDelete(record)}
+                disabled={isCompleted}
+                style={{ color: 'var(--dark-gold)' }}
+              />
+            )}
+          </Space>
+        );
+      }
+    }
+  ];
+
+  const cateringForm = (
+    <Form 
+      form={form} 
+      onFinish={handleCateringFormSubmit} 
+      layout="vertical"
+      initialValues={formData}
+    >
+      <Form.Item name="id_catering" hidden>
+        <Input />
+      </Form.Item>
+      <Form.Item
+        name="id_evento"
+        label="Evento"
+        rules={[{ required: true, message: 'Por favor seleccione un evento' }]}
+      >
+        <Select placeholder="Seleccione un evento">
+          {events.map(evento => (
+            <Option key={`event-${evento.id_evento}`} value={evento.id_evento}>
+              {evento.nombre_evento}
+            </Option>
+          ))}
+        </Select>
+      </Form.Item>
+      <Form.Item
+        name="personas_catering"
+        label="Número de Personas"
+        rules={[{ required: true, message: 'Por favor ingrese el número de personas' }]}
+      >
+        <InputNumber min={1} style={{ width: '100%' }} />
+      </Form.Item>
+      <Form.Item
+        name="estado_catering"
+        label="Estado"
+        rules={[{ required: true, message: 'Por favor seleccione un estado' }]}
+      >
+        <Select placeholder="Seleccione un estado">
+          <Option key="estado-solicitado" value="Solicitado">Solicitado</Option>
+          <Option key="estado-aceptado" value="Aceptado">Aceptado</Option>
+          <Option key="estado-completado" value="Completado">Completado</Option>
+          <Option key="estado-cancelado" value="Cancelado">Cancelado</Option>
+        </Select>
+      </Form.Item>
+      <Form.Item
+        name="menus"
+        label="Menús"
+        required
+        tooltip="Seleccione los menús y especifique la cantidad deseada para cada uno"
+      >
+        <Select
+          mode="multiple"
+          placeholder="Seleccione los menús"
+          style={{ width: '100%', marginBottom: 16 }}
+          onChange={menuIds => {
+            const uniqueMenuIds = [...new Set(menuIds)];
+            const selected = menus.filter(m => uniqueMenuIds.includes(m.id_menu));
+            const uniqueSelected = Array.from(
+              new Map(selected.map(menu => [menu.id_menu, { ...menu, quantity: 1 }])).values()
+            );
+            setSelectedMenus(uniqueSelected);
+          }}
+        >
+          {menus.map(menu => (
+            <Option key={`menu-option-${menu.id_menu}`} value={menu.id_menu}>
+              {menu.desc_menu} (${menu.precio_menu})
+            </Option>
+          ))}
+        </Select>
+      </Form.Item>
+      {selectedMenus.length > 0 && (
+        <List
+          dataSource={selectedMenus}
+          renderItem={menu => (
+            <List.Item key={`selected-menu-${menu.id_menu}`}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
+                <span>{menu.desc_menu}</span>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <span>Cantidad:</span>
+                  <InputNumber
+                    min={1}
+                    value={menu.quantity}
+                    onChange={(value) => {
+                      setSelectedMenus(prev => 
+                        prev.map(m => 
+                          m.id_menu === menu.id_menu 
+                            ? { ...m, quantity: value || 1 }
+                            : m
+                        )
+                      );
+                    }}
+                  />
+                  <span>Precio: ${(menu.precio_menu * (menu.quantity || 1)).toFixed(2)}</span>
+                </div>
+              </div>
+            </List.Item>
+          )}
+        />
+      )}
+      <Form.Item>
+        <Button 
+          type="primary" 
+          htmlType="submit"
+          style={{ backgroundColor: 'var(--dark-gold)', borderColor: 'var(--dark-gold)' }}
+        >
+          {formData.id_catering ? 'Actualizar Servicio' : 'Crear Servicio'}
+        </Button>
+      </Form.Item>
+    </Form>
+  );
+
+  // Función para filtrar los servicios de catering
+  const getFilteredCateringServices = () => {
+    return cateringServices.filter(service => {
+      // Filtro por texto de búsqueda (evento o ID)
+      const matchesSearch = !searchText
+        || (service.evento?.nombre_evento?.toLowerCase().includes(searchText.toLowerCase()))
+        || service.id_evento?.toString().includes(searchText);
+
+      // Filtro por estado
+      const matchesStatus = !statusFilter
+        || service.estado_catering === statusFilter;
+
+      return matchesSearch && matchesStatus;
     });
   };
 
-  const handleSolicitarCateringDesdeBandeja = () => {
-    setShowBandeja(false);
-    setShowCateringForm(true);
-    if (bandejaMenus.length > 0) {
-      setFormData(prev => ({
-        ...prev,
-        menus: bandejaMenus.map(menu => ({
-          id_menu: menu.id_menu,
-          desc_menu: menu.desc_menu,
-          id_proveedor: 0,
-          precio_menu: menu.precio_menu,
-          proveedor: menu.proveedor || '',
-          platos: (menu.platos || []).map((p, idx) => ({
-            id_plato: idx,
-            nombre: p.nombre,
-            descripcion: '',
-          })),
-        })),
-        precioneto_catering: bandejaMenus.reduce((acc, m) => acc + m.precio_menu, 0),
-        itbis_catering: +(bandejaMenus.reduce((acc, m) => acc + m.precio_menu, 0) * 0.18).toFixed(2),
-        total_catering: +(bandejaMenus.reduce((acc, m) => acc + m.precio_menu, 0) * 1.18).toFixed(2),
-        personas_catering: 1,
-      }));
-    }
-  };
-
-  const renderClientView = () => {
-    return (
-      <div className="catering-content">
-        <div className="menu-catalogo-filters">
-          <div className="search-bar">
-            <input
-              type="text"
-              placeholder="Buscar menús, platos o proveedores..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
-          </div>
-          <div className="category-filter">
-            <select
-              value={selectedCategory}
-              onChange={(e) => setSelectedCategory(e.target.value)}
-            >
-              <option value="todos">Todos los menús</option>
-              <option value="economico">Económicos (hasta $250)</option>
-              <option value="premium">Premium (más de $250)</option>
-            </select>
-          </div>
-        </div>
-
-        <div className="menu-catalogo-grid">
-          {filteredMenus.length > 0 ? (
-            filteredMenus.map((menu) => (
-              <div key={menu.id_menu} className="menu-card">
-                <div className="menu-card-header">
-                  <h3>{menu.desc_menu}</h3>
-                  <span className="menu-price">${menu.precio_menu.toFixed(2)}</span>
-                </div>
-                <div className="menu-card-content">
-                  <p className="menu-proveedor">Proveedor: {menu.proveedor}</p>
-                  <div className="menu-platos">
-                    <h4>Platos incluidos:</h4>
-                    <ul>
-                      {menu.platos.map((plato, idx) => (
-                        <li key={plato.id || idx}>{plato.nombre}</li>
-                      ))}
-                    </ul>
-                  </div>
-                </div>
-                <div className="menu-card-actions">
-                  <button
-                    className="solicitar-btn"
-                    onClick={() => handleSolicitarMenu(menu.id_menu)}
-                  >
-                    Solicitar Menú
-                  </button>
-                  <button
-                    className={`bandeja-btn ${bandejaMenus.some(m => m.id_menu === menu.id_menu) ? 'active' : ''}`}
-                    onClick={() => toggleBandejaMenu(menu)}
-                  >
-                    {bandejaMenus.some(m => m.id_menu === menu.id_menu) ? 'En Bandeja' : 'Agregar a Bandeja'}
-                  </button>
-                </div>
-              </div>
-            ))
-          ) : (
-            <div className="text-center py-12">
-              <p className="text-gray-500 text-lg">No se encontraron menús disponibles</p>
-            </div>
-          )}
-        </div>
-
-        {showCateringForm && selectedMenu && (
-          <div className="modal-overlay">
-            <div className="modal-container">
-              <button className="close-btn" onClick={closeCateringForm}>×</button>
-              <h2>Solicitar Catering</h2>
-              <form onSubmit={handleSubmit}>
-                <div className="form-group">
-                  <label>Evento:</label>
-                  <select
-                    name="id_evento"
-                    value={formData.id_evento}
-                    onChange={handleInputChange}
-                    required
-                  >
-                    <option value="">Selecciona un evento</option>
-                    {eventos.map(ev => (
-                      <option key={ev.id_evento} value={ev.id_evento}>
-                        {ev.nombre_evento || `Evento #${ev.id_evento}`}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                <div className="form-group">
-                  <label>Número de Personas:</label>
-                  <input
-                    type="number"
-                    name="personas_catering"
-                    min="1"
-                    value={formData.personas_catering}
-                    onChange={handleInputChange}
-                    required
-                  />
-                </div>
-                <div className="menu-details">
-                  <h3>Detalles del Menú</h3>
-                  <p><strong>Nombre:</strong> {selectedMenu.desc_menu}</p>
-                  <p><strong>Proveedor:</strong> {selectedMenu.proveedor}</p>
-                  <p><strong>Precio base:</strong> ${selectedMenu.precio_menu.toFixed(2)}</p>
-                  <p><strong>ITBIS (18%):</strong> ${(selectedMenu.precio_menu * 0.18).toFixed(2)}</p>
-                  <p><strong>Total:</strong> ${(selectedMenu.precio_menu * 1.18).toFixed(2)}</p>
-                </div>
-                <button type="submit" className="submit-btn">
-                  Confirmar Solicitud
-                </button>
-              </form>
-            </div>
-          </div>
-        )}
-      </div>
-    );
-  };
-
-  const renderAdminView = () => {
-    return (
-      <div className="catering-content">
-        <div className="dashboard__stats">
-          <div className="stat-card">
-            <span className="stat-card__label">Todos los Pedidos</span>
-            <button 
-              className="stat-card__seeInfo"
-              onClick={() => setShowPedidosModal(true)}
-            >
-              Ver pedidos
-            </button>
-          </div>
-
-          <div className="stat-card">
-            <span className="stat-card__label">Pedidos Pendientes</span>
-            <button 
-              className="stat-card__seeInfo"
-              onClick={() => setShowPendientesModal(true)}
-            >
-              Ver pendientes
-            </button>
-          </div>
-
-          <div className="stat-card">
-            <span className="stat-card__label">Proveedores de Catering</span>
-            <button 
-              className="stat-card__seeInfo"
-              onClick={() => setShowProveedoresModal(true)}
-            >
-              Ver proveedores
-            </button>
-          </div>
-        </div>
-
-        {showPedidosModal && renderPedidosModal()}
-        {showPendientesModal && renderPendientesModal()}
-        {showProveedoresModal && renderProveedoresModal()}
-
-        <center>
-          <button className="new-form-btn" onClick={() => setShowModal(true)}>
-          Agregar Servicio de Catering
-        </button>
-        </center>
-
-        {showModal && (
-          <div className="modal-overlay">
-            <div className="modal-container">
-              <button className="close-btn" onClick={() => setShowModal(false)}>×</button>
-              <form className="modal-form" onSubmit={handleSubmit}>
-                <h2>{editId ? 'Editar Servicio de Catering' : 'Nuevo Servicio de Catering'}</h2>
-                
-                <div className="form-grid">
-                  <label>
-                    <span>Evento:</span>
-                    <select
-                      name="id_evento"
-                      value={formData.id_evento || ''}
-                      onChange={handleInputChange}
-                      required
-                    >
-                      <option value="">Seleccionar evento</option>
-                      {eventos.map((evento) => (
-                        <option key={evento.id_evento} value={evento.id_evento}>
-                          {evento.tipo_evento} - {evento.fecha_evento}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
-
-                  <label>
-                    <span>Número de Personas:</span>
-                    <input
-                      type="number"
-                      name="personas_catering"
-                      value={formData.personas_catering || ''}
-                      onChange={handleInputChange}
-                      required
-                      min="1"
-                    />
-                  </label>
-
-                  <label>
-                    <span>Precio Neto:</span>
-                    <input
-                      type="number"
-                      name="precioneto_catering"
-                      value={formData.precioneto_catering || ''}
-                      onChange={handleInputChange}
-                      required
-                      min="0"
-                      step="0.01"
-                      placeholder="0.00"
-                    />
-                  </label>
-
-                  <label>
-                    <span>ITBIS (18%):</span>
-                    <input
-                      type="number"
-                      name="itbis_catering"
-                      value={formData.itbis_catering || ''}
-                      readOnly
-                      className="readonly"
-                      placeholder="ITBIS calculado automáticamente"
-                    />
-                  </label>
-
-                  <label>
-                    <span>Total:</span>
-                    <input
-                      type="number"
-                      name="total_catering"
-                      value={formData.total_catering || ''}
-                      readOnly
-                      className="readonly"
-                      placeholder="Total calculado automáticamente"
-                    />
-                  </label>
-
-                  <label className="full-width">
-                    <span>Menús:</span>
-                    <div className="menu-selection">
-                      {menus.map(menu => (
-                        <div
-                          key={menu.id_menu}
-                          className={`menu-card ${
-                            formData.menus?.some(m => m.id_menu === menu.id_menu) ? 'selected' : ''
-                          }`}
-                          onClick={() => handleMenuSelect(menu)}
-                        >
-                          <h4>{menu.desc_menu}</h4>
-                          <div className="menu-platos">
-                            {menu.platos?.map(plato => (
-                              <p key={plato.id_plato}>{plato.nombre}</p>
-                            ))}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </label>
-                </div>
-
-                <div className="form-buttons">
-                  <button type="submit" className="submit-btn">
-                    {editId ? 'Actualizar' : 'Guardar'}
-                  </button>
-                  <button
-                    type="button"
-                    className="reset-btn"
-                    onClick={() => setShowModal(false)}
-                  >
-                    Cancelar
-                  </button>
-                </div>
-              </form>
-            </div>
-          </div>
-        )}
-      </div>
-    );
-  };
-
-  const renderOrganizerView = () => (
-    <div className="catering-content">
-      <div className="dashboard__stats">
-        <div className="stat-card">
-          <span className="stat-card__label">Menús Disponibles</span>
-          <button 
-            className="stat-card__seeInfo"
-            onClick={() => setShowMenusModal(true)}
-          >
-            Ver menús
-          </button>
-        </div>
-
-        <div className="stat-card">
-          <span className="stat-card__label">Proveedores Activos</span>
-          <button 
-            className="stat-card__seeInfo"
-            onClick={() => setShowProveedoresModal(true)}
-          >
-            Ver proveedores
-          </button>
-        </div>
-
-        <div className="stat-card">
-          <span className="stat-card__label">Eventos con Catering</span>
-          <button 
-            className="stat-card__seeInfo"
-            onClick={() => setShowEventosModal(true)}
-          >
-            Ver eventos
-          </button>
-        </div>
-      </div>
-
-      {showMenusModal && (
-        <div className="modal-overlay">
-          <div className="modal-container">
-            <button className="close-btn" onClick={() => setShowMenusModal(false)}>×</button>
-            <div className="modal-content">
-              <h3>Menús Disponibles</h3>
-              <div className="table-container">
-                <table>
-                  <thead>
-                    <tr>
-                      <th>Descripción del Menú</th>
-                      <th>Proveedor</th>
-                      <th>Cantidad de Platos</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {menus.map((menu) => (
-                      <tr key={menu.id_menu}>
-                        <td>{menu.desc_menu}</td>
-                        <td>{menu.proveedor}</td>
-                        <td>{menu.platos?.length || 0}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {showProveedoresModal && (
-        <div className="modal-overlay">
-          <div className="modal-container">
-            <button className="close-btn" onClick={() => setShowProveedoresModal(false)}>×</button>
-            <div className="modal-content">
-              <h3>Proveedores de Catering Activos</h3>
-              <div className="table-container">
-                <table>
-                  <thead>
-                    <tr>
-                      <th>Nombre</th>
-                      <th>Contacto</th>
-                      <th>Estado</th>
-                      <th>Acciones</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {proveedores.map((proveedor) => (
-                      <tr key={proveedor.id_proveedor}>
-                        <td>{proveedor.nombre}</td>
-                        <td>{proveedor.telefono}</td>
-                        <td>
-                          <span className={`estado-badge ${proveedor.estado.toLowerCase()}`}>
-                            {proveedor.estado}
-                          </span>
-                        </td>
-                        <td>
-                          <div className="acciones-buttons">
-                            <button className="edit-btn">Editar</button>
-                            <button className="delete-btn">Eliminar</button>
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {showEventosModal && (
-        <div className="modal-overlay">
-          <div className="modal-container">
-            <button className="close-btn" onClick={() => setShowEventosModal(false)}>×</button>
-            <div className="modal-content">
-              <h3>Eventos con Catering</h3>
-              <div className="table-container">
-                <table>
-                  <thead>
-                    <tr>
-                      <th>Evento</th>
-                      <th>Cliente</th>
-                      <th>Espacio</th>
-                      <th>Menú</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {caterings.map((catering) => {
-                      const evento = eventos.find(e => e.id_evento === catering.id_evento);
-                      return (
-                        <tr key={catering.id_catering}>
-                          <td>{evento?.tipo_evento}</td>
-                          <td>{evento?.nombre_cliente}</td>
-                          <td>{evento?.lugar}</td>
-                          <td>{catering.menus?.map(m => m.desc_menu).join(', ')}</td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-      
-      <center>
-          <button className="new-form-btn" onClick={() => setShowModal(true)}>
-          Agregar Servicio de Catering
-        </button>
-        </center>
-    </div>
-  );
+  // Add menu columns definition
+  const menuColumns = [
+    {
+      title: 'ID',
+      dataIndex: 'id_menu',
+      key: 'id_menu',
+    },
+    {
+      title: 'Descripción',
+      dataIndex: 'desc_menu',
+      key: 'desc_menu',
+    },
+    {
+      title: 'Precio',
+      dataIndex: 'precio_menu',
+      key: 'precio_menu',
+      render: (precio: number) => `$${Number(precio).toFixed(2)}`,
+    },
+    {
+      title: 'Proveedor',
+      dataIndex: ['proveedor', 'nombre_proveedor'],
+      key: 'proveedor',
+    },
+    {
+      title: 'Estado',
+      dataIndex: 'estado_menu',
+      key: 'estado_menu',
+      render: (estado: string) => {
+        let color = 'default';
+        switch (estado.toLowerCase()) {
+          case 'activo':
+            color = 'success';
+            break;
+          case 'inactivo':
+            color = 'error';
+            break;
+        }
+        return <Tag color={color}>{estado}</Tag>;
+      },
+    },
+    {
+      title: 'Platos',
+      key: 'platos',
+      render: (record: Menu) => (
+        <Button
+          type="link"
+          onClick={() => {
+            setViewMenu(record);
+            setShowViewMenuModal(true);
+          }}
+          style={{ color: 'var(--dark-gold)' }}
+        >
+          Ver Platos
+        </Button>
+      ),
+    },
+  ];
 
   return (
-    <div className="catering-page">
-      <div className="welcome-header">
-        <h1>Gestión de Catering</h1>
-        <p>selecciona un menú y solicítalo para tu evento</p>
-      </div>
+    <div>
+      <Tabs defaultActiveKey="1" items={[
+        {
+          key: 'catering-services',
+          label: 'Servicios de Catering',
+          children: (
+            <StyledCard title="Servicios de Catering">
+              <TableActions>
+                <FilterContainer>
+                  <Search
+                    placeholder="Buscar por evento"
+                    allowClear
+                    onSearch={value => setSearchText(value)}
+                    style={{ width: 200 }}
+                  />
+                  <Select
+                    placeholder="Filtrar por estado"
+                    allowClear
+                    style={{ width: 200 }}
+                    onChange={value => setStatusFilter(value)}
+                  >
+                    <Option key="filter-solicitado" value="Solicitado">Solicitado</Option>
+                    <Option key="filter-aceptado" value="Aceptado">Aceptado</Option>
+                    <Option key="filter-completado" value="Completado">Completado</Option>
+                    <Option key="filter-cancelado" value="Cancelado">Cancelado</Option>
+                  </Select>
+                </FilterContainer>
+                <Button
+                  type="primary"
+                  icon={<PlusOutlined />}
+                  onClick={handleCreateCatering}
+                  style={{ backgroundColor: 'var(--dark-gold)', borderColor: 'var(--dark-gold)' }}
+                >
+                  Nuevo Servicio
+                </Button>
+              </TableActions>
+              <Table
+                columns={cateringColumns}
+                dataSource={getFilteredCateringServices()}
+                loading={loading}
+                rowKey="id_catering"
+              />
+            </StyledCard>
+          ),
+        },
+        {
+          key: 'menus',
+          label: 'Menús',
+          children: (
+            <StyledCard title="Menús Disponibles">
+              <Table
+                columns={menuColumns}
+                dataSource={menus}
+                loading={loadingMenus}
+                rowKey="id_menu"
+              />
+            </StyledCard>
+          ),
+        },
+      ]} />
+      
+      {/* Modal para crear/editar catering */}
+      <Modal
+        title={form.getFieldValue('id_catering') ? 'Editar Servicio de Catering' : 'Nuevo Servicio de Catering'}
+        open={showCateringForm}
+        onCancel={() => {
+          setShowCateringForm(false);
+          form.resetFields();
+          setSelectedMenus([]);
+        }}
+        footer={null}
+      >
+        {cateringForm}
+      </Modal>
 
-      <div className="service-content">
-        {(() => {
-          const rolId = Number(userData.rol);
-          const isAdmin = rolId === 1;
-          const isOrganizer = rolId === 3;
-          const isClient = rolId === 2;
-
-          if (isAdmin) {
-            return renderAdminView();
-          }
-
-          if (isOrganizer) {
-            return renderOrganizerView();
-          }
-
-          if (isClient) {
-            return renderClientView();
-          }
-
-          return null;
-        })()}
-      </div>
-
-      {/* Modales necesarios */}
+      {/* Modal para ver platos del menú */}
+      <Modal
+        title="Platos del Menú"
+        open={showViewMenuModal}
+        onCancel={() => setShowViewMenuModal(false)}
+        footer={null}
+      >
+        {viewMenu && (
+          <List
+            dataSource={viewMenu.platos || []}
+            renderItem={plato => (
+              <List.Item>
+                <Typography.Text>{plato.nombre}</Typography.Text>
+              </List.Item>
+            )}
+          />
+        )}
+      </Modal>
     </div>
   );
-}
+};
+
+export default CateringClient;
