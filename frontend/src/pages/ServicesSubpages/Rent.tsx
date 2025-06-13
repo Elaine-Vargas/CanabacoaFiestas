@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import RentAdmin from '../../components/DashboardComponents/Rent/RentAdmin';
 import RentClient from '../../components/DashboardComponents/Rent/RentClient';
 import RentEmployee from '../../components/DashboardComponents/Rent/RentEmployee';
-import { message, Spin, Result } from 'antd';
+import { message, Spin, Result, Modal } from 'antd';
 import styled from 'styled-components';
 import { useUser } from '../../contexts/UserContext';
 
@@ -26,6 +26,7 @@ const RentPage = () => {
   const navigate = useNavigate();
   const { userRole, isUserLoading } = useUser();
   const [loading, setLoading] = useState(true);
+  const userData = JSON.parse(localStorage.getItem('userData') || '{}');
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -64,6 +65,25 @@ const RentPage = () => {
   }
 
   const renderComponentByRole = () => {
+    console.log('Rent - renderComponentByRole - userRole:', userRole);
+    console.log('Rent - userData.rol:', userData.rol);
+    
+    if (!userRole) {
+      console.log('Rol no válido:', userRole);
+      Modal.confirm({
+        title: 'Sesión inválida',
+        content: 'Su sesión no es válida o ha expirado. Será redirigido al inicio de sesión.',
+        okText: 'Entendido',
+        cancelButtonProps: { style: { display: 'none' } },
+        onOk: () => {
+          localStorage.removeItem('userData');
+          localStorage.removeItem('token');
+          window.location.href = '/Login';
+        }
+      });
+      return null;
+    }
+
     switch (userRole) {
       case 'admin':
         return <RentAdmin />;
@@ -72,18 +92,7 @@ const RentPage = () => {
       case 'empleado':
         return <RentEmployee />;
       default:
-        return (
-          <Result
-            status="403"
-            title="Acceso Restringido"
-            subTitle="Lo sentimos, no tienes permisos para acceder a esta sección."
-            extra={[
-              <button key="login" onClick={() => navigate('/Login')}>
-                Volver al Login
-              </button>
-            ]}
-          />
-        );
+        return null;
     }
   };
 

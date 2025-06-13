@@ -1,6 +1,6 @@
 import '../styles/basics/App.scss';
 import { lazy, Suspense } from 'react';
-import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import ColorTheme from '../functions/ColorTheme';
 import { UserProvider } from '../contexts/UserContext';
 
@@ -24,46 +24,6 @@ import ProtectedRoute from '../components/Otros/ProtectedRoute';
 import PublicRoute from '../components/Otros/PublicRoute';
 import PrincipalLayout from './Principal/PrincipalLayout';
 import { LoadingScreen } from '../components/Otros/LoadingScreen';
-
-// Tipos para el mapeo de rutas
-type RouteMapping = {
-  [key: number]: string;
-};
-
-type RouteMappings = {
-  [key: string]: RouteMapping;
-};
-
-// Componente para manejar redirecciones basadas en roles
-const RoleBasedRedirect = () => {
-  const location = useLocation();
-  const userData = JSON.parse(localStorage.getItem('userData') || '{}');
-  const rolId = Number(userData.rol);
-
-  // Mapeo de rutas según el rol
-  const routeMappings: RouteMappings = {
-    'Alquiler': {
-      1: 'Alquileres-Compras', // Admin
-      2: 'Alquileres-Compras', // Cliente
-      3: 'Alquileres-Compras', // Empleado
-    },
-    'Facturas': {
-      1: 'Reportes-Facturas', // Admin
-      2: 'Facturas', // Cliente
-      3: 'Reportes-Facturas', // Empleado
-    }
-  };
-
-  const path = location.pathname.split('/').pop() || '';
-  const mapping = routeMappings[path];
-
-  if (mapping && mapping[rolId]) {
-    return <Navigate to={`/Menu-Servicios/${mapping[rolId]}`} replace />;
-  }
-
-  // Si no hay mapeo o el rol no está definido, redirigir a la página de bienvenida
-  return <Navigate to="/Menu-Servicios/Bienvenida" replace />;
-};
 
 function App() {
   return (
@@ -116,13 +76,11 @@ function App() {
             <Route index element={<Navigate to="Bienvenida" replace />} />
             <Route path="Bienvenida" element={<WelcomeMenu/>} />
             <Route path="Ajustes-Usuario" element={<UserConfig />} />
-            
-            {/* Rutas con redirección basada en roles */}
-            <Route path="Alquiler" element={<RoleBasedRedirect />} />
+            <Route path="Alquiler" element={<Rent />} />
             <Route path="Alquileres-Compras" element={<Rent />} />
             <Route path="Catering" element={<Catering />} />
             <Route path="Facturas" element={<Report />} />
-            {/* Catch-all para subrutas inexistentes de Menu-Servicios */}
+            <Route path="Reportes-Facturas" element={<Report />} />
             <Route path="*" element={
               <Suspense fallback={<LoadingScreen />}>
                 <NotFoundModal />

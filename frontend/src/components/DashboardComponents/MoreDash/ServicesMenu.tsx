@@ -56,7 +56,6 @@ export default function ServicesMenu({ selectedService }: ServicesMenuProps) {
   const renderMenuItems = () => {
     const rolId = Number(userData.rol);
 
-    // Menú para todos los roles
     return (
       <ul>
         <li
