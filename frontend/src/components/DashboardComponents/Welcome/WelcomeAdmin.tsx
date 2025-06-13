@@ -8,6 +8,7 @@ import UsuarioForm from '../FormService/UsuarioForm';
 import ProveedorForm from '../FormService/ProveedorForm';
 import AsignacionEmpleadoForm from '../FormService/AsignacionEmpleadoForm';
 import DecoracionForm from '../FormService/DecoracionForm';
+import PagoForm from '../FormService/PagoForm';
 import TableFilters from '../MoreDash/TableFilters';
 import { 
   getEventoColumns, 
@@ -265,6 +266,7 @@ const WelcomeAdmin: React.FC = () => {
   const [modalProveedorVisible, setModalProveedorVisible] = useState(false);
   const [modalAsignacionVisible, setModalAsignacionVisible] = useState(false);
   const [modalDecoracionVisible, setModalDecoracionVisible] = useState(false);
+  const [modalPagoVisible, setModalPagoVisible] = useState(false);
 
   // Estados para los modales de detalles
   const [modalDetallesEventoVisible, setModalDetallesEventoVisible] = useState(false);
@@ -339,6 +341,8 @@ const WelcomeAdmin: React.FC = () => {
 
   // Estados para el manejo de elementos de decoración
   const [modalElementosDecoracionVisible, setModalElementosDecoracionVisible] = useState(false);
+
+  const [loadingPago, setLoadingPago] = useState(false);
 
   const handleSubmitDecoracion = async (values: any) => {
     try {
@@ -863,6 +867,41 @@ const WelcomeAdmin: React.FC = () => {
       console.error('Error al crear proveedor:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleCrearPago = async (values: any) => {
+    setLoadingPago(true);
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        message.error('No hay sesión activa');
+        return;
+      }
+      const response = await fetch(`${apiUrl}/pago`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          ...values,
+          fecha_pago: values.fecha_pago.format('YYYY-MM-DD'),
+          hora_pago: values.hora_pago.format('HH:mm:ss'),
+        }),
+        credentials: 'include'
+      });
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.mensaje || 'Error al crear el pago');
+      }
+      setModalPagoVisible(false);
+      message.success('Pago creado exitosamente');
+      fetchPagos();
+    } catch (error) {
+      message.error(error instanceof Error ? error.message : 'Error al crear el pago');
+    } finally {
+      setLoadingPago(false);
     }
   };
 
@@ -1469,6 +1508,9 @@ const WelcomeAdmin: React.FC = () => {
         <p className="welcome-subtitle">
           Desde aquí podrás gestionar todos los aspectos de Canabacoa Fiestas
         </p>
+        <Button type="primary" onClick={() => setModalPagoVisible(true)} style={{ marginTop: 16 }}>
+          Añadir Pago
+        </Button>
       </Card>
 
       <div className="dashboard-container">
@@ -1993,6 +2035,14 @@ const WelcomeAdmin: React.FC = () => {
         proveedores={proveedores}
       />
 
+      <PagoForm
+        visible={modalPagoVisible}
+        onCancel={() => setModalPagoVisible(false)}
+        onSubmit={handleCrearPago}
+        loading={loadingPago}
+        eventos={eventos}
+      />
+
       <Modal
         title="Detalles del Evento"
         open={modalDetallesEventoVisible}
@@ -2452,6 +2502,16 @@ const WelcomeAdmin: React.FC = () => {
         <Card
           title="PAGOS"
           className="dashboard-card"
+          extra={
+            <Button
+              type="primary"
+              icon={<PlusOutlined />}
+              className="action-button primary"
+              onClick={() => setModalPagoVisible(true)}
+            >
+              Nuevo Pago
+            </Button>
+          }
         >
           <TableFilters
             type="pagos"

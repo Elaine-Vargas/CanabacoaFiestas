@@ -21,9 +21,6 @@ export default class Pago extends Model {
   })
   modo_pago!: string;
 
-
-
-
   @Column({ 
     type: DataType.DATEONLY, 
     allowNull: false,
