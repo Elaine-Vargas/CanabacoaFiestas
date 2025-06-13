@@ -100,6 +100,7 @@ interface AsignacionEmpleado {
     nombre_usuario: string;
     apellido_usuario: string;
   };
+  estado_empevento: string;
 }
 
 interface Decoracion {
@@ -456,6 +457,19 @@ export const getAsignacionColumns = ({ onViewDetails, onEdit, onDelete }: TableA
     )
   },
   {
+    title: 'Estado',
+    dataIndex: 'estado_empevento',
+    key: 'estado_empevento',
+    render: (estado: string) => {
+      const colors: Record<string, string> = {
+        'Activo': 'green',
+        'Completado': 'blue',
+        'Eliminado': 'red'
+      };
+      return <Tag color={colors[estado] || 'default'}>{estado}</Tag>;
+    }
+  },
+  {
     title: 'Acciones',
     key: 'acciones',
     width: 'fit-content',
@@ -479,7 +493,7 @@ export const getAsignacionColumns = ({ onViewDetails, onEdit, onDelete }: TableA
             type="text" 
             danger 
             icon={<DeleteOutlined />} 
-          onClick={() => onDelete(record)} 
+            onClick={() => onDelete({ ...record, estado_empevento: 'Eliminado' })} 
           />
         )}
       </Space>

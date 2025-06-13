@@ -13,7 +13,7 @@ interface UsuarioFormProps {
   onCancel: () => void;
   onSubmit: (values: any) => void;
   loading?: boolean;
-  initialValues?: Usuario | null;
+  initialValues?: any;
 }
 
 const UsuarioForm: React.FC<UsuarioFormProps> = ({
@@ -28,6 +28,7 @@ const UsuarioForm: React.FC<UsuarioFormProps> = ({
   const [roles, setRoles] = useState<Rol[]>([]);
   const [loadingRoles, setLoadingRoles] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [usuarios, setUsuarios] = useState([]);
 
   useEffect(() => {
     if (visible) {
@@ -38,6 +39,8 @@ const UsuarioForm: React.FC<UsuarioFormProps> = ({
   useEffect(() => {
     if (visible && initialValues) {
       form.setFieldsValue(initialValues);
+    } else {
+      form.resetFields();
     }
   }, [visible, initialValues, form]);
 
@@ -54,10 +57,10 @@ const UsuarioForm: React.FC<UsuarioFormProps> = ({
         throw new Error('Error al cargar los roles');
       }
       const data = await response.json();
-      console.log('Datos de roles recibidos:', data);
       setRoles(Array.isArray(data.roles) ? data.roles : []);
     } catch (error) {
       console.error('Error al cargar roles:', error);
+      message.error('Error al cargar los roles');
       setRoles([]);
     } finally {
       setLoadingRoles(false);
@@ -65,21 +68,10 @@ const UsuarioForm: React.FC<UsuarioFormProps> = ({
   };
 
   const formatCedula = (value: string) => {
-    // Eliminar todos los caracteres no numéricos
     const numbers = value.replace(/\D/g, '');
-    // Aplicar formato XXX-XXXXXXX-X
     if (numbers.length <= 3) return numbers;
     if (numbers.length <= 10) return `${numbers.slice(0, 3)}-${numbers.slice(3)}`;
     return `${numbers.slice(0, 3)}-${numbers.slice(3, 10)}-${numbers.slice(10, 11)}`;
-  };
-
-  const formatTelefono = (value: string) => {
-    // Eliminar todos los caracteres no numéricos
-    const numbers = value.replace(/\D/g, '');
-    // Aplicar formato XXX-XXX-XXXX
-    if (numbers.length <= 3) return numbers;
-    if (numbers.length <= 6) return `${numbers.slice(0, 3)}-${numbers.slice(3)}`;
-    return `${numbers.slice(0, 3)}-${numbers.slice(3, 6)}-${numbers.slice(6, 10)}`;
   };
 
   const handleCedulaChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -87,9 +79,16 @@ const UsuarioForm: React.FC<UsuarioFormProps> = ({
     form.setFieldValue('cedula_usuario', formattedValue);
   };
 
+  const formatTelefono = (value: string) => {
+    const numbers = value.replace(/\D/g, '');
+    if (numbers.length <= 3) return numbers;
+    if (numbers.length <= 6) return `${numbers.slice(0, 3)}-${numbers.slice(3)}`;
+    return `${numbers.slice(0, 3)}-${numbers.slice(3, 6)}-${numbers.slice(6, 10)}`;
+  };
+
   const handleTelefonoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const formattedValue = formatTelefono(e.target.value);
-    form.setFieldValue('telefono_usuario', formattedValue);
+    form.setFieldValue('tel_usuario', formattedValue);
   };
 
   const handleSubmit = async (values: any) => {
@@ -104,12 +103,15 @@ const UsuarioForm: React.FC<UsuarioFormProps> = ({
         correo_usuario: values.correo_usuario,
         tel_usuario: values.tel_usuario,
         id_rol: values.id_rol,
-        contrasena_login: values.contrasena_login
+        estado_usuario: values.estado_usuario
       };
+
+      if (!initialValues) {
+        userData.contrasena_login = values.contrasena_login;
+      }
 
       let response;
       if (initialValues) {
-        // Si estamos editando, actualizamos el usuario existente
         response = await fetch(`${apiUrl}/usuario/${initialValues.cedula_usuario}`, {
           method: 'PUT',
           headers: {
@@ -119,8 +121,7 @@ const UsuarioForm: React.FC<UsuarioFormProps> = ({
           body: JSON.stringify(userData)
         });
       } else {
-        // Si estamos creando, insertamos un nuevo usuario
-        response = await fetch(`${apiUrl}/usuario`, {
+        response = await fetch(`${apiUrl}/auth/register-user`, {
           method: 'POST',
           headers: {
             'Authorization': `Bearer ${localStorage.getItem('token')}`,
@@ -130,16 +131,16 @@ const UsuarioForm: React.FC<UsuarioFormProps> = ({
         });
       }
 
-      if (!response.ok) {
+      if (response.ok) {
+        const data = await response.json();
+        message.success(initialValues ? 'Usuario actualizado exitosamente' : 'Usuario creado exitosamente');
+        form.resetFields();
+        onCancel();
+        onSubmit(data);
+      } else {
         const errorData = await response.json();
         throw new Error(errorData.mensaje || `Error al ${initialValues ? 'actualizar' : 'crear'} el usuario`);
       }
-
-      const data = await response.json();
-      message.success(`Usuario ${initialValues ? 'actualizado' : 'creado'} exitosamente`);
-      onSubmit(data);
-      form.resetFields();
-      onCancel();
     } catch (error) {
       console.error(`Error al ${initialValues ? 'actualizar' : 'crear'} usuario:`, error);
       message.error(error instanceof Error ? error.message : `Error al ${initialValues ? 'actualizar' : 'crear'} el usuario`);
@@ -148,16 +149,11 @@ const UsuarioForm: React.FC<UsuarioFormProps> = ({
     }
   };
 
-  const handleCancel = () => {
-    form.resetFields();
-    onCancel();
-  };
-
   return (
     <Modal
       title={initialValues ? "Editar Usuario" : "Crear Nuevo Usuario"}
       open={visible}
-      onCancel={handleCancel}
+      onCancel={onCancel}
       footer={null}
       width={800}
     >
@@ -214,15 +210,8 @@ const UsuarioForm: React.FC<UsuarioFormProps> = ({
             loading={loadingRoles}
             showSearch
             optionFilterProp="children"
-            allowClear
-            filterOption={(input, option) => {
-              if (typeof option?.children === 'string') {
-                return (option.children as string).toLowerCase().includes(input.toLowerCase());
-              }
-              return false;
-            }}
           >
-            {Array.isArray(roles) && roles.map(rol => (
+            {roles.map(rol => (
               <Select.Option key={rol.id_rol} value={rol.id_rol}>
                 {rol.nombre_rol}
               </Select.Option>
@@ -247,25 +236,41 @@ const UsuarioForm: React.FC<UsuarioFormProps> = ({
           <Input placeholder="Crea un nombre de usuario" maxLength={25} />
         </Form.Item>
 
-        <Form.Item
-          name="contrasena_login"
-          label="Contraseña"
-          rules={[
-            { required: true, message: 'Por favor creele una contraseña' },
-            { validator: async (_, value) => {
-                if (!value) return Promise.resolve();
-                const error = validatePassword(value);
-                if (error) return Promise.reject(new Error(error));
-                return Promise.resolve();
+        {!initialValues && (
+          <Form.Item
+            name="contrasena_login"
+            label="Contraseña"
+            rules={[
+              { required: true, message: 'Por favor creele una contraseña' },
+              { validator: async (_, value) => {
+                  if (!value) return Promise.resolve();
+                  const error = validatePassword(value);
+                  if (error) return Promise.reject(new Error(error));
+                  return Promise.resolve();
+                }
               }
-            }
-          ]}
+            ]}
+          >
+            <Input.Password placeholder="Crea una contraseña" />
+          </Form.Item>
+        )}
+
+        <Form.Item
+          name="estado_usuario"
+          label="Estado"
+          rules={[{ required: true, message: 'Por favor seleccione el estado' }]}
         >
-          <Input.Password placeholder="Crea una contraseña" />
+          <Select
+            placeholder="Seleccione el estado"
+            options={[
+              { value: 'Activo', label: 'Activo' },
+              { value: 'Inactivo', label: 'Inactivo' }
+            ]}
+          />
         </Form.Item>
 
         <Form.Item
-          name="telefono_usuario"
+          name="tel_usuario"
           label="Teléfono"
           rules={[
             { required: true, message: 'Por favor ingrese el teléfono' },
@@ -284,6 +289,7 @@ const UsuarioForm: React.FC<UsuarioFormProps> = ({
           label="Correo Electrónico"
           rules={[
             { required: true, message: 'Por favor ingrese el correo electrónico' },
+            { type: 'email', message: 'Correo electrónico inválido' },
             { validator: async (_, value) => {
                 if (!value) return Promise.resolve();
                 const error = validateEmail(value);
@@ -293,12 +299,12 @@ const UsuarioForm: React.FC<UsuarioFormProps> = ({
             }
           ]}
         >
-          <Input placeholder="Ingrese el correo electrónico" maxLength={100} />
+          <Input placeholder="ejemplo@correo.com" />
         </Form.Item>
 
         <Form.Item>
           <div className="form-buttons">
-            <Button onClick={handleCancel}>Cancelar</Button>
+            <Button onClick={onCancel}>Cancelar</Button>
             <Button type="primary" htmlType="submit" loading={isSubmitting}>
               {initialValues ? "Actualizar Usuario" : "Crear Usuario"}
             </Button>

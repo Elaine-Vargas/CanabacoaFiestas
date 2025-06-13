@@ -13,7 +13,9 @@ import {
     getEmployeeEvents,
     updateEmployeeRole,
     removeEmployeeFromEvent,
-    updateEventStatus
+    updateEventStatus,
+    updateEmployeeAssignmentStatus,
+    getAsesorTeamAssignments
 } from '../controllers/eventoController';
 import { verificarToken } from '../middlewares/authMiddleware';
 import EmpleadoEvento from '../models/EmpleadoEvento_model';
@@ -160,6 +162,15 @@ router.get('/empleado/:id_empleado/eventos', async (req: Request, res: Response,
     }
 });
 
+// Obtener asignaciones de equipo para eventos donde el empleado es asesor
+router.get('/asesor/:cedula_asesor/asignaciones-equipo', async (req: Request, res: Response, next: NextFunction) => {
+    try {
+        await getAsesorTeamAssignments(req, res);
+    } catch (error) {
+        next(error);
+    }
+});
+
 // Actualizar rol de empleado en un evento
 router.put('/:id_evento/empleados/:empleado_evento', async (req: Request, res: Response, next: NextFunction) => {
     console.log('Datos recibidos para actualizar rol de empleado:', req.body);
@@ -183,6 +194,15 @@ router.delete('/:id_evento/empleados/:empleado_evento', async (req: Request, res
 router.patch('/:id_evento/estado', async (req: Request, res: Response, next: NextFunction) => {
     try {
         await updateEventStatus(req, res);
+    } catch (error) {
+        next(error);
+    }
+});
+
+// Actualizar estado de una asignación de empleado en evento
+router.patch('/:id_evento/empleados/:empleado_evento/estado', async (req: Request, res: Response, next: NextFunction) => {
+    try {
+        await updateEmployeeAssignmentStatus(req, res);
     } catch (error) {
         next(error);
     }
