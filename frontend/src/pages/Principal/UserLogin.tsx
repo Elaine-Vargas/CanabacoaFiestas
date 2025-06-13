@@ -86,9 +86,12 @@ const UserLogin = () => {
     
     if (id.startsWith('login-')) {
       // Validar que no haya espacios en usuario_login
-      if (id === 'login-username' && /\s/.test(value)) {
-        setError('El usuario no debe contener espacios');
-        return;
+      if (id === 'login-username') {
+        if (/\s/.test(value)) {
+          setError('El usuario no debe contener espacios');
+        } else {
+          setError("");
+        }
       }
       setLoginData(prev => ({
         ...prev,
