@@ -21,7 +21,9 @@ export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
 
   const updateUserRole = (storedUserData: any) => {
     let role: UserRole = null;
-    switch (storedUserData?.rol) {
+    // Cambiado de 'rol' a 'id_rol' para compatibilidad con la respuesta del backend
+    const userRoleId = storedUserData?.id_rol ?? storedUserData?.rol;
+    switch (userRoleId) {
       case 1:
         role = 'admin';
         break;
@@ -57,18 +59,27 @@ export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
           }
         });
 
+        if (response.status === 401) {
+          // Token inválido o expirado
+          setUserRole(null);
+          localStorage.removeItem('token');
+          localStorage.removeItem('userData');
+          setIsUserLoading(false);
+          return;
+        }
+
         if (!response.ok) {
           throw new Error('Error al obtener datos del usuario');
         }
 
         const data = await response.json();
+        console.log('Respuesta de /auth/current:', data); // <-- Log para depuración
         updateUserRole(data);
       } catch (error) {
         console.error('Error al obtener datos del usuario:', error);
+        // Solo limpiar localStorage si el error fue 401 (ya manejado arriba)
         setUserRole(null);
-        // Limpiar datos de usuario en caso de error
-        localStorage.removeItem('token');
-        localStorage.removeItem('userData');
+        // No limpiar localStorage aquí para evitar perder sesión por errores de red
       } finally {
         setIsUserLoading(false);
       }
