@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import '../../../styles/dashboard/ServicesSubpages.scss';
-import { Card, Button, Table, Tag, Space, Typography, Input, Select, Dropdown, Modal, Descriptions, message, Rate, Form } from 'antd';
-import { PlusOutlined, EditOutlined, DeleteOutlined, EyeOutlined, SearchOutlined, FilterOutlined } from '@ant-design/icons';
+import { Card, Button, Table, Tag, Space, Typography, Input, Select, Modal, Descriptions, message, Rate, Form, InputNumber, List } from 'antd';
+import { PlusOutlined, EditOutlined, DeleteOutlined, EyeOutlined } from '@ant-design/icons';
+import type { ColumnGroupType, ColumnType } from 'antd/es/table';
 import EventoForm from '../FormService/EventoForm';
 import UsuarioForm from '../FormService/UsuarioForm';
 import ProveedorForm from '../FormService/ProveedorForm';
@@ -12,7 +13,6 @@ import {
   getEventoColumns, 
   getUsuarioColumns, 
   getProveedorColumns, 
-  getAsignacionColumns, 
   getDecoracionColumns 
 } from '../MoreDash/TablesActions';
 import { 
@@ -21,7 +21,6 @@ import {
   updateProveedorEstado, 
   updateDecoracionEstado 
 } from '../MoreDash/TableUpdateActions';
-
 
 // Definición de tipos
 type EstadoSolicitud = 'Pendiente' | 'Aceptada' | 'Rechazada' | 'Completada' | 'Cancelada';
@@ -47,6 +46,7 @@ interface Evento {
   nota_cliente: string;
   creacion_evento: string;
   direccion?: {
+    id_direccion: number;
     calle: string;
     sector: string;
     ciudad: {
@@ -84,16 +84,20 @@ interface Proveedor {
   correo_proveedor: string;
   id_direccion: number;
   direccion: {
+    id_direccion: number;
     calle: string;
     sector: string;
+    detalles?: string;
     ciudad: {
+      id_ciudad: number;
       nombre_ciudad: string;
       provincia: {
+        id_provincia: number;
         nombre_provincia: string;
       };
     };
   };
-  estado_proveedor: string;
+  estado_proveedor: 'Activo' | 'Eliminado' | 'Inactivo';
   creacion_proveedor: string;
 }
 
@@ -107,6 +111,7 @@ interface AsignacionEmpleado {
   id_evento: number;
   empleado_evento: string;
   puesto_evento: string;
+  estado_empevento: string;
   evento?: {
     id_evento: number;
     fecha_evento: string;
@@ -188,7 +193,7 @@ interface Comentario {
   id_evento: number;
   comentario: string;
   calificacion: number;
-  estado: 'Activo' | 'Editado' | 'Eliminado';
+  estado_comentario: 'Activo' | 'Editado' | 'Eliminado';
   fecha_creacion: string;
   evento?: {
     id_evento: number;
@@ -199,10 +204,48 @@ interface Comentario {
   };
 }
 
+interface ProveedorFormValues extends Omit<Proveedor, 'direccion'> {
+  id_provincia?: number;
+  id_ciudad?: number;
+  sector?: string;
+  calle?: string;
+  detalles?: string;
+}
+
+interface ProveedorFormProps {
+  visible: boolean;
+  onCancel: () => void;
+  onSubmit: (values: ProveedorFormValues) => Promise<void>;
+  loading: boolean;
+  initialValues?: ProveedorFormValues;
+  provincias: Provincia[];
+  ciudades: Ciudad[];
+}
+
+interface AsignacionEmpleadoFormProps {
+  visible: boolean;
+  onCancel: () => void;
+  onSubmit: (values: AsignacionEmpleado) => Promise<void>;
+  loading: boolean;
+  initialValues?: AsignacionEmpleado;
+}
+
+interface DecoracionFormProps {
+  visible: boolean;
+  onCancel: () => void;
+  onSubmit: (values: any) => Promise<void>;
+  loading: boolean;
+  initialValues?: any;
+  proveedores: Proveedor[];
+}
+
 const { Title } = Typography;
 
 const WelcomeAdmin: React.FC = () => {
   const apiUrl = import.meta.env.VITE_API_BASE_URL;
+  const [formDecoracion] = Form.useForm();
+  const [formElementosDecoracion] = Form.useForm();
+  const [formEditarAsignacion] = Form.useForm();
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -234,7 +277,7 @@ const WelcomeAdmin: React.FC = () => {
   const [eventoSeleccionado, setEventoSeleccionado] = useState<Evento | null>(null);
   const [usuarioSeleccionado, setUsuarioSeleccionado] = useState<Usuario | null>(null);
   const [proveedorSeleccionado, setProveedorSeleccionado] = useState<Proveedor | null>(null);
-  const [decoracionSeleccionada, setDecoracionSeleccionada] = useState<Decoracion | null>(null);
+  const [decoracionSeleccionada, setDecoracionSeleccionada] = useState<any>(null);
   const [asignacionSeleccionada, setAsignacionSeleccionada] = useState<AsignacionEmpleado | null>(null);
 
   // Estados para los filtros de búsqueda individuales
@@ -293,7 +336,91 @@ const WelcomeAdmin: React.FC = () => {
   const [showComentariosFilters, setShowComentariosFilters] = useState(false);
 
   const [modalEditarAsignacionVisible, setModalEditarAsignacionVisible] = useState(false);
-  const [formEditarAsignacion] = Form.useForm();
+
+  // Estados para el manejo de elementos de decoración
+  const [modalElementosDecoracionVisible, setModalElementosDecoracionVisible] = useState(false);
+
+  const handleSubmitDecoracion = async (values: any) => {
+    try {
+      setLoading(true);
+      const url = decoracionSeleccionada 
+        ? `http://localhost:3001/api/decoraciones/${decoracionSeleccionada.id_decoracion}`
+        : 'http://localhost:3001/api/decoraciones';
+      
+      const method = decoracionSeleccionada ? 'PUT' : 'POST';
+
+      const response = await fetch(url, {
+        method,
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(values),
+      });
+
+      if (!response.ok) {
+        throw new Error('Error al guardar la decoración');
+      }
+
+      message.success(decoracionSeleccionada ? 'Decoración actualizada exitosamente' : 'Decoración creada exitosamente');
+      setModalDecoracionVisible(false);
+      formDecoracion.resetFields();
+      setDecoracionSeleccionada(null);
+      fetchDecoraciones();
+    } catch (error) {
+      console.error('Error:', error);
+      message.error('Error al guardar la decoración');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleEditDecoracion = (record: any) => {
+    setDecoracionSeleccionada(record);
+    formDecoracion.setFieldsValue({
+      tema_decoracion: record.tema_decoracion,
+      descripcion_decoracion: record.descripcion_decoracion,
+      precio_decoracion: record.precio_decoracion
+    });
+    setModalDecoracionVisible(true);
+  };
+
+  const handleDeleteDecoracion = async (id: number) => {
+    try {
+      setLoading(true);
+      const response = await fetch(`http://localhost:3001/api/decoraciones/${id}`, {
+        method: 'DELETE',
+      });
+
+      if (!response.ok) {
+        throw new Error('Error al eliminar la decoración');
+      }
+
+      message.success('Decoración eliminada exitosamente');
+      fetchDecoraciones();
+    } catch (error) {
+      console.error('Error:', error);
+      message.error('Error al eliminar la decoración');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchDecoraciones = async () => {
+    try {
+      setLoading(true);
+      const response = await fetch('http://localhost:3001/api/decoraciones');
+      if (!response.ok) {
+        throw new Error('Error al cargar las decoraciones');
+      }
+      const data = await response.json();
+      setDecoraciones(data);
+    } catch (error) {
+      console.error('Error:', error);
+      message.error('Error al cargar las decoraciones');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleEmpleadoChange = (value: string) => {
     setSelectedEmpleado(value);
@@ -1020,17 +1147,66 @@ const WelcomeAdmin: React.FC = () => {
     }
   };
   
-  const asignacionColumns = getAsignacionColumns({
-    onViewDetails: (record) => {
-      setAsignacionSeleccionada(record);
-      setModalDetallesAsignacionVisible(true);
+  const asignacionColumns: (ColumnGroupType<AsignacionEmpleado> | ColumnType<AsignacionEmpleado>)[] = [
+    {
+      title: 'Evento',
+      dataIndex: ['evento', 'id_evento'],
+      key: 'evento',
+      render: (_: unknown, record: AsignacionEmpleado) => (
+        <div>
+          <div>ID: {record.evento?.id_evento}</div>
+          <div>Fecha: {record.evento?.fecha_evento}</div>
+          <div>Hora: {record.evento?.hora_evento}</div>
+          {record.evento?.cliente && (
+            <div>Cliente: {`${record.evento.cliente.nombre_usuario} ${record.evento.cliente.apellido_usuario}`}</div>
+          )}
+        </div>
+      ),
     },
-    onEdit: (record) => {
-      setAsignacionSeleccionada(record);
-      setModalEditarAsignacionVisible(true);
+    {
+      title: 'Empleado',
+      dataIndex: ['empleado', 'cedula_usuario'],
+      key: 'empleado',
+      render: (_: unknown, record: AsignacionEmpleado) => (
+        <div>
+          <div>ID: {record.empleado?.cedula_usuario}</div>
+          <div>Nombre: {`${record.empleado?.nombre_usuario} ${record.empleado?.apellido_usuario}`}</div>
+        </div>
+      ),
     },
-    onDelete: handleDeleteAsignacion
-  });
+    {
+      title: 'Puesto',
+      dataIndex: 'puesto_evento',
+      key: 'puesto',
+    },
+    {
+      title: 'Estado',
+      dataIndex: 'estado_empevento',
+      key: 'estado',
+    },
+    {
+      title: 'Acciones',
+      key: 'acciones',
+      render: (_: unknown, record: AsignacionEmpleado) => (
+        <Space>
+          <Button
+            type="primary"
+            onClick={() => handleEditClick(record)}
+            icon={<EditOutlined />}
+          >
+            Editar
+          </Button>
+          <Button
+            danger
+            onClick={() => handleDeleteAsignacion(record)}
+            icon={<DeleteOutlined />}
+          >
+            Eliminar
+          </Button>
+        </Space>
+      ),
+    },
+  ];
 
   const decoracionColumns = getDecoracionColumns({
     onViewDetails: (record) => {
@@ -1245,6 +1421,44 @@ const WelcomeAdmin: React.FC = () => {
       formEditarAsignacion.setFieldsValue(formData);
     }
   }, [asignacionSeleccionada, modalEditarAsignacionVisible]);
+
+  // Función para manejar la selección de decoración
+  const handleSelectDecoracion = (decoracion: any) => {
+    setDecoracionSeleccionada(decoracion);
+    setModalElementosDecoracionVisible(true);
+  };
+
+  // Función para manejar el envío de elementos de decoración
+  const handleSubmitElementosDecoracion = async (values: any) => {
+    try {
+      setLoading(true);
+      const response = await fetch('http://localhost:3001/api/elementos-decoracion', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          ...values,
+          id_decoracion: decoracionSeleccionada.id_decoracion
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Error al guardar los elementos de decoración');
+      }
+
+      message.success('Elementos de decoración guardados exitosamente');
+      setModalElementosDecoracionVisible(false);
+      formElementosDecoracion.resetFields();
+      setDecoracionSeleccionada(null);
+      fetchDecoraciones();
+    } catch (error) {
+      console.error('Error:', error);
+      message.error('Error al guardar los elementos de decoración');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <div className="welcome-container">
@@ -1518,93 +1732,85 @@ const WelcomeAdmin: React.FC = () => {
           <Button
             type="primary"
             icon={<PlusOutlined />}
-            className="action-button primary"
             onClick={() => setModalAsignacionVisible(true)}
+            className="action-button primary"
           >
-            Asignar Empleado
+            Nueva Asignación
           </Button>
         }
       >
-        <TableFilters
-  type="asignaciones"
-  searchText={searchTextAsignaciones}
-  onSearchChange={setSearchTextAsignaciones}
-  clearFilters={() => {
-    setSearchTextAsignaciones('');
-    setSelectedEvento('');
-    setSelectedCargo('');
-    setSelectedEmpleado('');
-  }}
-  activeFiltersCount={
-    (selectedEvento ? 1 : 0) +
-    (selectedCargo ? 1 : 0) +
-    (selectedEmpleado ? 1 : 0)
-  }
-  filterContent={
-    <div style={{ padding: '8px', minWidth: '300px', backgroundColor: '#f5f5f5', borderRadius: '4px' }}>
-      <Space direction="vertical" style={{ width: '100%' }}>
-        <div>
-          <div style={{ marginBottom: 4 }}>Evento:</div>
-          <Select
-            placeholder="Filtrar por evento"
-            style={{ width: '100%' }}
-            onChange={handleEventoChange}
-            value={selectedEvento}
-            options={[
-              { value: '', label: 'Todos' },
-              ...eventos.map(evento => ({
-                value: evento.id_evento.toString(),
-                label: `ID: ${evento.id_evento} - ${evento.cliente?.nombre_usuario || ''} ${evento.cliente?.apellido_usuario || ''}`
-              }))
-            ]}
-          />
-        </div>
-        <div>
-          <div style={{ marginBottom: 4 }}>Empleado:</div>
-          <Select
-            placeholder="Filtrar por empleado"
-            style={{ width: '100%' }}
-            onChange={handleEmpleadoChange}
-            value={selectedEmpleado}
-            options={[
-              { value: '', label: 'Todos' },
-              ...empleados.map(empleado => ({
-                value: empleado.cedula_usuario,
-                label: `${empleado.nombre_usuario} ${empleado.apellido_usuario} (${empleado.cedula_usuario})`
-              }))
-            ]}
-          />
-        </div>
-        <div>
-          <div style={{ marginBottom: 4 }}>Cargo del empleado:</div>
-          <Select
-            placeholder="Filtrar por cargo"
-            style={{ width: '100%' }}
-            onChange={handleCargoChange}
-            value={selectedCargo}
-            options={[
-              { value: '', label: 'Todos' },
-              { value: 'Decorador', label: 'Decorador' },
-              { value: 'Camarero', label: 'Camarero' },
-              { value: 'Conductor', label: 'Conductor' },
-              { value: 'Supervisor', label: 'Supervisor' },
-              { value: 'Encargado de Logística', label: 'Encargado de Logística' },
-              { value: 'Encargado de Limpieza', label: 'Encargado de Limpieza' }
-            ]}
-          />
-        </div>
-      </Space>
-    </div>
-  }
-/>
         <Table
-          className="dashboard-table"
-          columns={asignacionColumns}
           dataSource={getFilteredAsignaciones()}
-          loading={loading}
-          pagination={{ pageSize: 3 }}
-          rowKey={(record) => `${record.id_evento}-${record.empleado_evento}`}
+          columns={[
+            {
+              title: 'ID Evento',
+              dataIndex: ['evento', 'id_evento'],
+              key: 'id_evento',
+              render: (text: string) => <span className="column-id">{text}</span>,
+            },
+            {
+              title: 'Empleado',
+              dataIndex: 'empleado',
+              key: 'empleado',
+              render: (empleado) => empleado ? `${empleado.nombre_usuario} ${empleado.apellido_usuario}` : 'N/A',
+            },
+            {
+              title: 'Puesto',
+              dataIndex: 'puesto_evento',
+              key: 'puesto_evento',
+            },
+            {
+              title: 'Estado',
+              dataIndex: 'estado_empevento',
+              key: 'estado_empevento',
+              render: (estado) => (
+                <Tag color={
+                  estado === 'Activo' ? 'green' :
+                  estado === 'Pendiente' ? 'orange' :
+                  estado === 'Cancelado' ? 'red' : 'default'
+                }>
+                  {estado}
+                </Tag>
+              ),
+            },
+            {
+              title: 'Acciones',
+              key: 'acciones',
+              fixed: 'right' as const,
+              width: 'fit-content',
+              render: (_: any, record: AsignacionEmpleado) => (
+                <Space>
+                  <Button
+                    type="text"
+                    icon={<EyeOutlined />}
+                    onClick={() => {
+                      setAsignacionSeleccionada(record);
+                      setModalDetallesAsignacionVisible(true);
+                    }}
+                    title="Ver Detalles"
+                  />
+                  <Button
+                    type="text"
+                    icon={<EditOutlined />}
+                    onClick={() => handleEditClick(record)}
+                    title="Editar"
+                  />
+                  <Button
+                    type="text"
+                    danger
+                    icon={<DeleteOutlined />}
+                    onClick={() => handleDeleteAsignacion(record)}
+                    title="Eliminar"
+                  />
+                </Space>
+              ),
+            },
+          ]}
+          rowKey="id_evento"
+          className="dashboard-table"
           scroll={{ x: 'max-content' }}
+          pagination={{ pageSize: 3 }}
+          loading={loading}
         />
       </Card>
 
@@ -1615,73 +1821,72 @@ const WelcomeAdmin: React.FC = () => {
           <Button
             type="primary"
             icon={<PlusOutlined />}
-            className="action-button primary"
             onClick={() => setModalDecoracionVisible(true)}
+            className="action-button primary"
           >
             Nueva Decoración
           </Button>
         }
       >
-        <TableFilters
-  type="decoraciones"
-  searchText={searchTextDecoraciones}
-  onSearchChange={setSearchTextDecoraciones}
-  clearFilters={() => {
-    setSearchTextDecoraciones('');
-    setSelectedEstadoDecoraciones('todos');
-    setSelectedEvento('');
-  }}
-  activeFiltersCount={
-    (selectedEstadoDecoraciones !== 'todos' ? 1 : 0) +
-    (selectedEvento ? 1 : 0)
-  }
-  filterContent={
-    <div style={{ padding: '8px', minWidth: '300px', backgroundColor: '#f5f5f5', borderRadius: '4px' }}>
-      <Space direction="vertical" style={{ width: '100%' }}>
-        <div>
-          <div style={{ marginBottom: 4 }}>Estado de la decoración:</div>
-          <Select
-            placeholder="Filtrar por estado"
-            style={{ width: '100%' }}
-            onChange={handleEstadoDecoracionesChange}
-            value={selectedEstadoDecoraciones}
-            options={[
-              { value: 'todos', label: 'Todos' },
-              { value: 'Solicitado', label: 'Solicitado' },
-              { value: 'Aceptado', label: 'Aceptado' },
-              { value: 'Completado', label: 'Completado' },
-              { value: 'Cancelado', label: 'Cancelado' }
-            ]}
-          />
-        </div>
-        <div>
-          <div style={{ marginBottom: 4 }}>Evento:</div>
-          <Select
-            placeholder="Filtrar por evento"
-            style={{ width: '100%' }}
-            onChange={handleEventoChange}
-            value={selectedEvento}
-            options={[
-              { value: '', label: 'Todos' },
-              ...eventos.map(evento => ({
-                value: evento.id_evento.toString(),
-                label: `ID: ${evento.id_evento} - ${evento.cliente?.nombre_usuario || ''} ${evento.cliente?.apellido_usuario || ''}`
-              }))
-            ]}
-          />
-        </div>
-      </Space>
-    </div>
-  }
-/>
         <Table
-          className="dashboard-table"
-          columns={decoracionColumns}
-          dataSource={getFilteredDecoraciones()}
-          loading={loading}
-          pagination={{ pageSize: 3 }}
+          dataSource={decoraciones}
+          columns={[
+            {
+              title: 'ID',
+              dataIndex: 'id_decoracion',
+              key: 'id_decoracion',
+            },
+            {
+              title: 'Tema',
+              dataIndex: 'tema_decoracion',
+              key: 'tema_decoracion',
+            },
+            {
+              title: 'Descripción',
+              dataIndex: 'descripcion_decoracion',
+              key: 'descripcion_decoracion',
+            },
+            {
+              title: 'Precio',
+              dataIndex: 'precio_decoracion',
+              key: 'precio_decoracion',
+              render: (precio) => precio ? `RD$ ${precio.toLocaleString()}` : 'N/A',
+            },
+            {
+              title: 'Acciones',
+              key: 'acciones',
+              render: (_, record) => (
+                <Space>
+                  <Button
+                    type="primary"
+                    icon={<PlusOutlined />}
+                    onClick={() => handleSelectDecoracion(record)}
+                    className="action-button primary"
+                  >
+                    Agregar Elementos
+                  </Button>
+                  <Button
+                    type="primary"
+                    icon={<EditOutlined />}
+                    onClick={() => handleEditDecoracion(record)}
+                    className="action-button primary"
+                  >
+                    Editar
+                  </Button>
+                  <Button
+                    type="primary"
+                    danger
+                    icon={<DeleteOutlined />}
+                    onClick={() => handleDeleteDecoracion(record.id_decoracion)}
+                    className="action-button danger"
+                  >
+                    Eliminar
+                  </Button>
+                </Space>
+              ),
+            },
+          ]}
           rowKey="id_decoracion"
-          scroll={{ x: 'max-content' }}
         />
       </Card>
     </div>
@@ -1691,7 +1896,10 @@ const WelcomeAdmin: React.FC = () => {
 
       <EventoForm
         visible={modalEventoVisible}
-        onCancel={() => setModalEventoVisible(false)}
+        onCancel={() => {
+          setModalEventoVisible(false);
+          setEventoSeleccionado(null);
+        }}
         onSubmit={handleCreateEvento}
         loading={loading}
         clientes={clientes}
@@ -1699,11 +1907,7 @@ const WelcomeAdmin: React.FC = () => {
         tiposEvento={tiposEvento}
         provincias={provincias}
         ciudades={ciudades}
-        loadingClientes={loadingClientes}
-        loadingAsesores={loadingAsesores}
-        loadingTipos={loadingTipos}
-        loadingProvincias={loadingProvincias}
-        loadingCiudades={loadingCiudades}
+        initialValues={eventoSeleccionado}
       />
 
       <Modal
@@ -1761,24 +1965,32 @@ const WelcomeAdmin: React.FC = () => {
           sector: proveedorSeleccionado.direccion?.sector,
           calle: proveedorSeleccionado.direccion?.calle,
           detalles: proveedorSeleccionado.direccion?.detalles
-        } : undefined}
+        } as ProveedorFormValues : undefined}
         provincias={provincias}
         ciudades={ciudades}
       />
 
       <AsignacionEmpleadoForm
         visible={modalAsignacionVisible}
-        onCancel={() => setModalAsignacionVisible(false)}
+        onCancel={() => {
+          setModalAsignacionVisible(false);
+          setAsignacionSeleccionada(null);
+        }}
         onSubmit={handleCreateAsignacion}
         loading={loading}
-        initialValues={asignacionSeleccionada}
+        initialValues={asignacionSeleccionada || undefined}
       />
 
       <DecoracionForm
         visible={modalDecoracionVisible}
-        onCancel={() => setModalDecoracionVisible(false)}
+        onCancel={() => {
+          setModalDecoracionVisible(false);
+          setDecoracionSeleccionada(null);
+        }}
         onSubmit={handleCreateDecoracion}
         loading={loading}
+        initialValues={decoracionSeleccionada}
+        proveedores={proveedores}
       />
 
       <Modal
@@ -2036,25 +2248,44 @@ const WelcomeAdmin: React.FC = () => {
             Cerrar
           </Button>
         ]}
-        width={600}
+        width={800}
       >
         {asignacionSeleccionada && (
-          <Descriptions bordered column={1}>
-            <Descriptions.Item label="Evento">
-              ID: {asignacionSeleccionada.evento?.id_evento}
-              <br />
-              Cliente: {asignacionSeleccionada.evento?.cliente?.nombre_usuario} {asignacionSeleccionada.evento?.cliente?.apellido_usuario}
+          <Descriptions bordered column={2}>
+            <Descriptions.Item label="ID del Evento" span={2}>
+              {asignacionSeleccionada.evento?.id_evento}
             </Descriptions.Item>
             <Descriptions.Item label="Fecha del Evento">
-              {asignacionSeleccionada.evento?.fecha_evento} {asignacionSeleccionada.evento?.hora_evento}
+              {asignacionSeleccionada.evento?.fecha_evento && new Date(asignacionSeleccionada.evento.fecha_evento).toLocaleDateString()}
             </Descriptions.Item>
-            <Descriptions.Item label="Empleado">
-              {asignacionSeleccionada.empleado?.nombre_usuario} {asignacionSeleccionada.empleado?.apellido_usuario}
+            <Descriptions.Item label="Hora del Evento">
+              {asignacionSeleccionada.evento?.hora_evento}
             </Descriptions.Item>
-            <Descriptions.Item label="Cédula del Empleado">
+            <Descriptions.Item label="Cliente" span={2}>
+              {asignacionSeleccionada.evento?.cliente 
+                ? `${asignacionSeleccionada.evento.cliente.nombre_usuario} ${asignacionSeleccionada.evento.cliente.apellido_usuario}`
+                : 'No especificado'}
+            </Descriptions.Item>
+            <Descriptions.Item label="Empleado" span={2}>
+              {asignacionSeleccionada.empleado 
+                ? `${asignacionSeleccionada.empleado.nombre_usuario} ${asignacionSeleccionada.empleado.apellido_usuario}`
+                : 'No asignado'}
+            </Descriptions.Item>
+            <Descriptions.Item label="ID del Empleado">
               {asignacionSeleccionada.empleado?.cedula_usuario}
             </Descriptions.Item>
-            <Descriptions.Item label="Puesto">{asignacionSeleccionada.puesto_evento}</Descriptions.Item>
+            <Descriptions.Item label="Puesto">
+              {asignacionSeleccionada.puesto_evento}
+            </Descriptions.Item>
+            <Descriptions.Item label="Estado" span={2}>
+              <Tag color={
+                asignacionSeleccionada.estado_empevento === 'Activo' ? 'green' :
+                asignacionSeleccionada.estado_empevento === 'Pendiente' ? 'orange' :
+                asignacionSeleccionada.estado_empevento === 'Cancelado' ? 'red' : 'default'
+              }>
+                {asignacionSeleccionada.estado_empevento}
+              </Tag>
+            </Descriptions.Item>
           </Descriptions>
         )}
       </Modal>
@@ -2195,18 +2426,25 @@ const WelcomeAdmin: React.FC = () => {
       {/* Formulario de Edición de Asignación */}
       <AsignacionEmpleadoForm
         visible={modalAsignacionVisible}
-        onCancel={() => setModalAsignacionVisible(false)}
+        onCancel={() => {
+          setModalAsignacionVisible(false);
+          setAsignacionSeleccionada(null);
+        }}
         onSubmit={handleCreateAsignacion}
         loading={loading}
-        initialValues={asignacionSeleccionada}
+        initialValues={asignacionSeleccionada || undefined}
       />
 
       {/* Formulario de Edición de Decoración */}
       <DecoracionForm
         visible={modalDecoracionVisible}
-        onCancel={() => setModalDecoracionVisible(false)}
+        onCancel={() => {
+          setModalDecoracionVisible(false);
+          setDecoracionSeleccionada(null);
+        }}
         onSubmit={handleCreateDecoracion}
         loading={loading}
+        initialValues={decoracionSeleccionada}
       />
 
       {/* Tarjeta de Pagos y Comentarios en formato dashboard */}
@@ -2533,6 +2771,147 @@ const WelcomeAdmin: React.FC = () => {
           </Form.Item>
         </Form>
       </Modal>
+
+      {/* Modal para seleccionar decoración */}
+      <Modal
+        title="Seleccionar Decoración"
+        open={modalElementosDecoracionVisible && !decoracionSeleccionada}
+        onCancel={() => {
+          setModalElementosDecoracionVisible(false);
+          setDecoracionSeleccionada(null);
+        }}
+        footer={null}
+      >
+        <List
+          dataSource={decoraciones}
+          renderItem={(decoracion) => (
+            <List.Item>
+              <Button
+                type="link"
+                onClick={() => handleSelectDecoracion(decoracion)}
+              >
+                {`ID: ${decoracion.id_decoracion} - Tema: ${decoracion.tema_decoracion}`}
+              </Button>
+            </List.Item>
+          )}
+        />
+      </Modal>
+
+      {/* Modal para agregar elementos de decoración */}
+      <Modal
+        title={`Agregar Elementos - Decoración: ${decoracionSeleccionada?.tema_decoracion}`}
+        open={modalElementosDecoracionVisible && decoracionSeleccionada}
+        onCancel={() => {
+          setModalElementosDecoracionVisible(false);
+          setDecoracionSeleccionada(null);
+          formElementosDecoracion.resetFields();
+        }}
+        footer={null}
+      >
+        <Form
+          form={formElementosDecoracion}
+          layout="vertical"
+          onFinish={handleSubmitElementosDecoracion}
+        >
+          <Form.Item
+            name="nombre_elemento"
+            label="Nombre del Elemento"
+            rules={[{ required: true, message: 'Por favor ingrese el nombre del elemento' }]}
+          >
+            <Input />
+          </Form.Item>
+
+          <Form.Item
+            name="cantidad_elemento"
+            label="Cantidad"
+            rules={[{ required: true, message: 'Por favor ingrese la cantidad' }]}
+          >
+            <InputNumber min={1} style={{ width: '100%' }} />
+          </Form.Item>
+
+          <Form.Item
+            name="precio_elemento"
+            label="Precio Unitario"
+            rules={[{ required: true, message: 'Por favor ingrese el precio unitario' }]}
+          >
+            <InputNumber
+              min={0}
+              step={0.01}
+              formatter={value => `RD$ ${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
+              parser={value => value!.replace(/RD\$\s?|(,*)/g, '')}
+              style={{ width: '100%' }}
+            />
+          </Form.Item>
+
+          <Form.Item
+            name="proveedor_elemento"
+            label="Proveedor"
+            rules={[{ required: true, message: 'Por favor ingrese el proveedor' }]}
+          >
+            <Input />
+          </Form.Item>
+
+          <Form.Item>
+            <Button type="primary" htmlType="submit" loading={loading}>
+              Guardar Elementos
+            </Button>
+          </Form.Item>
+        </Form>
+      </Modal>
+
+      {/* Modal de Decoración (sin elementos) */}
+      <Modal
+        title={decoracionSeleccionada ? "Editar Decoración" : "Nueva Decoración"}
+        open={modalDecoracionVisible}
+        onCancel={() => {
+          setModalDecoracionVisible(false);
+          setDecoracionSeleccionada(null);
+        }}
+        footer={null}
+      >
+        <Form
+          form={formDecoracion}
+          layout="vertical"
+          onFinish={handleSubmitDecoracion}
+        >
+          <Form.Item
+            name="tema_decoracion"
+            label="Tema"
+            rules={[{ required: true, message: 'Por favor ingrese el tema' }]}
+          >
+            <Input />
+          </Form.Item>
+
+          <Form.Item
+            name="descripcion_decoracion"
+            label="Descripción"
+            rules={[{ required: true, message: 'Por favor ingrese la descripción' }]}
+          >
+            <Input.TextArea />
+          </Form.Item>
+
+          <Form.Item
+            name="precio_decoracion"
+            label="Precio"
+            rules={[{ required: true, message: 'Por favor ingrese el precio' }]}
+          >
+            <InputNumber
+              min={0}
+              step={0.01}
+              formatter={value => `RD$ ${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
+              parser={value => value!.replace(/RD\$\s?|(,*)/g, '')}
+              style={{ width: '100%' }}
+            />
+          </Form.Item>
+
+          <Form.Item>
+            <Button type="primary" htmlType="submit" loading={loading}>
+              {decoracionSeleccionada ? "Actualizar" : "Crear"}
+            </Button>
+          </Form.Item>
+        </Form>
+      </Modal>
+
     </div>
   );
 };
