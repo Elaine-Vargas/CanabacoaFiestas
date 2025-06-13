@@ -245,7 +245,7 @@ interface Alquiler {
   detalles?: DetalleAlquiler[];
 }
 
-const RentAdmin: React.FC = () => {
+const RentEmployee: React.FC = () => {
   const [alquileres, setAlquileres] = useState<Alquiler[]>([]);
   const [elementos, setElementos] = useState<Elemento[]>([]);
   const [elementosSeleccionados, setElementosSeleccionados] = useState<ElementoSeleccionado[]>([]);
@@ -1475,4 +1475,4 @@ const RentAdmin: React.FC = () => {
   );
 };
 
-export default RentAdmin;
+export default RentEmployee;

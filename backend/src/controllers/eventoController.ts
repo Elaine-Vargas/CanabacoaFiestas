@@ -532,31 +532,100 @@ export const getEventEmployees = async (req: Request, res: Response) => {
 
 export const getEmployeeEvents = async (req: Request, res: Response) => {
     try {
-        const { id_empleado } = req.params;
+        const { id_empleado } = req.params; // Cédula del empleado logueado
+        console.log('Buscando eventos donde el empleado', id_empleado, 'ha participado.');
 
         const eventos = await EmpleadoEvento.findAll({
-            where: { 
-                empleado_evento: id_empleado,
+            where: {
+                empleado_evento: id_empleado, // El empleado es el que participa en el evento
                 estado_empevento: 'Activo'
             },
             include: [
-                { model: Usuario, as: 'empleado' }
-            ]
+                {
+                    model: Evento,
+                    as: 'evento',
+                    include: [
+                        { model: Usuario, as: 'cliente', attributes: ['nombre_usuario', 'apellido_usuario'] },
+                        { model: Usuario, as: 'asesor', attributes: ['nombre_usuario', 'apellido_usuario'] },
+                        { model: TipoEvento, as: 'tipo_evento', attributes: ['tipo_evento'] },
+                    ]
+                },
+                {
+                    model: Usuario,
+                    as: 'empleado', // El empleado que participa
+                    attributes: ['cedula_usuario', 'nombre_usuario', 'apellido_usuario']
+                }
+            ],
+            order: [[{ model: Evento, as: 'evento' }, 'fecha_evento', 'DESC']]
         });
 
+        console.log('Eventos participados encontrados para', id_empleado + ':', eventos.length);
+
         if (!eventos || eventos.length === 0) {
+            console.log('No se encontraron participaciones de eventos para el empleado', id_empleado);
             return res.status(404).json({
-                error: 'No se encontraron empleados',
-                mensaje: 'No hay empleados asignados a este evento'
+                error: 'No se encontraron participaciones',
+                mensaje: 'No hay eventos donde este empleado ha participado.'
             });
         }
 
         res.json(eventos);
     } catch (error) {
-        console.error('Error al obtener empleados del evento:', error);
+        console.error('Error al obtener participaciones del empleado:', error);
         res.status(500).json({
-            error: 'Error al obtener empleados',
-            mensaje: 'Ocurrió un error al cargar los empleados del evento'
+            error: 'Error al obtener participaciones',
+            mensaje: 'Ocurrió un error al cargar las participaciones del empleado.'
+        });
+    }
+};
+
+export const getAsesorTeamAssignments = async (req: Request, res: Response) => {
+    try {
+        const { cedula_asesor } = req.params; // Cédula del empleado logueado (asesor)
+        console.log('Buscando asignaciones de equipo para eventos donde el asesor es:', cedula_asesor);
+
+        const asignaciones = await EmpleadoEvento.findAll({
+            where: {
+                estado_empevento: 'Activo' // Asignaciones activas
+            },
+            include: [
+                {
+                    model: Evento,
+                    as: 'evento',
+                    where: {
+                        cedula_asesor: cedula_asesor // Filtra por eventos donde este empleado es el asesor
+                    },
+                    required: true, // Solo incluye si el evento cumple la condición
+                    include: [
+                        { model: Usuario, as: 'cliente', attributes: ['nombre_usuario', 'apellido_usuario'] },
+                        { model: TipoEvento, as: 'tipo_evento', attributes: ['tipo_evento'] },
+                    ]
+                },
+                {
+                    model: Usuario,
+                    as: 'empleado', // El empleado que está asignado a la tarea
+                    attributes: ['cedula_usuario', 'nombre_usuario', 'apellido_usuario']
+                }
+            ],
+            order: [[{ model: Evento, as: 'evento' }, 'fecha_evento', 'DESC']]
+        });
+
+        console.log('Asignaciones de equipo encontradas para eventos asesorados por', cedula_asesor + ':', asignaciones.length);
+
+        if (!asignaciones || asignaciones.length === 0) {
+            console.log('No se encontraron asignaciones de equipo para eventos donde el empleado es asesor para', cedula_asesor);
+            return res.status(404).json({
+                error: 'No se encontraron asignaciones de equipo',
+                mensaje: 'No hay empleados asignados a eventos donde este empleado es el asesor.'
+            });
+        }
+
+        res.json(asignaciones);
+    } catch (error) {
+        console.error('Error al obtener asignaciones de equipo del asesor:', error);
+        res.status(500).json({
+            error: 'Error al obtener asignaciones de equipo',
+            mensaje: 'Ocurrió un error al cargar las asignaciones de equipo para el asesor.'
         });
     }
 };
@@ -597,35 +666,65 @@ export const removeEmployeeFromEvent = async (req: Request, res: Response) => {
     try {
         const { id_evento, empleado_evento } = req.params;
 
-        const empleadoEvento = await EmpleadoEvento.findOne({
-            where: { 
-                id_evento, 
-                empleado_evento,
-                estado_empevento: 'Activo'
+        const asignacion = await EmpleadoEvento.findOne({
+            where: {
+                id_evento: id_evento,
+                empleado_evento: empleado_evento
             }
         });
 
-        if (!empleadoEvento) {
+        if (!asignacion) {
             return res.status(404).json({
                 error: 'Asignación no encontrada',
-                mensaje: 'No se encontró la asignación del empleado al evento'
+                mensaje: 'No se encontró la asignación de empleado para este evento.'
             });
         }
 
-        // En lugar de eliminar, actualizamos el estado a 'Eliminado'
-        await empleadoEvento.update({
-            estado_empevento: 'Eliminado'
-        });
+        await asignacion.destroy(); // Borrado lógico o físico según tu modelo
 
-        res.json({
-            error: null,
-            mensaje: 'Empleado removido del evento correctamente'
-        });
+        res.status(200).json({ mensaje: 'Empleado removido del evento exitosamente.' });
+
     } catch (error) {
         console.error('Error al remover empleado del evento:', error);
         res.status(500).json({
-            error: 'Error al remover empleado',
-            mensaje: 'Ocurrió un error al remover el empleado del evento'
+            error: 'Error al remover empleado del evento',
+            mensaje: error instanceof Error ? error.message : 'Ocurrió un error al remover el empleado del evento.'
+        });
+    }
+};
+
+export const updateEmployeeAssignmentStatus = async (req: Request, res: Response) => {
+    try {
+        const { id_evento, empleado_evento } = req.params;
+        const { estado_empevento } = req.body;
+
+        const asignacion = await EmpleadoEvento.findOne({
+            where: {
+                id_evento: id_evento,
+                empleado_evento: empleado_evento
+            }
+        });
+
+        if (!asignacion) {
+            return res.status(404).json({
+                error: 'Asignación no encontrada',
+                mensaje: 'No se encontró la asignación de empleado para este evento.'
+            });
+        }
+
+        asignacion.estado_empevento = estado_empevento;
+        await asignacion.save();
+
+        res.json({
+            mensaje: 'Estado de asignación actualizado exitosamente',
+            asignacion: asignacion
+        });
+
+    } catch (error) {
+        console.error('Error al actualizar estado de asignación de empleado:', error);
+        res.status(500).json({
+            error: 'Error al actualizar estado de asignación',
+            mensaje: error instanceof Error ? error.message : 'Ocurrió un error al actualizar el estado de la asignación.'
         });
     }
 };

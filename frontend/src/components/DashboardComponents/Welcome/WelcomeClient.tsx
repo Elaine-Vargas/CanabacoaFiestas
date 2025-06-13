@@ -6,6 +6,7 @@ import EventoForm from "../FormService/EventoForm";
 import DecoracionForm from "../FormService/DecoracionForm";
 import TableFilters from "../MoreDash/TableFilters";
 import type { Dayjs } from 'dayjs';
+import dayjs from 'dayjs';
 
 const { Title } = Typography;
 
@@ -87,6 +88,8 @@ export default function WelcomeClient() {
   const [selectedEvento, setSelectedEvento] = useState<Evento | null>(null);
   const [selectedDecoracion, setSelectedDecoracion] = useState<Decoracion | null>(null);
   const [selectedComentario, setSelectedComentario] = useState<Comentario | null>(null);
+  const [selectedEventoComentario, setSelectedEventoComentario] = useState<Evento | null>(null);
+  const [userCedula, setUserCedula] = useState<string>('');
   const [form] = Form.useForm();
   const [searchText, setSearchText] = useState('');
   const [filtrosEventos, setFiltrosEventos] = useState({
@@ -103,9 +106,45 @@ export default function WelcomeClient() {
   });
 
   useEffect(() => {
-    fetchData();
-    fetchTiposEvento();
+    const initializeData = async () => {
+      await fetchUserData();
+      // Solo ejecutar fetchData y fetchTiposEvento después de que userCedula esté disponible
+    };
+    initializeData();
   }, []);
+
+  useEffect(() => {
+    if (userCedula) {
+      fetchData();
+      fetchTiposEvento();
+    }
+  }, [userCedula]);
+
+  const fetchUserData = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        message.error('No hay sesión activa');
+        return;
+      }
+
+      const response = await fetch(`${apiUrl}/auth/current`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error('Error al obtener datos del usuario');
+      }
+
+      const userData = await response.json();
+      setUserCedula(userData.cedula_usuario);
+    } catch (error) {
+      console.error('Error al obtener datos del usuario:', error);
+      message.error('Error al obtener datos del usuario');
+    }
+  };
 
   const fetchData = async () => {
     try {
@@ -116,19 +155,10 @@ export default function WelcomeClient() {
         return;
       }
 
-      // Obtener datos del usuario actual
-      const userResponse = await fetch(`${apiUrl}/auth/current`, {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
-
-      if (!userResponse.ok) {
-        throw new Error('Error al obtener datos del usuario');
+      if (!userCedula) {
+        // Si userCedula no está disponible, salimos. fetchData será llamado de nuevo cuando userCedula se actualice.
+        return;
       }
-
-      const userData = await userResponse.json();
-      const userCedula = userData.cedula_usuario;
 
       // Obtener eventos del cliente
       const eventosResponse = await fetch(`${apiUrl}/evento/cliente/${userCedula}`, {
@@ -137,10 +167,16 @@ export default function WelcomeClient() {
         }
       });
       if (!eventosResponse.ok) {
+        const errorText = await eventosResponse.text();
+        console.error(`Error al obtener eventos: ${eventosResponse.status} - ${errorText}`);
         throw new Error('Error al obtener eventos');
       }
       const eventosData = await eventosResponse.json();
-      setEventos(eventosData);
+      setEventos(eventosData.map((evento: Evento) => ({
+        ...evento,
+        fecha_evento: evento.fecha_evento ? dayjs(evento.fecha_evento) : null,
+        hora_evento: evento.hora_evento ? dayjs(evento.hora_evento, 'HH:mm:ss') : null,
+      })));
 
       // Obtener decoraciones del cliente
       const decoracionesResponse = await fetch(`${apiUrl}/decoracion/cliente/${userCedula}`, {
@@ -149,6 +185,8 @@ export default function WelcomeClient() {
         }
       });
       if (!decoracionesResponse.ok) {
+        const errorText = await decoracionesResponse.text();
+        console.error(`Error al obtener decoraciones: ${decoracionesResponse.status} - ${errorText}`);
         throw new Error('Error al obtener decoraciones');
       }
       const decoracionesData = await decoracionesResponse.json();
@@ -161,6 +199,8 @@ export default function WelcomeClient() {
         }
       });
       if (!comentariosResponse.ok) {
+        const errorText = await comentariosResponse.text();
+        console.error(`Error al obtener comentarios: ${comentariosResponse.status} - ${errorText}`);
         throw new Error('Error al obtener comentarios');
       }
       const comentariosData = await comentariosResponse.json();
@@ -173,6 +213,8 @@ export default function WelcomeClient() {
         }
       });
       if (!empleadosResponse.ok) {
+        const errorText = await empleadosResponse.text();
+        console.error(`Error al obtener empleados: ${empleadosResponse.status} - ${errorText}`);
         throw new Error('Error al obtener empleados');
       }
       const empleadosData = await empleadosResponse.json();
@@ -483,6 +525,7 @@ export default function WelcomeClient() {
       message.success(selectedComentario ? 'Comentario actualizado exitosamente' : 'Comentario creado exitosamente');
       setModalComentarioVisible(false);
       setSelectedComentario(null);
+      setSelectedEventoComentario(null);
       form.resetFields();
       fetchData();
     } catch (error) {
@@ -714,6 +757,7 @@ export default function WelcomeClient() {
                   className="action-button primary"
                   onClick={() => {
                     setSelectedComentario(null);
+                    setSelectedEventoComentario(null);
                     setModalComentarioVisible(true);
                   }}
                 >
@@ -868,6 +912,7 @@ export default function WelcomeClient() {
         onCancel={() => {
           setModalComentarioVisible(false);
           setSelectedComentario(null);
+          setSelectedEventoComentario(null);
           form.resetFields();
         }}
         footer={null}
@@ -877,6 +922,28 @@ export default function WelcomeClient() {
           layout="vertical"
           onFinish={handleSubmitComentario}
         >
+          <Form.Item
+            name="id_evento"
+            label="Seleccionar Evento"
+            rules={[{ required: true, message: 'Por favor seleccione un evento' }]}
+          >
+            <Select
+              placeholder="Seleccione un evento"
+              onChange={(value) => {
+                const evento = eventos.find(e => e.id_evento === value);
+                setSelectedEventoComentario(evento || null);
+              }}
+            >
+              {eventos
+                .filter(evento => evento.cedula_cliente === userCedula)
+                .map(evento => (
+                  <Select.Option key={evento.id_evento} value={evento.id_evento}>
+                    {`${evento.tipo_evento.tipo_evento} - ${evento.fecha_evento && dayjs.isDayjs(evento.fecha_evento) && evento.fecha_evento.isValid() ? evento.fecha_evento.format('DD/MM/YYYY') : 'Fecha no disponible'}`}
+                  </Select.Option>
+                ))}
+            </Select>
+          </Form.Item>
+
           <Form.Item
             name="comentario"
             label="Comentario"

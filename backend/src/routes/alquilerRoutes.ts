@@ -7,7 +7,8 @@ import {
     editAlquilerServicio,
     deleteAlquilerServicio,
     getAlquilerById,
-    getElementosAlquiler
+    getElementosAlquiler,
+    getAlquileresByUsuario
 } from '../controllers/alquilerServicioController';
 import { verificarToken } from '../middlewares/authMiddleware';
 
@@ -70,6 +71,15 @@ router.get('/elemento/:id_elemento', async (req: Request, res: Response, next: N
 router.get('/:id_alquiler/elementos', async (req: Request, res: Response, next: NextFunction) => {
     try {
         await getElementosAlquiler(req, res);
+    } catch (error) {
+        next(error);
+    }
+});
+
+// Obtener alquileres por usuario
+router.get('/usuario/:cedula_usuario', async (req: Request, res: Response, next: NextFunction) => {
+    try {
+        await getAlquileresByUsuario(req, res);
     } catch (error) {
         next(error);
     }
