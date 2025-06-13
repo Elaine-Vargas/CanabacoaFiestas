@@ -1299,6 +1299,7 @@ const RentAdmin: React.FC = () => {
         <Space>
           <Tooltip title="Ver">
             <Button
+              type="text"
               icon={<EyeOutlined />}
               onClick={() => {
                 setViewingElement(record);
@@ -1308,12 +1309,11 @@ const RentAdmin: React.FC = () => {
           </Tooltip>
           <Tooltip title="Editar">
             <Button
-              type="primary"
+              type="text"
               icon={<EditOutlined />}
               onClick={() => {
                 setEditingElement(record);
                 elementForm.resetFields();
-                // Asegurarse de que todos los campos se establezcan correctamente
                 const formValues = {
                   nombre_elemento: record.nombre_elemento,
                   id_subcategoria: record.subcategoria.id_subcategoria,
@@ -1322,7 +1322,7 @@ const RentAdmin: React.FC = () => {
                   precio_elemento: record.precio_elemento,
                   cantidad_disponible: record.cantidad_disponible,
                   imagen_url: record.imagen_url,
-                  estado_elemento: record.estado_elemento // Mantener el estado actual del elemento
+                  estado_elemento: record.estado_elemento
                 };
                 console.log('Valores del formulario:', formValues);
                 elementForm.setFieldsValue(formValues);
@@ -1333,6 +1333,7 @@ const RentAdmin: React.FC = () => {
           {record.estado_elemento !== 'Eliminado' && (
             <Tooltip title="Eliminar">
               <Button
+                type="text"
                 danger
                 icon={<DeleteOutlined />}
                 onClick={() => handleElementStatusChange(record.id_elemento)}
@@ -1407,6 +1408,7 @@ const RentAdmin: React.FC = () => {
             <Button
               type="primary"
               icon={<PlusOutlined />}
+              style={{ backgroundColor: 'var(--dark-gold)', borderColor: 'var(--dark-gold)' }}
               onClick={() => {
                 setEditingElement(null);
                 elementForm.resetFields();
@@ -1652,7 +1654,12 @@ const RentAdmin: React.FC = () => {
               }}>
                 Cancelar
               </Button>
-              <Button type="primary" htmlType="submit" loading={loadingElement}>
+              <Button 
+                type="primary" 
+                htmlType="submit" 
+                loading={loadingElement}
+                style={{ backgroundColor: 'var(--dark-gold)', borderColor: 'var(--dark-gold)' }}
+              >
                 {editingElement ? 'Actualizar' : 'Crear'}
               </Button>
             </Space>
@@ -1667,6 +1674,7 @@ const RentAdmin: React.FC = () => {
               type="primary"
               icon={<PlusOutlined />}
               onClick={() => setShowCatalogo(true)}
+              style={{ backgroundColor: 'var(--dark-gold)', borderColor: 'var(--dark-gold)' }}
             >
               Nuevo Alquiler
             </Button>
@@ -2021,6 +2029,7 @@ const RentAdmin: React.FC = () => {
                   type="primary" 
                   htmlType="submit"
                   loading={loadingSubmit}
+                  style={{ backgroundColor: 'var(--dark-gold)', borderColor: 'var(--dark-gold)' }}
                 >
                   Guardar Cambios
                 </Button>
