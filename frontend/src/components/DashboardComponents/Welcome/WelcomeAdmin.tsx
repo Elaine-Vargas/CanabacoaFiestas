@@ -1117,6 +1117,13 @@ const WelcomeAdmin: React.FC = () => {
     }
   };
 
+  // Actualizar datos cuando se cierra el modal de usuario
+  useEffect(() => {
+    if (!modalUsuarioVisible) {
+      fetchData();
+    }
+  }, [modalUsuarioVisible]);
+
   return (
     <div className="welcome-container">
       <Card className="welcome-card">
@@ -1577,12 +1584,48 @@ const WelcomeAdmin: React.FC = () => {
         loadingCiudades={loadingCiudades}
       />
 
-      <UsuarioForm
-        visible={modalUsuarioVisible}
+      <Modal
+        title="Nuevo Usuario"
+        open={modalUsuarioVisible}
         onCancel={() => setModalUsuarioVisible(false)}
-        onSubmit={handleCreateUsuario}
-        loading={loading}
-      />
+        footer={null}
+        width={800}
+      >
+        <UsuarioForm
+          visible={modalUsuarioVisible}
+          onCancel={() => setModalUsuarioVisible(false)}
+          onSubmit={async (values) => {
+            try {
+              const token = localStorage.getItem('token');
+              if (!token) {
+                message.error('No hay sesión activa');
+                return;
+              }
+
+              const response = await fetch(`${apiUrl}/auth/register-user`, {
+                method: 'POST',
+                headers: {
+                  'Authorization': `Bearer ${token}`,
+                  'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(values)
+              });
+
+              if (!response.ok) {
+                throw new Error('Error al crear el usuario');
+              }
+
+              message.success('Usuario creado exitosamente');
+              setModalUsuarioVisible(false);
+              fetchData(); // Actualizar la lista de usuarios
+            } catch (error) {
+              console.error('Error al crear el usuario:', error);
+              message.error('Error al crear el usuario');
+            }
+          }}
+          loading={loading}
+        />
+      </Modal>
 
       <ProveedorForm
         visible={modalProveedorVisible}

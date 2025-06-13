@@ -96,10 +96,12 @@ const EventoForm: React.FC<EventoFormProps> = ({
         >
           <Select
             placeholder="Seleccione un cliente"
-            options={clientes.map(cliente => ({
-              label: `${cliente.nombre_usuario} ${cliente.apellido_usuario} - ${cliente.cedula_usuario}`,
-              value: cliente.cedula_usuario
-            }))}
+            options={clientes
+              .filter(cliente => cliente.estado_usuario === 'Activo')
+              .map(cliente => ({
+                label: `${cliente.nombre_usuario} ${cliente.apellido_usuario} - ${cliente.cedula_usuario}`,
+                value: cliente.cedula_usuario
+              }))}
             showSearch
             optionFilterProp="label"
           />
@@ -112,10 +114,12 @@ const EventoForm: React.FC<EventoFormProps> = ({
         >
           <Select
             placeholder="Seleccione un asesor"
-            options={asesores.map(asesor => ({
-              label: `${asesor.nombre_usuario} ${asesor.apellido_usuario} - ${asesor.cedula_usuario}`,
-              value: asesor.cedula_usuario
-            }))}
+            options={asesores
+              .filter(asesor => asesor.estado_usuario === 'Activo')
+              .map(asesor => ({
+                label: `${asesor.nombre_usuario} ${asesor.apellido_usuario} - ${asesor.cedula_usuario}`,
+                value: asesor.cedula_usuario
+              }))}
             showSearch
             optionFilterProp="label"
           />
