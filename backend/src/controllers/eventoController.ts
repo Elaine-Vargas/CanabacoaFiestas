@@ -769,4 +769,55 @@ export const updateEventStatus = async (req: Request, res: Response) => {
   }
 };
 
-  
+// Obtener todos los empleados asignados a los eventos de un cliente, filtrable por estado, evento y puesto
+export const getEmpleadosByClienteEventos = async (req: Request, res: Response) => {
+  try {
+    const { cedula_cliente } = req.params;
+    const { estado_empevento, id_evento, puesto_evento } = req.query;
+
+    // Buscar todos los eventos del cliente
+    const eventos = await Evento.findAll({
+      where: { cedula_cliente },
+      attributes: ['id_evento', 'fecha_evento', 'hora_evento', 'espacio_evento', 'estado_solicitud'],
+    });
+    const eventosIds = eventos.map(e => e.id_evento);
+    if (eventosIds.length === 0) {
+      return res.status(200).json([]); // No hay eventos, devolver array vacío
+    }
+
+    // Construir filtros dinámicos
+    const empleadoEventoWhere: any = {
+      id_evento: id_evento ? id_evento : { [Op.in]: eventosIds }
+    };
+    if (estado_empevento) empleadoEventoWhere.estado_empevento = estado_empevento;
+    if (puesto_evento) empleadoEventoWhere.puesto_evento = puesto_evento;
+
+    // Buscar empleados asignados a los eventos del cliente
+    const empleadosAsignados = await EmpleadoEvento.findAll({
+      where: empleadoEventoWhere,
+      include: [
+        {
+          model: Usuario,
+          as: 'empleado',
+          attributes: ['cedula_usuario', 'nombre_usuario', 'apellido_usuario']
+        },
+        {
+          model: Evento,
+          as: 'evento',
+          attributes: ['id_evento', 'fecha_evento', 'hora_evento', 'espacio_evento', 'estado_solicitud'],
+        }
+      ],
+      order: [[{ model: Evento, as: 'evento' }, 'fecha_evento', 'DESC']]
+    });
+
+    res.json(empleadosAsignados);
+  } catch (error) {
+    console.error('Error al obtener empleados de los eventos del cliente:', error);
+    res.status(500).json({
+      error: 'Error al obtener empleados de los eventos del cliente',
+      mensaje: 'Ocurrió un error al cargar los empleados asignados a los eventos del cliente.'
+    });
+  }
+};
+
+

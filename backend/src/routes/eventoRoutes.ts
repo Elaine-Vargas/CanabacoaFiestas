@@ -15,7 +15,8 @@ import {
     removeEmployeeFromEvent,
     updateEventStatus,
     updateEmployeeAssignmentStatus,
-    getAsesorTeamAssignments
+    getAsesorTeamAssignments,
+    getEmpleadosByClienteEventos // <-- importar el nuevo controlador
 } from '../controllers/eventoController';
 import { verificarToken } from '../middlewares/authMiddleware';
 import EmpleadoEvento from '../models/EmpleadoEvento_model';
@@ -152,7 +153,6 @@ router.get('/:id_evento/empleados', async (req: Request, res: Response, next: Ne
     }
 });
 
-
 // Obtener eventos de un empleado
 router.get('/empleado/:id_empleado/eventos', async (req: Request, res: Response, next: NextFunction) => {
     try {
@@ -166,6 +166,15 @@ router.get('/empleado/:id_empleado/eventos', async (req: Request, res: Response,
 router.get('/asesor/:cedula_asesor/asignaciones-equipo', async (req: Request, res: Response, next: NextFunction) => {
     try {
         await getAsesorTeamAssignments(req, res);
+    } catch (error) {
+        next(error);
+    }
+});
+
+// Obtener empleados de todos los eventos de un cliente (filtrable)
+router.get('/empleados/cliente/:cedula_cliente', async (req: Request, res: Response, next: NextFunction) => {
+    try {
+        await getEmpleadosByClienteEventos(req, res);
     } catch (error) {
         next(error);
     }

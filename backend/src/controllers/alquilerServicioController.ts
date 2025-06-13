@@ -7,6 +7,7 @@ import { Op, Transaction } from 'sequelize';
 import { sequelize } from '../database/database';
 import SubcategoriaElemento from '../models/SubcategoriaElemento_model';
 import CategoriaElemento from '../models/CategoriaElemento_model';
+import Usuario from '../models/Usuario_model';
 
 export const createAlquilerServicio = async (req: Request, res: Response) => {
   const t: Transaction = await sequelize.transaction();
@@ -570,6 +571,89 @@ export const deleteAlquilerServicio = async (req: Request, res: Response) => {
     res.status(500).json({ 
       error: 'Error al eliminar alquiler',
       mensaje: 'Ocurrió un error al cancelar el alquiler'
+    });
+  }
+};
+
+export const getAlquileresByUsuario = async (req: Request, res: Response) => {
+  try {
+    const { cedula_usuario } = req.params;
+
+    // Verificar que el usuario existe
+    const usuario = await Usuario.findByPk(cedula_usuario);
+    if (!usuario) {
+      return res.status(404).json({
+        error: 'Usuario no encontrado',
+        mensaje: 'El usuario especificado no existe en el sistema'
+      });
+    }
+
+    // Obtener los eventos del usuario
+    const eventos = await Evento.findAll({
+      where: { cedula_usuario }
+    });
+
+    if (!eventos || eventos.length === 0) {
+      return res.status(404).json({
+        error: 'No hay eventos',
+        mensaje: 'El usuario no tiene eventos registrados'
+      });
+    }
+
+    // Obtener los IDs de los eventos
+    const idEventos = eventos.map(evento => evento.id_evento);
+
+    // Obtener los alquileres asociados a los eventos del usuario
+    const alquileres = await AlquilerServicio.findAll({
+      where: {
+        id_evento: {
+          [Op.in]: idEventos
+        },
+        estado_alquiler: {
+          [Op.ne]: 'Cancelado' // Excluir alquileres cancelados
+        }
+      },
+      include: [
+        {
+          model: DetalleAlquiler,
+          include: [
+            {
+              model: Elemento,
+              include: [
+                {
+                  model: SubcategoriaElemento,
+                  include: [
+                    {
+                      model: CategoriaElemento,
+                      as: 'categoria'
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          model: Evento,
+          as: 'evento'
+        }
+      ],
+      order: [['id_alquiler', 'DESC']]
+    });
+
+    if (!alquileres || alquileres.length === 0) {
+      return res.status(404).json({
+        error: 'No hay alquileres',
+        mensaje: 'No se encontraron alquileres para este usuario'
+      });
+    }
+
+    res.json(alquileres);
+  } catch (error) {
+    console.error('Error al obtener alquileres del usuario:', error);
+    res.status(500).json({
+      error: 'Error al obtener alquileres',
+      mensaje: 'Ocurrió un error al cargar los alquileres del usuario'
     });
   }
 };

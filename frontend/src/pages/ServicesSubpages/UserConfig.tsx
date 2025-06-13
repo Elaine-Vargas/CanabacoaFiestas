@@ -542,6 +542,9 @@ export default function UserConfig() {
                   {isVerifying ? 'Verificando...' : 'Verificar'}
                 </button>
               </div>
+              <div className="info-message" style={{marginTop: 8, color: '#c49a44'}}>
+                Se ha enviado un código de verificación a tu <b>nuevo correo electrónico</b>. Ingresa el código para confirmar el cambio.
+              </div>
             </div>
           )}
 

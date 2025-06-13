@@ -156,8 +156,9 @@ export const getComentariosByUsuario = async (req: Request, res: Response) => {
       }
     });
 
+    // Cambiado: Si no hay comentarios, devolver array vacío y mensaje informativo
     if (!comentarios || comentarios.length === 0) {
-      return res.status(404).json({ error: 'No se encontraron comentarios para este usuario' });
+      return res.status(200).json([]); // No error, solo array vacío
     }
 
     res.json(comentarios);

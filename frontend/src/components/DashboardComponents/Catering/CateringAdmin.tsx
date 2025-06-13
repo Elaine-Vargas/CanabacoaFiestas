@@ -134,9 +134,15 @@ interface Menu {
   id_proveedor: number;
   proveedor: {
     nombre_proveedor: string;
+    nombre?: string;
   };
-  platos_menu?: Array<{
+  platos_menu: Array<{
     plato: Plato;
+  }>;
+  // Permitir también la estructura de la API para compatibilidad
+  platos?: Array<{
+    id: number;
+    nombre: string;
   }>;
 }
 
@@ -179,6 +185,8 @@ const CateringAdmin = () => {
   const [statusFilter, setStatusFilter] = useState('');
   const [proveedorFilter, setProveedorFilter] = useState('');
   const [form] = Form.useForm();
+  const [showViewMenuModal, setShowViewMenuModal] = useState(false);
+  const [viewMenu, setViewMenu] = useState<Menu | null>(null);
 
   // Efectos
   useEffect(() => {
@@ -245,13 +253,37 @@ const CateringAdmin = () => {
         return;
       }
 
-      const response = await axios.get(`${apiUrl}/catering/menu`, {
+      const response = await axios.get(`${apiUrl}/menu`, {
         headers: {
           'Authorization': `Bearer ${token}`
         }
       });
-      console.log('Respuesta de menús:', response.data);
-      setMenus(response.data || []);
+      
+      // Normaliza la estructura de los menús para que siempre tengan platos_menu y platos
+      let menusData = Array.isArray(response.data) ? response.data : 
+                     Array.isArray(response.data.data) ? response.data.data : [];
+      menusData = menusData.map((menu: any) => {
+        // Si la API devuelve platos_menu, úsalo para crear un array de platos
+        if (Array.isArray(menu.platos_menu) && menu.platos_menu.length > 0) {
+          menu.platos = menu.platos_menu
+            .filter((pm: any) => pm.plato)
+            .map((pm: any) => ({
+              id: pm.plato.id_plato,
+              nombre: pm.plato.desc_plato
+            }));
+        }
+        // Si la API devuelve platos, úsalo para crear platos_menu
+        if (Array.isArray(menu.platos) && menu.platos.length > 0) {
+          menu.platos_menu = menu.platos.map((plato: any) => ({
+            plato: {
+              id_plato: plato.id || plato.id_plato,
+              desc_plato: plato.nombre || plato.desc_plato
+            }
+          }));
+        }
+        return menu;
+      });
+      setMenus(menusData);
     } catch (error) {
       console.error('Error al cargar los menús:', error);
       message.error('Error al cargar los menús');
@@ -270,13 +302,19 @@ const CateringAdmin = () => {
         return;
       }
 
-      const response = await axios.get(`${apiUrl}/catering/plato`, {
+      // Solicita todos los platos (ajusta el límite según lo que soporte tu backend)
+      const response = await axios.get(`${apiUrl}/plato?limit=1000`, {
         headers: {
           'Authorization': `Bearer ${token}`
         }
       });
-      console.log('Respuesta de platos:', response.data);
-      setPlatos(response.data || []);
+
+      // Soporta respuesta paginada o directa
+      const platosData = Array.isArray(response.data) ? response.data
+        : Array.isArray(response.data.data) ? response.data.data
+        : Array.isArray(response.data.rows) ? response.data.rows
+        : [];
+      setPlatos(platosData);
     } catch (error) {
       console.error('Error al cargar los platos:', error);
       message.error('Error al cargar los platos');
@@ -319,14 +357,21 @@ const CateringAdmin = () => {
           'Authorization': `Bearer ${token}`
         }
       });
-      // Filtrar solo proveedores de tipo Catering
-      const proveedoresCatering = response.data.filter(
+      
+      // Ensure we're setting an array and filter for Catering providers
+      const proveedoresData = Array.isArray(response.data) ? response.data : 
+                            Array.isArray(response.data.data) ? response.data.data : [];
+      
+      // Filter only Catering providers
+      const proveedoresCatering = proveedoresData.filter(
         (proveedor: Proveedor) => proveedor.tipo_proveedor === 'Catering'
       );
+      
       setProveedores(proveedoresCatering);
     } catch (error) {
       console.error('Error al cargar los proveedores:', error);
       message.error('Error al cargar los proveedores');
+      setProveedores([]);
     }
   };
 
@@ -417,18 +462,31 @@ const CateringAdmin = () => {
         message.error('No hay sesión activa');
         return;
       }
-      await axios.post(`${apiUrl}/catering/menu`, values, {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
-      message.success('Menú creado correctamente');
+      const menuData = {
+        desc_menu: values.desc_menu,
+        precio_menu: values.precio_menu,
+        id_proveedor: values.id_proveedor,
+        platos: values.platos || [] // Array de IDs de platos
+      };
+      if (values.id_menu) {
+        // Actualizar menú existente (PUT)
+        await axios.put(`${apiUrl}/menu/${values.id_menu}`, menuData, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        message.success('Menú actualizado correctamente');
+      } else {
+        // Crear nuevo menú (POST)
+        await axios.post(`${apiUrl}/menu`, menuData, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        message.success('Menú creado correctamente');
+      }
       setShowMenuForm(false);
       form.resetFields();
       fetchMenus();
     } catch (error) {
-      console.error('Error al crear el menú:', error);
-      message.error('Error al crear el menú');
+      console.error('Error al guardar el menú:', error);
+      message.error('Error al guardar el menú');
     }
   };
 
@@ -439,10 +497,8 @@ const CateringAdmin = () => {
         message.error('No hay sesión activa');
         return;
       }
-      await axios.post(`${apiUrl}/catering/plato`, values, {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
+      await axios.post(`${apiUrl}/plato`, { desc_plato: values.nombre_plato }, {
+        headers: { 'Authorization': `Bearer ${token}` }
       });
       message.success('Plato creado correctamente');
       setShowPlatoForm(false);
@@ -513,9 +569,11 @@ const CateringAdmin = () => {
   const handleEditMenu = (record: Menu) => {
     try {
       form.setFieldsValue({
-        nombre_menu: record.desc_menu,
+        id_menu: record.id_menu,
+        desc_menu: record.desc_menu,
         precio_menu: record.precio_menu,
-        id_proveedor: record.id_proveedor
+        id_proveedor: record.id_proveedor,
+        platos: record.platos_menu?.map(pm => pm.plato.id_plato) || []
       });
       setShowMenuForm(true);
     } catch (error) {
@@ -524,24 +582,50 @@ const CateringAdmin = () => {
   };
 
   const handleDeleteMenu = async (record: Menu) => {
+    Modal.confirm({
+      title: '¿Está seguro que desea inactivar este menú?',
+      content: 'Esta acción no se puede deshacer. ¿Desea continuar?',
+      okText: 'Sí, inactivar',
+      okType: 'danger',
+      cancelText: 'Cancelar',
+      onOk: async () => {
+        try {
+          const token = localStorage.getItem('token');
+          if (!token) {
+            message.error('No hay sesión activa');
+            return;
+          }
+          await axios.put(`${apiUrl}/menu/${record.id_menu}`, { estado_menu: 'Inactivo' }, {
+            headers: { 'Authorization': `Bearer ${token}` }
+          });
+          message.success('Menú inactivado exitosamente');
+          fetchMenus();
+        } catch (error) {
+          console.error('Error al inactivar el menú:', error);
+          message.error('Error al inactivar el menú');
+        }
+      }
+    });
+  };
+
+  const handleViewMenu = async (menu: Menu) => {
     try {
       const token = localStorage.getItem('token');
       if (!token) {
         message.error('No hay sesión activa');
         return;
       }
-
-      await axios.delete(`${apiUrl}/catering/menu/${record.id_menu}`, {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
+      // Pide el menú por id para obtener los platos actualizados
+      const response = await axios.get(`${apiUrl}/menu/${menu.id_menu}`, {
+        headers: { 'Authorization': `Bearer ${token}` }
       });
-
-      message.success('Menú eliminado exitosamente');
-      fetchMenus();
+      // Soporta respuesta con data o directa
+      const menuData = response.data && response.data.data ? response.data.data : response.data;
+      setViewMenu(menuData);
+      setShowViewMenuModal(true);
     } catch (error) {
-      console.error('Error al eliminar el menú:', error);
-      message.error('Error al eliminar el menú');
+      console.error('Error al obtener detalles del menú:', error);
+      message.error('Error al obtener detalles del menú');
     }
   };
 
@@ -557,7 +641,7 @@ const CateringAdmin = () => {
     }
   };
 
-  const handleDeletePlato = async (record: Plato) => {
+  const handleAddPlatos = async (menu: Menu) => {
     try {
       const token = localStorage.getItem('token');
       if (!token) {
@@ -565,23 +649,75 @@ const CateringAdmin = () => {
         return;
       }
 
-      await axios.delete(`${apiUrl}/catering/plato/${record.id_plato}`, {
+      // Get current platos for the menu
+      const response = await axios.get(`${apiUrl}/menu/${menu.id_menu}`, {
         headers: {
           'Authorization': `Bearer ${token}`
         }
       });
 
-      message.success('Plato eliminado exitosamente');
-      fetchPlatos();
-    } catch (error) {
-      console.error('Error al eliminar el plato:', error);
-      message.error('Error al eliminar el plato');
-    }
-  };
+      const currentPlatos = response.data.platos_menu?.map((p: any) => p.plato.id_plato) || [];
+      
+      Modal.confirm({
+        title: 'Agregar platos al menú',
+        content: (
+          <Select
+            mode="multiple"
+            style={{ width: '100%' }}
+            placeholder="Seleccione los platos"
+            defaultValue={currentPlatos}
+            onChange={async (selectedPlatos) => {
+              try {
+                // Add new platos
+                const newPlatos = selectedPlatos.filter((p: number) => !currentPlatos.includes(p));
+                // Remove unselected platos
+                const removedPlatos = currentPlatos.filter((p: number) => !selectedPlatos.includes(p));
 
-  const handleAddPlatos = (menu: Menu) => {
-    // Implementar lógica para agregar platos al menú
-    message.info('Funcionalidad en desarrollo');
+                // Update platos
+                await Promise.all([
+                  // Add new platos
+                  ...newPlatos.map((id_plato: number) =>
+                    axios.post(`${apiUrl}/menu/${menu.id_menu}/plato`, {
+                      id_plato
+                    }, {
+                      headers: {
+                        'Authorization': `Bearer ${token}`
+                      }
+                    })
+                  ),
+                  // Remove unselected platos
+                  ...removedPlatos.map((id_plato: number) =>
+                    axios.delete(`${apiUrl}/menu/${menu.id_menu}/plato/${id_plato}`, {
+                      headers: {
+                        'Authorization': `Bearer ${token}`
+                      }
+                    })
+                  )
+                ]);
+
+                message.success('Platos actualizados correctamente');
+                fetchMenus(); // Refresh the menus list
+              } catch (error) {
+                console.error('Error al actualizar platos:', error);
+                message.error('Error al actualizar los platos');
+              }
+            }}
+          >
+            {platos.map(plato => (
+              <Option key={plato.id_plato} value={plato.id_plato}>
+                {plato.desc_plato}
+              </Option>
+            ))}
+          </Select>
+        ),
+        onOk() {
+          return Promise.resolve();
+        }
+      });
+    } catch (error) {
+      console.error('Error al cargar platos del menú:', error);
+      message.error('Error al cargar los platos del menú');
+    }
   };
 
   // Columnas para las tablas
@@ -684,8 +820,34 @@ const CateringAdmin = () => {
     },
     {
       title: 'Proveedor',
-      dataIndex: ['proveedor', 'nombre_proveedor'],
       key: 'proveedor',
+      render: (_: any, record: Menu) => (
+        <span>
+          {(record.proveedor && (record.proveedor.nombre || record.proveedor.nombre_proveedor)) || 'Sin proveedor'}
+        </span>
+      ),
+    },
+    {
+      title: 'Platos',
+      key: 'platos',
+      render: (_: any, record: Menu) => (
+        <div>
+          {Array.isArray(record.platos_menu) && record.platos_menu.length > 0 && (
+            <List
+              size="small"
+              dataSource={record.platos_menu}
+              renderItem={(pm: any) => (
+                <List.Item>
+                  {pm.plato && pm.plato.desc_plato}
+                </List.Item>
+              )}
+            />
+          )}
+          {(!record.platos_menu || record.platos_menu.length === 0) && (
+            <span style={{ color: '#888' }}>Sin platos</span>
+          )}
+        </div>
+      ),
     },
     {
       title: 'Acciones',
@@ -703,6 +865,13 @@ const CateringAdmin = () => {
             danger
             onClick={() => handleDeleteMenu(record)}
           />
+          <Button
+            icon={<ArrowRightOutlined />}
+            type="link"
+            onClick={() => handleViewMenu(record)}
+          >
+            Ver
+          </Button>
         </Space>
       ),
     },
@@ -724,12 +893,6 @@ const CateringAdmin = () => {
             type="link"
             onClick={() => handleEditPlato(record)}
           />
-          <Button
-            icon={<DeleteOutlined />}
-            type="link"
-            danger
-            onClick={() => handleDeletePlato(record)}
-          />
         </Space>
       ),
     },
@@ -741,265 +904,211 @@ const CateringAdmin = () => {
     return matchesSearch && matchesProveedor;
   });
 
-  return (
-    <>
-      <StyledCard title="Servicios de Catering">
-        <TableActions>
-          <FilterContainer>
-            <Search
-              placeholder="Buscar servicio"
-              onSearch={value => setSearchText(value)}
-              onChange={e => setSearchText(e.target.value)}
-              style={{ width: 200 }}
-            />
-            <Select
-              placeholder="Filtrar por evento"
-              value={eventFilter}
-              onChange={value => setEventFilter(value)}
-              allowClear
-              style={{ width: 200 }}
-            >
-              {events.map(event => (
-                <Option key={event.id_evento} value={event.id_evento.toString()}>
-                  {event.nombre_evento}
-                </Option>
-              ))}
-            </Select>
-            <Select
-              placeholder="Filtrar por estado"
-              value={statusFilter}
-              onChange={value => setStatusFilter(value)}
-              allowClear
-              style={{ width: 200 }}
-            >
-              <Option value="solicitado">Solicitado</Option>
-              <Option value="confirmado">Confirmado</Option>
-              <Option value="completado">Completado</Option>
-              <Option value="cancelado">Cancelado</Option>
-            </Select>
-          </FilterContainer>
-          <Button
-            type="primary"
-            icon={<PlusOutlined />}
-            onClick={handleCreateCatering}
-          >
-            Nuevo Servicio de Catering
-          </Button>
-        </TableActions>
-
-        <Table
-          columns={cateringColumns}
-          dataSource={cateringServices.filter(service => {
-            const matchesSearch = searchText
-              ? service.id_catering.toString().includes(searchText) ||
-                service.evento?.nombre_evento.toLowerCase().includes(searchText.toLowerCase())
-              : true;
-            const matchesEvent = eventFilter
-              ? service.id_evento.toString() === eventFilter
-              : true;
-            const matchesStatus = statusFilter
-              ? service.estado_catering.toLowerCase() === statusFilter
-              : true;
-            return matchesSearch && matchesEvent && matchesStatus;
-          })}
-          loading={loading}
-          rowKey="id_catering"
-        />
-      </StyledCard>
-
-      <StyledCard>
-        <Tabs defaultActiveKey="1" items={[
-          {
-            key: '1',
-            label: 'Menús',
-            children: (
-              <>
-                <TableActions>
-                  <FilterContainer>
-                    <Search
-                      placeholder="Buscar menú"
-                      value={searchText}
-                      onChange={e => setSearchText(e.target.value)}
-                      style={{ width: 200 }}
-                    />
-                    <Select
-                      placeholder="Filtrar por proveedor"
-                      value={proveedorFilter}
-                      onChange={value => setProveedorFilter(value)}
-                      allowClear
-                      style={{ width: 200 }}
-                    >
-                      {proveedores.map(proveedor => (
-                        <Option key={proveedor.id_proveedor} value={proveedor.id_proveedor.toString()}>
-                          {proveedor.nombre_proveedor}
-                        </Option>
-                      ))}
-                    </Select>
-                  </FilterContainer>
-                  <Button
-                    type="primary"
-                    icon={<PlusOutlined />}
-                    onClick={() => setShowMenuForm(true)}
-                  >
-                    Nuevo Menú
-                  </Button>
-                </TableActions>
-                <Table
-                  columns={menuColumns}
-                  dataSource={menus.filter(menu => {
-                    const matchesSearch = searchText
-                      ? menu.desc_menu.toLowerCase().includes(searchText.toLowerCase())
-                      : true;
-                    const matchesProveedor = proveedorFilter
-                      ? menu.id_proveedor.toString() === proveedorFilter
-                      : true;
-                    return matchesSearch && matchesProveedor;
-                  })}
-                  rowKey="id_menu"
-                  loading={loadingMenus}
-                  locale={{
-                    emptyText: 'No hay menús disponibles'
-                  }}
-                />
-              </>
-            )
-          },
-          {
-            key: '2',
-            label: 'Platos',
-            children: (
-              <>
-                <TableActions>
-                  <FilterContainer>
-                    <Search
-                      placeholder="Buscar plato"
-                      value={searchText}
-                      onChange={e => setSearchText(e.target.value)}
-                      style={{ width: 200 }}
-                    />
-                  </FilterContainer>
-                  <Button
-                    type="primary"
-                    icon={<PlusOutlined />}
-                    onClick={() => setShowPlatoForm(true)}
-                  >
-                    Nuevo Plato
-                  </Button>
-                </TableActions>
-                <Table
-                  columns={platoColumns}
-                  dataSource={platos.filter(plato =>
-                    searchText
-                      ? plato.desc_plato.toLowerCase().includes(searchText.toLowerCase())
-                      : true
-                  )}
-                  rowKey="id_plato"
-                  loading={loadingPlatos}
-                  locale={{
-                    emptyText: 'No hay platos disponibles'
-                  }}
-                />
-              </>
-            )
-          }
-        ]} />
-      </StyledCard>
-
-      {/* Modal de Selección de Menús */}
-      <Modal
-        title="Seleccionar Menús"
-        open={showMenuSelection}
-        onCancel={() => setShowMenuSelection(false)}
-        footer={null}
-        width={800}
+  const menuForm = (
+    <Form form={form} onFinish={handleMenuFormSubmit} layout="vertical">
+      <Form.Item name="id_menu" hidden>
+        <Input />
+      </Form.Item>
+      <Form.Item
+        name="desc_menu"
+        label="Nombre del Menú"
+        rules={[{ required: true, message: 'Por favor ingrese el nombre del menú' }]}
       >
-        <Row gutter={[16, 16]}>
-          {menus.map(menu => (
-            <Col xs={24} sm={12} key={menu.id_menu}>
-              <Card
-                hoverable
-                onClick={() => handleMenuSelect(menu)}
-                style={{
-                  borderColor: selectedMenus.some(m => m.id_menu === menu.id_menu)
-                    ? 'var(--dark-gold)'
-                    : undefined,
-                }}
-              >
-                <h4>{menu.desc_menu}</h4>
-                <p>{menu.desc_menu}</p>
-                <p>Precio: ${menu.precio_menu}</p>
-                <p>Proveedor: {menu.proveedor.nombre_proveedor}</p>
-              </Card>
-            </Col>
+        <Input />
+      </Form.Item>
+      <Form.Item
+        name="precio_menu"
+        label="Precio"
+        rules={[{ required: true, message: 'Por favor ingrese el precio' }]}
+      >
+        <InputNumber style={{ width: '100%' }} min={0} />
+      </Form.Item>
+      <Form.Item
+        name="id_proveedor"
+        label="Proveedor"
+        rules={[{ required: true, message: 'Por favor seleccione un proveedor' }]}
+      >
+        <Select placeholder="Seleccione un proveedor">
+          {proveedores.map(proveedor => (
+            <Option key={proveedor.id_proveedor} value={proveedor.id_proveedor}>
+              {proveedor.nombre_proveedor}
+            </Option>
           ))}
-        </Row>
-        {selectedMenus.length > 0 && (
-          <ContinueButton onClick={handleContinueToForm}>
-            Continuar <ArrowRightOutlined />
-          </ContinueButton>
-        )}
-      </Modal>
-
-      {/* Modal de Formulario de Catering */}
-      <Modal
-        title="Crear Servicio de Catering"
-        open={showCateringForm}
-        onCancel={() => setShowCateringForm(false)}
-        footer={null}
+        </Select>
+      </Form.Item>
+      <Form.Item
+        name="platos"
+        label="Platos"
+        rules={[{ required: true, message: 'Por favor seleccione al menos un plato' }]}
       >
-        <Form
-          form={form}
-          layout="vertical"
-          onFinish={handleCateringFormSubmit}
-        >
-          <Form.Item
-            name="id_evento"
-            label="Evento"
-            rules={[{ required: true, message: 'Por favor seleccione un evento' }]}
-          >
-            <Select>
-              {events.map(event => (
-                <Option key={event.id_evento} value={event.id_evento}>
-                  {event.nombre_evento}
-                </Option>
-              ))}
-            </Select>
-          </Form.Item>
-          <Form.Item
-            name="personas_catering"
-            label="Número de Personas"
-            rules={[{ required: true, message: 'Por favor ingrese el número de personas' }]}
-          >
-            <InputNumber min={1} style={{ width: '100%' }} />
-          </Form.Item>
-          <Form.Item
-            label="Menús Seleccionados"
-          >
-            <List
-              dataSource={selectedMenus}
-              renderItem={menu => (
-                <List.Item>
-                  <div>{menu.desc_menu} - ${menu.precio_menu}</div>
-                </List.Item>
-              )}
-            />
-            <div style={{ marginTop: 16 }}>
-              <strong>Total: $
-                {(selectedMenus.reduce((sum, menu) => sum + menu.precio_menu, 0) * 1.18).toFixed(2)}
-              </strong> (Incluye ITBIS)
-            </div>
-          </Form.Item>
-          <Form.Item>
-            <Button type="primary" htmlType="submit">
-              Crear Servicio
-            </Button>
-          </Form.Item>
-        </Form>
-      </Modal>
+        <Select mode="multiple" placeholder="Seleccione los platos">
+          {Array.isArray(platos) && platos.map(plato => (
+            <Option key={plato.id_plato} value={plato.id_plato}>
+              {plato.desc_plato}
+            </Option>
+          ))}
+        </Select>
 
-      {/* Modal de Formulario de Menú */}
+      </Form.Item>
+      <Form.Item>
+        <Button type="primary" htmlType="submit">
+          Guardar Menú
+        </Button>
+      </Form.Item>
+    </Form>
+  );
+
+  const platoForm = (
+    <Form
+      form={form}
+      onFinish={handlePlatoFormSubmit}
+      layout="vertical"
+    >
+      <Form.Item
+        name="nombre_plato"
+        label="Nombre del Plato"
+        rules={[{ required: true, message: 'Por favor ingrese el nombre del plato' }]}
+      >
+        <Input placeholder="Ej: Arroz con Pollo" />
+      </Form.Item>
+      <Form.Item>
+        <Button type="primary" htmlType="submit">
+          Guardar Plato
+        </Button>
+      </Form.Item>
+    </Form>
+  );
+
+  return (
+    <div>
+      <Tabs defaultActiveKey="1" items={[
+        {
+          key: '1',
+          label: 'Servicios de Catering',
+          children: (
+            <StyledCard title="Servicios de Catering">
+              <TableActions>
+                <FilterContainer>
+                  <Search
+                    placeholder="Buscar por evento"
+                    allowClear
+                    onSearch={value => setSearchText(value)}
+                    style={{ width: 200 }}
+                  />
+                  <Select
+                    placeholder="Filtrar por estado"
+                    allowClear
+                    style={{ width: 200 }}
+                    onChange={value => setStatusFilter(value)}
+                  >
+                    <Option value="Solicitado">Solicitado</Option>
+                    <Option value="Confirmado">Confirmado</Option>
+                    <Option value="Completado">Completado</Option>
+                    <Option value="Cancelado">Cancelado</Option>
+                  </Select>
+                </FilterContainer>
+                <Button
+                  type="primary"
+                  icon={<PlusOutlined />}
+                  onClick={handleCreateCatering}
+                >
+                  Nuevo Servicio
+                </Button>
+              </TableActions>
+              <Table
+                columns={cateringColumns}
+                dataSource={cateringServices}
+                loading={loading}
+                rowKey="id_catering"
+              />
+            </StyledCard>
+          ),
+        },
+        {
+          key: '2',
+          label: 'Menús',
+          children: (
+            <StyledCard title="Menús">
+              <TableActions>
+                <FilterContainer>
+                  <Search
+                    placeholder="Buscar menú"
+                    allowClear
+                    onSearch={value => setSearchText(value)}
+                    style={{ width: 200 }}
+                  />
+                  <Select
+                    placeholder="Filtrar por proveedor"
+                    allowClear
+                    style={{ width: 200 }}
+                    onChange={value => setProveedorFilter(value)}
+                  >
+                    {proveedores.map(proveedor => (
+                      <Option key={proveedor.id_proveedor} value={proveedor.id_proveedor}>
+                        {proveedor.nombre_proveedor}
+                      </Option>
+                    ))}
+                  </Select>
+                </FilterContainer>
+                <Button
+                  type="primary"
+                  icon={<PlusOutlined />}
+                  onClick={() => {
+                    form.resetFields();
+                    setShowMenuForm(true);
+                  }}
+                >
+                  Nuevo Menú
+                </Button>
+              </TableActions>
+              <Table
+                columns={menuColumns}
+                dataSource={menus}
+                loading={loadingMenus}
+                rowKey="id_menu"
+              />
+            </StyledCard>
+          ),
+        },
+        {
+          key: '3',
+          label: 'Platos',
+          children: (
+            <StyledCard title="Platos">
+              <TableActions>
+                <FilterContainer>
+                  <Search
+                    placeholder="Buscar plato"
+                    allowClear
+                    onSearch={value => setSearchText(value)}
+                    style={{ width: 200 }}
+                  />
+                </FilterContainer>
+                <Button
+                  type="primary"
+                  icon={<PlusOutlined />}
+                  onClick={() => {
+                    form.resetFields();
+                    setShowPlatoForm(true);
+                  }}
+                >
+                  Nuevo Plato
+                </Button>
+              </TableActions>
+              <Table
+                columns={platoColumns}
+                dataSource={platos}
+                loading={loadingPlatos}
+                rowKey="id_plato"
+              />
+            </StyledCard>
+          ),
+        },
+      ]} />
+      
+      {/* Modal para crear/editar menú */}
       <Modal
-        title="Menú"
+        title={form.getFieldValue('id_menu') ? 'Editar Menú' : 'Nuevo Menú'}
         open={showMenuForm}
         onCancel={() => {
           setShowMenuForm(false);
@@ -1007,53 +1116,12 @@ const CateringAdmin = () => {
         }}
         footer={null}
       >
-        <Form
-          form={form}
-          layout="vertical"
-          onFinish={handleMenuFormSubmit}
-        >
-          <Form.Item
-            name="desc_menu"
-            label="Nombre"
-            rules={[{ required: true, message: 'Por favor ingrese el nombre' }]}
-          >
-            <Input />
-          </Form.Item>
-          <Form.Item
-            name="precio_menu"
-            label="Precio"
-            rules={[{ required: true, message: 'Por favor ingrese el precio' }]}
-          >
-            <InputNumber
-              style={{ width: '100%' }}
-              formatter={value => `$ ${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
-              parser={value => value!.replace(/\$\s?|(,*)/g, '')}
-            />
-          </Form.Item>
-          <Form.Item
-            name="id_proveedor"
-            label="Proveedor"
-            rules={[{ required: true, message: 'Por favor seleccione un proveedor' }]}
-          >
-            <Select>
-              {proveedores.map(proveedor => (
-                <Option key={proveedor.id_proveedor} value={proveedor.id_proveedor}>
-                  {proveedor.nombre_proveedor}
-                </Option>
-              ))}
-            </Select>
-          </Form.Item>
-          <Form.Item>
-            <Button type="primary" htmlType="submit">
-              Guardar Menú
-            </Button>
-          </Form.Item>
-        </Form>
+        {menuForm}
       </Modal>
 
-      {/* Modal de Formulario de Plato */}
+      {/* Modal para crear/editar plato */}
       <Modal
-        title="Plato"
+        title={form.getFieldValue('id_plato') ? 'Editar Plato' : 'Nuevo Plato'}
         open={showPlatoForm}
         onCancel={() => {
           setShowPlatoForm(false);
@@ -1061,26 +1129,39 @@ const CateringAdmin = () => {
         }}
         footer={null}
       >
-        <Form
-          form={form}
-          layout="vertical"
-          onFinish={handlePlatoFormSubmit}
-        >
-          <Form.Item
-            name="desc_plato"
-            label="Nombre"
-            rules={[{ required: true, message: 'Por favor ingrese el nombre' }]}
-          >
-            <Input />
-          </Form.Item>
-          <Form.Item>
-            <Button type="primary" htmlType="submit">
-              Guardar Plato
-            </Button>
-          </Form.Item>
-        </Form>
+        {platoForm}
       </Modal>
-    </>
+
+      {/* Modal para ver detalles de menú */}
+      <Modal
+        title={viewMenu ? `Detalles del Menú: ${viewMenu.desc_menu}` : 'Detalles del Menú'}
+        open={showViewMenuModal}
+        onCancel={() => setShowViewMenuModal(false)}
+        footer={null}
+      >
+        {viewMenu && (
+          <div>
+            <p><b>Nombre:</b> {viewMenu.desc_menu}</p>
+            <p><b>Precio:</b> ${viewMenu.precio_menu}</p>
+            <p><b>Proveedor:</b> {viewMenu.proveedor?.nombre || viewMenu.proveedor?.nombre_proveedor || 'Sin proveedor'}</p>
+            <p><b>Platos:</b></p>
+            {Array.isArray(viewMenu.platos_menu) && viewMenu.platos_menu.length > 0 ? (
+              <List
+                size="small"
+                dataSource={viewMenu.platos_menu}
+                renderItem={(pm: any) => (
+                  <List.Item>
+                    {pm.plato && pm.plato.desc_plato}
+                  </List.Item>
+                )}
+              />
+            ) : (
+              <span style={{ color: '#888' }}>Sin platos</span>
+            )}
+          </div>
+        )}
+      </Modal>
+    </div>
   );
 };
 

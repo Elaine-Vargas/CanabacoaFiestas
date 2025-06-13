@@ -567,3 +567,49 @@ export const getAllDetallesDecoracion = async (req: Request, res: Response) => {
         });
     }
 };
+
+// Obtener decoraciones por cliente, con filtros de estado y evento
+export const getDecoracionesByCliente = async (req: Request, res: Response) => {
+    try {
+        const { cedula_usuario } = req.params;
+        const { estado, id_evento } = req.query;
+        
+        // Construir condiciones dinámicas
+        const whereDecoracion: any = {
+            estado_decoracion: { [Op.ne]: 'Eliminado' }
+        };
+        if (estado) whereDecoracion.estado_decoracion = estado;
+        if (id_evento) whereDecoracion.id_evento = id_evento;
+
+        // Buscar decoraciones donde el evento pertenezca al cliente
+        const decoraciones = await DecoracionServicio.findAll({
+            where: whereDecoracion,
+            include: [
+                {
+                    model: Evento,
+                    as: 'evento',
+                    where: { cedula_cliente: cedula_usuario },
+                    include: [
+                        { model: Usuario, as: 'cliente' },
+                        { model: TipoEvento, as: 'tipo_evento' }
+                    ]
+                },
+                {
+                    model: DetalleDecoracion,
+                    as: 'detalles_decoracion',
+                    where: { estado_detdecoracion: 'Aceptado' },
+                    required: false
+                }
+            ],
+            order: [['id_decoracion', 'DESC']]
+        });
+
+        res.json(decoraciones.map(d => d ? d.get({ plain: true }) : null).filter(Boolean) || []);
+    } catch (error: any) {
+        console.error('Error al obtener decoraciones por cliente:', error);
+        res.status(500).json({
+            error: 'Error al obtener decoraciones por cliente',
+            mensaje: error.message || 'Ocurrió un error al cargar las decoraciones por cliente'
+        });
+    }
+};

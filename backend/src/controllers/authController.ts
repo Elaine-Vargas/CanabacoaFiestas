@@ -2,7 +2,7 @@ import { Request, Response } from 'express';
 import Usuario from '../models/Usuario_model';
 import jwt from 'jsonwebtoken';
 import { Op } from 'sequelize';
-import { sendVerificationEmail } from '../controllers/mailController';
+import { sendVerificationEmail } from './mailController';
 
 // Define el tiempo de expiración para registros y actualizaciones pendientes (30 minutos)
 const PENDING_REGISTRATION_EXPIRATION_MS = 30 * 60 * 1000;
@@ -30,6 +30,11 @@ interface PendingRegistration {
 
 export const Login = async (req: Request, res: Response) => {
   const { usuario_login, contrasena } = req.body;
+
+  // Validar campos requeridos
+  if (!usuario_login || !contrasena) {
+    return res.status(400).json({ error: 'Faltan credenciales' });
+  }
 
   try {
     // Buscar primero por usuario_login
@@ -161,7 +166,7 @@ export const RegisterClient = async (req: Request, res: Response) => {
       // Si el registro pendiente no ha expirado, reenviar el código en vez de lanzar error
       if (pendingRegistration && (now - pendingRegistration.timestamp) < 15 * 60 * 1000) {
         try {
-          await sendVerificationEmail(correo_usuario, pendingRegistration.verificationCode);
+          await sendVerificationEmail(correo_usuario, pendingRegistration.verificationCode, false);
           return res.status(200).json({
             mensaje: 'Ya existe un registro pendiente, se ha reenviado el código de verificación a tu correo.',
             correo_usuario,
@@ -214,7 +219,7 @@ export const RegisterClient = async (req: Request, res: Response) => {
 
     // Enviar correo de verificación
     try {
-      await sendVerificationEmail(correo_usuario, verificationCode);
+      await sendVerificationEmail(correo_usuario, verificationCode, false);
       
       res.status(200).json({
         mensaje: 'Por favor verifica tu correo electrónico para completar el registro.',
@@ -444,7 +449,7 @@ export const sendUpdateEmailVerification = async (req: Request, res: Response) =
 
     // Enviar correo de verificación (la función sendVerificationEmail ya no maneja res directamente)
     try {
-      await sendVerificationEmail(correo_usuario, verificationCode);
+      await sendVerificationEmail(correo_usuario, verificationCode, true);
       
       res.status(200).json({
         mensaje: 'Por favor verifica tu nuevo correo electrónico para completar la actualización.',

@@ -16,27 +16,17 @@ export default function DashboardLayout() {
   useEffect(() => {
     const checkAuth = async () => {
       const token = localStorage.getItem('token');
-      const userRole = localStorage.getItem('userRole');
       
       if (!token) {
         navigate('/Login');
         return;
       }
 
-      // Verificar que el usuario tenga acceso a la ruta actual
-      if (currentPath === 'Bienvenida') {
-        if (userRole === 'cliente' && location.pathname.includes('/admin')) {
-          navigate('/dashboard/client');
-        } else if (userRole === 'admin' && location.pathname.includes('/client')) {
-          navigate('/dashboard/admin');
-        }
-      }
-
       setIsLoading(false);
     };
 
     checkAuth();
-  }, [location.pathname, navigate, currentPath]);
+  }, [navigate]);
 
   if (isLoading) {
     return <div className="loading-container">Cargando...</div>;
