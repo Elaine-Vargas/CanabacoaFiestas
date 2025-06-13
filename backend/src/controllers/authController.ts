@@ -158,13 +158,18 @@ export const RegisterClient = async (req: Request, res: Response) => {
     if (global.pendingRegistrations?.has(correo_usuario.toLowerCase())) {
       const pendingRegistration = global.pendingRegistrations.get(correo_usuario.toLowerCase());
       const now = Date.now();
-      
-      // Si el registro pendiente no ha expirado, devolver un error indicando que ya existe uno
+      // Si el registro pendiente no ha expirado, reenviar el código en vez de lanzar error
       if (pendingRegistration && (now - pendingRegistration.timestamp) < 15 * 60 * 1000) {
-        return res.status(400).json({ 
-          error: 'Ya existe un registro pendiente para este correo',
-          details: 'Por favor verifica tu correo electrónico o espera 15 minutos para intentar nuevamente'
-        });
+        try {
+          await sendVerificationEmail(correo_usuario, pendingRegistration.verificationCode);
+          return res.status(200).json({
+            mensaje: 'Ya existe un registro pendiente, se ha reenviado el código de verificación a tu correo.',
+            correo_usuario,
+            requiresVerification: true
+          });
+        } catch (error) {
+          return res.status(500).json({ error: 'Error al reenviar el código de verificación' });
+        }
       }
       // Si el registro pendiente ha expirado, lo eliminamos para crear uno nuevo
       global.pendingRegistrations.delete(correo_usuario.toLowerCase());
