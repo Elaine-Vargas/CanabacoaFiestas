@@ -237,21 +237,21 @@ const UsuarioForm: React.FC<UsuarioFormProps> = ({
         </Form.Item>
 
         {!initialValues && (
-          <Form.Item
-            name="contrasena_login"
-            label="Contraseña"
-            rules={[
-              { required: true, message: 'Por favor creele una contraseña' },
-              { validator: async (_, value) => {
-                  if (!value) return Promise.resolve();
-                  const error = validatePassword(value);
-                  if (error) return Promise.reject(new Error(error));
-                  return Promise.resolve();
-                }
+        <Form.Item
+          name="contrasena_login"
+          label="Contraseña"
+          rules={[
+            { required: true, message: 'Por favor creele una contraseña' },
+            { validator: async (_, value) => {
+                if (!value) return Promise.resolve();
+                const error = validatePassword(value);
+                if (error) return Promise.reject(new Error(error));
+                return Promise.resolve();
               }
-            ]}
-          >
-            <Input.Password placeholder="Crea una contraseña" />
+            }
+          ]}
+        >
+          <Input.Password placeholder="Crea una contraseña" />
           </Form.Item>
         )}
 

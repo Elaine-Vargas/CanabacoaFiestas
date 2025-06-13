@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Modal, Form, Input, Select, Button, message } from 'antd';
+import { Modal, Form, Input, Select, Button, message, Divider } from 'antd';
 import '../../../styles/dashboard/DashboardForms.scss';
 import { validateEmail, validatePhoneNumber, formatPhoneNumber } from '../../../utils/validation';
 
@@ -21,6 +21,21 @@ interface Proveedor {
   tel_proveedor: string;
   correo_proveedor: string;
   id_direccion: number;
+  estado_proveedor: 'Activo' | 'Inactivo' | 'Eliminado';
+  direccion?: {
+    id_direccion: number;
+    sector: string;
+    calle: string;
+    detalles?: string;
+    ciudad: {
+      id_ciudad: number;
+      nombre_ciudad: string;
+      provincia: {
+        id_provincia: number;
+        nombre_provincia: string;
+      };
+    };
+  };
 }
 
 interface ProveedorFormProps {
@@ -49,19 +64,117 @@ const ProveedorForm: React.FC<ProveedorFormProps> = ({
 
   useEffect(() => {
     if (visible && initialValues) {
-      form.setFieldsValue(initialValues);
-      if (initialValues.id_provincia) {
-        handleProvinciaChange(initialValues.id_provincia);
+      console.log('Valores iniciales del proveedor (ProveedorForm):', initialValues); 
+
+      form.setFieldsValue({
+        tipo_proveedor: initialValues.tipo_proveedor,
+        nombre_proveedor: initialValues.nombre_proveedor,
+        telefono_proveedor: initialValues.tel_proveedor,
+        correo_proveedor: initialValues.correo_proveedor,
+        estado_proveedor: initialValues.estado_proveedor,
+        id_provincia: initialValues.direccion?.ciudad?.provincia?.id_provincia,
+        sector: initialValues.direccion?.sector,
+        calle: initialValues.direccion?.calle,
+        detalles: initialValues.direccion?.detalles
+      });
+
+      if (initialValues.direccion?.ciudad?.provincia?.id_provincia) {
+        // Llama a handleProvinciaChange después de que las provincias y ciudades estén cargadas
+        // Esto se maneja en el useEffect de abajo ahora.
+      }
+    } else if (visible && !initialValues) {
+      form.resetFields();
+      setCiudadesFiltradas([]);
+    }
+  }, [visible, initialValues, form]); // Removed 'ciudades' from dependencies to prevent infinite loop
+
+  // useEffect para cargar provincias y ciudades
+  useEffect(() => {
+    const fetchDataAndSetInitialValues = async () => {
+    if (visible) {
+        console.log('Iniciando carga de datos...');
+        await fetchProvincias();
+        await fetchCiudades();
+      }
+    };
+    fetchDataAndSetInitialValues();
+  }, [visible]); // Solo se ejecuta cuando cambia visible
+
+  // useEffect separado para establecer los valores iniciales
+  useEffect(() => {
+    if (visible && initialValues && provincias.length > 0 && ciudades.length > 0) {
+      console.log('=== DATOS DE DEPURACIÓN ===');
+      console.log('1. Valores iniciales completos:', JSON.stringify(initialValues, null, 2));
+      
+      // Buscar el ID de la provincia basado en el nombre
+      const nombreProvincia = initialValues.direccion?.ciudad?.provincia?.nombre_provincia;
+      const provinciaEncontrada = provincias.find(p => p.nombre_provincia === nombreProvincia);
+      
+      if (provinciaEncontrada) {
+        console.log('2. Provincia encontrada:', provinciaEncontrada);
+        form.setFieldsValue({ id_provincia: provinciaEncontrada.id_provincia });
+        handleProvinciaChange(provinciaEncontrada.id_provincia);
+        
+        // Buscar el ID de la ciudad basado en el nombre y la provincia
+        const nombreCiudad = initialValues.direccion?.ciudad?.nombre_ciudad;
+        const ciudadEncontrada = ciudades.find(c => 
+          c.nombre_ciudad === nombreCiudad && 
+          c.id_provincia === provinciaEncontrada.id_provincia
+        );
+        
+        if (ciudadEncontrada) {
+          console.log('3. Ciudad encontrada:', ciudadEncontrada);
+          form.setFieldsValue({ id_ciudad: ciudadEncontrada.id_ciudad });
+        } else {
+          console.warn('No se encontró la ciudad:', nombreCiudad);
+        }
+      } else {
+        console.warn('No se encontró la provincia:', nombreProvincia);
+      }
+
+      // Establecer el resto de los valores del formulario
+      form.setFieldsValue({
+        tipo_proveedor: initialValues.tipo_proveedor,
+        nombre_proveedor: initialValues.nombre_proveedor,
+        telefono_proveedor: initialValues.tel_proveedor,
+        correo_proveedor: initialValues.correo_proveedor,
+        estado_proveedor: initialValues.estado_proveedor,
+        sector: initialValues.direccion?.sector,
+        calle: initialValues.direccion?.calle,
+        detalles: initialValues.direccion?.detalles
+      });
+    }
+  }, [visible, initialValues, form, provincias, ciudades]);
+
+  // useEffect para establecer id_ciudad después de que ciudadesFiltradas esté poblado
+  useEffect(() => {
+    if (visible && initialValues && ciudadesFiltradas.length > 0 && initialValues.direccion?.ciudad?.id_ciudad) {
+      console.log('=== INTENTANDO ESTABLECER CIUDAD ===');
+      console.log('1. Ciudades filtradas actuales:', ciudadesFiltradas);
+      console.log('2. ID de ciudad a establecer:', initialValues.direccion.ciudad.id_ciudad);
+      
+      const cityIdToSet = initialValues.direccion.ciudad.id_ciudad;
+      const provinceIdOfCity = initialValues.direccion.ciudad.provincia?.id_provincia;
+      const currentSelectedProvince = form.getFieldValue('id_provincia');
+
+      console.log('3. Provincia actual seleccionada:', currentSelectedProvince);
+      console.log('4. Provincia de la ciudad:', provinceIdOfCity);
+
+      if (provinceIdOfCity === currentSelectedProvince) {
+        const cityExistsInFiltered = ciudadesFiltradas.some(ciudad => ciudad.id_ciudad === cityIdToSet);
+        console.log('5. ¿La ciudad existe en las filtradas?:', cityExistsInFiltered);
+        
+        if (cityExistsInFiltered) {
+          console.log('6. Estableciendo id_ciudad:', cityIdToSet);
+          form.setFieldsValue({ id_ciudad: cityIdToSet });
+        } else {
+          console.warn('6. Ciudad no encontrada en las filtradas');
+        }
+      } else {
+        console.warn('5. Las provincias no coinciden');
       }
     }
-  }, [visible, initialValues, form]);
-
-  useEffect(() => {
-    if (visible) {
-      fetchProvincias();
-      fetchCiudades();
-    }
-  }, [visible]);
+  }, [visible, initialValues, form, ciudadesFiltradas]);
 
   const fetchProvincias = async () => {
     try {
@@ -109,15 +222,17 @@ const ProveedorForm: React.FC<ProveedorFormProps> = ({
   };
 
   const handleProvinciaChange = (value: number) => {
+    console.log('Provincia seleccionada:', value);
     const ciudadesFiltradas = ciudades.filter(ciudad => ciudad.id_provincia === value);
+    console.log('Ciudades filtradas:', ciudadesFiltradas);
     setCiudadesFiltradas(ciudadesFiltradas);
+    if (!initialValues) {
     form.setFieldsValue({ id_ciudad: undefined });
+    }
   };
 
   const formatTelefono = (value: string) => {
-    // Eliminar todos los caracteres no numéricos
     const numbers = value.replace(/\D/g, '');
-    // Aplicar formato XXX-XXX-XXXX
     if (numbers.length <= 3) return numbers;
     if (numbers.length <= 6) return `${numbers.slice(0, 3)}-${numbers.slice(3)}`;
     return `${numbers.slice(0, 3)}-${numbers.slice(3, 6)}-${numbers.slice(6, 10)}`;
@@ -132,7 +247,6 @@ const ProveedorForm: React.FC<ProveedorFormProps> = ({
     try {
       setIsSubmitting(true);
 
-      // Preparar los datos de la dirección
       const direccionData = {
         id_provincia: values.id_provincia,
         id_ciudad: values.id_ciudad,
@@ -144,7 +258,6 @@ const ProveedorForm: React.FC<ProveedorFormProps> = ({
       let id_direccion;
 
       if (initialValues) {
-        // Si estamos editando, actualizamos la dirección existente
         const direccionResponse = await fetch(`${apiUrl}/direccion/${initialValues.id_direccion}`, {
           method: 'PUT',
           headers: {
@@ -161,7 +274,6 @@ const ProveedorForm: React.FC<ProveedorFormProps> = ({
 
         id_direccion = initialValues.id_direccion;
       } else {
-        // Si estamos creando, insertamos una nueva dirección
         const direccionResponse = await fetch(`${apiUrl}/direccion`, {
           method: 'POST',
           headers: {
@@ -180,18 +292,17 @@ const ProveedorForm: React.FC<ProveedorFormProps> = ({
         id_direccion = direccionResult.id_direccion;
       }
 
-      // Preparar los datos del proveedor
       const proveedorData = {
         tipo_proveedor: values.tipo_proveedor,
         nombre_proveedor: values.nombre_proveedor,
         tel_proveedor: values.telefono_proveedor,
         correo_proveedor: values.correo_proveedor,
-        id_direccion: id_direccion
+        id_direccion: id_direccion,
+        estado_proveedor: values.estado_proveedor || 'Activo'
       };
 
       let proveedorResponse;
       if (initialValues) {
-        // Si estamos editando, actualizamos el proveedor existente
         proveedorResponse = await fetch(`${apiUrl}/proveedor/${initialValues.id_proveedor}`, {
           method: 'PUT',
           headers: {
@@ -201,7 +312,6 @@ const ProveedorForm: React.FC<ProveedorFormProps> = ({
           body: JSON.stringify(proveedorData)
         });
       } else {
-        // Si estamos creando, insertamos un nuevo proveedor
         proveedorResponse = await fetch(`${apiUrl}/proveedor`, {
           method: 'POST',
           headers: {
@@ -219,7 +329,7 @@ const ProveedorForm: React.FC<ProveedorFormProps> = ({
 
       const data = await proveedorResponse.json();
       message.success(`Proveedor ${initialValues ? 'actualizado' : 'creado'} exitosamente`);
-      onSubmit(data.proveedor);
+      onSubmit(data);
       form.resetFields();
       onCancel();
     } catch (error) {
@@ -292,18 +402,27 @@ const ProveedorForm: React.FC<ProveedorFormProps> = ({
 
         <Form.Item
           name="correo_proveedor"
-          label="Correo Electronico"
+          label="Correo Electrónico"
           rules={[
-            { required: true, message: 'Por favor ingrese el correo electronico' },
-            { validator: (_, value) => {
-              const error = validateEmail(value);
-              return error ? Promise.reject(error) : Promise.resolve();
-            }},
-            { max: 100, message: 'El correo no puede exceder los 100 caracteres' }
+            { required: true, message: 'Por favor ingrese el correo electrónico' },
+            { type: 'email', message: 'Por favor ingrese un correo electrónico válido' }
           ]}
         >
-          <Input placeholder="Ingrese el correo electronico" maxLength={100} />
+          <Input placeholder="ejemplo@correo.com" />
         </Form.Item>
+
+        {initialValues && (
+          <Form.Item
+            name="estado_proveedor"
+            label="Estado"
+            rules={[{ required: true, message: 'Por favor seleccione el estado' }]}
+          >
+            <Select>
+              <Select.Option value="Activa">Activa</Select.Option>
+              <Select.Option value="Inactivo">Inactivo</Select.Option>
+            </Select>
+          </Form.Item>
+        )}
 
         <Form.Item
           name="id_provincia"
@@ -400,6 +519,8 @@ const ProveedorForm: React.FC<ProveedorFormProps> = ({
             maxLength={200}
           />
         </Form.Item>
+
+        <Divider>Dirección</Divider>
 
         <Form.Item>
           <div className="form-buttons">

@@ -20,6 +20,7 @@ interface Evento {
   desea_supervision: boolean;
   estado_solicitud: string;
   total_evento: number;
+  cedula_asesor: string;
   cliente?: {
     nombre_usuario: string;
     apellido_usuario: string;
@@ -80,7 +81,7 @@ interface AsignacionEmpleadoFormProps {
   onCancel: () => void;
   onSubmit: (values: any) => void;
   loading?: boolean;
-  initialValues: AsignacionEmpleado;
+  initialValues?: AsignacionEmpleado;
 }
 
 const AsignacionEmpleadoForm: React.FC<AsignacionEmpleadoFormProps> = ({
@@ -266,6 +267,29 @@ const AsignacionEmpleadoForm: React.FC<AsignacionEmpleadoFormProps> = ({
     onCancel();
   };
 
+  const handleEventoChange = (value: number) => {
+    console.log('Select onChange value:', value);
+    form.setFieldsValue({ id_evento: value });
+    console.log('id_evento after setFieldsValue:', form.getFieldValue('id_evento'));
+    const evento = eventos.find(e => e.id_evento === value);
+    if (evento) {
+      setSelectedEvento(evento);
+      // Limpiar la selección del empleado cuando cambia el evento
+      form.setFieldValue('empleado_evento', undefined);
+    } else {
+      setSelectedEvento(null);
+      setShowEventoDetails(false);
+    }
+  };
+
+  // Filtrar empleados excluyendo al asesor del evento seleccionado
+  const getEmpleadosFiltrados = () => {
+    if (!selectedEvento) return empleados;
+    return empleados.filter(empleado => 
+      empleado.cedula_usuario !== selectedEvento.cedula_asesor
+    );
+  };
+
   return (
     <>
       <Modal
@@ -293,18 +317,7 @@ const AsignacionEmpleadoForm: React.FC<AsignacionEmpleadoFormProps> = ({
                 loading={loadingEventos}
                 showSearch
                 allowClear
-                onChange={(value: number) => {
-                  console.log('Select onChange value:', value);
-                  form.setFieldsValue({ id_evento: value });
-                  console.log('id_evento after setFieldsValue:', form.getFieldValue('id_evento'));
-                  const evento = eventos.find(e => e.id_evento === value);
-                  if (evento) {
-                    setSelectedEvento(evento);
-                  } else {
-                    setSelectedEvento(null);
-                    setShowEventoDetails(false);
-                  }
-                }}
+                onChange={handleEventoChange}
                 onClear={() => {
                   form.setFieldsValue({ id_evento: undefined });
                   setSelectedEvento(null);
@@ -343,13 +356,14 @@ const AsignacionEmpleadoForm: React.FC<AsignacionEmpleadoFormProps> = ({
               loading={loadingEmpleados}
               showSearch
               allowClear
+              disabled={!selectedEvento}
               filterOption={(input, option) => {
                 if (typeof option?.label === 'string') {
                   return option.label.toLowerCase().includes(input.toLowerCase());
                 }
                 return false;
               }}
-              options={empleados.map(empleado => ({
+              options={getEmpleadosFiltrados().map(empleado => ({
                 value: empleado.cedula_usuario,
                 label: `${empleado.nombre_usuario} ${empleado.apellido_usuario} (${empleado.cedula_usuario})`
               }))}

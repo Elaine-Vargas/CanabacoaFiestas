@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import '../../../styles/dashboard/ServicesSubpages.scss';
-import { Card, Button, Table, Tag, Space, Typography, Input, Select, Dropdown, Modal, Descriptions, message, Rate } from 'antd';
+import { Card, Button, Table, Tag, Space, Typography, Input, Select, Dropdown, Modal, Descriptions, message, Rate, Form } from 'antd';
 import { PlusOutlined, EditOutlined, DeleteOutlined, EyeOutlined, SearchOutlined, FilterOutlined } from '@ant-design/icons';
 import EventoForm from '../FormService/EventoForm';
 import UsuarioForm from '../FormService/UsuarioForm';
@@ -273,7 +273,7 @@ const WelcomeAdmin: React.FC = () => {
   const [showEventoForm, setShowEventoForm] = useState(false);
   const [showUsuarioForm, setShowUsuarioForm] = useState(false);
   const [showProveedorForm, setShowProveedorForm] = useState(false);
-  const [showAsignacionForm, setShowAsignacionForm] = useState(false);
+  const [showAsignacionEmpleadoForm, setShowAsignacionEmpleadoForm] = useState(false);
   const [showDecoracionForm, setShowDecoracionForm] = useState(false);
 
   const [pagos, setPagos] = useState<Pago[]>([]);
@@ -291,6 +291,9 @@ const WelcomeAdmin: React.FC = () => {
 
   const [showPagosFilters, setShowPagosFilters] = useState(false);
   const [showComentariosFilters, setShowComentariosFilters] = useState(false);
+
+  const [modalEditarAsignacionVisible, setModalEditarAsignacionVisible] = useState(false);
+  const [formEditarAsignacion] = Form.useForm();
 
   const handleEmpleadoChange = (value: string) => {
     setSelectedEmpleado(value);
@@ -616,25 +619,57 @@ const WelcomeAdmin: React.FC = () => {
   };
 
   const handleCreateAsignacion = async (values: any) => {
+    const token = localStorage.getItem('token');
+    if (!token) {
+      message.error('No hay sesión activa');
+      return;
+    }
     try {
       setLoading(true);
-      const response = await fetch(`${apiUrl}/empleado-evento`, {
+      const response = await fetch(`${apiUrl}/evento/asignar-empleados`, {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
         },
-        body: JSON.stringify(values),
+        body: JSON.stringify({
+          id_evento: values.id_evento,
+          empleado_evento: values.empleado_evento,
+          puesto_evento: values.puesto_evento,
+          estado_empevento: 'Activo'
+        })
       });
 
+      const data = await response.json();
+
       if (!response.ok) {
-        throw new Error('Error al crear la asignación');
+        // Si es un error de asignación duplicada, mostrar un mensaje más amigable
+        if (data.error === 'Asignación duplicada') {
+          message.warning(data.mensaje);
+          setModalAsignacionVisible(false);
+          return;
+        }
+        throw new Error(data.mensaje || 'Error al crear la asignación');
       }
 
+      message.success('Asignación creada exitosamente');
       setModalAsignacionVisible(false);
-      fetchData();
+      
+      // Actualizar la tabla de asignaciones
+      const asignacionesResponse = await fetch(`${apiUrl}/evento/asignar-empleados?include=evento.cliente,empleado`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      if (!asignacionesResponse.ok) {
+        throw new Error('Error al actualizar la lista de asignaciones');
+      }
+      const asignacionesData = await asignacionesResponse.json();
+      setAsignaciones(asignacionesData);
     } catch (error) {
       console.error('Error al crear asignación:', error);
+      message.error(`Error al crear asignación: ${error instanceof Error ? error.message : String(error)}`);
     } finally {
       setLoading(false);
     }
@@ -992,7 +1027,7 @@ const WelcomeAdmin: React.FC = () => {
     },
     onEdit: (record) => {
       setAsignacionSeleccionada(record);
-      setShowAsignacionForm(true);
+      setModalEditarAsignacionVisible(true);
     },
     onDelete: handleDeleteAsignacion
   });
@@ -1123,6 +1158,93 @@ const WelcomeAdmin: React.FC = () => {
       fetchData();
     }
   }, [modalUsuarioVisible]);
+
+  const handleEditAsignacion = async (values: any) => {
+    const token = localStorage.getItem('token');
+    if (!token) {
+      message.error('No hay sesión activa');
+      return;
+    }
+    try {
+      setLoading(true);
+      
+      // Primero eliminamos la asignación actual
+      const deleteResponse = await fetch(`${apiUrl}/evento/${asignacionSeleccionada?.id_evento}/empleados/${asignacionSeleccionada?.empleado_evento}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (!deleteResponse.ok) {
+        const errorData = await deleteResponse.json();
+        throw new Error(errorData.mensaje || 'Error al eliminar la asignación actual');
+      }
+
+      // Luego creamos la nueva asignación
+      const response = await fetch(`${apiUrl}/evento/asignar-empleados`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          id_evento: values.id_evento,
+          empleado_evento: values.empleado_evento,
+          puesto_evento: values.puesto_evento,
+          estado_empevento: values.estado_empevento
+        })
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.mensaje || 'Error al crear la nueva asignación');
+      }
+
+      message.success('Asignación actualizada exitosamente');
+      setModalEditarAsignacionVisible(false);
+      
+      // Actualizar la tabla de asignaciones
+      const asignacionesResponse = await fetch(`${apiUrl}/evento/asignar-empleados?include=evento.cliente,empleado`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      if (!asignacionesResponse.ok) {
+        throw new Error('Error al actualizar la lista de asignaciones');
+      }
+      const asignacionesData = await asignacionesResponse.json();
+      setAsignaciones(asignacionesData);
+    } catch (error) {
+      console.error('Error al actualizar asignación:', error);
+      message.error(`Error al actualizar asignación: ${error instanceof Error ? error.message : String(error)}`);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleEditClick = (record: any) => {
+    console.log('Datos de la asignación seleccionada:', record);
+    setAsignacionSeleccionada(record);
+    setModalEditarAsignacionVisible(true);
+  };
+
+  // Efecto para cargar los datos en el formulario cuando cambia la asignación seleccionada
+  useEffect(() => {
+    if (asignacionSeleccionada && modalEditarAsignacionVisible) {
+      console.log('Intentando cargar datos en el formulario:', asignacionSeleccionada);
+      const formData = {
+        id_evento: asignacionSeleccionada.evento?.id_evento,
+        empleado_evento: asignacionSeleccionada.empleado?.cedula_usuario,
+        puesto_evento: asignacionSeleccionada.puesto_evento,
+        estado_empevento: asignacionSeleccionada.estado_empevento
+      };
+      console.log('Datos a cargar en el formulario:', formData);
+      formEditarAsignacion.setFieldsValue(formData);
+    }
+  }, [asignacionSeleccionada, modalEditarAsignacionVisible]);
 
   return (
     <div className="welcome-container">
@@ -1591,9 +1713,9 @@ const WelcomeAdmin: React.FC = () => {
         footer={null}
         width={800}
       >
-        <UsuarioForm
-          visible={modalUsuarioVisible}
-          onCancel={() => setModalUsuarioVisible(false)}
+      <UsuarioForm
+        visible={modalUsuarioVisible}
+        onCancel={() => setModalUsuarioVisible(false)}
           onSubmit={async (values) => {
             try {
               const token = localStorage.getItem('token');
@@ -1623,8 +1745,8 @@ const WelcomeAdmin: React.FC = () => {
               message.error('Error al crear el usuario');
             }
           }}
-          loading={loading}
-        />
+        loading={loading}
+      />
       </Modal>
 
       <ProveedorForm
@@ -1632,6 +1754,16 @@ const WelcomeAdmin: React.FC = () => {
         onCancel={() => setModalProveedorVisible(false)}
         onSubmit={handleCreateProveedor}
         loading={loading}
+        initialValues={proveedorSeleccionado ? {
+          ...proveedorSeleccionado,
+          id_provincia: proveedorSeleccionado.direccion?.ciudad?.provincia?.id_provincia,
+          id_ciudad: proveedorSeleccionado.direccion?.ciudad?.id_ciudad,
+          sector: proveedorSeleccionado.direccion?.sector,
+          calle: proveedorSeleccionado.direccion?.calle,
+          detalles: proveedorSeleccionado.direccion?.detalles
+        } : undefined}
+        provincias={provincias}
+        ciudades={ciudades}
       />
 
       <AsignacionEmpleadoForm
@@ -1639,6 +1771,7 @@ const WelcomeAdmin: React.FC = () => {
         onCancel={() => setModalAsignacionVisible(false)}
         onSubmit={handleCreateAsignacion}
         loading={loading}
+        initialValues={asignacionSeleccionada}
       />
 
       <DecoracionForm
@@ -1999,16 +2132,50 @@ const WelcomeAdmin: React.FC = () => {
               return;
             }
 
-            const response = await fetch(`${apiUrl}/proveedor/${proveedorSeleccionado?.id_proveedor}`, {
+            // Preparar los datos de la dirección
+            const direccionData = {
+              id_provincia: values.id_provincia,
+              id_ciudad: values.id_ciudad,
+              sector: values.sector,
+              calle: values.calle,
+              detalles: values.detalles || null
+            };
+
+            // Actualizar la dirección
+            const direccionResponse = await fetch(`${apiUrl}/direccion/${proveedorSeleccionado?.id_direccion}`, {
               method: 'PUT',
               headers: {
                 'Authorization': `Bearer ${token}`,
                 'Content-Type': 'application/json'
               },
-              body: JSON.stringify(values)
+              body: JSON.stringify(direccionData)
             });
 
-            if (!response.ok) {
+            if (!direccionResponse.ok) {
+              throw new Error('Error al actualizar la dirección');
+            }
+
+            // Preparar los datos del proveedor
+            const proveedorData = {
+              tipo_proveedor: values.tipo_proveedor,
+              nombre_proveedor: values.nombre_proveedor,
+              tel_proveedor: values.telefono_proveedor,
+              correo_proveedor: values.correo_proveedor,
+              id_direccion: proveedorSeleccionado?.id_direccion,
+              estado_proveedor: values.estado_proveedor
+            };
+
+            // Actualizar el proveedor
+            const proveedorResponse = await fetch(`${apiUrl}/proveedor/${proveedorSeleccionado?.id_proveedor}`, {
+              method: 'PUT',
+              headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+              },
+              body: JSON.stringify(proveedorData)
+            });
+
+            if (!proveedorResponse.ok) {
               throw new Error('Error al actualizar el proveedor');
             }
 
@@ -2027,83 +2194,19 @@ const WelcomeAdmin: React.FC = () => {
 
       {/* Formulario de Edición de Asignación */}
       <AsignacionEmpleadoForm
-        visible={showAsignacionForm}
-        onCancel={() => {
-          setShowAsignacionForm(false);
-          setAsignacionSeleccionada(null);
-        }}
-        onSubmit={async (values) => {
-          try {
-            const token = localStorage.getItem('token');
-            if (!token) {
-              message.error('No hay sesión activa');
-              return;
-            }
-
-            const response = await fetch(`${apiUrl}/asignacion/${asignacionSeleccionada?.id_evento}/${asignacionSeleccionada?.empleado_evento}`, {
-              method: 'PUT',
-              headers: {
-                'Authorization': `Bearer ${token}`,
-                'Content-Type': 'application/json'
-              },
-              body: JSON.stringify(values)
-            });
-
-            if (!response.ok) {
-              throw new Error('Error al actualizar la asignación');
-            }
-
-            message.success('Asignación actualizada exitosamente');
-            setShowAsignacionForm(false);
-            setAsignacionSeleccionada(null);
-            fetchData();
-          } catch (error) {
-            console.error('Error al actualizar la asignación:', error);
-            message.error('Error al actualizar la asignación');
-          }
-        }}
+        visible={modalAsignacionVisible}
+        onCancel={() => setModalAsignacionVisible(false)}
+        onSubmit={handleCreateAsignacion}
         loading={loading}
+        initialValues={asignacionSeleccionada}
       />
 
       {/* Formulario de Edición de Decoración */}
       <DecoracionForm
-        visible={showDecoracionForm}
-        onCancel={() => {
-          setShowDecoracionForm(false);
-          setDecoracionSeleccionada(null);
-        }}
-        onSubmit={async (values) => {
-          try {
-            const token = localStorage.getItem('token');
-            if (!token) {
-              message.error('No hay sesión activa');
-              return;
-            }
-
-            const response = await fetch(`${apiUrl}/decoracion/${decoracionSeleccionada?.id_decoracion}`, {
-              method: 'PUT',
-              headers: {
-                'Authorization': `Bearer ${token}`,
-                'Content-Type': 'application/json'
-              },
-              body: JSON.stringify(values)
-            });
-
-            if (!response.ok) {
-              throw new Error('Error al actualizar la decoración');
-            }
-
-            message.success('Decoración actualizada exitosamente');
-            setShowDecoracionForm(false);
-            setDecoracionSeleccionada(null);
-            fetchData();
-          } catch (error) {
-            console.error('Error al actualizar la decoración:', error);
-            message.error('Error al actualizar la decoración');
-          }
-        }}
+        visible={modalDecoracionVisible}
+        onCancel={() => setModalDecoracionVisible(false)}
+        onSubmit={handleCreateDecoracion}
         loading={loading}
-        initialValues={decoracionSeleccionada}
       />
 
       {/* Tarjeta de Pagos y Comentarios en formato dashboard */}
@@ -2111,16 +2214,6 @@ const WelcomeAdmin: React.FC = () => {
         <Card
           title="PAGOS"
           className="dashboard-card"
-          extra={
-            <Button
-              type="primary"
-              icon={<FilterOutlined />}
-              onClick={() => setShowPagosFilters(!showPagosFilters)}
-              className="action-button primary"
-            >
-              Filtros {getActiveFiltersCount(filtrosPagos) > 0 && `(${getActiveFiltersCount(filtrosPagos)})`}
-            </Button>
-          }
         >
           <TableFilters
             type="pagos"
@@ -2246,16 +2339,6 @@ const WelcomeAdmin: React.FC = () => {
         <Card
           title="COMENTARIOS Y CALIFICACIONES"
           className="dashboard-card"
-          extra={
-            <Button
-              type="primary"
-              icon={<FilterOutlined />}
-              onClick={() => setShowComentariosFilters(!showComentariosFilters)}
-              className="action-button primary"
-            >
-              Filtros {getActiveFiltersCount(filtrosComentarios) > 0 && `(${getActiveFiltersCount(filtrosComentarios)})`}
-            </Button>
-          }
         >
           <TableFilters
             type="comentarios"
@@ -2354,6 +2437,102 @@ const WelcomeAdmin: React.FC = () => {
           />
         </Card>
       </div>
+
+      <Modal
+        title="Editar Asignación"
+        open={modalEditarAsignacionVisible}
+        onCancel={() => {
+          setModalEditarAsignacionVisible(false);
+          formEditarAsignacion.resetFields();
+          setAsignacionSeleccionada(null);
+        }}
+        footer={null}
+        destroyOnClose={true}
+        afterOpenChange={(visible) => {
+          if (visible && asignacionSeleccionada) {
+            console.log('Modal abierto, cargando datos:', asignacionSeleccionada);
+            formEditarAsignacion.setFieldsValue({
+              id_evento: asignacionSeleccionada.evento?.id_evento,
+              empleado_evento: asignacionSeleccionada.empleado?.cedula_usuario,
+              puesto_evento: asignacionSeleccionada.puesto_evento,
+              estado_empevento: asignacionSeleccionada.estado_empevento
+            });
+          }
+        }}
+      >
+        <Form
+          form={formEditarAsignacion}
+          layout="vertical"
+          onFinish={handleEditAsignacion}
+          preserve={false}
+          initialValues={asignacionSeleccionada ? {
+            id_evento: asignacionSeleccionada.evento?.id_evento,
+            empleado_evento: asignacionSeleccionada.empleado?.cedula_usuario,
+            puesto_evento: asignacionSeleccionada.puesto_evento,
+            estado_empevento: asignacionSeleccionada.estado_empevento
+          } : undefined}
+        >
+          <Form.Item
+            name="id_evento"
+            label="Evento"
+            rules={[{ required: true, message: 'Por favor seleccione un evento' }]}
+          >
+            <Select>
+              {eventos.map(evento => (
+                <Select.Option key={evento.id_evento} value={evento.id_evento}>
+                  {`${evento.cliente?.nombre_usuario} ${evento.cliente?.apellido_usuario} - ${evento.fecha_evento}`}
+                </Select.Option>
+              ))}
+            </Select>
+          </Form.Item>
+
+          <Form.Item
+            name="empleado_evento"
+            label="Empleado"
+            rules={[{ required: true, message: 'Por favor seleccione un empleado' }]}
+          >
+            <Select>
+              {empleados.map(empleado => (
+                <Select.Option key={empleado.cedula_usuario} value={empleado.cedula_usuario}>
+                  {`${empleado.nombre_usuario} ${empleado.apellido_usuario}`}
+                </Select.Option>
+              ))}
+            </Select>
+          </Form.Item>
+
+          <Form.Item
+            name="puesto_evento"
+            label="Cargo"
+            rules={[{ required: true, message: 'Por favor seleccione un cargo' }]}
+          >
+            <Select>
+              <Select.Option value="Decorador">Decorador</Select.Option>
+              <Select.Option value="Camarero">Camarero</Select.Option>
+              <Select.Option value="Conductor">Conductor</Select.Option>
+              <Select.Option value="Supervisor">Supervisor</Select.Option>
+              <Select.Option value="Encargado de Logística">Encargado de Logística</Select.Option>
+              <Select.Option value="Encargado de Limpieza">Encargado de Limpieza</Select.Option>
+            </Select>
+          </Form.Item>
+
+          <Form.Item
+            name="estado_empevento"
+            label="Estado"
+            rules={[{ required: true, message: 'Por favor seleccione un estado' }]}
+          >
+            <Select>
+              <Select.Option value="Activo">Activo</Select.Option>
+              <Select.Option value="Completado">Completado</Select.Option>
+            </Select>
+          </Form.Item>
+
+          <Form.Item>
+            <Button type="primary" htmlType="submit" loading={loading}>
+              Guardar Cambios
+            </Button>
+          </Form.Item>
+        </Form>
+      </Modal>
     </div>
   );
 };
