@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import '../../../styles/dashboard/ServicesSubpages.scss';
-import { Card, Button, Table, Tag, Space, Typography, Input, Select, Dropdown, Modal, Descriptions, message } from 'antd';
+import { Card, Button, Table, Tag, Space, Typography, Input, Select, Dropdown, Modal, Descriptions, message, Rate } from 'antd';
 import { PlusOutlined, EditOutlined, DeleteOutlined, EyeOutlined, SearchOutlined, FilterOutlined } from '@ant-design/icons';
 import EventoForm from '../FormService/EventoForm';
 import UsuarioForm from '../FormService/UsuarioForm';
@@ -165,6 +165,40 @@ interface Ciudad {
   id_provincia: number;
 }
 
+interface Pago {
+  id_pago: number;
+  id_evento: number;
+  monto_pago: number;
+  fecha_pago: string;
+  hora_pago: string;
+  tipo_pago: 'Inicial' | 'Final' | 'Adicional';
+  estado_pago: 'Pendiente' | 'Recibido' | 'Rechazado';
+  metodo_pago: string;
+  evento?: {
+    id_evento: number;
+    cliente?: {
+      nombre_usuario: string;
+      apellido_usuario: string;
+    };
+  };
+}
+
+interface Comentario {
+  id_comentario: number;
+  id_evento: number;
+  comentario: string;
+  calificacion: number;
+  estado: 'Activo' | 'Editado' | 'Eliminado';
+  fecha_creacion: string;
+  evento?: {
+    id_evento: number;
+    cliente?: {
+      nombre_usuario: string;
+      apellido_usuario: string;
+    };
+  };
+}
+
 const { Title } = Typography;
 
 const WelcomeAdmin: React.FC = () => {
@@ -241,6 +275,22 @@ const WelcomeAdmin: React.FC = () => {
   const [showProveedorForm, setShowProveedorForm] = useState(false);
   const [showAsignacionForm, setShowAsignacionForm] = useState(false);
   const [showDecoracionForm, setShowDecoracionForm] = useState(false);
+
+  const [pagos, setPagos] = useState<Pago[]>([]);
+  const [comentarios, setComentarios] = useState<Comentario[]>([]);
+  const [filtrosPagos, setFiltrosPagos] = useState({
+    estado: '',
+    evento: '',
+    metodo: '',
+    tipo: ''
+  });
+  const [filtrosComentarios, setFiltrosComentarios] = useState({
+    estado: '',
+    calificacion: ''
+  });
+
+  const [showPagosFilters, setShowPagosFilters] = useState(false);
+  const [showComentariosFilters, setShowComentariosFilters] = useState(false);
 
   const handleEmpleadoChange = (value: string) => {
     setSelectedEmpleado(value);
@@ -453,6 +503,58 @@ const WelcomeAdmin: React.FC = () => {
     }
   };
 
+  const fetchPagos = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        message.error('No hay sesión activa');
+        return;
+      }
+
+      const headers = {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      };
+
+      const response = await fetch(`${apiUrl}/pagos`, { headers });
+      if (!response.ok) {
+        throw new Error('Error al obtener pagos');
+      }
+
+      const data = await response.json();
+      setPagos(data);
+    } catch (error) {
+      console.error('Error al cargar pagos:', error);
+      message.error('Error al cargar los pagos');
+    }
+  };
+
+  const fetchComentarios = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        message.error('No hay sesión activa');
+        return;
+      }
+
+      const headers = {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      };
+
+      const response = await fetch(`${apiUrl}/comentario`, { headers });
+      if (!response.ok) {
+        throw new Error('Error al obtener comentarios');
+      }
+
+      const data = await response.json();
+      setComentarios(data);
+    } catch (error) {
+      console.error('Error al cargar comentarios:', error);
+      message.error('Error al cargar los comentarios');
+    }
+  };
+
   // Cargar datos al montar el componente
   useEffect(() => {
     const token = localStorage.getItem('token');
@@ -462,6 +564,8 @@ const WelcomeAdmin: React.FC = () => {
       fetchTiposEvento();
       fetchProvincias();
       fetchCiudades();
+      fetchPagos();
+      fetchComentarios();
     } else {
       setError('No hay token de autenticación');
       setLoading(false);
@@ -477,17 +581,35 @@ const WelcomeAdmin: React.FC = () => {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${localStorage.getItem('token')}`
         },
-        body: JSON.stringify(values),
+        body: JSON.stringify({
+          cedula_cliente: values.cedula_cliente,
+          cedula_asesor: values.cedula_asesor,
+          fecha_evento: values.fecha_evento.format('YYYY-MM-DD'),
+          hora_evento: values.hora_evento.format('HH:mm:ss'),
+          id_tipo_evento: values.id_tipo_evento,
+          id_provincia: values.id_provincia,
+          id_ciudad: values.id_ciudad,
+          sector: values.sector,
+          calle: values.calle,
+          detalles: values.detalles,
+          espacio_evento: values.espacio_evento,
+          desea_supervision: values.desea_supervision,
+          nota_cliente: values.nota_cliente
+        })
       });
 
       if (!response.ok) {
-        throw new Error('Error al crear el evento');
+        const errorData = await response.json();
+        throw new Error(errorData.mensaje || 'Error al crear el evento');
       }
 
+      const data = await response.json();
+      message.success('Evento creado exitosamente');
       setModalEventoVisible(false);
-      fetchData(); // Recargar la lista de eventos
+      fetchData();
     } catch (error) {
       console.error('Error al crear evento:', error);
+      message.error(error instanceof Error ? error.message : 'Error al crear el evento');
     } finally {
       setLoading(false);
     }
@@ -834,6 +956,35 @@ const WelcomeAdmin: React.FC = () => {
     }
   });
 
+  const handleDeleteAsignacion = async (record: AsignacionEmpleado) => {
+    const token = localStorage.getItem('token');
+    if (!token) {
+      message.error('No hay sesión activa');
+      return;
+    }
+    console.log('Eliminando asignación:', record);
+    try {
+      const response = await fetch(`${apiUrl}/evento/${record.id_evento}/empleados/${record.empleado_evento}/estado`, {
+        method: 'PATCH',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ estado_empevento: 'Eliminado' })
+      });
+      const data = await response.json();
+      console.log('Respuesta del backend al eliminar asignación:', data);
+      if (!response.ok) {
+        throw new Error(data.mensaje || 'Error al eliminar asignación');
+      }
+      message.success('Asignación eliminada exitosamente');
+      fetchData(); // Recargar datos para reflejar el cambio
+    } catch (error) {
+      console.error('Error al eliminar asignación:', error);
+      message.error(`Error al eliminar asignación: ${error instanceof Error ? error.message : String(error)}`);
+    }
+  };
+  
   const asignacionColumns = getAsignacionColumns({
     onViewDetails: (record) => {
       setAsignacionSeleccionada(record);
@@ -843,7 +994,7 @@ const WelcomeAdmin: React.FC = () => {
       setAsignacionSeleccionada(record);
       setShowAsignacionForm(true);
     },
-    onDelete: (record) => console.log('Eliminar', record) // No implementamos eliminación para asignaciones
+    onDelete: handleDeleteAsignacion
   });
 
   const decoracionColumns = getDecoracionColumns({
@@ -862,6 +1013,109 @@ const WelcomeAdmin: React.FC = () => {
       }
     }
   });
+
+  // Funciones para filtrar pagos y comentarios
+  const getFilteredPagos = () => {
+    return pagos.filter(pago => {
+      const matchEstado = !filtrosPagos.estado || pago.estado_pago === filtrosPagos.estado;
+      const matchEvento = !filtrosPagos.evento || pago.id_evento.toString() === filtrosPagos.evento;
+      const matchMetodo = !filtrosPagos.metodo || pago.metodo_pago === filtrosPagos.metodo;
+      const matchTipo = !filtrosPagos.tipo || pago.tipo_pago === filtrosPagos.tipo;
+      return matchEstado && matchEvento && matchMetodo && matchTipo;
+    });
+  };
+
+  const getFilteredComentarios = () => {
+    return comentarios.filter(comentario => {
+      const matchEstado = !filtrosComentarios.estado || comentario.estado_comentario === filtrosComentarios.estado;
+      const matchCalificacion = !filtrosComentarios.calificacion || comentario.calificacion?.toString() === filtrosComentarios.calificacion;
+      return matchEstado && matchCalificacion;
+    });
+  };
+
+  const getActiveFiltersCount = (filtros: any) => {
+    return Object.values(filtros).filter((value: any) => value !== '').length;
+  };
+
+  const handleEditEvento = (evento: Evento) => {
+    setEventoSeleccionado(evento);
+    setShowEventoForm(true);
+  };
+
+  const handleUpdateEvento = async (values: any) => {
+    try {
+      setLoading(true);
+      const token = localStorage.getItem('token');
+      if (!token) {
+        message.error('No hay sesión activa');
+        return;
+      }
+
+      // Validar que las fechas sean válidas
+      if (!values.fecha_evento || !values.hora_evento) {
+        throw new Error('La fecha y hora del evento son requeridas');
+      }
+
+      // Primero actualizar la dirección
+      const direccionResponse = await fetch(`${apiUrl}/direccion/${eventoSeleccionado?.direccion?.id_direccion}`, {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          id_ciudad: values.id_ciudad,
+          sector: values.sector,
+          calle: values.calle,
+          detalles: values.detalles || ''
+        })
+      });
+
+      if (!direccionResponse.ok) {
+        const errorData = await direccionResponse.json();
+        throw new Error(errorData.message || 'Error al actualizar la dirección');
+      }
+
+      // Formatear la fecha y hora correctamente
+      const fechaEvento = values.fecha_evento.format('YYYY-MM-DD');
+      const horaEvento = values.hora_evento.format('HH:mm:ss');
+
+      // Luego actualizar el evento
+      const eventoResponse = await fetch(`${apiUrl}/evento/${eventoSeleccionado?.id_evento}`, {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          cedula_cliente: values.cedula_cliente,
+          cedula_asesor: values.cedula_asesor,
+          fecha_evento: fechaEvento,
+          hora_evento: horaEvento,
+          id_tipo_evento: values.id_tipo_evento,
+          espacio_evento: values.espacio_evento,
+          desea_supervision: values.desea_supervision,
+          estado_solicitud: values.estado_solicitud,
+          nota_cliente: values.nota_cliente || ''
+        })
+      });
+
+      if (!eventoResponse.ok) {
+        const errorData = await eventoResponse.json();
+        throw new Error(errorData.message || 'Error al actualizar el evento');
+      }
+
+      message.success('Evento actualizado exitosamente');
+      setShowEventoForm(false);
+      setEventoSeleccionado(null);
+      fetchData();
+    } catch (error) {
+      console.error('Error al actualizar el evento:', error);
+      message.error(error instanceof Error ? error.message : 'Error al actualizar el evento');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <div className="welcome-container">
@@ -920,9 +1174,9 @@ const WelcomeAdmin: React.FC = () => {
             options={[
               { value: 'todos', label: 'Todos' },
               { value: 'Pendiente', label: 'Pendiente' },
-              { value: 'Confirmado', label: 'Confirmado' },
-              { value: 'Cancelado', label: 'Cancelado' },
-              { value: 'Completado', label: 'Completado' }
+              { value: 'Confirmada', label: 'Confirmada' },
+              { value: 'Cancelada', label: 'Cancelada' },
+              { value: 'Completada', label: 'Completada' }
             ]}
           />
         </div>
@@ -1636,47 +1890,14 @@ const WelcomeAdmin: React.FC = () => {
           setShowEventoForm(false);
           setEventoSeleccionado(null);
         }}
-        onSubmit={async (values) => {
-          try {
-            const token = localStorage.getItem('token');
-            if (!token) {
-              message.error('No hay sesión activa');
-              return;
-            }
-
-            const response = await fetch(`${apiUrl}/evento/${eventoSeleccionado?.id_evento}`, {
-              method: 'PUT',
-              headers: {
-                'Authorization': `Bearer ${token}`,
-                'Content-Type': 'application/json'
-              },
-              body: JSON.stringify(values)
-            });
-
-            if (!response.ok) {
-              throw new Error('Error al actualizar el evento');
-            }
-
-            message.success('Evento actualizado exitosamente');
-            setShowEventoForm(false);
-            setEventoSeleccionado(null);
-            fetchData();
-          } catch (error) {
-            console.error('Error al actualizar el evento:', error);
-            message.error('Error al actualizar el evento');
-          }
-        }}
+        onSubmit={handleUpdateEvento}
         loading={loading}
         clientes={clientes}
         asesores={asesores}
         tiposEvento={tiposEvento}
         provincias={provincias}
         ciudades={ciudades}
-        loadingClientes={loadingClientes}
-        loadingAsesores={loadingAsesores}
-        loadingTipos={loadingTipos}
-        loadingProvincias={loadingProvincias}
-        loadingCiudades={loadingCiudades}
+        initialValues={eventoSeleccionado}
       />
 
       {/* Formulario de Edición de Usuario */}
@@ -1841,6 +2062,255 @@ const WelcomeAdmin: React.FC = () => {
         loading={loading}
         initialValues={decoracionSeleccionada}
       />
+
+      {/* Tarjeta de Pagos y Comentarios en formato dashboard */}
+      <div className="dashboard-row">
+        <Card
+          title="PAGOS"
+          className="dashboard-card"
+          extra={
+            <Button
+              type="primary"
+              icon={<FilterOutlined />}
+              onClick={() => setShowPagosFilters(!showPagosFilters)}
+              className="action-button primary"
+            >
+              Filtros {getActiveFiltersCount(filtrosPagos) > 0 && `(${getActiveFiltersCount(filtrosPagos)})`}
+            </Button>
+          }
+        >
+          <TableFilters
+            type="pagos"
+            searchText={filtrosPagos.evento}
+            onSearchChange={e => setFiltrosPagos({ ...filtrosPagos, evento: e.target.value })}
+            clearFilters={() => setFiltrosPagos({ estado: '', evento: '', metodo: '', tipo: '' })}
+            activeFiltersCount={getActiveFiltersCount(filtrosPagos)}
+            filterContent={
+              <div style={{ padding: '8px', minWidth: '300px', backgroundColor: '#f5f5f5', borderRadius: '4px' }}>
+                <Space direction="vertical" style={{ width: '100%' }}>
+                  <div>
+                    <div style={{ marginBottom: 4 }}>Estado del pago:</div>
+                    <Select
+                      placeholder="Filtrar por estado"
+                      style={{ width: '100%' }}
+                      onChange={value => setFiltrosPagos({ ...filtrosPagos, estado: value })}
+                      value={filtrosPagos.estado}
+                      allowClear
+                    >
+                      <Select.Option value="">Todos</Select.Option>
+                      <Select.Option value="Pendiente">Pendiente</Select.Option>
+                      <Select.Option value="Recibido">Recibido</Select.Option>
+                      <Select.Option value="Rechazado">Rechazado</Select.Option>
+                    </Select>
+                  </div>
+                  <div>
+                    <div style={{ marginBottom: 4 }}>Tipo de pago:</div>
+                    <Select
+                      placeholder="Filtrar por tipo"
+                      style={{ width: '100%' }}
+                      onChange={value => setFiltrosPagos({ ...filtrosPagos, tipo: value })}
+                      value={filtrosPagos.tipo}
+                      allowClear
+                    >
+                      <Select.Option value="">Todos</Select.Option>
+                      <Select.Option value="Inicial">Inicial</Select.Option>
+                      <Select.Option value="Final">Final</Select.Option>
+                      <Select.Option value="Adicional">Adicional</Select.Option>
+                    </Select>
+                  </div>
+                  <div>
+                    <div style={{ marginBottom: 4 }}>Método de pago:</div>
+                    <Select
+                      placeholder="Filtrar por método"
+                      style={{ width: '100%' }}
+                      onChange={value => setFiltrosPagos({ ...filtrosPagos, metodo: value })}
+                      value={filtrosPagos.metodo}
+                      allowClear
+                    >
+                      <Select.Option value="">Todos</Select.Option>
+                      <Select.Option value="Efectivo">Efectivo</Select.Option>
+                      <Select.Option value="Tarjeta">Tarjeta</Select.Option>
+                      <Select.Option value="Transferencia">Transferencia</Select.Option>
+                    </Select>
+                  </div>
+                  <div>
+                    <div style={{ marginBottom: 4 }}>ID de evento:</div>
+                    <Input
+                      placeholder="Buscar por ID de evento"
+                      value={filtrosPagos.evento}
+                      onChange={e => setFiltrosPagos({ ...filtrosPagos, evento: e.target.value })}
+                      style={{ width: '100%' }}
+                    />
+                  </div>
+                </Space>
+              </div>
+            }
+          />
+          <Table
+            className="dashboard-table"
+            dataSource={getFilteredPagos()}
+            columns={[
+              {
+                title: 'Evento',
+                dataIndex: 'evento',
+                key: 'evento',
+                render: (evento) => evento ? `${evento.id_evento} - ${evento.cliente?.nombre_usuario} ${evento.cliente?.apellido_usuario}` : 'N/A'
+              },
+              {
+                title: 'Método de Pago',
+                dataIndex: 'metodo_pago',
+                key: 'metodo_pago'
+              },
+              {
+                title: 'Fecha y Hora',
+                dataIndex: 'fecha_pago',
+                key: 'fecha_pago',
+                render: (fecha, record) => `${fecha} ${record.hora_pago}`
+              },
+              {
+                title: 'Monto',
+                dataIndex: 'monto_pago',
+                key: 'monto_pago',
+                render: (monto) => `RD$ ${monto.toFixed(2)}`
+              },
+              {
+                title: 'Tipo',
+                dataIndex: 'tipo_pago',
+                key: 'tipo_pago'
+              },
+              {
+                title: 'Estado',
+                dataIndex: 'estado_pago',
+                key: 'estado_pago',
+                render: (estado) => (
+                  <Tag color={
+                    estado === 'Recibido' ? 'green' :
+                    estado === 'Pendiente' ? 'orange' :
+                    'red'
+                  }>
+                    {estado}
+                  </Tag>
+                )
+              }
+            ]}
+            rowKey="id_pago"
+            loading={loading}
+            pagination={{ pageSize: 3 }}
+            scroll={{ x: 'max-content' }}
+          />
+        </Card>
+
+        <Card
+          title="COMENTARIOS Y CALIFICACIONES"
+          className="dashboard-card"
+          extra={
+            <Button
+              type="primary"
+              icon={<FilterOutlined />}
+              onClick={() => setShowComentariosFilters(!showComentariosFilters)}
+              className="action-button primary"
+            >
+              Filtros {getActiveFiltersCount(filtrosComentarios) > 0 && `(${getActiveFiltersCount(filtrosComentarios)})`}
+            </Button>
+          }
+        >
+          <TableFilters
+            type="comentarios"
+            searchText={filtrosComentarios.calificacion}
+            onSearchChange={e => setFiltrosComentarios({ ...filtrosComentarios, calificacion: e.target.value })}
+            clearFilters={() => setFiltrosComentarios({ estado: '', calificacion: '' })}
+            activeFiltersCount={getActiveFiltersCount(filtrosComentarios)}
+            filterContent={
+              <div style={{ padding: '8px', minWidth: '300px', backgroundColor: '#f5f5f5', borderRadius: '4px' }}>
+                <Space direction="vertical" style={{ width: '100%' }}>
+                  <div>
+                    <div style={{ marginBottom: 4 }}>Estado del comentario:</div>
+                    <Select
+                      placeholder="Filtrar por estado"
+                      style={{ width: '100%' }}
+                      onChange={value => setFiltrosComentarios({ ...filtrosComentarios, estado: value })}
+                      value={filtrosComentarios.estado}
+                      allowClear
+                    >
+                      <Select.Option value="">Todos</Select.Option>
+                      <Select.Option value="Activo">Activo</Select.Option>
+                      <Select.Option value="Editado">Editado</Select.Option>
+                      <Select.Option value="Eliminado">Eliminado</Select.Option>
+                    </Select>
+                  </div>
+                  <div>
+                    <div style={{ marginBottom: 4 }}>Calificación:</div>
+                    <Select
+                      placeholder="Filtrar por calificación"
+                      style={{ width: '100%' }}
+                      onChange={value => setFiltrosComentarios({ ...filtrosComentarios, calificacion: value })}
+                      value={filtrosComentarios.calificacion}
+                      allowClear
+                    >
+                      <Select.Option value="">Todas</Select.Option>
+                      <Select.Option value="1">1 estrella</Select.Option>
+                      <Select.Option value="2">2 estrellas</Select.Option>
+                      <Select.Option value="3">3 estrellas</Select.Option>
+                      <Select.Option value="4">4 estrellas</Select.Option>
+                      <Select.Option value="5">5 estrellas</Select.Option>
+                    </Select>
+                  </div>
+                </Space>
+              </div>
+            }
+          />
+          <Table
+            className="dashboard-table"
+            dataSource={getFilteredComentarios()}
+            columns={[
+              {
+                title: 'Evento',
+                dataIndex: 'evento',
+                key: 'evento',
+                render: (evento, record) =>
+                  record.id_evento +
+                  (evento && evento.cliente
+                    ? ' - ' + evento.cliente.nombre_usuario + ' ' + evento.cliente.apellido_usuario
+                    : '')
+              },
+              {
+                title: 'Comentario',
+                dataIndex: 'comentario',
+                key: 'comentario',
+                render: (comentario) => (
+                  <span style={{ whiteSpace: 'pre-line', wordBreak: 'break-word', maxWidth: 250, display: 'block' }}>
+                    {comentario}
+                  </span>
+                )
+              },
+              {
+                title: 'Calificación',
+                dataIndex: 'calificacion',
+                key: 'calificacion',
+                render: (calificacion) => <Rate disabled defaultValue={calificacion} />
+              },
+              {
+                title: 'Estado',
+                dataIndex: 'estado_comentario',
+                key: 'estado_comentario',
+                render: (estado) => (
+                  <Tag color={
+                    estado === 'Activo' ? 'green' :
+                    estado === 'Editado' ? 'orange' :
+                    estado === 'Eliminado' ? 'red' : 'red'
+                  }>
+                    {estado}
+                  </Tag>
+                )
+              }
+            ]}
+            rowKey="id_comentario"
+            loading={loading}
+            pagination={{ pageSize: 3 }}
+            scroll={{ x: 'max-content' }}
+          />
+        </Card>
+      </div>
     </div>
   );
 };

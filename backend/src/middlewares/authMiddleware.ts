@@ -25,16 +25,24 @@ export const verificarToken = async (req: Request, res: Response, next: NextFunc
 
     const decoded = jwt.verify(token, process.env.JWT_SECRET || 'w3r9Gv!72JkpX%lQs@8bZ&hMfT0^nAy') as JwtPayload;
     
+    console.log('Token decodificado:', decoded);
+
     // Check if decoded token has the cedula_usuario property
     if (typeof decoded === 'string' || !decoded.cedula_usuario) {
         res.status(400).json({ error: 'Invalid token payload: cedula_usuario missing' });
         return;
     }
 
+    const cedulaFromToken = decoded.cedula_usuario;
+    console.log('Cédula de usuario del token:', cedulaFromToken);
+
     // Fetch the user from the database using cedula_usuario from the token
-    const usuario = await Usuario.findByPk(decoded.cedula_usuario);
+    const usuario = await Usuario.findByPk(cedulaFromToken);
+
+    console.log('Resultado de Usuario.findByPk:', usuario);
 
     if (!usuario) {
+      console.error('Usuario no encontrado para la cédula:', cedulaFromToken);
       res.status(404).json({ error: 'User not found' });
       return;
     }
