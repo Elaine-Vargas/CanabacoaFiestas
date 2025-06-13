@@ -1003,6 +1003,7 @@ const RentAdmin: React.FC = () => {
               type="primary"
               icon={<PlusOutlined />}
               onClick={() => setShowCatalogo(true)}
+              style={{ backgroundColor: 'var(--dark-gold)', borderColor: 'var(--dark-gold)' }}
             >
               Nuevo Alquiler
             </Button>
@@ -1246,7 +1247,11 @@ const RentAdmin: React.FC = () => {
           </div>
 
           <Form.Item>
-            <Button type="primary" htmlType="submit">
+            <Button 
+              type="primary" 
+              htmlType="submit"
+              style={{ backgroundColor: 'var(--dark-gold)', borderColor: 'var(--dark-gold)' }}
+            >
               Crear Alquiler
             </Button>
           </Form.Item>
@@ -1357,6 +1362,7 @@ const RentAdmin: React.FC = () => {
                   type="primary" 
                   htmlType="submit"
                   loading={loadingSubmit}
+                  style={{ backgroundColor: 'var(--dark-gold)', borderColor: 'var(--dark-gold)' }}
                 >
                   Guardar Cambios
                 </Button>
