@@ -328,11 +328,6 @@ export default function WelcomeClient() {
   // Columnas para la tabla de decoraciones
   const decoracionesColumns = [
     {
-      title: 'Evento',
-      dataIndex: ['evento', 'tipo_evento', 'tipo_evento'],
-      key: 'evento',
-    },
-    {
       title: 'Tema',
       dataIndex: 'tema_decoracion',
       key: 'tema_decoracion',
@@ -374,9 +369,9 @@ export default function WelcomeClient() {
   // Columnas para la tabla de comentarios
   const comentariosColumns = [
     {
-      title: 'Evento',
-      dataIndex: ['evento', 'tipo_evento', 'tipo_evento'],
-      key: 'evento',
+      title: 'ID Evento',
+      dataIndex: 'id_evento',
+      key: 'id_evento',
     },
     {
       title: 'Comentario',

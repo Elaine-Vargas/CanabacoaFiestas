@@ -1,6 +1,6 @@
-import React from "react";
+import React, { lazy, Suspense } from "react";
 import "../../styles/mainPages/Info.scss";
-import "../../components/principal/Footer";
+const Footer = lazy(() => import("../../components/principal/Footer"));
 import { Box, Container } from "@mui/material";
 
 const Nosotros: React.FC = () => {
@@ -86,6 +86,9 @@ const Nosotros: React.FC = () => {
             </div>
           </div>
         </main>
+        <Suspense fallback={<div>Cargando pie de página...</div>}>
+          <Footer />
+        </Suspense>
       </Container>
     </>
   );

@@ -11,7 +11,7 @@ const PrincipalCard = React.memo(() => {
   <h6 className="contentTitle">Podemos servirle en:</h6>
 
   <div className="card">
-    <img src={Alquiler} alt="Alquiler" className="cardIcon" />
+    <img src={Alquiler} alt="Alquiler" className="cardIcon" loading="lazy" />
     <div className="cardContent">
       <h3 className="cardTitle">Alquiler</h3>
       <p className="cardText">
@@ -21,7 +21,7 @@ const PrincipalCard = React.memo(() => {
   </div>
 
   <div className="card">
-    <img src={Decoracion} alt="Decoración" className="cardIcon" />
+    <img src={Decoracion} alt="Decoración" className="cardIcon" loading="lazy" />
     <div className="cardContent">
       <h3 className="cardTitle">Decoración</h3>
       <p className="cardText">
@@ -31,7 +31,7 @@ const PrincipalCard = React.memo(() => {
   </div>
 
   <div className="card">
-    <img src={Catering} alt="Catering" className="cardIcon" />
+    <img src={Catering} alt="Catering" className="cardIcon" loading="lazy" />
     <div className="cardContent">
       <h3 className="cardTitle">Catering</h3>
       <p className="cardText">

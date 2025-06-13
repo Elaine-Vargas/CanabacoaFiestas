@@ -290,6 +290,10 @@ const WelcomeEmployee: React.FC = () => {
     useState(false);
   const [showClientesFilters, setShowClientesFilters] = useState(false);
 
+  // Agregar estados para provincias y ciudades
+  const [provincias, setProvincias] = useState<any[]>([]);
+  const [ciudades, setCiudades] = useState<any[]>([]);
+
   useEffect(() => {
     const fetchUserData = async () => {
       try {
@@ -329,6 +333,38 @@ const WelcomeEmployee: React.FC = () => {
   useEffect(() => {
     fetchTiposEvento();
   }, []);
+
+  // Cargar provincias y ciudades al montar el componente
+  useEffect(() => {
+    const fetchProvincias = async () => {
+      try {
+        const token = localStorage.getItem("token");
+        if (!token) return;
+        const response = await fetch(`${apiUrl}/provincia`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (response.ok) {
+          const data = await response.json();
+          setProvincias(data);
+        }
+      } catch (e) { /* opcional: manejar error */ }
+    };
+    const fetchCiudades = async () => {
+      try {
+        const token = localStorage.getItem("token");
+        if (!token) return;
+        const response = await fetch(`${apiUrl}/ciudad`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (response.ok) {
+          const data = await response.json();
+          setCiudades(data);
+        }
+      } catch (e) { /* opcional: manejar error */ }
+    };
+    fetchProvincias();
+    fetchCiudades();
+  }, [apiUrl]);
 
   const fetchData = async () => {
     try {
@@ -1571,7 +1607,7 @@ const WelcomeEmployee: React.FC = () => {
                 </Button>
               }
             >
-              <TableFilters
+              <TableFilters type="eventos"
                 searchText={searchTextEventos}
                 onSearchChange={setSearchTextEventos}
                 clearFilters={() =>
@@ -1612,7 +1648,7 @@ const WelcomeEmployee: React.FC = () => {
                 </Button>
               }
             >
-              <TableFilters
+              <TableFilters type="asignaciones"
                 searchText={searchTextAsignaciones}
                 onSearchChange={setSearchTextAsignaciones}
                 clearFilters={() =>
@@ -1650,7 +1686,7 @@ const WelcomeEmployee: React.FC = () => {
                 </Button>
               }
             >
-              <TableFilters
+              <TableFilters type=""
                 searchText={searchTextParticipaciones}
                 onSearchChange={setSearchTextParticipaciones}
                 clearFilters={() =>
@@ -1660,9 +1696,7 @@ const WelcomeEmployee: React.FC = () => {
                     eventoId: "",
                   })
                 }
-                activeFiltersCount={getActiveFiltersCount(
-                  filtrosParticipaciones
-                )}
+                activeFiltersCount={getActiveFiltersCount(filtrosParticipaciones)}
                 filterContent={filterContentParticipaciones}
               />
               <Table
@@ -1695,7 +1729,7 @@ const WelcomeEmployee: React.FC = () => {
                 </Button>
               }
             >
-              <TableFilters
+              <TableFilters type="clientes"
                 searchText={searchTextClientes}
                 onSearchChange={setSearchTextClientes}
                 clearFilters={() => setFiltrosClientes({ estado: "" })}
@@ -1723,7 +1757,7 @@ const WelcomeEmployee: React.FC = () => {
         footer={null}
         width={800}
       >
-        <EventoForm
+        <EventoForm 
           visible={modalEventoVisible}
           onCancel={() => setModalEventoVisible(false)}
           onSubmit={
@@ -1733,6 +1767,8 @@ const WelcomeEmployee: React.FC = () => {
           clientes={clientes}
           asesores={asesores}
           tiposEvento={tiposEvento}
+          provincias={provincias}
+          ciudades={ciudades}
           initialValues={selectedEvento}
         />
       </Modal>
