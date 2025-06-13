@@ -15,7 +15,8 @@ import {
   validateUsername, 
   validatePhoneNumber,
   validatePassword,
-  validatePasswordMatch
+  validatePasswordMatch,
+  validateNameOrLastname // <-- importado
 } from "../../utils/validation";
 import { useUser } from "../../contexts/UserContext";
 
@@ -84,6 +85,14 @@ const UserLogin = () => {
     const { id, value } = e.target;
     
     if (id.startsWith('login-')) {
+      // Validar que no haya espacios en usuario_login
+      if (id === 'login-username') {
+        if (/\s/.test(value)) {
+          setError('El usuario no debe contener espacios');
+        } else {
+          setError("");
+        }
+      }
       setLoginData(prev => ({
         ...prev,
         [id === 'login-username' ? 'usuario_login' : 'contrasena']: value
@@ -123,19 +132,23 @@ const UserLogin = () => {
         const error = validateUsername(processedValue);
         if (error) {
           setError(error);
-          // Agregar clase de error al input
           const inputElement = document.getElementById(id);
           if (inputElement) {
             inputElement.classList.add('error-input');
           }
         } else {
           setError("");
-          // Remover clase de error del input
           const inputElement = document.getElementById(id);
           if (inputElement) {
             inputElement.classList.remove('error-input');
           }
         }
+      } else if (id === 'signup-name') {
+        const error = validateNameOrLastname(processedValue, 'Nombre');
+        setError(error || "");
+      } else if (id === 'signup-lastname') {
+        const error = validateNameOrLastname(processedValue, 'Apellido');
+        setError(error || "");
       } else if (id === 'signup-phone') {
         const error = validatePhoneNumber(processedValue);
         setError(error || "");
@@ -168,6 +181,11 @@ const UserLogin = () => {
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
+    // Validar que no haya espacios en usuario_login
+    if (/\s/.test(loginData.usuario_login)) {
+      setError('El usuario no debe contener espacios');
+      return;
+    }
     
     if (isLoggingIn) return;
     
@@ -248,19 +266,38 @@ const UserLogin = () => {
     setError("");
     
     if (isRegistering) return;
-    
-    // Validar que las contraseñas coincidan
-    if (signupData.contrasena_login !== signupData.confirmar_contrasena) {
-      showModal('Error', 'Las contraseñas no coinciden', 'error');
+
+    // Validaciones antes de enviar
+    const nombreError = validateNameOrLastname(signupData.nombre_usuario, 'Nombre');
+    if (nombreError) {
+      setError(nombreError);
       return;
     }
-
+    const apellidoError = validateNameOrLastname(signupData.apellido_usuario, 'Apellido');
+    if (apellidoError) {
+      setError(apellidoError);
+      return;
+    }
+    const usernameError = validateUsername(signupData.usuario_login);
+    if (usernameError) {
+      setError(usernameError);
+      return;
+    }
+    const emailError = validateEmail(signupData.correo_usuario);
+    if (emailError) {
+      setError(emailError);
+      return;
+    }
+    // Validar que las contraseñas coincidan
+    if (signupData.contrasena_login !== signupData.confirmar_contrasena) {
+      setError('Las contraseñas no coinciden');
+      return;
+    }
     // Validar que todos los campos requeridos estén llenos
     const requiredFields = ['nombre_usuario', 'apellido_usuario', 'cedula_usuario', 'correo_usuario', 'tel_usuario', 'contrasena_login', 'usuario_login'];
     const emptyFields = requiredFields.filter(field => !signupData[field as keyof typeof signupData]);
-    
     if (emptyFields.length > 0) {
-      showModal('Error', 'Por favor completa todos los campos requeridos', 'error');
+      setError('Por favor completa todos los campos requeridos');
       return;
     }
   
@@ -502,7 +539,7 @@ const UserLogin = () => {
                 <input 
                   type="text" 
                   id="login-username" 
-                  placeholder="Usuario / Cédula" 
+                  placeholder="Usuario / Cédula (con guiones)" 
                   required 
                   value={loginData.usuario_login}
                   onChange={handleInputChange}

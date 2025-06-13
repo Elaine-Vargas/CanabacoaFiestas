@@ -20,23 +20,50 @@ export const validatePasswordMatch = (password: string, confirmPassword: string)
 };
 
 export const validateEmail = (email: string): string | null => {
+  if (/^\s/.test(email)) {
+    return "El correo no debe iniciar con espacios";
+  }
+  if (/\s$/.test(email)) {
+    return "El correo no debe terminar con espacios";
+  }
+  if (/\s/.test(email)) {
+    return "El correo no debe contener espacios";
+  }
+  // No permitir símbolos inválidos en el correo
+  if (/[!#$`":,]/.test(email)) {
+    return "El correo no debe contener símbolos inválidos como ! # $ ` \" : ,";
+  }
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   return emailRegex.test(email) ? null : "Ingrese un correo electrónico válido";
 };
 
 export const validateUsername = (username: string): string | null => {
+  if (/\s/.test(username)) {
+    return "El usuario no debe contener espacios";
+  }
+  if (/^[0-9]/.test(username)) {
+    return "El usuario no puede iniciar con un número";
+  }
+  // No permitir símbolos inválidos
+  if (/[!@#$%^&*()\-+=\[\]{}|;:'",.<>/?`~]/.test(username)) {
+    return "El usuario no debe contener símbolos especiales";
+  }
   // Verificar longitud
   if (username.length < 4 || username.length > 20) {
     return "El usuario debe tener entre 4-20 caracteres";
   }
-
   // Verificar si contiene caracteres no permitidos
   const invalidChars = username.match(/[^a-zA-Z0-9_]/g);
   if (invalidChars) {
-    const uniqueInvalidChars = [...new Set(invalidChars)];
     return `Solo se permiten letras, números y guión bajo (_)`;
   }
+  return null;
+};
 
+export const validateNameOrLastname = (value: string, fieldName: string = "El campo") => {
+  if (/^\s|\s$/.test(value)) {
+    return `${fieldName} no debe iniciar ni terminar con espacios`;
+  }
   return null;
 };
 
