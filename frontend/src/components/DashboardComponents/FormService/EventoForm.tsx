@@ -13,6 +13,7 @@ interface EventoFormProps {
   provincias: any[];
   ciudades: any[];
   initialValues?: any;
+  userCedula?: string;
 }
 
 const EventoForm: React.FC<EventoFormProps> = ({
@@ -25,31 +26,50 @@ const EventoForm: React.FC<EventoFormProps> = ({
   tiposEvento,
   provincias,
   ciudades,
-  initialValues
+  initialValues,
+  userCedula
 }) => {
   const [form] = Form.useForm();
   const [selectedProvincia, setSelectedProvincia] = useState<string | null>(null);
+  const isEditing = !!initialValues;
+  const canEdit = !isEditing || initialValues.estado_solicitud === 'Pendiente';
 
   useEffect(() => {
-    if (visible && initialValues) {
-      // Convertir las fechas a objetos dayjs
-      const values = {
-        ...initialValues,
-        fecha_evento: initialValues.fecha_evento ? dayjs(initialValues.fecha_evento) : null,
-        hora_evento: initialValues.hora_evento ? dayjs(initialValues.hora_evento, 'HH:mm:ss') : null,
-        id_provincia: initialValues.direccion?.ciudad?.id_provincia,
-        id_ciudad: initialValues.direccion?.id_ciudad,
-        sector: initialValues.direccion?.sector,
-        calle: initialValues.direccion?.calle,
-        detalles: initialValues.direccion?.detalles
-      };
-      form.setFieldsValue(values);
-      setSelectedProvincia(initialValues.direccion?.ciudad?.id_provincia);
+    if (visible) {
+      if (initialValues) {
+        // Convertir las fechas a objetos dayjs
+        const values = {
+          ...initialValues,
+          fecha_evento: initialValues.fecha_evento ? dayjs(initialValues.fecha_evento) : null,
+          hora_evento: initialValues.hora_evento ? dayjs(initialValues.hora_evento, 'HH:mm:ss') : null,
+          id_provincia: initialValues.direccion?.ciudad?.provincia?.id_provincia,
+          id_ciudad: initialValues.direccion?.ciudad?.id_ciudad,
+          sector: initialValues.direccion?.sector,
+          calle: initialValues.direccion?.calle,
+          detalles: initialValues.direccion?.detalles,
+          id_tipo_evento: initialValues.tipo_evento?.id_tipo_evento,
+          espacio_evento: initialValues.espacio_evento,
+          desea_supervision: initialValues.desea_supervision,
+          nota_cliente: initialValues.nota_cliente,
+          cedula_cliente: initialValues.cliente?.cedula_usuario,
+          cedula_asesor: initialValues.asesor?.cedula_usuario,
+          estado_solicitud: initialValues.estado_solicitud
+        };
+        form.setFieldsValue(values);
+        setSelectedProvincia(initialValues.direccion?.ciudad?.provincia?.id_provincia);
+      } else {
+        // Si es un nuevo evento, establecer la cédula del usuario actual
+        form.setFieldsValue({
+          cedula_cliente: userCedula,
+          estado_solicitud: 'Pendiente',
+          desea_supervision: false
+        });
+      }
     } else {
       form.resetFields();
       setSelectedProvincia(null);
     }
-  }, [visible, initialValues, form]);
+  }, [visible, initialValues, form, userCedula]);
 
   const handleProvinciaChange = (value: string) => {
     setSelectedProvincia(value);
@@ -74,7 +94,7 @@ const EventoForm: React.FC<EventoFormProps> = ({
 
   return (
     <Modal
-      title={initialValues ? "Editar Evento" : "Crear Evento"}
+      title={isEditing ? "Editar Evento" : "Crear Evento"}
       open={visible}
       onCancel={onCancel}
       onOk={handleSubmit}
@@ -93,36 +113,25 @@ const EventoForm: React.FC<EventoFormProps> = ({
           name="cedula_cliente"
           label="Cliente"
           rules={[{ required: true, message: 'Por favor seleccione un cliente' }]}
+          hidden={true}
         >
-          <Select
-            placeholder="Seleccione un cliente"
-            options={clientes
-              .filter(cliente => cliente.estado_usuario === 'Activo')
-              .map(cliente => ({
-                label: `${cliente.nombre_usuario} ${cliente.apellido_usuario} - ${cliente.cedula_usuario}`,
-                value: cliente.cedula_usuario
-              }))}
-            showSearch
-            optionFilterProp="label"
-          />
+          <Input disabled={true} />
         </Form.Item>
 
         <Form.Item
           name="cedula_asesor"
           label="Asesor"
-          rules={[{ required: true, message: 'Por favor seleccione un asesor' }]}
+          hidden={true}
         >
-          <Select
-            placeholder="Seleccione un asesor"
-            options={asesores
-              .filter(asesor => asesor.estado_usuario === 'Activo')
-              .map(asesor => ({
-                label: `${asesor.nombre_usuario} ${asesor.apellido_usuario} - ${asesor.cedula_usuario}`,
-                value: asesor.cedula_usuario
-              }))}
-            showSearch
-            optionFilterProp="label"
-          />
+          <Input disabled={true} />
+        </Form.Item>
+
+        <Form.Item
+          name="estado_solicitud"
+          label="Estado"
+          hidden={true}
+        >
+          <Input disabled={true} />
         </Form.Item>
 
         <Form.Item
@@ -130,7 +139,10 @@ const EventoForm: React.FC<EventoFormProps> = ({
           label="Fecha del Evento"
           rules={[{ required: true, message: 'Por favor seleccione una fecha' }]}
         >
-          <DatePicker style={{ width: '100%' }} />
+          <DatePicker 
+            style={{ width: '100%' }} 
+            disabled={!canEdit}
+          />
         </Form.Item>
 
         <Form.Item
@@ -138,7 +150,11 @@ const EventoForm: React.FC<EventoFormProps> = ({
           label="Hora del Evento"
           rules={[{ required: true, message: 'Por favor seleccione una hora' }]}
         >
-          <TimePicker style={{ width: '100%' }} format="HH:mm" />
+          <TimePicker 
+            style={{ width: '100%' }} 
+            format="HH:mm" 
+            disabled={!canEdit}
+          />
         </Form.Item>
 
         <Form.Item
@@ -154,6 +170,7 @@ const EventoForm: React.FC<EventoFormProps> = ({
             }))}
             showSearch
             optionFilterProp="label"
+            disabled={!canEdit}
           />
         </Form.Item>
 
@@ -171,6 +188,7 @@ const EventoForm: React.FC<EventoFormProps> = ({
             }))}
             showSearch
             optionFilterProp="label"
+            disabled={!canEdit}
           />
         </Form.Item>
 
@@ -181,7 +199,7 @@ const EventoForm: React.FC<EventoFormProps> = ({
         >
           <Select
             placeholder="Seleccione una ciudad"
-            disabled={!selectedProvincia}
+            disabled={!selectedProvincia || !canEdit}
             options={ciudades
               .filter(ciudad => ciudad.id_provincia === selectedProvincia)
               .map(ciudad => ({
@@ -198,7 +216,7 @@ const EventoForm: React.FC<EventoFormProps> = ({
           label="Sector"
           rules={[{ required: true, message: 'Por favor ingrese el sector' }]}
         >
-          <Input placeholder="Ingrese el sector" />
+          <Input disabled={!canEdit} />
         </Form.Item>
 
         <Form.Item
@@ -206,14 +224,14 @@ const EventoForm: React.FC<EventoFormProps> = ({
           label="Calle"
           rules={[{ required: true, message: 'Por favor ingrese la calle' }]}
         >
-          <Input placeholder="Ingrese la calle" />
+          <Input disabled={!canEdit} />
         </Form.Item>
 
         <Form.Item
           name="detalles"
-          label="Detalles de la Dirección"
+          label="Detalles Adicionales"
         >
-          <Input.TextArea placeholder="Ingrese detalles adicionales de la dirección" />
+          <Input.TextArea rows={4} disabled={!canEdit} />
         </Form.Item>
 
         <Form.Item
@@ -221,35 +239,22 @@ const EventoForm: React.FC<EventoFormProps> = ({
           label="Espacio del Evento"
           rules={[{ required: true, message: 'Por favor ingrese el espacio del evento' }]}
         >
-          <Input.TextArea placeholder="Describa el espacio del evento" />
+          <Input disabled={!canEdit} />
         </Form.Item>
 
         <Form.Item
           name="desea_supervision"
-          label="Desea Supervisión"
+          label="¿Desea supervisión?"
           valuePropName="checked"
         >
-          <Switch />
-        </Form.Item>
-
-        <Form.Item
-          name="estado_solicitud"
-          label="Estado de la Solicitud"
-          rules={[{ required: true, message: 'Por favor seleccione el estado' }]}
-        >
-          <Select>
-            <Select.Option value="Pendiente">Pendiente</Select.Option>
-            <Select.Option value="Aceptada">Aceptada</Select.Option>
-            <Select.Option value="Rechazada">Rechazada</Select.Option>
-            <Select.Option value="Completada">Completada</Select.Option>
-          </Select>
+          <Switch disabled={!canEdit} />
         </Form.Item>
 
         <Form.Item
           name="nota_cliente"
-          label="Nota del Cliente"
+          label="Notas"
         >
-          <Input.TextArea placeholder="Ingrese notas adicionales" />
+          <Input.TextArea rows={4} disabled={!canEdit} />
         </Form.Item>
       </Form>
     </Modal>

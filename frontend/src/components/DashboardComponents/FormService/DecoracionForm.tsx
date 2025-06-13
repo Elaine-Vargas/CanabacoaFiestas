@@ -1,46 +1,58 @@
 import React, { useState, useEffect } from 'react';
-import { Modal, Form, Input, Select, InputNumber, Button, Table, message, Descriptions } from 'antd';
-import { PlusOutlined, DeleteOutlined, EyeOutlined } from '@ant-design/icons';
-import axios from 'axios';
+import { Modal, Form, Input, Select, Button, message, Descriptions } from 'antd';
+import { EyeOutlined } from '@ant-design/icons';
+
+import type { Dayjs } from 'dayjs';
+import dayjs from 'dayjs';
 
 interface Evento {
   id_evento: number;
-  nombre_cliente: string;
-  fecha_evento: string;
-  hora_evento: string;
-  tipo_evento: string | { tipo_evento: string };
+  tipo_evento: {
+    id_tipo_evento: number;
+    tipo_evento: string;
+  };
+  fecha_evento: Dayjs;
+  hora_evento: Dayjs;
+  id_direccion: number,
+  direccion: {
+    ciudad: {
+      id_ciudad: number;
+      nombre_ciudad: string;
+      provincia: {
+        id_provincia: number;
+        nombre_provincia: string;
+      }
+    }
+    sector: string;
+    calle: string;
+    detalles?: string;
+  }
+  estado_solicitud: string;
+  cliente: {
+    cedula_usuario: string;
+    nombre_usuario: string;
+  }
+  asesor: {
+    cedula_usuario: string;
+    nombre_usuario: string;
+    apellido_usuario: string;
+    tel_usuario: string;
+  };
+  id_tipo_evento: number;
+  nota_cliente: string;
   espacio_evento: string;
   desea_supervision: boolean;
-  estado_solicitud: string;
-  total_evento: number;
-  nombre_asesor: string | null;
-  cliente?: {
-    nombre_usuario: string;
-    apellido_usuario: string;
-  };
-  asesor?: {
-    nombre_usuario: string;
-    apellido_usuario: string;
-  };
-}
-
-interface ElementoDecoracion {
-  id_elemento?: number;
-  elemento_decoracion: string;
-  cantelemento_decoracion: number;
-  precio_elemento: number;
-  precio_decoracion: number;
 }
 
 interface Decoracion {
-  id_decoracion: number;
+  id_decoracion?: number;
   id_evento: number;
   tema_decoracion: string;
   colores_decoracion: string;
-  precioneto_decoracion: number;
-  itbis_decoracion: number;
-  total_decoracion: number;
-  estado_decoracion: string;
+  precioneto_decoracion?: number;
+  itbis_decoracion?: number;
+  total_decoracion?: number;
+  estado_decoracion?: string;
   detalle_decoracion?: {
     id_detdecoracion: number;
     elemento_decoracion: string;
@@ -49,26 +61,17 @@ interface Decoracion {
     precio_decoracion: number;
     estado_detdecoracion: string;
   }[];
-  evento?: {
-    id_evento: number;
-    fecha_evento: string;
-    tipo_evento: {
-      id_tipo_evento: number;
-      tipo_evento: string;
-    };
-    cliente?: {
-      nombre_usuario: string;
-      apellido_usuario: string;
-    };
-  };
+  evento?: Evento;
 }
 
 interface DecoracionFormProps {
   visible: boolean;
   onCancel: () => void;
-  onSubmit: (values: any) => void;
+  onSubmit: (values: Decoracion) => Promise<void>;
   loading?: boolean;
-  initialValues?: Decoracion | null;
+  initialValues?: Decoracion | undefined;
+  eventosCliente: Evento[];
+  userCedula: string;
 }
 
 const DecoracionForm: React.FC<DecoracionFormProps> = ({
@@ -77,21 +80,14 @@ const DecoracionForm: React.FC<DecoracionFormProps> = ({
   onSubmit,
   loading = false,
   initialValues,
+  eventosCliente,
+  userCedula
 }) => {
   const [form] = Form.useForm();
-  const [eventos, setEventos] = useState<Evento[]>([]);
   const [selectedEvento, setSelectedEvento] = useState<Evento | null>(null);
   const [showEventoDetails, setShowEventoDetails] = useState(false);
-  const [elementos, setElementos] = useState<ElementoDecoracion[]>([]);
-  const [loadingEventos, setLoadingEventos] = useState(false);
-  const apiUrl = import.meta.env.VITE_API_BASE_URL;
-  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  useEffect(() => {
-    if (visible) {
-      fetchEventos();
-    }
-  }, [visible]);
+  const filteredEventos = eventosCliente.filter(evento => evento.cliente.cedula_usuario === userCedula);
 
   useEffect(() => {
     if (visible && initialValues) {
@@ -101,237 +97,64 @@ const DecoracionForm: React.FC<DecoracionFormProps> = ({
         id_evento: initialValues.id_evento,
         estado_decoracion: initialValues.estado_decoracion
       });
-      if (initialValues.detalle_decoracion) {
-        setElementos(initialValues.detalle_decoracion);
-      }
+    } else if (visible && !initialValues) {
+      form.resetFields();
+      setSelectedEvento(null);
     }
   }, [visible, initialValues, form]);
 
-  const fetchEventos = async () => {
-    try {
-      setLoadingEventos(true);
-      const response = await fetch(`${apiUrl}/evento`, {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        }
-      });
-      if (!response.ok) {
-        throw new Error('Error al cargar los eventos');
-      }
-      
-      const data = await response.json();
-      setEventos(Array.isArray(data) ? data : []);
-    } catch (error) {
-      console.error('Error al cargar eventos:', error);
-      message.error('Error al cargar los eventos');
-    } finally {
-      setLoadingEventos(false);
+  useEffect(() => {
+    const currentIdEvento = form.getFieldValue('id_evento');
+    if (currentIdEvento) {
+      const evento = filteredEventos.find(e => e.id_evento === currentIdEvento);
+      setSelectedEvento(evento || null);
+    } else {
+      setSelectedEvento(null);
     }
-  };
-
-  const calculateTotals = (elementos: ElementoDecoracion[]) => {
-    const precioneto = elementos.reduce((total, elemento) => 
-      total + (elemento.precio_elemento * elemento.cantelemento_decoracion), 0);
-    const itbis = precioneto * 0.18;
-    const total = precioneto + itbis;
-    
-    return { precioneto, itbis, total };
-  };
+  }, [form, filteredEventos]);
 
   const handleSubmit = async (values: any) => {
     try {
-      setIsSubmitting(true);
-
-      const decoracionData = {
+      console.log('Valores del formulario al enviar:', values);
+      const decoracionToSubmit: Decoracion = {
         id_evento: values.id_evento,
         tema_decoracion: values.tema_decoracion,
         colores_decoracion: values.colores_decoracion,
-        detalle_decoracion: elementos.map(elemento => ({
-          elemento_decoracion: elemento.elemento_decoracion,
-          cantelemento_decoracion: elemento.cantelemento_decoracion,
-          precio_elemento: elemento.precio_elemento,
-          precio_decoracion: elemento.precio_decoracion,
-          estado_detdecoracion: 'Activo'
-        }))
       };
 
-      let response;
       if (initialValues) {
-        // Si estamos editando, actualizamos la decoración existente
-        response = await fetch(`${apiUrl}/decoracion/${initialValues.id_decoracion}`, {
-          method: 'PUT',
-          headers: {
-            'Authorization': `Bearer ${localStorage.getItem('token')}`,
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify(decoracionData)
-        });
+        decoracionToSubmit.id_decoracion = initialValues.id_decoracion;
+        decoracionToSubmit.precioneto_decoracion = initialValues.precioneto_decoracion;
+        decoracionToSubmit.itbis_decoracion = initialValues.itbis_decoracion;
+        decoracionToSubmit.total_decoracion = initialValues.total_decoracion;
+        decoracionToSubmit.estado_decoracion = initialValues.estado_decoracion;
+        decoracionToSubmit.detalle_decoracion = initialValues.detalle_decoracion || [];
       } else {
-        // Si estamos creando, insertamos una nueva decoración
-        response = await fetch(`${apiUrl}/decoracion`, {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${localStorage.getItem('token')}`,
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify(decoracionData)
-        });
+        decoracionToSubmit.estado_decoracion = 'solicitado';
+        decoracionToSubmit.detalle_decoracion = [];
       }
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.mensaje || `Error al ${initialValues ? 'actualizar' : 'crear'} la decoración`);
-      }
-
-      const data = await response.json();
-      message.success(`Decoración ${initialValues ? 'actualizada' : 'creada'} exitosamente`);
-      onSubmit(data);
+      
+      await onSubmit(decoracionToSubmit);
+      
       form.resetFields();
-      setElementos([]);
       onCancel();
     } catch (error) {
-      console.error(`Error al ${initialValues ? 'actualizar' : 'crear'} decoración:`, error);
-      message.error(error instanceof Error ? error.message : `Error al ${initialValues ? 'actualizar' : 'crear'} la decoración`);
-    } finally {
-      setIsSubmitting(false);
+      console.error(`Error al procesar formulario de decoración:`, error);
+      message.error(error instanceof Error ? error.message : `Error al procesar el formulario de decoración`);
     }
   };
-
-  const handleAddElemento = () => {
-    const newElemento: ElementoDecoracion = {
-      elemento_decoracion: '',
-      cantelemento_decoracion: 1,
-      precio_elemento: 0,
-      precio_decoracion: 0
-    };
-    setElementos([...elementos, newElemento]);
-  };
-
-  const handleRemoveElemento = (index: number) => {
-    const newElementos = [...elementos];
-    newElementos.splice(index, 1);
-    setElementos(newElementos);
-  };
-
-  const handleElementoChange = (index: number, field: string, value: any) => {
-    const newElementos = [...elementos];
-    newElementos[index] = {
-      ...newElementos[index],
-      [field]: value
-    };
-
-    // Calcular el precio total si cambia la cantidad o el precio unitario
-    if (field === 'cantelemento_decoracion' || field === 'precio_elemento') {
-      const cantidad = field === 'cantelemento_decoracion' ? value : newElementos[index].cantelemento_decoracion;
-      const precioUnitario = field === 'precio_elemento' ? value : newElementos[index].precio_elemento;
-      newElementos[index].precio_decoracion = cantidad * precioUnitario;
-    }
-
-    setElementos(newElementos);
-  };
-
-  const columns = [
-    {
-      title: 'Elemento',
-      dataIndex: 'elemento_decoracion',
-      key: 'elemento_decoracion',
-      render: (_: any, record: ElementoDecoracion, index: number) => (
-        <Input
-          value={record.elemento_decoracion}
-          onChange={(e) => handleElementoChange(index, 'elemento_decoracion', e.target.value)}
-          placeholder="Nombre del elemento"
-          maxLength={50}
-        />
-      ),
-    },
-    {
-      title: 'Cantidad',
-      dataIndex: 'cantelemento_decoracion',
-      key: 'cantelemento_decoracion',
-      render: (_: any, record: ElementoDecoracion, index: number) => (
-        <InputNumber
-          value={record.cantelemento_decoracion}
-          onChange={(value) => handleElementoChange(index, 'cantelemento_decoracion', value)}
-          min={1}
-          style={{ width: '100%' }}
-        />
-      ),
-    },
-    {
-      title: 'Precio Unitario',
-      dataIndex: 'precio_elemento',
-      key: 'precio_elemento',
-      render: (_: any, record: ElementoDecoracion, index: number) => (
-        <InputNumber
-          value={record.precio_elemento}
-          onChange={(value) => handleElementoChange(index, 'precio_elemento', value)}
-          min={0}
-          precision={2}
-          style={{ width: '100%' }}
-          formatter={(value) => `$ ${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
-          parser={(value) => parseFloat(value!.replace(/\$\s?|(,*)/g, ''))}
-        />
-      ),
-    },
-    {
-      title: 'Total',
-      dataIndex: 'precio_decoracion',
-      key: 'precio_decoracion',
-      render: (value: number) => `$ ${value.toFixed(2)}`,
-    },
-    {
-      title: 'Acciones',
-      key: 'actions',
-      render: (_: any, __: any, index: number) => (
-        <Button
-          type="text"
-          danger
-          icon={<DeleteOutlined />}
-          onClick={() => handleRemoveElemento(index)}
-        />
-      ),
-    },
-  ];
 
   const handleCancel = () => {
     form.resetFields();
-    setElementos([]);
     onCancel();
   };
 
-  // Calcular el total general
-  const { precioneto, itbis, total } = calculateTotals(elementos);
-
-  const handleEventoSelect = (value: number) => {
-    const eventoSeleccionado = eventos.find(evento => evento.id_evento === value);
-    setSelectedEvento(eventoSeleccionado || null);
+  const showEventoDetailsModal = () => {
+    setShowEventoDetails(true);
   };
 
-  const showEventoDetailsModal = () => {
-    if (selectedEvento) {
-      Modal.info({
-        title: 'Detalles del Evento',
-        width: 600,
-        content: (
-          <Descriptions bordered column={2}>
-            <Descriptions.Item label="Cliente" span={2}>
-              {selectedEvento.cliente?.nombre_usuario} {selectedEvento.cliente?.apellido_usuario}
-            </Descriptions.Item>
-            <Descriptions.Item label="Fecha">{selectedEvento.fecha_evento}</Descriptions.Item>
-            <Descriptions.Item label="Hora">{selectedEvento.hora_evento}</Descriptions.Item>
-            <Descriptions.Item label="Tipo de Evento" span={2}>
-              {typeof selectedEvento.tipo_evento === 'string' 
-                ? selectedEvento.tipo_evento 
-                : selectedEvento.tipo_evento.tipo_evento}
-            </Descriptions.Item>
-            <Descriptions.Item label="Espacio">{selectedEvento.espacio_evento}</Descriptions.Item>
-            <Descriptions.Item label="Supervisión">
-              {selectedEvento.desea_supervision ? 'Sí' : 'No'}
-            </Descriptions.Item>
-          </Descriptions>
-        ),
-      });
-    }
+  const hideEventoDetailsModal = () => {
+    setShowEventoDetails(false);
   };
 
   return (
@@ -339,108 +162,103 @@ const DecoracionForm: React.FC<DecoracionFormProps> = ({
       title={initialValues ? "Editar Decoración" : "Crear Decoración"}
       open={visible}
       onCancel={handleCancel}
-      footer={null}
+      onOk={() => form.submit()}
+      confirmLoading={loading}
       width={800}
     >
       <Form
         form={form}
         layout="vertical"
         onFinish={handleSubmit}
-        className="decoracion-form"
+        initialValues={{ 
+          ...initialValues,
+          id_evento: initialValues?.id_evento,
+          estado_decoracion: initialValues?.estado_decoracion || 'solicitado' 
+        }}
       >
         <Form.Item
-            name="id_evento"
-            label="Evento"
-            rules={[{ required: true, message: 'Por favor seleccione el evento' }]}
-          >
-            <div style={{ display: 'flex', gap: '8px' }}>
-              <Select
-                placeholder="Seleccione el evento"
-                loading={loadingEventos}
-                showSearch
-                allowClear
-                onChange={(value) => {
-                  form.setFieldsValue({ id_evento: value });
-                  handleEventoSelect(value);
-                }}
-                onClear={() => {
-                  form.setFieldsValue({ id_evento: undefined });
-                  setSelectedEvento(null);
-                  setShowEventoDetails(false);
-                }}
-                filterOption={(input, option) => {
-                  if (typeof option?.label === 'string') {
-                    return option.label.toLowerCase().includes(input.toLowerCase());
-                  }
-                  return false;
-                }}
-                options={eventos.map(evento => ({
-                  value: evento.id_evento,
-                  label: `ID: ${evento.id_evento} - ${evento.cliente?.nombre_usuario || ''} ${evento.cliente?.apellido_usuario || ''}`
-                }))}
-                style={{ flex: 1 }}
-              />
-              {selectedEvento && (
-                <Button
-                  type="text"
-                  icon={<EyeOutlined />}
-                  onClick={showEventoDetailsModal}
-                  title="Ver detalles del evento"
-                />
-              )}
-            </div>
-          </Form.Item>
-          <Form.Item
-            name="tema_decoracion"
-            label="Tema de Decoración"
-            rules={[{ required: true, message: 'Por favor ingrese el tema de decoración' }]}
-          >
-            <Input.TextArea rows={3} placeholder="Describa el tema de la decoración" />
-          </Form.Item>
+          name="id_evento"
+          label="Evento"
+          rules={[{ required: true, message: 'Por favor seleccione un evento' }]}
+        >
+          <Select
+            placeholder="Seleccione el evento"
+            options={filteredEventos.map(evento => ({
+              label: `${evento.tipo_evento.tipo_evento} - ${dayjs(evento.fecha_evento).format('DD/MM/YYYY')}`,
+              value: evento.id_evento
+            }))}
+            showSearch
+            optionFilterProp="label"
+            loading={loading}
+          />
+        </Form.Item>
 
-          <Form.Item
-            name="colores_decoracion"
-            label="Colores"
-            rules={[
-              { required: true, message: 'Por favor ingrese los colores' },
-              { max: 100, message: 'Los colores no pueden exceder los 100 caracteres' }
-            ]}
-          >
-            <Input placeholder="Ingrese los colores de la decoración" maxLength={100} />
-          </Form.Item>
+        {selectedEvento && (
+          <Button type="link" onClick={showEventoDetailsModal}>
+            Ver Detalles del Evento
+          </Button>
+        )}
 
-          <div style={{ marginBottom: 16 }}>
-            <Button
-              type="dashed"
-              onClick={handleAddElemento}
-              icon={<PlusOutlined />}
-              style={{ 
-                width: '100%',
-                borderColor: 'var(--gold)',
-                color: 'var(--gold)'
-              }}
-              className="gold-button"
-            >
-              Agregar Elemento
-            </Button>
-          </div>
+        <Form.Item
+          name="tema_decoracion"
+          label="Tema de Decoración"
+          rules={[{ required: true, message: 'Por favor describa el tema de la decoración' }]}
+        >
+          <Input.TextArea rows={2} placeholder="Describa el tema de la decoración" maxLength={255} />
+        </Form.Item>
 
-        <Table
-          columns={columns}
-          dataSource={elementos}
-          rowKey={(_, index) => (index !== undefined ? index.toString() : '')}
-          pagination={false}
-          size="small"
-          scroll={{ x: 'max-content' }}
-        />
+        <Form.Item
+          name="colores_decoracion"
+          label="Colores"
+          rules={[{ required: true, message: 'Por favor ingrese los colores de la decoración' }]}
+        >
+          <Input placeholder="Ingrese los colores de la decoración" maxLength={255} />
+        </Form.Item>
 
-        <div style={{ marginTop: 16, textAlign: 'right' }}>
-          <div style={{ marginBottom: 8 }}>
-            <span style={{ marginRight: 16 }}>Subtotal: $ {precioneto.toFixed(2)}</span>
-            <span style={{ marginRight: 16 }}>ITBIS (18%): $ {itbis.toFixed(2)}</span>
-            <span style={{ fontWeight: 'bold' }}>Total: $ {total.toFixed(2)}</span>
-          </div>
-        </div>
+        <Modal
+          title="Detalles del Evento"
+          open={showEventoDetails}
+          onCancel={hideEventoDetailsModal}
+          footer={null}
+        >
+          {selectedEvento && (
+            <Descriptions bordered column={1}>
+              <Descriptions.Item label="Tipo de Evento">
+                {selectedEvento.tipo_evento.tipo_evento}
+              </Descriptions.Item>
+              <Descriptions.Item label="Fecha">
+                {selectedEvento.fecha_evento && dayjs.isDayjs(selectedEvento.fecha_evento) && selectedEvento.fecha_evento.isValid() ? selectedEvento.fecha_evento.format('DD/MM/YYYY') : 'N/A'}
+              </Descriptions.Item>
+              <Descriptions.Item label="Hora">
+                {selectedEvento.hora_evento && dayjs.isDayjs(selectedEvento.hora_evento) && selectedEvento.hora_evento.isValid() ? selectedEvento.hora_evento.format('HH:mm') : 'N/A'}
+              </Descriptions.Item>
+              <Descriptions.Item label="Estado">
+                {selectedEvento.estado_solicitud}
+              </Descriptions.Item>
+              <Descriptions.Item label="Espacio">
+                {selectedEvento.espacio_evento}
+              </Descriptions.Item>
+              <Descriptions.Item label="Dirección">
+                {selectedEvento.direccion ? 
+                  `${selectedEvento.direccion.calle || ''} ${selectedEvento.direccion.sector || ''} ${selectedEvento.direccion.ciudad?.nombre_ciudad || ''} ${selectedEvento.direccion.ciudad?.provincia?.nombre_provincia || ''}`
+                  : 'No disponible'}
+              </Descriptions.Item>
+              <Descriptions.Item label="Notas">
+                {selectedEvento.nota_cliente || selectedEvento.direccion?.detalles || 'Sin notas'}
+              </Descriptions.Item>
+              <Descriptions.Item label="Cliente">
+                {selectedEvento.cliente ? 
+                  `${selectedEvento.cliente.nombre_usuario} (Cédula: ${selectedEvento.cliente.cedula_usuario})`
+                  : 'N/A'}
+              </Descriptions.Item>
+              <Descriptions.Item label="Asesor">
+                {selectedEvento.asesor ? 
+                  `${selectedEvento.asesor.nombre_usuario} ${selectedEvento.asesor.apellido_usuario} (Cédula: ${selectedEvento.asesor.cedula_usuario}, Teléfono: ${selectedEvento.asesor.tel_usuario})`
+                  : 'N/A'}
+              </Descriptions.Item>
+            </Descriptions>
+          )}
+        </Modal>
       </Form>
     </Modal>
   );
