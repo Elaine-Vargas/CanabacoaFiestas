@@ -19,32 +19,26 @@ const Footer = () => {
             <MapComponent />
           </Suspense>
         </div>
-
-       <div className='footerInfo'>
+        {/* Si agregas un logo o imagen aquí, usa width/height y loading="lazy" */}
+        <div className='footerInfo'>
           <div className='footerInfo'>
             <h3>Contáctanos</h3>
             <div className="ContactItem">
               <InstagramIcon className="contactIcons" />
               <a href="https://www.instagram.com/canabacoa_fiestas?igsh=MTB4Ymg4N3o4NXI3dw==" target="_blank" rel="noopener noreferrer">@canabacoa_fiestas</a>
             </div>
-            
             <div className="ContactItem">
               <a className='contactPhones' href="tel:+18297700926">829-770-0926</a> 
               <WhatsAppIcon className="contactIcons"/>
               <a className='contactPhones' href="tel:+18093918940">809-391-8940</a>
             </div>
-
             <div className="ContactItem">
               <MailIcon className="contactIcons" />
               <a className='contactMail' href="mailto:soporte@canabacoafiesta.online">soporte@canabacoafiesta.online</a>
             </div>
           </div>
         </div>
-
-          <Comments />
-      
-
- 
+        <Comments />
       </div>
     </footer>
   );
