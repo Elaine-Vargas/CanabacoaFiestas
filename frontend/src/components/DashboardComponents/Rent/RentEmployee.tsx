@@ -130,23 +130,19 @@ const ContinueButton = styled(Button)`
 
 const ListItem = styled(List.Item)`
   margin: 8px 0;
-  padding: 16px;
-  background-color: white;
-  border-radius: 8px;
-  border: 1px solid var(--beige);
+  padding: 0;
+  background-color: transparent;
+  border: none;
   transition: all 0.3s ease;
   
   &:hover {
     transform: translateY(-2px);
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
   }
 
   &.selected {
-    background-color: var(--beige-light);
-    border-color: var(--dark-gold);
-    
-    .ant-typography {
-      color: var(--dark-gold);
+    .elemento-info {
+      background-color: var(--beige-light);
+      border-color: var(--dark-gold);
     }
   }
 `;
@@ -200,6 +196,94 @@ const ResetIcon = styled(ReloadOutlined)`
 const ModalContainer = styled.div`
   position: relative;
   z-index: 1100;
+`;
+
+const StyledButton = styled(Button)`
+  &.ant-btn-primary {
+    background-color: var(--dark-gold) !important;
+    border-color: var(--dark-gold) !important;
+    color: white !important;
+    
+    &:hover {
+      background-color: var(--gold) !important;
+      border-color: var(--dark-gold) !important;
+      color: white !important;
+    }
+  }
+
+  &.ant-btn-default {
+    border-color: var(--dark-gold) !important;
+    color: var(--dark-gold) !important;
+    
+    &:hover {
+      background-color: var(--beige-light) !important;
+      border-color: var(--dark-gold) !important;
+      color: var(--dark-gold) !important;
+    }
+  }
+`;
+
+const CatalogHeader = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  padding: 16px;
+  background-color: var(--beige);
+  border-radius: 12px;
+  border: 1px solid var(--dark-gold);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+`;
+
+const ElementoInfo = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 16px;
+  background-color: white;
+  border-radius: 12px;
+  transition: all 0.3s ease;
+  
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  }
+  
+  .elemento-imagen {
+    width: 100px;
+    height: 100px;
+    border-radius: 8px;
+    object-fit: cover;
+    border: 2px solid var(--beige);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  }
+  
+  .elemento-details {
+    flex: 1;
+    padding: 8px;
+  }
+
+  .elemento-title {
+    color: var(--dark-gold);
+    font-weight: 600;
+    margin-bottom: 8px;
+  }
+
+  .elemento-price {
+    color: var(--dark-gold);
+    font-size: 1.2em;
+    font-weight: 600;
+  }
+
+  .elemento-category {
+    color: #666;
+    font-size: 0.9em;
+  }
+
+  .elemento-stock {
+    color: #666;
+    font-size: 0.9em;
+  }
 `;
 
 interface Elemento {
@@ -999,20 +1083,36 @@ const RentEmployee: React.FC = () => {
       <StyledCard title="Gestión de Alquileres">
         <Space direction="vertical" style={{ width: '100%', marginBottom: 16 }}>
           <Space wrap>
-            <Button
+            <StyledButton
               type="primary"
               icon={<PlusOutlined />}
               onClick={() => setShowCatalogo(true)}
-              style={{ backgroundColor: 'var(--dark-gold)', borderColor: 'var(--dark-gold)' }}
             >
               Nuevo Alquiler
-            </Button>
-            <Button
+            </StyledButton>
+            <StyledButton
+              type="primary"
               icon={<ReloadOutlined />}
-              onClick={fetchAlquileres}
+              onClick={async () => {
+                try {
+                  setLoading(true);
+                  await Promise.all([
+                    fetchAlquileres(),
+                    fetchElementos(),
+                    fetchEventos(),
+                    fetchCategorias()
+                  ]);
+                  message.success('Datos actualizados correctamente');
+                } catch (error) {
+                  console.error('Error al actualizar los datos:', error);
+                  message.error('Error al actualizar los datos');
+                } finally {
+                  setLoading(false);
+                }
+              }}
             >
               Recargar
-            </Button>
+            </StyledButton>
           </Space>
 
           <Space wrap>
@@ -1076,37 +1176,34 @@ const RentEmployee: React.FC = () => {
         zIndex={1100}
         style={{ top: 20 }}
       >
-        <Space style={{ marginBottom: 16 }}>
-          <Search
-            placeholder="Buscar elementos..."
-            onChange={(e) => setSearchText(e.target.value)}
-            style={{ width: 200 }}
-          />
-          <Select
-            style={{ width: 200 }}
-            placeholder="Filtrar por categoría"
-            allowClear
-            onChange={(value) => setFilterCategoria(value)}
-          >
-            {categorias.map((categoria: any) => (
-              <Option key={categoria.id_categoria} value={categoria.id_categoria}>
-                {categoria.nombre_categoria}
-              </Option>
-            ))}
-          </Select>
-          <Button onClick={handleReset} icon={<ReloadOutlined />}>
+        <CatalogHeader>
+          <Space>
+            <Search
+              placeholder="Buscar elementos..."
+              onChange={(e) => setSearchText(e.target.value)}
+              style={{ width: 200 }}
+            />
+            <Select
+              style={{ width: 200 }}
+              placeholder="Filtrar por categoría"
+              allowClear
+              onChange={(value) => setFilterCategoria(value)}
+            >
+              {categorias.map((categoria: any) => (
+                <Option key={categoria.id_categoria} value={categoria.id_categoria}>
+                  {categoria.nombre_categoria}
+                </Option>
+              ))}
+            </Select>
+          </Space>
+          <StyledButton onClick={handleReset} icon={<ReloadOutlined />}>
             Resetear Filtros
-          </Button>
-        </Space>
+          </StyledButton>
+        </CatalogHeader>
 
         <ModalContent hasSelection={elementosSeleccionados.length > 0 || (editingAlquiler?.detalles?.length ?? 0) > 0}>
           <List
-            dataSource={elementos.filter((elemento: Elemento) => {
-              const matchesSearch = elemento.nombre_elemento.toLowerCase().includes(searchText.toLowerCase());
-              const matchesCategoria = !filterCategoria || 
-                elemento.subcategoria?.categoria?.id_categoria.toString() === filterCategoria;
-              return matchesSearch && matchesCategoria;
-            })}
+            dataSource={filteredElementos}
             renderItem={(elemento: Elemento) => {
               const detalleExistente = editingAlquiler?.detalles?.find(
                 (d: any) => d.id_elemento === elemento.id_elemento && d.estado_detalquiler === 'Aceptado'
@@ -1121,22 +1218,27 @@ const RentEmployee: React.FC = () => {
 
               return (
                 <ListItem className={isSelected ? 'selected' : ''}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
-                    <div style={{ flex: 1 }}>
-                      <Title level={5} style={{ margin: 0 }}>{elemento.nombre_elemento}</Title>
-                      <Space direction="vertical" size={0} style={{ marginTop: 8 }}>
-                        <Typography.Text type="secondary">
+                  <ElementoInfo>
+                    {elemento.imagen_url ? (
+                      <img src={elemento.imagen_url} alt={elemento.nombre_elemento} className="elemento-imagen" />
+                    ) : (
+                      <Avatar shape="square" size={100} icon={<InboxOutlined />} style={{ backgroundColor: 'var(--beige)' }} />
+                    )}
+                    <div className="elemento-details">
+                      <Title level={4} className="elemento-title">{elemento.nombre_elemento}</Title>
+                      <Space direction="vertical" size={4}>
+                        <Typography.Text className="elemento-category">
                           Categoría: {elemento.subcategoria.categoria.nombre_categoria} - {elemento.subcategoria.nombre_subcategoria}
                         </Typography.Text>
-                        <Typography.Text>
-                          Precio: <Typography.Text strong>${elemento.precio_elemento}</Typography.Text>
+                        <Typography.Text className="elemento-price">
+                          Precio: ${elemento.precio_elemento.toFixed(2)}
                         </Typography.Text>
-                        <Typography.Text>
-                          Disponibles: <Typography.Text strong>{typeof elemento.cantidad_disponible === 'number' ? elemento.cantidad_disponible : 'N/A'}</Typography.Text>
+                        <Typography.Text className="elemento-stock">
+                          Disponibles: {typeof elemento.cantidad_disponible === 'number' ? elemento.cantidad_disponible : 'N/A'}
                         </Typography.Text>
                       </Space>
                     </div>
-                    <Space align="center">
+                    <Space align="center" style={{ marginLeft: 'auto' }}>
                       <Typography.Text>Cantidad:</Typography.Text>
                       <InputNumber
                         min={0}
@@ -1144,37 +1246,7 @@ const RentEmployee: React.FC = () => {
                         value={cantidad}
                         onChange={(value: number | null) => {
                           if (editingAlquiler) {
-                            const newDetalles = [...(editingAlquiler.detalles || [])];
-                            const index = newDetalles.findIndex(d => d.id_elemento === elemento.id_elemento);
-                            
-                            if (!value || value === 0) {
-                              if (index !== -1) {
-                                newDetalles.splice(index, 1);
-                              }
-                            } else {
-                              const subtotal = Number((value * elemento.precio_elemento).toFixed(2));
-                              if (index !== -1) {
-                                newDetalles[index] = {
-                                  ...newDetalles[index],
-                                  cantidad_alquiler: value,
-                                  precio_unitario: elemento.precio_elemento,
-                                  total_alquiler: subtotal
-                                };
-                              } else {
-                                newDetalles.push({
-                                  id_elemento: elemento.id_elemento,
-                                  elemento: elemento,
-                                  cantidad_alquiler: value,
-                                  precio_unitario: elemento.precio_elemento,
-                                  total_alquiler: subtotal,
-                                  estado_detalquiler: 'Aceptado'
-                                });
-                              }
-                            }
-                            setEditingAlquiler({
-                              ...editingAlquiler,
-                              detalles: newDetalles
-                            });
+                            handleCantidadChange(elemento, value || 0);
                           } else {
                             handleCantidadChange(elemento, value || 0);
                           }
@@ -1183,7 +1255,7 @@ const RentEmployee: React.FC = () => {
                         disabled={typeof elemento.cantidad_disponible !== 'number' || elemento.cantidad_disponible === 0}
                       />
                     </Space>
-                  </div>
+                  </ElementoInfo>
                 </ListItem>
               );
             }}
@@ -1191,9 +1263,25 @@ const RentEmployee: React.FC = () => {
         </ModalContent>
         
         {(elementosSeleccionados.length > 0 || (editingAlquiler?.detalles?.length ?? 0) > 0) && (
-          <ContinueButton onClick={handleContinuar}>
+          <StyledButton
+            type="primary"
+            onClick={handleContinuar}
+            style={{
+              position: 'fixed',
+              bottom: '20px',
+              right: '20px',
+              borderRadius: '25px',
+              padding: '0 25px',
+              height: '50px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '8px',
+              zIndex: 1000
+            }}
+          >
             Continuar <RightOutlined />
-          </ContinueButton>
+          </StyledButton>
         )}
       </Modal>
 
@@ -1358,15 +1446,14 @@ const RentEmployee: React.FC = () => {
 
             <Form.Item>
               <Space>
-                <Button 
+                <StyledButton 
                   type="primary" 
                   htmlType="submit"
                   loading={loadingSubmit}
-                  style={{ backgroundColor: 'var(--dark-gold)', borderColor: 'var(--dark-gold)' }}
                 >
                   Guardar Cambios
-                </Button>
-                <Button 
+                </StyledButton>
+                <StyledButton 
                   onClick={() => {
                     setShowEditModal(false);
                     setEditingAlquiler(null);
@@ -1375,7 +1462,7 @@ const RentEmployee: React.FC = () => {
                   }}
                 >
                   Cancelar
-                </Button>
+                </StyledButton>
               </Space>
             </Form.Item>
           </Form>
@@ -1391,12 +1478,15 @@ const RentEmployee: React.FC = () => {
           setViewingAlquiler(null);
         }}
         footer={[
-          <Button key="close" onClick={() => {
-            setShowViewModal(false);
-            setViewingAlquiler(null);
-          }}>
+          <StyledButton 
+            key="close" 
+            onClick={() => {
+              setShowViewModal(false);
+              setViewingAlquiler(null);
+            }}
+          >
             Cerrar
-          </Button>
+          </StyledButton>
         ]}
         width={800}
       >
