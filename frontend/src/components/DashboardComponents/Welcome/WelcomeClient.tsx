@@ -16,8 +16,8 @@ interface Evento {
     id_tipo_evento: number;
     tipo_evento: string;
   };
-  fecha_evento: Dayjs | null;
-  hora_evento: Dayjs | null;
+  fecha_evento: Dayjs;
+  hora_evento: Dayjs;
   estado_solicitud: string;
   sector: string;
   calle: string;
@@ -61,11 +61,22 @@ interface Comentario {
 }
 
 interface Empleado {
-  id_empleado: number;
-  nombre: string;
-  apellido: string;
-  cargo: string;
-  id_evento: number;
+  id_empleado?: number; // Puede no venir
+  empleado?: {
+    cedula_usuario: string;
+    nombre_usuario: string;
+    apellido_usuario: string;
+  };
+  puesto_evento?: string;
+  estado_empevento?: string;
+  id_evento?: number;
+  evento?: {
+    id_evento: number;
+    fecha_evento: string;
+    hora_evento: string;
+    espacio_evento: string;
+    estado_solicitud: string;
+  };
 }
 
 interface TipoEvento {
@@ -95,11 +106,11 @@ export default function WelcomeClient() {
   const [filtrosEventos, setFiltrosEventos] = useState({
     estado: '',
     tipo: '',
-    fecha: ''
+    fecha_evento: ''
   });
   const [filtrosDecoraciones, setFiltrosDecoraciones] = useState({
     estado: '',
-    tema: ''
+    evento: ''
   });
   const [filtrosComentarios, setFiltrosComentarios] = useState({
     calificacion: ''
@@ -156,7 +167,6 @@ export default function WelcomeClient() {
       }
 
       if (!userCedula) {
-        // Si userCedula no está disponible, salimos. fetchData será llamado de nuevo cuando userCedula se actualice.
         return;
       }
 
@@ -178,8 +188,12 @@ export default function WelcomeClient() {
         hora_evento: evento.hora_evento ? dayjs(evento.hora_evento, 'HH:mm:ss') : null,
       })));
 
-      // Obtener decoraciones del cliente
-      const decoracionesResponse = await fetch(`${apiUrl}/decoracion/cliente/${userCedula}`, {
+      // Obtener decoraciones del cliente con filtros
+      const decoracionQuery = [];
+      if (filtrosDecoraciones.estado) decoracionQuery.push(`estado=${encodeURIComponent(filtrosDecoraciones.estado)}`);
+      if (filtrosDecoraciones.evento) decoracionQuery.push(`id_evento=${encodeURIComponent(filtrosDecoraciones.evento)}`);
+      const decoracionQueryString = decoracionQuery.length > 0 ? `?${decoracionQuery.join('&')}` : '';
+      const decoracionesResponse = await fetch(`${apiUrl}/decoracion/cliente/${userCedula}${decoracionQueryString}`, {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -193,21 +207,31 @@ export default function WelcomeClient() {
       setDecoraciones(decoracionesData);
 
       // Obtener comentarios del cliente
-      const comentariosResponse = await fetch(`${apiUrl}/comentario/cliente/${userCedula}`, {
+      const comentariosResponse = await fetch(`${apiUrl}/comentario/usuario/${userCedula}`, {
         headers: {
           'Authorization': `Bearer ${token}`
         }
       });
       if (!comentariosResponse.ok) {
         const errorText = await comentariosResponse.text();
-        console.error(`Error al obtener comentarios: ${comentariosResponse.status} - ${errorText}`);
-        throw new Error('Error al obtener comentarios');
+        if (comentariosResponse.status === 404) {
+          setComentarios([]);
+          message.info('No tienes comentarios registrados.');
+        } else {
+          console.error(`Error al obtener comentarios: ${comentariosResponse.status} - ${errorText}`);
+          message.error('Error al cargar los comentarios');
+          // No lanzar throw para evitar mostrar el error global
+        }
+      } else {
+        const comentariosData = await comentariosResponse.json();
+        setComentarios(comentariosData);
       }
-      const comentariosData = await comentariosResponse.json();
-      setComentarios(comentariosData);
 
       // Obtener empleados asignados a eventos del cliente
-      const empleadosResponse = await fetch(`${apiUrl}/evento/empleados/cliente/${userCedula}`, {
+      const empleadosQuery: string[] = [];
+      // Ejemplo: para filtrar por puesto: empleadosQuery.push(`puesto_evento=Decorador`);
+      const empleadosQueryString = empleadosQuery.length > 0 ? `?${empleadosQuery.join('&')}` : '';
+      const empleadosResponse = await fetch(`${apiUrl}/evento/empleados/cliente/${userCedula}${empleadosQueryString}`, {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -266,11 +290,13 @@ export default function WelcomeClient() {
       title: 'Fecha',
       dataIndex: 'fecha_evento',
       key: 'fecha_evento',
+      render: (fecha: Dayjs) => fecha && dayjs.isDayjs(fecha) && fecha.isValid() ? fecha.format('DD/MM/YYYY') : '',
     },
     {
       title: 'Hora',
       dataIndex: 'hora_evento',
       key: 'hora_evento',
+      render: (hora: Dayjs) => hora && dayjs.isDayjs(hora) && hora.isValid() ? hora.format('HH:mm') : '',
     },
     {
       title: 'Estado',
@@ -307,14 +333,14 @@ export default function WelcomeClient() {
       key: 'evento',
     },
     {
+      title: 'Tema',
+      dataIndex: 'tema_decoracion',
+      key: 'tema_decoracion',
+    },
+    {
       title: 'Estado',
       dataIndex: 'estado_decoracion',
       key: 'estado_decoracion',
-    },
-    {
-      title: 'Fecha Solicitud',
-      dataIndex: 'fecha_decoracion',
-      key: 'fecha_decoracion',
     },
     {
       title: 'Acciones',
@@ -383,27 +409,36 @@ export default function WelcomeClient() {
     },
   ];
 
-  // Columnas para la tabla de empleados
+  // Columnas para la tabla de empleados (ajustadas a la nueva estructura)
   const empleadosColumns = [
     {
       title: 'Nombre',
-      dataIndex: 'nombre',
+      dataIndex: ['empleado', 'nombre_usuario'],
       key: 'nombre',
     },
     {
       title: 'Apellido',
-      dataIndex: 'apellido',
+      dataIndex: ['empleado', 'apellido_usuario'],
       key: 'apellido',
     },
     {
-      title: 'Cargo',
-      dataIndex: 'cargo',
-      key: 'cargo',
+      title: 'Puesto',
+      dataIndex: 'puesto_evento',
+      key: 'puesto_evento',
+    },
+    {
+      title: 'Estado',
+      dataIndex: 'estado_empevento',
+      key: 'estado_empevento',
     },
     {
       title: 'Evento',
-      dataIndex: ['evento', 'tipo_evento', 'tipo_evento'],
+      dataIndex: ['evento', 'id_evento'],
       key: 'evento',
+      render: (_: any, record: Empleado) =>
+        record.evento
+          ? `${record.evento.id_evento} - ${record.evento.fecha_evento}`
+          : '',
     },
   ];
 
@@ -543,7 +578,7 @@ export default function WelcomeClient() {
 
       const matchesEstado = !filtrosEventos.estado || evento.estado_solicitud === filtrosEventos.estado;
       const matchesTipo = !filtrosEventos.tipo || evento.tipo_evento.tipo_evento === filtrosEventos.tipo;
-      const matchesFecha = !filtrosEventos.fecha || evento.fecha_evento?.format('YYYY-MM-DD') === filtrosEventos.fecha;
+      const matchesFecha = !filtrosEventos.fecha_evento || evento.fecha_evento?.format('YYYY-MM-DD') === filtrosEventos.fecha_evento;
 
       return matchesSearch && matchesEstado && matchesTipo && matchesFecha;
     });
@@ -556,9 +591,9 @@ export default function WelcomeClient() {
         decoracion.colores_decoracion.toLowerCase().includes(searchText.toLowerCase());
 
       const matchesEstado = !filtrosDecoraciones.estado || decoracion.estado_decoracion === filtrosDecoraciones.estado;
-      const matchesTema = !filtrosDecoraciones.tema || decoracion.tema_decoracion === filtrosDecoraciones.tema;
+      const matchesEvento = !filtrosDecoraciones.evento || decoracion.id_evento === Number(filtrosDecoraciones.evento);
 
-      return matchesSearch && matchesEstado && matchesTema;
+      return matchesSearch && matchesEstado && matchesEvento;
     });
   };
 
@@ -602,7 +637,7 @@ export default function WelcomeClient() {
       <DatePicker
         style={{ width: '100%' }}
         placeholder="Fecha"
-        onChange={(date) => setFiltrosEventos(prev => ({ ...prev, fecha: date?.format('YYYY-MM-DD') || '' }))}
+        onChange={(date) => setFiltrosEventos(prev => ({ ...prev, fecha_evento: date?.format('YYYY-MM-DD') || '' }))}
       />
     </div>
   );
@@ -620,15 +655,16 @@ export default function WelcomeClient() {
         <Select.Option value="completado">Completado</Select.Option>
         <Select.Option value="cancelado">Cancelado</Select.Option>
       </Select>
+     
       <Select
         style={{ width: '100%' }}
-        placeholder="Tema"
+        placeholder="Evento"
         allowClear
-        onChange={(value) => setFiltrosDecoraciones(prev => ({ ...prev, tema: value }))}
+        onChange={(value) => setFiltrosDecoraciones(prev => ({ ...prev, evento: value }))}
       >
-        {Array.from(new Set(decoraciones.map(d => d.tema_decoracion))).map(tema => (
-          <Select.Option key={tema} value={tema}>
-            {tema}
+        {eventos.map(evento => (
+          <Select.Option key={evento.id_evento} value={evento.id_evento}>
+            {evento.tipo_evento.tipo_evento} - {evento.fecha_evento && dayjs.isDayjs(evento.fecha_evento) && evento.fecha_evento.isValid() ? evento.fecha_evento.format('DD/MM/YYYY') : 'Fecha no disponible'}
           </Select.Option>
         ))}
       </Select>
@@ -693,7 +729,7 @@ export default function WelcomeClient() {
                 type="eventos"
                 searchText={searchText}
                 onSearchChange={setSearchText}
-                clearFilters={() => setFiltrosEventos({ estado: '', tipo: '', fecha: '' })}
+                clearFilters={() => setFiltrosEventos({ estado: '', tipo: '', fecha_evento: '' })}
                 activeFiltersCount={getActiveFiltersCount(filtrosEventos)}
                 filterContent={filterContentEventos}
               />
@@ -732,7 +768,7 @@ export default function WelcomeClient() {
                 type="decoraciones"
                 searchText={searchText}
                 onSearchChange={setSearchText}
-                clearFilters={() => setFiltrosDecoraciones({ estado: '', tema: '' })}
+                clearFilters={() => setFiltrosDecoraciones({ estado: '',  evento: '' })}
                 activeFiltersCount={getActiveFiltersCount(filtrosDecoraciones)}
                 filterContent={filterContentDecoraciones}
               />
@@ -854,6 +890,8 @@ export default function WelcomeClient() {
           asesores={[]}
           tiposEvento={tiposEvento}
           initialValues={selectedEvento || undefined}
+          provincias={[]}   // TODO: Replace with actual provincias data if available
+          ciudades={[]}     // TODO: Replace with actual ciudades data if available
         />
       )}
 
@@ -947,7 +985,7 @@ export default function WelcomeClient() {
           <Form.Item
             name="comentario"
             label="Comentario"
-            rules={[{ required: true, message: 'Por favor ingrese su comentario' }]}
+            rules={[{ required: true, message: 'Por favor seleccione un evento' }]}
           >
             <Input.TextArea rows={4} />
           </Form.Item>

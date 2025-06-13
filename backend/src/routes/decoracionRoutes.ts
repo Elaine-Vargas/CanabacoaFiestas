@@ -7,7 +7,8 @@ import {
     createDetalleDecoracion,
     deleteDetalleDecoracion,
     getDetallesByDecoracion,
-    getAllDetallesDecoracion
+    getAllDetallesDecoracion,
+    getDecoracionesByCliente
 } from '../controllers/decoracionController';
 import { verificarToken } from '../middlewares/authMiddleware';
 
@@ -89,6 +90,15 @@ router.get('/detalles', async (req: Request, res: Response, next: NextFunction) 
 router.delete('/detalle/:id_detalle_decoracion', async (req: Request, res: Response, next: NextFunction) => {
     try {
         await deleteDetalleDecoracion(req, res);
+    } catch (error) {
+        next(error);
+    }
+});
+
+// Obtener decoraciones filtradas por cliente, estado y evento
+router.get('/cliente/:cedula_usuario', async (req: Request, res: Response, next: NextFunction) => {
+    try {
+        await getDecoracionesByCliente(req, res);
     } catch (error) {
         next(error);
     }
