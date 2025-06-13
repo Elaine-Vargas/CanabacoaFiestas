@@ -24,16 +24,19 @@ const transporter = nodemailer.createTransport({
   }
 });
 
-export const sendVerificationEmail = async (correo_usuario: string, verificationCode: string): Promise<string> => {
+export const sendVerificationEmail = async (correo_usuario: string, verificationCode: string, isUpdate: boolean = false): Promise<string> => {
   const mailOptions = {
     from: process.env.EMAIL_USER,
     to: correo_usuario,
-    subject: 'Verificación de Correo Electrónico',
+    subject: isUpdate ? 'Verificación de Nuevo Correo Electrónico' : 'Verificación de Correo Electrónico',
     html: `
       <div style="font-family: 'Century Gothic', sans-serif; max-width: 600px; margin: 0 auto;">
         <h2 style="color: #c49a44;">Verificación de Correo Electrónico</h2>
         <p>Hola,</p>
-        <p>Gracias por registrarte. Para completar tu registro, por favor usa el siguiente código de verificación:</p>
+        <p>${isUpdate
+          ? 'Has solicitado actualizar tu correo electrónico. Para confirmar el cambio, por favor usa el siguiente código de verificación:'
+          : 'Gracias por registrarte. Para completar tu registro, por favor usa el siguiente código de verificación:'
+        }</p>
         <div style="background-color: #f5f5f5; padding: 20px; text-align: center; margin: 20px 0;">
           <h1 style="color: #c49a44; margin: 0; font-size: 32px;">${verificationCode}</h1>
         </div>

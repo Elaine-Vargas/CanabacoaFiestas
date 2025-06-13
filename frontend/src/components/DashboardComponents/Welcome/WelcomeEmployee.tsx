@@ -142,7 +142,7 @@ interface Cliente {
   cedula_usuario: string;
   nombre_usuario: string;
   apellido_usuario: string;
-  telefono_usuario: string;
+  tel_usuario: string;
   correo_usuario: string;
   estado_usuario: string;
 }
@@ -418,7 +418,7 @@ const WelcomeEmployee: React.FC = () => {
       setClientes(clientesData.usuarios || []);
 
       // Obtener asesores
-      const asesoresResponse = await fetch(`${apiUrl}/usuarios/asesores`, {
+      const asesoresResponse = await fetch(`${apiUrl}/usuario/rol/3`, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -431,7 +431,7 @@ const WelcomeEmployee: React.FC = () => {
       setAsesores(asesoresData);
 
       // Obtener empleados
-      const empleadosResponse = await fetch(`${apiUrl}/usuarios/empleados`, {
+      const empleadosResponse = await fetch(`${apiUrl}/usuario/rol/3`, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -880,7 +880,7 @@ const WelcomeEmployee: React.FC = () => {
         (cliente.nombre_usuario || "").toLowerCase().includes(searchLower) ||
         (cliente.apellido_usuario || "").toLowerCase().includes(searchLower) ||
         (cliente.cedula_usuario || "").includes(searchTextClientes) ||
-        (cliente.telefono_usuario || "").includes(searchTextClientes) ||
+        (cliente.tel_usuario || "").includes(searchTextClientes) ||
         (cliente.correo_usuario || "").toLowerCase().includes(searchLower) ||
         (cliente.estado_usuario || "").toLowerCase().includes(searchLower);
 
@@ -1235,8 +1235,8 @@ const WelcomeEmployee: React.FC = () => {
     },
     {
       title: "Teléfono",
-      dataIndex: "telefono_usuario",
-      key: "telefono_usuario",
+      dataIndex: "tel_usuario",
+      key: "tel_usuario",
     },
     {
       title: "Correo",
@@ -1842,7 +1842,7 @@ const WelcomeEmployee: React.FC = () => {
                 label: "Nombre",
                 value: `${clienteDetalles.nombre_usuario} ${clienteDetalles.apellido_usuario}`,
               },
-              { label: "Teléfono", value: clienteDetalles.telefono_usuario },
+              { label: "Teléfono", value: clienteDetalles.tel_usuario },
               { label: "Correo", value: clienteDetalles.correo_usuario },
               { label: "Estado", value: clienteDetalles.estado_usuario },
             ]}

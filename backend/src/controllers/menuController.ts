@@ -109,7 +109,6 @@ export const getMenuCatalog = async (req: Request, res: Response) => {
                 { 
                     model: PlatoMenu, 
                     as: 'platos_menu',
-                    attributes: [],
                     include: [
                         { 
                             model: Plato, 
