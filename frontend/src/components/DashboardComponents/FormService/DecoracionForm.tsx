@@ -87,7 +87,9 @@ const DecoracionForm: React.FC<DecoracionFormProps> = ({
   const [selectedEvento, setSelectedEvento] = useState<Evento | null>(null);
   const [showEventoDetails, setShowEventoDetails] = useState(false);
 
-  const filteredEventos = eventosCliente.filter(evento => evento.cliente.cedula_usuario === userCedula);
+  const filteredEventos = eventosCliente?.filter(evento => 
+    evento.cliente?.cedula_usuario === userCedula
+  ) || [];
 
   useEffect(() => {
     if (visible && initialValues) {

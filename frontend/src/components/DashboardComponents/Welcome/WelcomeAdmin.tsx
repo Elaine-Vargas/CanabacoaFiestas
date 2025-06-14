@@ -36,7 +36,10 @@ interface Evento {
   nombre_cliente: string;
   fecha_evento: string;
   hora_evento: string;
-  tipo_evento: string | TipoEvento;
+  tipo_evento: {
+    id_tipo_evento: number;
+    tipo_evento: string;
+  };
   espacio_evento: string;
   desea_supervision: boolean;
   estado_solicitud: EstadoSolicitud;
@@ -46,6 +49,8 @@ interface Evento {
   itbis_evento: number;
   nota_cliente: string;
   creacion_evento: string;
+  id_direccion: number;
+  id_tipo_evento: number;
   direccion?: {
     id_direccion: number;
     calle: string;
@@ -57,8 +62,8 @@ interface Evento {
       };
     };
   };
-  cliente?: Usuario;  
-  asesor?: Usuario;   
+  cliente?: Usuario;
+  asesor?: Usuario;
 }
 
 interface Usuario {
@@ -237,7 +242,8 @@ interface DecoracionFormProps {
   onSubmit: (values: any) => Promise<void>;
   loading: boolean;
   initialValues?: any;
-  proveedores: Proveedor[];
+  eventosCliente: Evento[];
+  userCedula: string;
 }
 
 const { Title } = Typography;
@@ -343,6 +349,8 @@ const WelcomeAdmin: React.FC = () => {
   const [modalElementosDecoracionVisible, setModalElementosDecoracionVisible] = useState(false);
 
   const [loadingPago, setLoadingPago] = useState(false);
+
+  const [user, setUser] = useState<Usuario | null>(null);
 
   const handleSubmitDecoracion = async (values: any) => {
     try {
@@ -1499,6 +1507,33 @@ const WelcomeAdmin: React.FC = () => {
     }
   };
 
+  useEffect(() => {
+    const fetchUserData = async () => {
+      try {
+        const token = localStorage.getItem('token');
+        if (!token) return;
+
+        const response = await fetch(`${apiUrl}/auth/current`, {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        });
+
+        if (!response.ok) {
+          throw new Error('Error al obtener datos del usuario');
+        }
+
+        const userData = await response.json();
+        setUser(userData);
+      } catch (error) {
+        console.error('Error al cargar datos del usuario:', error);
+      }
+    };
+
+    fetchUserData();
+  }, []);
+
   return (
     <div className="welcome-container">
       <Card className="welcome-card">
@@ -1508,9 +1543,6 @@ const WelcomeAdmin: React.FC = () => {
         <p className="welcome-subtitle">
           Desde aquí podrás gestionar todos los aspectos de Canabacoa Fiestas
         </p>
-        <Button type="primary" onClick={() => setModalPagoVisible(true)} style={{ marginTop: 16 }}>
-          Añadir Pago
-        </Button>
       </Card>
 
       <div className="dashboard-container">
@@ -2032,7 +2064,8 @@ const WelcomeAdmin: React.FC = () => {
         onSubmit={handleCreateDecoracion}
         loading={loading}
         initialValues={decoracionSeleccionada}
-        proveedores={proveedores}
+        eventosCliente={eventos}
+        userCedula={user?.cedula_usuario || ''}
       />
 
       <PagoForm
@@ -2516,7 +2549,7 @@ const WelcomeAdmin: React.FC = () => {
           <TableFilters
             type="pagos"
             searchText={filtrosPagos.evento}
-            onSearchChange={e => setFiltrosPagos({ ...filtrosPagos, evento: e.target.value })}
+            onSearchChange={(value: string) => setFiltrosPagos({ ...filtrosPagos, evento: value })}
             clearFilters={() => setFiltrosPagos({ estado: '', evento: '', metodo: '', tipo: '' })}
             activeFiltersCount={getActiveFiltersCount(filtrosPagos)}
             filterContent={
@@ -2641,7 +2674,7 @@ const WelcomeAdmin: React.FC = () => {
           <TableFilters
             type="comentarios"
             searchText={filtrosComentarios.calificacion}
-            onSearchChange={e => setFiltrosComentarios({ ...filtrosComentarios, calificacion: e.target.value })}
+            onSearchChange={(value: string) => setFiltrosComentarios({ ...filtrosComentarios, calificacion: value })}
             clearFilters={() => setFiltrosComentarios({ estado: '', calificacion: '' })}
             activeFiltersCount={getActiveFiltersCount(filtrosComentarios)}
             filterContent={
