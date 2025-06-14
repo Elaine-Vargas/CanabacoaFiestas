@@ -2,10 +2,12 @@ import React, { lazy, Suspense } from 'react';
 import { Modal, Spin } from 'antd';
 import { useUser } from '../../contexts/UserContext';
 
-// Importación directa del componente WelcomeEmployee
-import WelcomeEmployee from '../../components/DashboardComponents/Welcome/WelcomeEmployee';
-
 // Lazy loading de componentes con manejo de errores
+const WelcomeEmployee = lazy(() => import('../../components/DashboardComponents/Welcome/WelcomeEmployee').catch(() => {
+  console.error('Error al cargar WelcomeEmployee');
+  return { default: () => <div>Error al cargar el componente</div> };
+}));
+
 const WelcomeAdmin = lazy(() => import('../../components/DashboardComponents/Welcome/WelcomeAdmin').catch(() => {
   console.error('Error al cargar WelcomeAdmin');
   return { default: () => <div>Error al cargar el componente</div> };

@@ -86,9 +86,6 @@ const Nosotros: React.FC = () => {
             </div>
           </div>
         </main>
-        <Suspense fallback={<div>Cargando pie de página...</div>}>
-          <Footer />
-        </Suspense>
       </Container>
     </>
   );
