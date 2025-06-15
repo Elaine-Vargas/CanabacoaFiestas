@@ -1479,7 +1479,8 @@ const WelcomeEmployee: React.FC = () => {
             participacion.evento && (
               <Option
                 key={participacion.id_evento}
-                value={participacion.id_evento.toString()}
+                value={participacion.id_evento.toString()
+                }
               >
                 {participacion.evento.id_evento}
               </Option>
@@ -1617,12 +1618,11 @@ const WelcomeEmployee: React.FC = () => {
                 filterContent={filterContentEventos}
               />
               <Table
-                dataSource={getFilteredEventos()}
                 columns={eventosColumns}
-                className="dashboard-table"
-                scroll={{ x: "max-content" }}
-                pagination={{ pageSize: 5 }}
+                dataSource={getFilteredEventos()}
                 loading={loading}
+                rowKey="id_evento"
+                locale={{ emptyText: <span style={{ color: '#999', fontWeight: 500, fontSize: 16 }}>No hay Registros</span> }}
               />
             </Card>
           </div>
@@ -1658,12 +1658,11 @@ const WelcomeEmployee: React.FC = () => {
                 filterContent={filterContentAsignaciones}
               />
               <Table
-                dataSource={getFilteredAsignaciones()}
                 columns={asignacionesColumns}
-                className="dashboard-table"
-                scroll={{ x: "max-content" }}
-                pagination={{ pageSize: 5 }}
+                dataSource={getFilteredAsignaciones()}
                 loading={loading}
+                rowKey="id_asignacion"
+                locale={{ emptyText: <span style={{ color: '#999', fontWeight: 500, fontSize: 16 }}>No hay Registros</span> }}
               />
             </Card>
 
@@ -1700,12 +1699,11 @@ const WelcomeEmployee: React.FC = () => {
                 filterContent={filterContentParticipaciones}
               />
               <Table
-                dataSource={getFilteredParticipaciones()}
                 columns={participacionesColumns}
-                className="dashboard-table"
-                scroll={{ x: "max-content" }}
-                pagination={{ pageSize: 5 }}
+                dataSource={getFilteredParticipaciones()}
                 loading={loading}
+                rowKey="id_participacion"
+                locale={{ emptyText: <span style={{ color: '#999', fontWeight: 500, fontSize: 16 }}>No hay Registros</span> }}
               />
             </Card>
           </div>
@@ -1737,12 +1735,11 @@ const WelcomeEmployee: React.FC = () => {
                 filterContent={filterContentClientes}
               />
               <Table
-                dataSource={getFilteredClientes()}
                 columns={clientesColumns}
-                className="dashboard-table"
-                scroll={{ x: "max-content" }}
-                pagination={{ pageSize: 5 }}
+                dataSource={getFilteredClientes()}
                 loading={loading}
+                rowKey="cedula_usuario"
+                locale={{ emptyText: <span style={{ color: '#999', fontWeight: 500, fontSize: 16 }}>No hay Registros</span> }}
               />
             </Card>
           </div>
@@ -1790,6 +1787,7 @@ const WelcomeEmployee: React.FC = () => {
           loading={loading}
           empleados={empleados}
           eventos={eventos}
+          //@ts-ignore
           initialValues={selectedAsignacion}
         />
       </Modal>

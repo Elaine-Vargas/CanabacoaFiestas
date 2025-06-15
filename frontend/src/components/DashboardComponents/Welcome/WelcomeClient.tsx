@@ -525,7 +525,7 @@ export default function WelcomeClient() {
   const comentariosColumns = [
     {
       title: 'Evento',
-      dataIndex: ['evento', 'tipo_evento', 'tipo_evento'],
+      dataIndex: ['evento', 'tipo_evento'],
       key: 'evento',
       render: (_: any, record: Comentario) => {
         const evento = eventos.find(e => e.id_evento === record.id_evento);
@@ -1139,9 +1139,8 @@ export default function WelcomeClient() {
                 columns={eventosColumns}
                 dataSource={getFilteredEventos()}
                 loading={loading}
-                pagination={{ pageSize: 3 }}
                 rowKey="id_evento"
-                scroll={{ x: 'max-content' }}
+                locale={{ emptyText: <span style={{ color: '#999', fontWeight: 500, fontSize: 16 }}>No hay Registros</span> }}
               />
             </Card>
           </div>
@@ -1180,9 +1179,8 @@ export default function WelcomeClient() {
                 columns={decoracionesColumns}
                 dataSource={getFilteredDecoraciones()}
                 loading={loading}
-                pagination={{ pageSize: 3 }}
                 rowKey="id_decoracion"
-                scroll={{ x: 'max-content' }}
+                locale={{ emptyText: <span style={{ color: '#999', fontWeight: 500, fontSize: 16 }}>No hay Registros</span> }}
               />
             </Card>
 
@@ -1217,9 +1215,8 @@ export default function WelcomeClient() {
                 columns={comentariosColumns}
                 dataSource={getFilteredComentarios()}
                 loading={loading}
-                pagination={{ pageSize: 3 }}
                 rowKey="id_comentario"
-                scroll={{ x: 'max-content' }}
+                locale={{ emptyText: <span style={{ color: '#999', fontWeight: 500, fontSize: 16 }}>No hay Registros</span> }}
               />
             </Card>
           </div>
@@ -1243,9 +1240,8 @@ export default function WelcomeClient() {
                 columns={empleadosColumns}
                 dataSource={getFilteredEmpleados()}
                 loading={loading}
-                pagination={{ pageSize: 3 }}
                 rowKey="id_empleado"
-                scroll={{ x: 'max-content' }}
+                locale={{ emptyText: <span style={{ color: '#999', fontWeight: 500, fontSize: 16 }}>No hay Registros</span> }}
               />
             </Card>
           </div>
@@ -1269,9 +1265,8 @@ export default function WelcomeClient() {
                 columns={pagosColumns}
                 dataSource={getFilteredPagos()}
                 loading={loading}
-                pagination={{ pageSize: 3 }}
                 rowKey="id_pago"
-                scroll={{ x: 'max-content' }}
+                locale={{ emptyText: <span style={{ color: '#999', fontWeight: 500, fontSize: 16 }}>No hay Registros</span> }}
               />
             </Card>
           </div>

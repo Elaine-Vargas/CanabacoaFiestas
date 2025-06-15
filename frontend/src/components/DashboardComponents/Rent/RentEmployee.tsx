@@ -1162,7 +1162,7 @@ const RentEmployee: React.FC = () => {
           loading={loading}
           rowKey="id_alquiler"
           pagination={{ pageSize: 10 }}
-          locale={{ emptyText: 'No hay alquileres registrados' }}
+          locale={{ emptyText: <span style={{ color: '#999', fontWeight: 500, fontSize: 16 }}>No hay Registros</span> }}
         />
       </StyledCard>
 

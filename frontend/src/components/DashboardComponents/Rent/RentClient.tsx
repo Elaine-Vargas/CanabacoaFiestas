@@ -911,6 +911,7 @@ const RentClient: React.FC = () => {
           loading={loading}
           rowKey="id_alquiler"
           pagination={{ pageSize: 10 }}
+          locale={{ emptyText: <span style={{ color: '#999', fontWeight: 500, fontSize: 16 }}>No hay Registros</span> }}
         />
       </StyledCard>
 
@@ -1428,4 +1429,4 @@ const RentClient: React.FC = () => {
   );
 };
 
-export default RentClient; 
+export default RentClient;

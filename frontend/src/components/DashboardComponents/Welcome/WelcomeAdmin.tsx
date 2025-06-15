@@ -1641,6 +1641,7 @@ const WelcomeAdmin: React.FC = () => {
           pagination={{ pageSize: 3 }}
           rowKey="id_evento"
           scroll={{ x: 'max-content' }}
+          locale={{ emptyText: <span style={{ color: '#999', fontWeight: 500, fontSize: 16 }}>No hay Registros</span> }}
         />
       </Card>
     </div>
@@ -1719,6 +1720,7 @@ const WelcomeAdmin: React.FC = () => {
           pagination={{ pageSize: 3 }}
           rowKey="cedula_usuario"
           scroll={{ x: 'max-content' }}
+          locale={{ emptyText: <span style={{ color: '#999', fontWeight: 500, fontSize: 16 }}>No hay Registros</span> }}
         />
       </Card>
 
@@ -1793,6 +1795,7 @@ const WelcomeAdmin: React.FC = () => {
           pagination={{ pageSize: 3 }}
           rowKey="id_proveedor"
           scroll={{ x: 'max-content' }}
+          locale={{ emptyText: <span style={{ color: '#999', fontWeight: 500, fontSize: 16 }}>No hay Registros</span> }}
         />
       </Card>
     </div>
@@ -1885,6 +1888,7 @@ const WelcomeAdmin: React.FC = () => {
           scroll={{ x: 'max-content' }}
           pagination={{ pageSize: 3 }}
           loading={loading}
+          locale={{ emptyText: <span style={{ color: '#999', fontWeight: 500, fontSize: 16 }}>No hay Registros</span> }}
         />
       </Card>
 
@@ -1961,6 +1965,7 @@ const WelcomeAdmin: React.FC = () => {
             },
           ]}
           rowKey="id_decoracion"
+          locale={{ emptyText: <span style={{ color: '#999', fontWeight: 500, fontSize: 16 }}>No hay Registros</span> }}
         />
       </Card>
     </div>
@@ -2160,6 +2165,7 @@ const WelcomeAdmin: React.FC = () => {
                 }
                 try {
                   const fecha = new Date(usuarioSeleccionado.creacion_usuario);
+                 
                   if (isNaN(fecha.getTime())) {
                     return 'Formato de fecha inválido';
                   }
@@ -2317,6 +2323,7 @@ const WelcomeAdmin: React.FC = () => {
                   ]}
                   pagination={false}
                   rowKey="id_detdecoracion"
+                  locale={{ emptyText: <span style={{ color: '#999', fontWeight: 500, fontSize: 16 }}>No hay Registros</span> }}
                 />
               </div>
             )}
@@ -2669,6 +2676,7 @@ const WelcomeAdmin: React.FC = () => {
             loading={loading}
             pagination={{ pageSize: 3 }}
             scroll={{ x: 'max-content' }}
+            locale={{ emptyText: <span style={{ color: '#999', fontWeight: 500, fontSize: 16 }}>No hay Registros</span> }}
           />
         </Card>
 
@@ -2770,6 +2778,7 @@ const WelcomeAdmin: React.FC = () => {
             loading={loading}
             pagination={{ pageSize: 3 }}
             scroll={{ x: 'max-content' }}
+            locale={{ emptyText: <span style={{ color: '#999', fontWeight: 500, fontSize: 16 }}>No hay Registros</span> }}
           />
         </Card>
       </div>
