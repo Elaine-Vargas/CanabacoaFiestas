@@ -45,7 +45,7 @@ export default class Pago extends Model {
   tipo_pago!: string;
 
   @Column({
-    type: DataType.ENUM('Pendiente', 'Recibido', 'Rechazado'),
+    type: DataType.ENUM('Recibido', 'Rechazado'),
     allowNull: false
   })
   estado_pago!: string;

@@ -32,9 +32,9 @@ export default class Compra extends Model {
   costo_compra!: number;
 
   @Column({
-    type: DataType.ENUM('En proceso', 'Completada', 'Cancelada')
+    type: DataType.ENUM('Completada', 'Cancelada')
   })
-  estado_compra!: 'En proceso' |'Completada'|'Cancelada';
+  estado_compra!: 'Completada'|'Cancelada';
 
   @HasMany(() => DetalleCompra)
   detalles!: DetalleCompra[];

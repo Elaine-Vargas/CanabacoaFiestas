@@ -107,6 +107,10 @@ export default class Evento extends Model {
   @Column({ type: DataType.DECIMAL(10, 2), field: 'total_evento', defaultValue: 0 })
   total_evento!: number;
 
+  @Column({ type: DataType.DECIMAL(10, 2), field: 'pagopendiente_evento', defaultValue: 0 })
+  pagopendiente_evento!: number;
+
+
   @Column(DataType.VIRTUAL)
   get nombre_cliente(): string | undefined {
     return this.cliente?.nombre_usuario;

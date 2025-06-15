@@ -20,6 +20,9 @@ export default class MenuCatering extends Model {
   @ForeignKey(() => Menu)
   @Column({ type: DataType.INTEGER, allowNull: false })
   id_menu!: number;
+  
+  @Column({ type: DataType.INTEGER, allowNull: false })
+  personas_menucatering!: number;
 
   @BelongsTo(() => Menu)
   menu!: Menu;

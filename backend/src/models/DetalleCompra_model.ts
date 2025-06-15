@@ -33,4 +33,11 @@ export default class DetalleCompra extends Model {
   @Column({ type: DataType.DECIMAL(10, 2), allowNull: false })
   precio_total!: number;
 
+  
+  @Column({
+    type: DataType.ENUM('Activo', 'Eliminado')
+  })
+  estado_detcompra!: 'Activo'|'Eliminado';
+
+
 }

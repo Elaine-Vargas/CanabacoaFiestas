@@ -53,11 +53,15 @@ export const ReporteFacturaEvento = async (req: Request, res: Response) => {
       }]
     });
 
-    const catering = await CateringServicio.findOne({
-      where: { id_evento: id_evento }
-    });
+    // Buscar el transporte relacionado al alquiler encontrado
+    let transporte = null;
+    if (alquiler) {
+      transporte = await TransporteServicio.findOne({
+        where: { id_alquiler: alquiler.id_alquiler }
+      });
+    }
 
-    const transporte = await TransporteServicio.findOne({
+    const catering = await CateringServicio.findOne({
       where: { id_evento: id_evento }
     });
 
@@ -205,4 +209,4 @@ export const ReporteFacturaEvento = async (req: Request, res: Response) => {
       mensaje: 'Ocurrió un error al generar el reporte'
     });
   }
-}; 
+};

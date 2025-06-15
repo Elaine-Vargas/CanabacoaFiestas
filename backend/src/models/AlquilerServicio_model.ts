@@ -23,7 +23,7 @@ export default class AlquilerServicio extends Model {
   cant_elementos_alquiler!: number;
 
   @Column({ type: DataType.DECIMAL(10, 2)})
-  precioneto_alquiler!: number;
+  subtotal_alquiler!: number;
 
   @Column({ type: DataType.DECIMAL(10, 2) })
   itbis_alquiler!: number;

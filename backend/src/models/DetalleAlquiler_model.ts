@@ -11,7 +11,7 @@ import {
 import Elemento from './Elemento_model';
 import AlquilerServicio from './AlquilerServicio_model';
 
-@Table({ tableName: 'id_detalquiler', timestamps: false })
+@Table({ tableName: 'detalle_alquiler', timestamps: false })
 export default class DetalleAlquiler extends Model {
   @PrimaryKey
   @AutoIncrement

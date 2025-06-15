@@ -1,6 +1,7 @@
 import { Table, Model, Column, ForeignKey, DataType, BelongsTo, PrimaryKey, AutoIncrement } from 'sequelize-typescript';
 import TransporteServicio from './TransporteServicio_model';
 import Vehiculo from './Vehiculo_model';
+import Usuario from './Usuario_model';
 
 @Table({ tableName: 'detalle_transporte', timestamps: false })
 export default class DetalleTransporte extends Model {
@@ -24,8 +25,9 @@ export default class DetalleTransporte extends Model {
   @BelongsTo(() => Vehiculo)
   vehiculo!: Vehiculo;
 
+  @ForeignKey(() => Usuario)
   @Column({ type: DataType.CHAR(13), allowNull: false })
-  id_usuarioconductor!: number;
+  conductor!: string;
 
   @Column({
     type: DataType.ENUM('Aceptado', 'Cancelado'),

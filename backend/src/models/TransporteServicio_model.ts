@@ -21,6 +21,9 @@ export default class TransporteServicio extends Model {
   distancia_km!: number;
 
   @Column({ type: DataType.DECIMAL(10, 2), allowNull: false })
+  tarifa_km!: number;
+
+  @Column({ type: DataType.DECIMAL(10, 2), allowNull: false })
   precioneto_transporte!: number;
 
   @Column({ type: DataType.DECIMAL(10, 2), allowNull: false })

@@ -16,9 +16,6 @@ export default class CateringServicio extends Model {
   @BelongsTo(() => Evento)
   evento!: Evento;
 
-  @Column({ type: DataType.INTEGER, allowNull: false })
-  personas_catering!: number;
-
   @Column({ type: DataType.DECIMAL(10, 2), allowNull: false })
   precioneto_catering!: number;
 
@@ -29,7 +26,7 @@ export default class CateringServicio extends Model {
   total_catering!: number;
 
   @Column({
-    type: DataType.ENUM('Solicitado', 'Aceptado', 'Completado', 'Cancelado'),
+    type: DataType.ENUM('Solicitado', 'Aceptado', 'Cancelado'),
     allowNull: false,
     defaultValue: 'Solicitado'
   })
