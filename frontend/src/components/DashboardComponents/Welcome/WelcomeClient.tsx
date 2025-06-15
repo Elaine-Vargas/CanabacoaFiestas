@@ -1344,6 +1344,7 @@ export default function WelcomeClient() {
           provincias={provincias}
           ciudades={ciudades}
           userCedula={userCedula}
+          userRole="cliente"
         />
       )}
 

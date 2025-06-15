@@ -865,7 +865,7 @@ const Catalog: React.FC<CatalogProps> = ({ onAddToCart, onComprarCarrito }) => {
                         variant="h5" 
                         component="div"
                         sx={{ 
-                          fontFamily: '"Montserrat Alternates", cursive',
+                          fontFamily: '"Montserrat", sans-serif',
                           fontWeight: 800,
                           color: 'var(--color-text)',
                           fontSize: { xs: '1.2rem', sm: '1.5rem' },
@@ -940,7 +940,7 @@ const Catalog: React.FC<CatalogProps> = ({ onAddToCart, onComprarCarrito }) => {
                           variant="h5" 
                           sx={{ 
                             color: 'var(--gold)',
-                            fontFamily: '"Montserrat Alternates", cursive',
+                            fontFamily: '"Montserrat", sans-serif',
                             fontWeight: 800,
                             fontSize: '1.8rem'
                           }}
@@ -995,7 +995,7 @@ const Catalog: React.FC<CatalogProps> = ({ onAddToCart, onComprarCarrito }) => {
                               </IconButton>
                               <Typography sx={{ 
                                 color: 'var(--color-text)',
-                                fontFamily: '"Montserrat Alternates", cursive',
+                                fontFamily: '"Montserrat", sans-serif',
                                 fontWeight: 700,
                                 fontSize: '1.2rem',
                                 minWidth: '2rem',
@@ -1022,7 +1022,7 @@ const Catalog: React.FC<CatalogProps> = ({ onAddToCart, onComprarCarrito }) => {
                               fullWidth
                               sx={{ 
                                 backgroundColor: 'var(--gold)',
-                                fontFamily: '"Montserrat Alternates", cursive',
+                                fontFamily: '"Montserrat", sans-serif',
                                 fontWeight: 800,
                                 color: 'var(--white)',
                                 fontSize: {
@@ -1058,7 +1058,7 @@ const Catalog: React.FC<CatalogProps> = ({ onAddToCart, onComprarCarrito }) => {
                             onClick={() => navigate('/login')}
                             sx={{ 
                               backgroundColor: 'var(--gold)',
-                              fontFamily: '"Montserrat Alternates", cursive',
+                              fontFamily: '"Montserrat", sans-serif',
                               fontWeight: 800,
                               color: 'var(--white)',
                               fontSize: {
@@ -1123,7 +1123,7 @@ const Catalog: React.FC<CatalogProps> = ({ onAddToCart, onComprarCarrito }) => {
                 sx={{
                   borderColor: 'var(--gold)',
                   color: 'var(--gold)',
-                  fontFamily: '"Montserrat Alternates", cursive',
+                  fontFamily: '"Montserrat", sans-serif',
                   fontWeight: 800,
                   '&:hover': {
                     backgroundColor: 'var(--gold-light)'
@@ -1147,7 +1147,7 @@ const Catalog: React.FC<CatalogProps> = ({ onAddToCart, onComprarCarrito }) => {
                 sx={{
                   borderColor: 'var(--gold)',
                   color: 'var(--gold)',
-                  fontFamily: '"Montserrat Alternates", cursive',
+                  fontFamily: '"Montserrat", sans-serif',
                   fontWeight: 800,
                   '&:hover': {
                     backgroundColor: 'var(--gold-light)'
@@ -1200,7 +1200,7 @@ const Catalog: React.FC<CatalogProps> = ({ onAddToCart, onComprarCarrito }) => {
                   <Typography 
                     variant="h6" 
                     sx={{ 
-                      fontFamily: '"Montserrat Alternates", cursive',
+                      fontFamily: '"Montserrat", sans-serif',
                       fontWeight: 800,
                       color: 'var(--color-text)',
                       fontSize: {
@@ -1261,7 +1261,7 @@ const Catalog: React.FC<CatalogProps> = ({ onAddToCart, onComprarCarrito }) => {
                       <ListItemText
                         primary={
                           <Typography sx={{ 
-                            fontFamily: '"Montserrat Alternates", cursive',
+                            fontFamily: '"Montserrat", sans-serif',
                             fontWeight: 700,
                             color: 'var(--color-text)',
                             fontSize: {
@@ -1348,7 +1348,7 @@ const Catalog: React.FC<CatalogProps> = ({ onAddToCart, onComprarCarrito }) => {
                   <Typography 
                     variant="h6"
                     sx={{ 
-                      fontFamily: '"Montserrat Alternates", cursive',
+                      fontFamily: '"Montserrat", sans-serif',
                       fontWeight: 800,
                       color: 'var(--color-text)',
                       mb: {
@@ -1378,7 +1378,7 @@ const Catalog: React.FC<CatalogProps> = ({ onAddToCart, onComprarCarrito }) => {
                       sx={{
                         borderColor: 'var(--error)',
                         color: 'var(--error)',
-                        fontFamily: '"Montserrat Alternates", cursive',
+                        fontFamily: '"Montserrat", sans-serif',
                         fontWeight: 800,
                         fontSize: {
                           xs: '0.7rem',
@@ -1403,7 +1403,7 @@ const Catalog: React.FC<CatalogProps> = ({ onAddToCart, onComprarCarrito }) => {
                       disabled={carrito.length === 0}
                       sx={{
                         backgroundColor: 'var(--gold)',
-                        fontFamily: '"Montserrat Alternates", cursive',
+                        fontFamily: '"Montserrat", sans-serif',
                         fontWeight: 800,
                         color: 'var(--white)',
                         fontSize: {
@@ -1450,7 +1450,7 @@ const Catalog: React.FC<CatalogProps> = ({ onAddToCart, onComprarCarrito }) => {
             }}
           >
             <DialogTitle sx={{ 
-              fontFamily: '"Montserrat Alternates", cursive',
+              fontFamily: '"Montserrat", sans-serif',
               fontWeight: 800,
               color: 'var(--gold)',
               fontSize: { xs: '1.2rem', sm: '1.5rem' }
@@ -1462,10 +1462,10 @@ const Catalog: React.FC<CatalogProps> = ({ onAddToCart, onComprarCarrito }) => {
                 <Table>
                   <TableHead>
                     <TableRow>
-                      <TableCell sx={{ fontFamily: '"Montserrat Alternates", cursive', fontWeight: 600 }}>Elemento</TableCell>
-                      <TableCell sx={{ fontFamily: '"Montserrat Alternates", cursive', fontWeight: 600 }}>Cantidad</TableCell>
-                      <TableCell sx={{ fontFamily: '"Montserrat Alternates", cursive', fontWeight: 600 }}>Precio Unitario</TableCell>
-                      <TableCell sx={{ fontFamily: '"Montserrat Alternates", cursive', fontWeight: 600 }}>Subtotal</TableCell>
+                      <TableCell sx={{ fontFamily: '"Montserrat", sans-serif', fontWeight: 600 }}>Elemento</TableCell>
+                      <TableCell sx={{ fontFamily: '"Montserrat", sans-serif', fontWeight: 600 }}>Cantidad</TableCell>
+                      <TableCell sx={{ fontFamily: '"Montserrat", sans-serif', fontWeight: 600 }}>Precio Unitario</TableCell>
+                      <TableCell sx={{ fontFamily: '"Montserrat", sans-serif', fontWeight: 600 }}>Subtotal</TableCell>
                     </TableRow>
                   </TableHead>
                   <TableBody>
@@ -1484,7 +1484,7 @@ const Catalog: React.FC<CatalogProps> = ({ onAddToCart, onComprarCarrito }) => {
                 variant="h6" 
                 sx={{ 
                   mt: 3,
-                  fontFamily: '"Montserrat Alternates", cursive',
+                  fontFamily: '"Montserrat", sans-serif',
                   fontWeight: 800,
                   color: 'var(--gold)'
                 }}
@@ -1497,7 +1497,7 @@ const Catalog: React.FC<CatalogProps> = ({ onAddToCart, onComprarCarrito }) => {
                 onClick={() => setShowAlquilerModal(false)}
                 sx={{
                   color: 'var(--error)',
-                  fontFamily: '"Montserrat Alternates", cursive',
+                  fontFamily: '"Montserrat", sans-serif',
                   fontWeight: 600
                 }}
               >
@@ -1519,7 +1519,7 @@ const Catalog: React.FC<CatalogProps> = ({ onAddToCart, onComprarCarrito }) => {
                 variant="contained"
                 sx={{
                   backgroundColor: 'var(--gold)',
-                  fontFamily: '"Montserrat Alternates", cursive',
+                  fontFamily: '"Montserrat", sans-serif',
                   fontWeight: 800,
                   '&:hover': {
                     backgroundColor: 'var(--dark-gold)'
@@ -1546,7 +1546,7 @@ const Catalog: React.FC<CatalogProps> = ({ onAddToCart, onComprarCarrito }) => {
             }}
           >
             <DialogTitle sx={{ 
-              fontFamily: '"Montserrat Alternates", cursive',
+              fontFamily: '"Montserrat", sans-serif',
               fontWeight: 800,
               color: 'var(--gold)',
               fontSize: { xs: '1.2rem', sm: '1.5rem' }
@@ -1586,7 +1586,7 @@ const Catalog: React.FC<CatalogProps> = ({ onAddToCart, onComprarCarrito }) => {
                   onClick={() => setShowNuevoEventoModal(true)}
                   sx={{
                     backgroundColor: 'var(--gold)',
-                    fontFamily: '"Montserrat Alternates", cursive',
+                    fontFamily: '"Montserrat", sans-serif',
                     fontWeight: 800,
                     '&:hover': {
                       backgroundColor: 'var(--dark-gold)'
@@ -1601,11 +1601,11 @@ const Catalog: React.FC<CatalogProps> = ({ onAddToCart, onComprarCarrito }) => {
                 <Table>
                   <TableHead>
                     <TableRow>
-                      <TableCell sx={{ fontFamily: '"Montserrat Alternates", cursive', fontWeight: 600 }}>ID</TableCell>
-                      <TableCell sx={{ fontFamily: '"Montserrat Alternates", cursive', fontWeight: 600 }}>Nombre</TableCell>
-                      <TableCell sx={{ fontFamily: '"Montserrat Alternates", cursive', fontWeight: 600 }}>Fecha</TableCell>
-                      <TableCell sx={{ fontFamily: '"Montserrat Alternates", cursive', fontWeight: 600 }}>Lugar</TableCell>
-                      <TableCell sx={{ fontFamily: '"Montserrat Alternates", cursive', fontWeight: 600 }}>Acciones</TableCell>
+                      <TableCell sx={{ fontFamily: '"Montserrat", sans-serif', fontWeight: 600 }}>ID</TableCell>
+                      <TableCell sx={{ fontFamily: '"Montserrat", sans-serif', fontWeight: 600 }}>Nombre</TableCell>
+                      <TableCell sx={{ fontFamily: '"Montserrat", sans-serif', fontWeight: 600 }}>Fecha</TableCell>
+                      <TableCell sx={{ fontFamily: '"Montserrat", sans-serif', fontWeight: 600 }}>Lugar</TableCell>
+                      <TableCell sx={{ fontFamily: '"Montserrat", sans-serif', fontWeight: 600 }}>Acciones</TableCell>
                     </TableRow>
                   </TableHead>
                   <TableBody>
@@ -1626,7 +1626,7 @@ const Catalog: React.FC<CatalogProps> = ({ onAddToCart, onComprarCarrito }) => {
                             }}
                             sx={{
                               backgroundColor: 'var(--gold)',
-                              fontFamily: '"Montserrat Alternates", cursive',
+                              fontFamily: '"Montserrat", sans-serif',
                               fontWeight: 600,
                               '&:hover': {
                                 backgroundColor: 'var(--dark-gold)'
@@ -1647,7 +1647,7 @@ const Catalog: React.FC<CatalogProps> = ({ onAddToCart, onComprarCarrito }) => {
                 <Typography 
                   variant="h6" 
                   sx={{ 
-                    fontFamily: '"Montserrat Alternates", cursive',
+                    fontFamily: '"Montserrat", sans-serif',
                     fontWeight: 800,
                     color: 'var(--gold)',
                     mb: 2
@@ -1659,10 +1659,10 @@ const Catalog: React.FC<CatalogProps> = ({ onAddToCart, onComprarCarrito }) => {
                   <Table>
                     <TableHead>
                       <TableRow>
-                        <TableCell sx={{ fontFamily: '"Montserrat Alternates", cursive', fontWeight: 600 }}>Elemento</TableCell>
-                        <TableCell sx={{ fontFamily: '"Montserrat Alternates", cursive', fontWeight: 600 }}>Cantidad</TableCell>
-                        <TableCell sx={{ fontFamily: '"Montserrat Alternates", cursive', fontWeight: 600 }}>Precio Unitario</TableCell>
-                        <TableCell sx={{ fontFamily: '"Montserrat Alternates", cursive', fontWeight: 600 }}>Subtotal</TableCell>
+                        <TableCell sx={{ fontFamily: '"Montserrat", sans-serif', fontWeight: 600 }}>Elemento</TableCell>
+                        <TableCell sx={{ fontFamily: '"Montserrat", sans-serif', fontWeight: 600 }}>Cantidad</TableCell>
+                        <TableCell sx={{ fontFamily: '"Montserrat", sans-serif', fontWeight: 600 }}>Precio Unitario</TableCell>
+                        <TableCell sx={{ fontFamily: '"Montserrat", sans-serif', fontWeight: 600 }}>Subtotal</TableCell>
                       </TableRow>
                     </TableHead>
                     <TableBody>
@@ -1688,7 +1688,7 @@ const Catalog: React.FC<CatalogProps> = ({ onAddToCart, onComprarCarrito }) => {
                   onClick={() => setShowEventoModal(false)}
                   sx={{
                     color: 'var(--error)',
-                    fontFamily: '"Montserrat Alternates", cursive',
+                    fontFamily: '"Montserrat", sans-serif',
                     fontWeight: 600
                   }}
                 >
@@ -1710,7 +1710,7 @@ const Catalog: React.FC<CatalogProps> = ({ onAddToCart, onComprarCarrito }) => {
                   }}
                   sx={{
                     backgroundColor: 'var(--gold)',
-                    fontFamily: '"Montserrat Alternates", cursive',
+                    fontFamily: '"Montserrat", sans-serif',
                     fontWeight: 800,
                     '&:hover': {
                       backgroundColor: 'var(--dark-gold)'
@@ -1738,7 +1738,7 @@ const Catalog: React.FC<CatalogProps> = ({ onAddToCart, onComprarCarrito }) => {
             }}
           >
             <DialogTitle sx={{ 
-              fontFamily: '"Montserrat Alternates", cursive',
+              fontFamily: '"Montserrat", sans-serif',
               fontWeight: 800,
               color: 'var(--gold)',
               fontSize: { xs: '1.2rem', sm: '1.5rem' }
@@ -1912,7 +1912,7 @@ const Catalog: React.FC<CatalogProps> = ({ onAddToCart, onComprarCarrito }) => {
                 onClick={() => setShowNuevoEventoModal(false)}
                 sx={{
                   color: 'var(--error)',
-                  fontFamily: '"Montserrat Alternates", cursive',
+                  fontFamily: '"Montserrat", sans-serif',
                   fontWeight: 600
                 }}
               >
@@ -1923,7 +1923,7 @@ const Catalog: React.FC<CatalogProps> = ({ onAddToCart, onComprarCarrito }) => {
                 variant="contained"
                 sx={{
                   backgroundColor: 'var(--gold)',
-                  fontFamily: '"Montserrat Alternates", cursive',
+                  fontFamily: '"Montserrat", sans-serif',
                   fontWeight: 800,
                   '&:hover': {
                     backgroundColor: 'var(--dark-gold)'

@@ -177,6 +177,7 @@ const DecoracionForm: React.FC<DecoracionFormProps> = ({
           id_evento: initialValues?.id_evento,
           estado_decoracion: initialValues?.estado_decoracion || 'solicitado' 
         }}
+        className="dashboard-form"
       >
         <Form.Item
           name="id_evento"

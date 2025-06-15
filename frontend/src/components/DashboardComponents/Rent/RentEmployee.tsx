@@ -20,6 +20,7 @@ import {
 } from 'antd';
 import { PlusOutlined, RightOutlined, CloseOutlined, ReloadOutlined, EditOutlined, DeleteOutlined, EyeOutlined, InboxOutlined } from '@ant-design/icons';
 import axios from 'axios';
+import '../../../styles/dashboard/ServicesSubpages.scss';
 import styled from 'styled-components';
 import dayjs from 'dayjs';
 import { apiUrl } from '../../../config';
@@ -35,14 +36,14 @@ const StyledCard = styled(Card)`
   background-color: var(--color-background2);
   
   .ant-card-head {
-    background-color: var(--beige);
+    background-color: var(--color-background);
     border-radius: 15px 15px 0 0;
-    border-bottom: 2px solid var(--dark-gold);
+    border-bottom: 2px solid var(--color-shadow);
   }
 
   .ant-card-head-title {
-    color: var(--color-text2);
-    font-family: "Montserrat Alternates", sans-serif;
+    color: var(--color-text);
+    font-family: "Montserrat", sans-serif;
     font-weight: 600;
   }
 `;
@@ -54,13 +55,13 @@ const StyledModal = styled(Modal)`
   }
   
   .ant-modal-header {
-    background-color: var(--beige);
-    border-bottom: 2px solid var(--dark-gold);
+    background-color: var(--color-background);
+    border-bottom: 2px solid var(--color-shadow);
     padding: 16px 24px;
     
     .ant-modal-title {
-      color: var(--color-text2);
-      font-family: "Montserrat Alternates", sans-serif;
+      color: var(--color-text);
+      font-family: "Montserrat", sans-serif;
       font-weight: 600;
     }
   }
@@ -91,17 +92,17 @@ const ModalContent = styled.div<{ hasSelection?: boolean }>`
   }
 
   &::-webkit-scrollbar-track {
-    background: #f1f1f1;
+    background: var(--color-background);
     border-radius: 4px;
   }
 
   &::-webkit-scrollbar-thumb {
-    background: var(--beige);
+    background: var(--color-shadow);
     border-radius: 4px;
   }
 
   &::-webkit-scrollbar-thumb:hover {
-    background: var(--dark-gold);
+    background: var(--gold);
   }
 `;
 
@@ -120,6 +121,8 @@ const ContinueButton = styled(Button)`
   border-color: var(--gold);
   color: white;
   z-index: 1000;
+  font-family: "Montserrat", sans-serif;
+  font-weight: 600;
   
   &:hover {
     background-color: var(--gold) !important;
@@ -141,8 +144,8 @@ const ListItem = styled(List.Item)`
 
   &.selected {
     .elemento-info {
-      background-color: var(--beige-light);
-      border-color: var(--dark-gold);
+      background-color: var(--color-background);
+      border-color: var(--gold);
     }
   }
 `;
@@ -160,9 +163,10 @@ const ResetButton = styled(Button)`
   margin-right: 8px;
   border-color: var(--dark-gold);
   color: var(--dark-gold);
+  font-family: "Montserrat", sans-serif;
   
   &:hover {
-    background-color: var(--beige-light) !important;
+    background-color: var(--color-background) !important;
     border-color: var(--dark-gold) !important;
     color: var(--dark-gold) !important;
   }
@@ -173,6 +177,7 @@ const HeaderButton = styled(Button)`
   background-color: var(--dark-gold);
   border-color: var(--gold);
   color: white;
+  font-family: "Montserrat", sans-serif;
   
   &:hover {
     background-color: var(--gold) !important;

@@ -357,7 +357,7 @@ const ProveedorForm: React.FC<ProveedorFormProps> = ({
         form={form}
         layout="vertical"
         onFinish={handleSubmit}
-        className="proveedor-form"
+        className="dashboard-form"
       >
         <Form.Item
           name="tipo_proveedor"

@@ -136,7 +136,7 @@ $transition-standard: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     }
     
     .ant-card-head-title {
-      font-family: "Montserrat Alternates", sans-serif;
+      font-family: "Montserrat", sans-serif;
       font-weight: 600;
       color: var(--color-text);
       font-size: 1.1rem;
@@ -260,13 +260,13 @@ $transition-standard: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 .ant-input,
 .ant-picker,
 .ant-select-selector,
-.ant-input-affix-wrapper { /* Added ant-input-affix-wrapper for search inputs */
+.ant-input-affix-wrapper {
   border-radius: 4px;
-  background-color: var(--color-background) !important; /* Changed to color-background for better dark mode adaptation */
+  background-color: var(--color-background) !important;
   color: var(--color-text) !important;
   border-color: var(--color-border) !important;
 
-  &::placeholder { /* Estilo para el placeholder */
+  &::placeholder {
     color: var(--color-text2) !important;
   }
 
@@ -274,25 +274,22 @@ $transition-standard: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     border-color: var(--gold) !important;
   }
 
-  // Specific focus styles for Ant Design elements and their inner input fields
   &.ant-picker-focused,
   &.ant-input-focused,
   &.ant-select-focused .ant-select-selector,
   &.ant-input-affix-wrapper-focused {
     box-shadow: 0 0 0 2px rgba(var(--gold-rgb), 0.2) !important;
     border-color: var(--gold) !important;
-    outline: none !important; // Ensure no default outline
+    outline: none !important;
   }
 
-  // Target the actual input/textarea elements within these Ant Design components
   input:focus,
   textarea:focus {
     outline: none !important;
     border-color: var(--gold) !important;
-    box-shadow: none !important; /* Remove any inner box-shadow from Ant Design to avoid conflicts */
+    box-shadow: none !important;
   }
 
-  // Specific focus style for select's internal search input
   .ant-select-selection-search-input:focus {
     outline: none !important;
     border-color: var(--gold) !important;
@@ -300,10 +297,29 @@ $transition-standard: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   }
 }
 
+/* Estilos para el Input.Search (barra de búsqueda) */
 .ant-input-search {
   .ant-input-suffix {
     .anticon-search {
+      color: var(--color-text2) !important; /* Lupa de búsqueda */
+    }
+  }
+  .ant-input-group-addon {
+    .ant-btn {
+      border-color: var(--color-input-border) !important;
       color: var(--color-text) !important;
+      background-color: var(--color-background2) !important;
+
+      &:hover {
+        border-color: var(--gold) !important;
+        color: var(--dark-gold) !important;
+      }
+      &:focus,
+      &:active {
+        border-color: var(--dark-gold) !important;
+        box-shadow: 0 0 0 2px rgba(var(--gold-rgb), 0.2) !important;
+        outline: none !important;
+      }
     }
   }
 }
@@ -314,33 +330,45 @@ $transition-standard: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 
 /* Ensure dropdowns also follow dark mode theme */
 .ant-select-dropdown {
-  background-color: var(--color-background) !important; /* Changed to color-background for dropdowns */
+  background-color: var(--color-background) !important;
   .ant-select-item-option-selected:not(.ant-select-item-option-disabled) {
     background-color: var(--dark-gold) !important;
     color: var(--color-button-text) !important;
   }
   .ant-select-item-option-active:not(.ant-select-item-option-disabled) {
-    background-color: var(--color-background2) !important; /* Slightly lighter for active hover */
+    background-color: var(--color-background2) !important;
   }
   .ant-select-item-option-content {
     color: var(--color-text) !important;
   }
 }
 
-/* Estilos para botones de acción */
-.action-button {
-  &.primary {
+/* Estilos para botones genéricos de Ant Design */
+.ant-btn {
+  border-color: var(--color-input-border) !important;
+  color: var(--color-text) !important;
+  
+  &.ant-btn-default {
+    border-color: var(--color-input-border) !important;
+    color: var(--color-text) !important;
+    background-color: var(--color-background2) !important;
+
+    &:hover {
+      border-color: var(--gold) !important;
+      color: var(--dark-gold) !important;
+    }
+    &:focus,
+    &:active {
+      border-color: var(--dark-gold) !important;
+      box-shadow: 0 0 0 2px rgba(var(--gold-rgb), 0.2) !important;
+      outline: none !important;
+    }
+  }
+
+  &.ant-btn-primary {
     background-color: var(--dark-gold) !important;
     border-color: var(--dark-gold) !important;
     color: var(--color-button-text) !important;
-    padding: 8px 16px;
-    height: auto;
-    font-size: 0.9rem;
-    
-    @media screen and (max-width: 480px) {
-      padding: 6px 12px;
-      font-size: 0.8rem;
-    }
     
     &:hover, &:focus {
       background-color: var(--gold) !important;
@@ -349,160 +377,199 @@ $transition-standard: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     }
 
     &:active {
-      background-color: var(--dark-brown) !important;
-      border-color: var(--dark-brown) !important;
+      background-color: var(--brown) !important;
+      border-color: var(--brown) !important;
+      box-shadow: 0 0 0 2px rgba(var(--gold-rgb), 0.2) !important;
+      outline: none !important;
     }
+  }
+
+  /* Para los botones de icono como los de filtro */
+  &.ant-btn-icon-only {
+    border-color: var(--color-input-border) !important;
+    color: var(--color-text) !important;
+    background-color: var(--color-background2) !important;
+
+    &:hover {
+      border-color: var(--gold) !important;
+      color: var(--dark-gold) !important;
+    }
+    &:focus,
+    &:active {
+      border-color: var(--dark-gold) !important;
+      box-shadow: 0 0 0 2px rgba(var(--gold-rgb), 0.2) !important;
+      outline: none !important;
+    }
+  }
+  /* Asegurar que el focus no sea azul en ningún botón */
+  &:focus-visible {
+    outline: none !important;
+    box-shadow: 0 0 0 2px rgba(var(--gold-rgb), 0.2) !important;
+    border-color: var(--dark-gold) !important;
   }
 }
 
-/* Estilos para la tarjeta de bienvenida */
-.welcome-card {
-  margin-bottom: 20px;
-  background-color: transparent;
-  border: none;
-  box-shadow: none;
-
-  .ant-card-body {
-    padding: 24px;
+/* DatePicker y TimePicker */
+.ant-picker {
+  .ant-picker-input > input {
+    color: var(--color-text) !important;
   }
 
-  .welcome-title {
-    text-align: center;
-    color: var(--dark-gold);
-    font-family: "Pinyon Script", cursive;
-    font-weight: 400;
-    font-size: 3.5rem;
-    margin-top: 2rem;
-    margin-bottom: 0.5rem;
-    line-height: 1;
+  .ant-picker-suffix {
+    color: var(--color-text2) !important;
   }
 
-  .welcome-subtitle {
-    text-align: center;
-    font-size: 1.1rem;
-    color: var(--color-text2);
-    font-family: "Nunito Sans", sans-serif;
-    margin-bottom: 0;
+  .ant-picker-clear {
+    color: var(--color-text2) !important;
   }
 
-  @media screen and (max-width: 768px) {
-    margin-bottom: 15px;
-    
-    .ant-card-body {
-      padding: 20px;
+  /* Celdas del calendario */
+  .ant-picker-cell-inner {
+    &.ant-picker-cell-selected {
+      background-color: var(--dark-gold) !important;
+      color: var(--color-button-text) !important;
     }
-
-    .welcome-title {
-      font-size: 2.8rem;
+    &.ant-picker-cell-today {
+      border-color: var(--dark-gold) !important;
+      color: var(--dark-gold) !important;
     }
-
-    .welcome-subtitle {
-      font-size: 1rem;
+    &:hover:not(.ant-picker-cell-selected):not(.ant-picker-cell-disabled) {
+      background-color: var(--color-background) !important;
     }
   }
 
-  @media screen and (max-width: 480px) {
-    margin-bottom: 10px;
-    
-    .ant-card-body {
-      padding: 16px;
+  /* Celdas del selector de hora */
+  .ant-picker-time-panel-cell-inner {
+    &.ant-picker-time-panel-cell-selected {
+      background-color: var(--dark-gold) !important;
+      color: var(--color-button-text) !important;
     }
-
-    .welcome-title {
-      font-size: 2.2rem;
-    }
-
-    .welcome-subtitle {
-      font-size: 0.9rem;
+    &:hover:not(.ant-picker-time-panel-cell-selected):not(.ant-picker-time-panel-cell-disabled) {
+      background-color: var(--color-background) !important;
     }
   }
-}
 
-/* Estilos para los spinners de carga */
-.ant-spin {
-  .ant-spin-dot {
-    i {
+  /* Botón OK en TimePicker */
+  .ant-picker-ok .ant-btn {
+    background-color: var(--dark-gold) !important;
+    border-color: var(--dark-gold) !important;
+    color: var(--color-button-text) !important;
+
+    &:hover {
       background-color: var(--gold) !important;
+      border-color: var(--gold) !important;
     }
   }
-}
 
-.ant-spin-text {
-  color: var(--gold) !important;
-}
-
-/* Estilos para los tags de estado */
-.ant-tag {
-  border-radius: 4px;
-  padding: 2px 8px;
-  font-weight: 500;
-  margin: 0;
-
-  &.ant-tag-blue {
-    background-color: var(--gold) !important;
-    border-color: var(--gold) !important;
+  /* Rangos de fecha */
+  .ant-picker-cell-in-range.ant-picker-cell-inner {
+    background-color: rgba(var(--gold-rgb), 0.1) !important;
+  }
+  .ant-picker-cell-range-start.ant-picker-cell-inner,
+  .ant-picker-cell-range-end.ant-picker-cell-inner {
+    background-color: var(--dark-gold) !important;
     color: var(--color-button-text) !important;
   }
+  .ant-picker-cell-range-hover-start:not(.ant-picker-cell-in-range):not(.ant-picker-cell-selected):not(.ant-picker-cell-range-start):not(.ant-picker-cell-range-end)::after,
+  .ant-picker-cell-range-hover-end:not(.ant-picker-cell-in-range):not(.ant-picker-cell-selected):not(.ant-picker-cell-range-start):not(.ant-picker-cell-range-end)::after,
+  .ant-picker-cell-range-hover-start.ant-picker-cell-range-start:not(.ant-picker-cell-range-end)::after,
+  .ant-picker-cell-range-hover-end.ant-picker-cell-range-end:not(.ant-picker-cell-range-start)::after,
+  .ant-picker-cell-range-hover-start:not(.ant-picker-cell-in-range):not(.ant-picker-cell-selected)::after,
+  .ant-picker-cell-range-hover-end:not(.ant-picker-cell-in-range):not(.ant-picker-cell-selected)::after,
+  .ant-picker-cell-range-hover:not(.ant-picker-cell-in-range)::after {
+    border-color: var(--gold) !important;
+  }
+  .ant-picker-cell-in-range.ant-picker-cell-inner::before {
+    background-color: rgba(var(--gold-rgb), 0.1) !important;
+  }
 }
 
-/* Estilos para los botones de acción en la tabla */
-.ant-table-row {
-  .ant-btn {
-    padding: 4px 8px;
-    
+/* Switch de supervisión */
+.ant-switch {
+  background-color: var(--color-input-border) !important;
+
+  &-checked {
+    background-color: var(--dark-gold) !important;
+  }
+
+  &:hover:not(.ant-switch-disabled) {
+    background-color: var(--gold) !important;
+  }
+}
+
+/* Pestañas (Tabs) en CateringAdmin */
+.ant-tabs {
+  .ant-tabs-tab {
+    color: var(--color-text) !important;
+
     &:hover {
-      background-color: var(--color-background);
+      color: var(--gold) !important;
+    }
+
+    &-active {
+      .ant-tabs-tab-btn {
+        color: var(--dark-gold) !important;
+      }
+    }
+  }
+  .ant-tabs-ink-bar {
+    background-color: var(--dark-gold) !important;
+  }
+}
+
+/* Iconos de botones */
+.ant-btn .anticon {
+  color: inherit !important;
+}
+
+/* Filtros de tabla */
+.ant-table-filter-trigger {
+  border-color: var(--color-input-border) !important;
+  .anticon {
+    color: var(--color-text) !important;
+  }
+  &:hover {
+    border-color: var(--gold) !important;
+    .anticon {
+      color: var(--dark-gold) !important;
     }
   }
 }
 
-/* Ajustes responsivos adicionales */
-@media screen and (max-width: 768px) {
-  .welcome-container {
-    left: 80px; /* Ajustado para el menú colapsado */
-  }
+/* Dropdowns de filtros */
+.ant-dropdown {
+  .ant-dropdown-menu {
+    background-color: var(--color-background2) !important;
+    border: 1px solid var(--color-input-border) !important;
 
-  .dashboard-row {
-    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-    gap: 15px;
-  }
+    .ant-dropdown-menu-item {
+      color: var(--color-text) !important;
 
-  .dashboard-container {
-    padding: 10px;
+      &:hover {
+        background-color: var(--color-background) !important;
+      }
+
+      &-selected {
+        background-color: var(--dark-gold) !important;
+        color: var(--color-button-text) !important;
+      }
+    }
   }
 }
 
-@media screen and (max-width: 480px) {
-  .welcome-container {
-    left: 0; /* En móviles, el menú se oculta completamente */
+/* Checkboxes en filtros */
+.ant-checkbox-wrapper {
+  .ant-checkbox-checked .ant-checkbox-inner {
+    background-color: var(--dark-gold) !important;
+    border-color: var(--dark-gold) !important;
   }
 
-  .dashboard-container {
-    padding: 8px;
+  .ant-checkbox-inner {
+    border-color: var(--color-input-border) !important;
   }
 
-  .dashboard-grid {
-    gap: 8px;
-  }
-
-  .dashboard-row {
-    grid-template-columns: 1fr;
-    gap: 8px;
-  }
-
-  .dashboard-card {
-    .ant-card-head {
-      padding: 8px;
-    }
-
-    .ant-card-body {
-      padding: 8px;
-    }
-  }
-
-  .action-button.primary {
-    padding: 4px 8px;
-    font-size: 0.8rem;
+  &:hover .ant-checkbox-inner {
+    border-color: var(--gold) !important;
   }
 }
 
@@ -587,13 +654,13 @@ $transition-standard: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   }
 } 
 .reportTitle {
-  font-family: 'Montserrat Alternates',sans-serif;
+  font-family: 'Montserrat', sans-serif;
   font-size: 1.25rem;
   text-transform: uppercase;
 }
 .ReportsModal {
   .ant-modal-title {
-    font-family: 'Pinyon Script', sans-serif;
+    font-family: 'Georgia', serif;
     font-size: 3rem !important;
   }
 
@@ -631,7 +698,7 @@ $transition-standard: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     padding: 1rem 2rem;
 
     h1 {
-      font-family: "Pinyon Script", sans-serif;
+      font-family: "Dancing Script", cursive;
       font-weight: 400;
       color: var(--gold);
       font-size: 4rem;
@@ -694,3 +761,233 @@ $transition-standard: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     }
   }
 } 
+
+/* Asegurar que los inputs y selects también mantengan los colores correctos en focus y hover */
+.ant-input,
+.ant-select-selector,
+.ant-picker,
+.ant-input-number {
+  &:hover {
+    border-color: var(--gold) !important;
+  }
+
+  &:focus,
+  &-focused {
+    border-color: var(--dark-gold) !important;
+    box-shadow: 0 0 0 2px rgba(var(--gold-rgb), 0.2) !important;
+    outline: none !important;
+  }
+}
+
+/* OVERRIDES FINALES PARA ELIMINAR CUALQUIER TRAZO DE AZUL DE ANT DESIGN */
+
+/* Inputs y Selects */
+.ant-input,
+.ant-input-password,
+.ant-select-selector,
+.ant-input-number,
+.ant-input-affix-wrapper {
+  border-color: var(--color-input-border) !important;
+  color: var(--color-text) !important;
+  background-color: var(--color-input-bg) !important;
+
+  &:hover {
+    border-color: var(--gold) !important;
+  }
+
+  &:focus,
+  &-focused {
+    border-color: var(--dark-gold) !important;
+    box-shadow: 0 0 0 2px rgba(var(--gold-rgb), 0.2) !important;
+    outline: none !important;
+  }
+
+  .ant-input-suffix .anticon {
+    color: var(--color-text2) !important;
+  }
+}
+
+/* Específico para el Input.Search */
+.ant-input-search {
+  .ant-input-group-addon {
+    .ant-btn {
+      border-color: var(--color-input-border) !important;
+      color: var(--color-text) !important;
+      background-color: var(--color-background2) !important;
+
+      &:hover {
+        border-color: var(--gold) !important;
+        color: var(--dark-gold) !important;
+      }
+    }
+  }
+  .ant-input-suffix {
+    .anticon-search {
+      color: var(--color-text2) !important;
+    }
+  }
+}
+
+/* DatePicker y TimePicker */
+.ant-picker {
+  .ant-picker-input > input {
+    color: var(--color-text) !important;
+  }
+
+  .ant-picker-suffix {
+    color: var(--color-text2) !important;
+  }
+
+  .ant-picker-clear {
+    color: var(--color-text2) !important;
+  }
+
+  /* Celdas del calendario */
+  .ant-picker-cell-inner {
+    &.ant-picker-cell-selected {
+      background-color: var(--dark-gold) !important;
+      color: var(--color-button-text) !important;
+    }
+    &.ant-picker-cell-today {
+      border-color: var(--dark-gold) !important;
+      color: var(--dark-gold) !important;
+    }
+    &:hover:not(.ant-picker-cell-selected):not(.ant-picker-cell-disabled) {
+      background-color: var(--color-background) !important;
+    }
+  }
+
+  /* Celdas del selector de hora */
+  .ant-picker-time-panel-cell-inner {
+    &.ant-picker-time-panel-cell-selected {
+      background-color: var(--dark-gold) !important;
+      color: var(--color-button-text) !important;
+    }
+    &:hover:not(.ant-picker-time-panel-cell-selected):not(.ant-picker-time-panel-cell-disabled) {
+      background-color: var(--color-background) !important;
+    }
+  }
+
+  /* Botón OK en TimePicker */
+  .ant-picker-ok .ant-btn {
+    background-color: var(--dark-gold) !important;
+    border-color: var(--dark-gold) !important;
+    color: var(--color-button-text) !important;
+
+    &:hover {
+      background-color: var(--gold) !important;
+      border-color: var(--gold) !important;
+    }
+  }
+
+  /* Rangos de fecha */
+  .ant-picker-cell-in-range.ant-picker-cell-inner {
+    background-color: rgba(var(--gold-rgb), 0.1) !important;
+  }
+  .ant-picker-cell-range-start.ant-picker-cell-inner,
+  .ant-picker-cell-range-end.ant-picker-cell-inner {
+    background-color: var(--dark-gold) !important;
+    color: var(--color-button-text) !important;
+  }
+  .ant-picker-cell-range-hover-start:not(.ant-picker-cell-in-range):not(.ant-picker-cell-selected):not(.ant-picker-cell-range-start):not(.ant-picker-cell-range-end)::after,
+  .ant-picker-cell-range-hover-end:not(.ant-picker-cell-in-range):not(.ant-picker-cell-selected):not(.ant-picker-cell-range-start):not(.ant-picker-cell-range-end)::after,
+  .ant-picker-cell-range-hover-start.ant-picker-cell-range-start:not(.ant-picker-cell-range-end)::after,
+  .ant-picker-cell-range-hover-end.ant-picker-cell-range-end:not(.ant-picker-cell-range-start)::after,
+  .ant-picker-cell-range-hover-start:not(.ant-picker-cell-in-range):not(.ant-picker-cell-selected)::after,
+  .ant-picker-cell-range-hover-end:not(.ant-picker-cell-in-range):not(.ant-picker-cell-selected)::after,
+  .ant-picker-cell-range-hover:not(.ant-picker-cell-in-range)::after {
+    border-color: var(--gold) !important;
+  }
+  .ant-picker-cell-in-range.ant-picker-cell-inner::before {
+    background-color: rgba(var(--gold-rgb), 0.1) !important;
+  }
+}
+
+/* Switch de supervisión */
+.ant-switch {
+  background-color: var(--color-input-border) !important;
+
+  &-checked {
+    background-color: var(--dark-gold) !important;
+  }
+
+  &:hover:not(.ant-switch-disabled) {
+    background-color: var(--gold) !important;
+  }
+}
+
+/* Pestañas (Tabs) en CateringAdmin */
+.ant-tabs {
+  .ant-tabs-tab {
+    color: var(--color-text) !important;
+
+    &:hover {
+      color: var(--gold) !important;
+    }
+
+    &-active {
+      .ant-tabs-tab-btn {
+        color: var(--dark-gold) !important;
+      }
+    }
+  }
+  .ant-tabs-ink-bar {
+    background-color: var(--dark-gold) !important;
+  }
+}
+
+/* Iconos de botones */
+.ant-btn .anticon {
+  color: inherit !important;
+}
+
+/* Filtros de tabla */
+.ant-table-filter-trigger {
+  border-color: var(--color-input-border) !important;
+  .anticon {
+    color: var(--color-text) !important;
+  }
+  &:hover {
+    border-color: var(--gold) !important;
+    .anticon {
+      color: var(--dark-gold) !important;
+    }
+  }
+}
+
+/* Dropdowns de filtros */
+.ant-dropdown {
+  .ant-dropdown-menu {
+    background-color: var(--color-background2) !important;
+    border: 1px solid var(--color-input-border) !important;
+
+    .ant-dropdown-menu-item {
+      color: var(--color-text) !important;
+
+      &:hover {
+        background-color: var(--color-background) !important;
+      }
+
+      &-selected {
+        background-color: var(--dark-gold) !important;
+        color: var(--color-button-text) !important;
+      }
+    }
+  }
+}
+
+/* Checkboxes en filtros */
+.ant-checkbox-wrapper {
+  .ant-checkbox-checked .ant-checkbox-inner {
+    background-color: var(--dark-gold) !important;
+    border-color: var(--dark-gold) !important;
+  }
+
+  .ant-checkbox-inner {
+    border-color: var(--color-input-border) !important;
+  }
+
+  &:hover .ant-checkbox-inner {
+    border-color: var(--gold) !important;
+  }
+}

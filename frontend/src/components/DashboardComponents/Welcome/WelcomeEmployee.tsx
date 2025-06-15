@@ -1757,7 +1757,7 @@ const WelcomeEmployee: React.FC = () => {
         footer={null}
         width={800}
       >
-        <EventoForm 
+        <EventoForm
           visible={modalEventoVisible}
           onCancel={() => setModalEventoVisible(false)}
           onSubmit={
@@ -1770,6 +1770,7 @@ const WelcomeEmployee: React.FC = () => {
           provincias={provincias}
           ciudades={ciudades}
           initialValues={selectedEvento}
+          userRole="empleado"
         />
       </Modal>
 

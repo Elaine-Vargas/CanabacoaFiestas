@@ -1,11 +1,12 @@
 import React, { useEffect, useState } from 'react';
-import { Button, Select, Space, message, Card, Modal, Row, Col, Input, DatePicker } from 'antd';
+import { Button, Select, Space, message, Card, Modal, Row, Col, Input, Typography, DatePicker } from 'antd';
 import { DownloadOutlined, UserOutlined, TeamOutlined, CalendarOutlined, TruckOutlined, ShoppingCartOutlined, PrinterOutlined, InboxOutlined, ShopOutlined } from '@ant-design/icons';
 import axios from 'axios';
 import dayjs from 'dayjs';
 import { useNavigate } from 'react-router-dom';
+import '../../../styles/dashboard/ServicesSubpages.scss';
 
-
+const { Title } = Typography;
 const { Option } = Select;
 const { RangePicker } = DatePicker;
 
@@ -1028,7 +1029,9 @@ const ReportClient = () => {
 
   return (
     <div style={{ padding: '20px' }}>
-      <h2>Reportes del Sistema</h2>
+      <Title level={2} className="welcome-title">
+          Reportes del Sistema
+        </Title>
       <Row gutter={[16, 16]}>
         <Col xs={24} sm={12} md={8} lg={6}>
           <Card

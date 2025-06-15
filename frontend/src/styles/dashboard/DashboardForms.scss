@@ -17,15 +17,23 @@ $form-transition: all 0.3s ease;
   }
 
   .ant-form-item {
-    margin-bottom: 1.5rem;
+    margin-bottom: 16px;
 
     .ant-form-item-label {
-      label {
+      padding-bottom: 4px;
+      
+      > label {
         color: var(--color-text);
-        font-family: "Nunito Sans", sans-serif;
-        font-weight: 600;
-        font-size: 0.95rem;
+        font-family: "Montserrat", sans-serif;
+        font-weight: 500;
+        font-size: 0.9rem;
       }
+    }
+
+    .ant-form-item-explain-error {
+      font-family: "Nunito Sans", sans-serif;
+      font-size: 0.8rem;
+      margin-top: 4px;
     }
 
     .ant-form-item-control-input {
@@ -263,64 +271,78 @@ $form-transition: all 0.3s ease;
   /* Estilos para los date pickers */
   .ant-picker {
     width: 100%;
-    background-color: var(--color-input-bg);
+    background-color: var(--color-input-bg) !important;
+    border-color: var(--color-input-border) !important;
+    color: var(--color-text) !important;
 
     .ant-picker-input {
       > input {
-        color: var(--color-text);
+        color: var(--color-text) !important;
 
         &::placeholder {
-          color: var(--color-text2);
+          color: var(--color-text2) !important;
         }
       }
     }
 
+    .ant-picker-suffix {
+      color: var(--color-text2) !important;
+    }
+
     &:hover {
-      border-color: var(--gold);
+      border-color: var(--gold) !important;
     }
 
     &.ant-picker-focused {
-      border-color: var(--dark-gold);
-      box-shadow: 0 0 0 2px rgba(196, 154, 68, 0.2);
+      border-color: var(--dark-gold) !important;
+      box-shadow: 0 0 0 2px rgba(196, 154, 68, 0.2) !important;
     }
 
     .ant-picker-dropdown {
-      background-color: var(--color-background2);
-      border: 1px solid var(--color-input-border);
+      background-color: var(--color-background2) !important;
+      border: 1px solid var(--color-input-border) !important;
 
       .ant-picker-panel {
-        background-color: var(--color-background2);
-        border-color: var(--color-input-border);
+        background-color: var(--color-background2) !important;
+        border-color: var(--color-input-border) !important;
 
         .ant-picker-header {
-          color: var(--color-text);
-          border-color: var(--color-input-border);
+          color: var(--color-text) !important;
+          border-color: var(--color-input-border) !important;
 
           button {
-            color: var(--color-text);
+            color: var(--color-text) !important;
+
+            &:hover {
+              color: var(--gold) !important;
+            }
           }
         }
 
         .ant-picker-content {
           th {
-            color: var(--color-text);
+            color: var(--color-text) !important;
           }
         }
 
         .ant-picker-cell {
-          color: var(--color-text);
+          color: var(--color-text) !important;
 
           &-in-view {
-            color: var(--color-text);
+            color: var(--color-text) !important;
           }
 
           &-selected .ant-picker-cell-inner {
-            background-color: var(--dark-gold);
-            color: var(--color-button-text);
+            background-color: var(--dark-gold) !important;
+            color: var(--color-button-text) !important;
           }
 
           &-today .ant-picker-cell-inner {
-            color: var(--dark-gold);
+            color: var(--dark-gold) !important;
+          }
+
+          &:hover .ant-picker-cell-inner {
+            background-color: var(--color-background) !important;
           }
         }
       }
@@ -673,85 +695,99 @@ $form-transition: all 0.3s ease;
 .ant-modal {
   .ant-modal-content {
     background-color: var(--color-background2);
-    border-radius: 12px;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+    border-radius: 15px;
+    overflow: hidden;
+  }
 
-    .ant-modal-close {
-      color: var(--color-text2) !important;
-      transition: color 0.3s ease;
+  .ant-modal-close {
+    color: var(--color-text2) !important;
+    transition: color 0.3s ease;
 
-      &:hover {
-        color: var(--gold) !important;
-      }
-
-      .ant-modal-close-x {
-        color: inherit;
-        font-size: 16px;
-        line-height: 1;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        height: 56px;
-        width: 56px;
-      }
+    &:hover {
+      color: var(--gold) !important;
     }
 
-    .ant-modal-header {
-      background-color: var(--color-background2);
-      border-bottom: 2px solid var(--color-shadow);
-      padding: 16px 24px;
-
-      .ant-modal-title {
-        color: var(--dark-gold);
-        font-family: "Pinyon Script", cursive;
-        font-weight: 600;
-        font-size: 3rem;
-      }
+    .ant-modal-close-x {
+      color: inherit;
+      font-size: 16px;
+      line-height: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 56px;
+      width: 56px;
     }
+  }
 
-    .ant-modal-body {
-      padding: 24px;
+  .ant-modal-header {
+    background-color: var(--color-background);
+    border-bottom: 2px solid var(--color-shadow);
+    padding: 16px 24px;
+
+    .ant-modal-title {
       color: var(--color-text);
+      font-family: "Montserrat", sans-serif;
+      font-weight: 600;
+      font-size: 1.2rem;
+    }
+  }
+
+  .ant-modal-body {
+    padding: 24px;
+    max-height: calc(100vh - 200px);
+    overflow-y: auto;
+
+    &::-webkit-scrollbar {
+      width: 8px;
     }
 
-    .ant-modal-footer {
-      border-top: 2px solid var(--color-shadow);
-      padding: 16px 24px;
-      background-color: var(--color-background2);
+    &::-webkit-scrollbar-track {
+      background: transparent;
+    }
 
-      .ant-btn {
-        border-radius: $form-border-radius;
-        font-family: "Nunito Sans", sans-serif;
-        font-weight: 600;
-        height: 40px;
-        padding: 0 20px;
-        transition: $form-transition;
+    &::-webkit-scrollbar-thumb {
+      background-color: var(--gold);
+      border-radius: 4px;
+    }
+  }
 
-        &.ant-btn-primary {
-          background-color: var(--dark-gold);
-          border-color: var(--dark-gold);
-          color: var(--color-button-text);
+  .ant-modal-footer {
+    border-top: 2px solid var(--color-shadow);
+    padding: 16px 24px;
+    background-color: var(--color-background);
 
-          &:hover {
-            background-color: var(--gold);
-            border-color: var(--gold);
-          }
+    .ant-btn {
+      border-radius: $form-border-radius;
+      font-family: "Nunito Sans", sans-serif;
+      font-weight: 600;
+      height: 40px;
+      padding: 0 20px;
+      transition: $form-transition;
 
-          &:active {
-            background-color: var(--brown);
-            border-color: var(--brown);
-          }
+      &.ant-btn-primary {
+        background-color: var(--dark-gold);
+        border-color: var(--dark-gold);
+        color: var(--color-button-text);
+
+        &:hover {
+          background-color: var(--gold);
+          border-color: var(--gold);
         }
 
-        &.ant-btn-default {
-          border-color: var(--color-input-border);
-          color: var(--color-text);
-          background-color: var(--color-background2);
+        &:active {
+          background-color: var(--brown);
+          border-color: var(--brown);
+        }
+      }
 
-          &:hover {
-            border-color: var(--gold);
-            color: var(--dark-gold);
-          }
+      &.ant-btn-default {
+        border-color: var(--color-input-border);
+        color: var(--color-text);
+        background-color: var(--color-background2);
+
+        &:hover {
+          border-color: var(--gold);
+          color: var(--dark-gold);
         }
       }
     }
@@ -809,30 +845,20 @@ $form-transition: all 0.3s ease;
 @media screen and (max-width: 768px) {
   .dashboard-form {
     .ant-form-item {
-      margin-bottom: 1rem;
+      margin-bottom: 12px;
     }
 
-    .ant-form-item-control-input-content {
-      .ant-btn {
-        height: 36px;
-        padding: 0 16px;
-      }
+    .ant-input,
+    .ant-input-number,
+    .ant-picker,
+    .ant-select-selector {
+      padding: 6px 10px;
     }
   }
 
   .ant-modal {
-    .ant-modal-content {
-      .ant-modal-header {
-        padding: 12px 20px;
-      }
-
-      .ant-modal-body {
-        padding: 20px;
-      }
-
-      .ant-modal-footer {
-        padding: 12px 20px;
-      }
+    .ant-modal-body {
+      padding: 16px;
     }
   }
 }
@@ -840,31 +866,19 @@ $form-transition: all 0.3s ease;
 @media screen and (max-width: 480px) {
   .dashboard-form {
     .ant-form-item {
-      margin-bottom: 0.75rem;
+      margin-bottom: 8px;
     }
 
-    .ant-form-item-control-input-content {
-      .ant-btn {
-        height: 32px;
-        padding: 0 12px;
-        font-size: 0.9rem;
+    .ant-form-item-label {
+      > label {
+        font-size: 0.8rem;
       }
     }
   }
 
   .ant-modal {
-    .ant-modal-content {
-      .ant-modal-header {
-        padding: 10px 16px;
-      }
-
-      .ant-modal-body {
-        padding: 16px;
-      }
-
-      .ant-modal-footer {
-        padding: 10px 16px;
-      }
+    .ant-modal-body {
+      padding: 16px;
     }
   }
 }
@@ -1088,5 +1102,492 @@ $form-transition: all 0.3s ease;
 
   .ant-select-selection-item {
     color: var(--color-text);
+  }
+}
+
+/* Estilos estandarizados para formularios del dashboard */
+
+/* Contenedor del formulario */
+.dashboard-form {
+  .ant-form-item {
+    margin-bottom: 16px;
+
+    .ant-form-item-label {
+      padding-bottom: 4px;
+      
+      > label {
+        color: var(--color-text);
+        font-family: "Montserrat", sans-serif;
+        font-weight: 500;
+        font-size: 0.9rem;
+      }
+    }
+
+    .ant-form-item-explain-error {
+      font-family: "Nunito Sans", sans-serif;
+      font-size: 0.8rem;
+      margin-top: 4px;
+    }
+  }
+
+  /* Inputs */
+  .ant-input,
+  .ant-input-number,
+  .ant-picker,
+  .ant-select-selector,
+  .ant-input-affix-wrapper {
+    background-color: var(--color-background) !important;
+    border: 1px solid var(--color-border) !important;
+    border-radius: 8px !important;
+    color: var(--color-text) !important;
+    font-family: "Nunito Sans", sans-serif;
+    padding: 8px 12px;
+    transition: all 0.3s ease;
+
+    &:hover {
+      border-color: var(--gold) !important;
+    }
+
+    &:focus,
+    &-focused {
+      border-color: var(--dark-gold) !important;
+      box-shadow: 0 0 0 2px rgba(var(--gold-rgb), 0.2) !important;
+    }
+
+    &::placeholder {
+      color: var(--color-text2) !important;
+    }
+  }
+
+  /* Select */
+  .ant-select {
+    width: 100%;
+
+    .ant-select-selector {
+      background-color: var(--color-background) !important;
+      border: 1px solid var(--color-border) !important;
+      border-radius: 8px !important;
+      padding: 4px 12px !important;
+    }
+
+    .ant-select-arrow {
+      color: var(--color-text) !important;
+    }
+  }
+
+  /* DatePicker y TimePicker */
+  .ant-picker {
+    width: 100%;
+    
+    .ant-picker-input {
+      > input {
+        color: var(--color-text) !important;
+      }
+    }
+  }
+
+  /* TextArea */
+  .ant-input-textarea {
+    .ant-input {
+      min-height: 100px;
+      resize: vertical;
+    }
+  }
+
+  /* InputNumber */
+  .ant-input-number {
+    width: 100%;
+    
+    .ant-input-number-input {
+      color: var(--color-text) !important;
+    }
+  }
+
+  /* Checkbox y Radio */
+  .ant-checkbox-wrapper,
+  .ant-radio-wrapper {
+    color: var(--color-text);
+    font-family: "Nunito Sans", sans-serif;
+  }
+
+  /* Botones del formulario */
+  .ant-form-item-control-input-content {
+    .ant-btn {
+      font-family: "Montserrat", sans-serif;
+      font-weight: 500;
+      height: 40px;
+      padding: 0 20px;
+      border-radius: 8px;
+      transition: all 0.3s ease;
+
+      &.ant-btn-primary {
+        background-color: var(--dark-gold);
+        border-color: var(--dark-gold);
+        color: white;
+
+        &:hover {
+          background-color: var(--gold);
+          border-color: var(--gold);
+        }
+      }
+
+      &.ant-btn-default {
+        border-color: var(--dark-gold);
+        color: var(--dark-gold);
+
+        &:hover {
+          background-color: var(--color-background);
+          border-color: var(--dark-gold);
+          color: var(--dark-gold);
+        }
+      }
+    }
+  }
+}
+
+/* Estilos para el modal del formulario */
+.ant-modal {
+  .ant-modal-content {
+    background-color: var(--color-background2);
+    border-radius: 15px;
+    overflow: hidden;
+  }
+
+  .ant-modal-header {
+    background-color: var(--color-background);
+    border-bottom: 2px solid var(--color-shadow);
+    padding: 16px 24px;
+
+    .ant-modal-title {
+      color: var(--color-text);
+      font-family: "Montserrat", sans-serif;
+      font-weight: 600;
+      font-size: 1.2rem;
+    }
+  }
+
+  .ant-modal-body {
+    padding: 24px;
+    max-height: calc(100vh - 200px);
+    overflow-y: auto;
+
+    &::-webkit-scrollbar {
+      width: 8px;
+    }
+
+    &::-webkit-scrollbar-track {
+      background: transparent;
+    }
+
+    &::-webkit-scrollbar-thumb {
+      background-color: var(--gold);
+      border-radius: 4px;
+    }
+  }
+
+  .ant-modal-footer {
+    border-top: 2px solid var(--color-shadow);
+    padding: 16px 24px;
+    background-color: var(--color-background);
+  }
+}
+
+/* Estilos para mensajes de error y éxito */
+.ant-form-item-explain-error {
+  color: var(--error) !important;
+}
+
+.ant-form-item-has-success {
+  .ant-input,
+  .ant-input-number,
+  .ant-picker,
+  .ant-select-selector {
+    border-color: var(--success) !important;
+  }
+}
+
+/* Estilos específicos para eliminar elementos azules */
+.ant-picker {
+  /* Estilos para el botón OK del TimePicker */
+  .ant-picker-ok {
+    .ant-btn {
+      background-color: var(--dark-gold) !important;
+      border-color: var(--dark-gold) !important;
+      color: var(--color-button-text) !important;
+
+      &:hover {
+        background-color: var(--gold) !important;
+        border-color: var(--gold) !important;
+      }
+    }
+  }
+
+  /* Estilos para el panel de selección de hora */
+  .ant-picker-time-panel {
+    .ant-picker-time-panel-column {
+      &::-webkit-scrollbar-thumb {
+        background-color: var(--gold) !important;
+      }
+    }
+
+    .ant-picker-time-panel-cell {
+      &-selected {
+        background-color: var(--dark-gold) !important;
+        color: var(--color-button-text) !important;
+      }
+
+      &:hover {
+        background-color: var(--color-background) !important;
+      }
+    }
+  }
+
+  /* Estilos para el panel de selección de fecha */
+  .ant-picker-panel {
+    .ant-picker-cell {
+      &-selected .ant-picker-cell-inner {
+        background-color: var(--dark-gold) !important;
+        color: var(--color-button-text) !important;
+      }
+
+      &-today .ant-picker-cell-inner {
+        border-color: var(--dark-gold) !important;
+        color: var(--dark-gold) !important;
+      }
+
+      &-in-range {
+        background-color: rgba(196, 154, 68, 0.1) !important;
+      }
+
+      &-in-range::before {
+        background-color: rgba(196, 154, 68, 0.1) !important;
+      }
+    }
+  }
+}
+
+/* Estilos para el Switch de supervisión */
+.ant-switch {
+  background-color: var(--color-input-border) !important;
+
+  &-checked {
+    background-color: var(--dark-gold) !important;
+  }
+
+  &:hover:not(.ant-switch-disabled) {
+    background-color: var(--gold) !important;
+  }
+}
+
+/* Estilos para las pestañas (tabs) */
+.ant-tabs {
+  .ant-tabs-tab {
+    color: var(--color-text) !important;
+
+    &:hover {
+      color: var(--gold) !important;
+    }
+
+    &-active {
+      .ant-tabs-tab-btn {
+        color: var(--dark-gold) !important;
+      }
+    }
+  }
+
+  .ant-tabs-ink-bar {
+    background-color: var(--dark-gold) !important;
+  }
+}
+
+/* Estilos para los filtros de tabla */
+.ant-table-filter-dropdown {
+  background-color: var(--color-background2) !important;
+  border: 1px solid var(--color-input-border) !important;
+
+  .ant-table-filter-dropdown-btns {
+    border-top: 1px solid var(--color-input-border) !important;
+
+    .ant-btn {
+      &.ant-btn-primary {
+        background-color: var(--dark-gold) !important;
+        border-color: var(--dark-gold) !important;
+        color: var(--color-button-text) !important;
+
+        &:hover {
+          background-color: var(--gold) !important;
+          border-color: var(--gold) !important;
+        }
+      }
+
+      &.ant-btn-default {
+        border-color: var(--color-input-border) !important;
+        color: var(--color-text) !important;
+
+        &:hover {
+          border-color: var(--gold) !important;
+          color: var(--dark-gold) !important;
+        }
+      }
+    }
+  }
+}
+
+/* Estilos para los botones de acción en las tablas y generales */
+.ant-btn {
+  border-color: var(--color-input-border) !important;
+  color: var(--color-text) !important;
+  
+  &.ant-btn-primary {
+    background-color: var(--dark-gold) !important;
+    border-color: var(--dark-gold) !important;
+    color: var(--color-button-text) !important;
+
+    &:hover {
+      background-color: var(--gold) !important;
+      border-color: var(--gold) !important;
+    }
+
+    &:active {
+      background-color: var(--brown) !important;
+      border-color: var(--brown) !important;
+    }
+  }
+
+  &.ant-btn-default {
+    border-color: var(--color-input-border) !important;
+    color: var(--color-text) !important;
+    background-color: var(--color-background2) !important;
+
+    &:hover {
+      border-color: var(--gold) !important;
+      color: var(--dark-gold) !important;
+    }
+  }
+
+  /* Asegurar que el focus no sea azul */
+  &:focus-visible {
+    outline: none !important;
+    box-shadow: 0 0 0 2px rgba(var(--gold-rgb), 0.2) !important;
+    border-color: var(--dark-gold) !important;
+  }
+}
+
+/* Estilos para los dropdowns de filtro */
+.ant-dropdown {
+  .ant-dropdown-menu {
+    background-color: var(--color-background2) !important;
+    border: 1px solid var(--color-input-border) !important;
+
+    .ant-dropdown-menu-item {
+      color: var(--color-text) !important;
+
+      &:hover {
+        background-color: var(--color-background) !important;
+      }
+
+      &-selected {
+        background-color: var(--dark-gold) !important;
+        color: var(--color-button-text) !important;
+      }
+    }
+  }
+}
+
+/* Estilos para los checkboxes en los filtros */
+.ant-checkbox-wrapper {
+  .ant-checkbox-checked .ant-checkbox-inner {
+    background-color: var(--dark-gold) !important;
+    border-color: var(--dark-gold) !important;
+  }
+
+  .ant-checkbox-inner {
+    border-color: var(--color-input-border) !important;
+  }
+
+  &:hover .ant-checkbox-inner {
+    border-color: var(--gold) !important;
+  }
+}
+
+/* Estilos para los campos de texto, números y selectores */
+.ant-input,
+.ant-input-password,
+.ant-select-selector,
+.ant-picker,
+.ant-input-number,
+.ant-input-affix-wrapper {
+  border-color: var(--color-input-border) !important;
+  color: var(--color-text) !important;
+
+  &:hover {
+    border-color: var(--gold) !important;
+  }
+
+  &:focus,
+  &-focused {
+    border-color: var(--dark-gold) !important;
+    box-shadow: 0 0 0 2px rgba(var(--gold-rgb), 0.2) !important;
+    outline: none !important;
+  }
+
+  .ant-input-suffix {
+    .anticon {
+      color: var(--color-text2) !important;
+    }
+  }
+}
+
+/* Asegurar que el borde del Input.Search sea correcto */
+.ant-input-search {
+  .ant-input-group-addon {
+    .ant-btn {
+      border-color: var(--color-input-border) !important; 
+      color: var(--color-text) !important;
+      background-color: var(--color-background2) !important;
+
+      &:hover {
+        border-color: var(--gold) !important;
+        color: var(--dark-gold) !important;
+      }
+    }
+  }
+  .ant-input-suffix {
+    .anticon-search {
+      color: var(--color-text2) !important;
+    }
+  }
+}
+
+/* Estilos adicionales para DatePicker y TimePicker */
+.ant-picker-time-panel-cell-inner {
+  color: var(--color-text) !important;
+
+  &.ant-picker-time-panel-cell-selected {
+    background-color: var(--dark-gold) !important;
+    color: var(--color-button-text) !important;
+  }
+}
+
+.ant-picker-cell-inner {
+  &.ant-picker-cell-today {
+    border-color: var(--dark-gold) !important;
+    color: var(--dark-gold) !important;
+  }
+}
+
+.ant-picker-time-panel-column {
+  .ant-picker-time-panel-cell {
+    &:hover:not(.ant-picker-time-panel-cell-selected):not(.ant-picker-time-panel-cell-disabled) {
+      background-color: var(--color-background) !important;
+    }
+  }
+}
+
+.ant-picker-body {
+  .ant-picker-cell {
+    &:hover:not(.ant-picker-cell-selected):not(.ant-picker-cell-disabled) .ant-picker-cell-inner {
+      background-color: var(--color-background) !important;
+    }
   }
 } 

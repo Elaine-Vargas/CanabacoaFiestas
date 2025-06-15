@@ -36,6 +36,7 @@ import {
   EditOutlined
 } from '@ant-design/icons';
 import axios from 'axios';
+import '../../../styles/dashboard/ServicesSubpages.scss';
 import styled from 'styled-components';
 import dayjs from 'dayjs';
 import { apiUrl } from '../../../config';
@@ -76,14 +77,14 @@ const StyledCard = styled(Card)`
   background-color: var(--color-background2);
   
   .ant-card-head {
-    background-color: var(--beige);
+    background-color: var(--color-background);
     border-radius: 15px 15px 0 0;
-    border-bottom: 2px solid var(--dark-gold);
+    border-bottom: 2px solid var(--color-shadow);
   }
 
   .ant-card-head-title {
-    color: var(--color-text2);
-    font-family: "Montserrat Alternates", sans-serif;
+    color: var(--color-text);
+    font-family: "Montserrat", sans-serif;
     font-weight: 600;
   }
 `;
@@ -105,13 +106,14 @@ const CatalogCard = styled(Card)`
   }
 
   .ant-card-meta-title {
-    font-family: "Montserrat Alternates", sans-serif;
+    font-family: "Montserrat", sans-serif;
     font-weight: 600;
-    color: var(--color-text2);
+    color: var(--color-text);
   }
 
   .ant-card-meta-description {
-    color: var(--color-text);
+    color: var(--color-text2);
+    font-family: "Nunito Sans", sans-serif;
   }
 `;
 
@@ -146,13 +148,13 @@ const StyledDrawer = styled(Drawer)`
   }
 
   .ant-drawer-header {
-    background-color: var(--beige);
-    border-bottom: 2px solid var(--dark-gold);
+    background-color: var(--color-background);
+    border-bottom: 2px solid var(--color-shadow);
   }
 
   .ant-drawer-title {
-    color: var(--color-text2);
-    font-family: "Montserrat Alternates", sans-serif;
+    color: var(--color-text);
+    font-family: "Montserrat", sans-serif;
     font-weight: 600;
   }
 `;

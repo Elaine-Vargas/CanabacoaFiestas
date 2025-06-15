@@ -14,6 +14,7 @@ interface EventoFormProps {
   ciudades: any[];
   initialValues?: any;
   userCedula?: string;
+  userRole?: string;
 }
 
 const EventoForm: React.FC<EventoFormProps> = ({
@@ -27,7 +28,8 @@ const EventoForm: React.FC<EventoFormProps> = ({
   provincias,
   ciudades,
   initialValues,
-  userCedula
+  userCedula,
+  userRole
 }) => {
   const [form] = Form.useForm();
   const [selectedProvincia, setSelectedProvincia] = useState<string | null>(null);
@@ -108,22 +110,42 @@ const EventoForm: React.FC<EventoFormProps> = ({
           desea_supervision: false,
           estado_solicitud: 'Pendiente'
         }}
+        className="dashboard-form"
       >
         <Form.Item
           name="cedula_cliente"
           label="Cliente"
           rules={[{ required: true, message: 'Por favor seleccione un cliente' }]}
-          hidden={true}
+          hidden={userRole === 'cliente'}
         >
-          <Input disabled={true} />
+          <Select
+            placeholder="Seleccione un cliente"
+            options={clientes.map(cliente => ({
+              label: `${cliente.nombre_usuario} ${cliente.apellido_usuario}`,
+              value: cliente.cedula_usuario
+            }))}
+            showSearch
+            optionFilterProp="label"
+            disabled={userRole === 'cliente'}
+          />
         </Form.Item>
 
         <Form.Item
           name="cedula_asesor"
           label="Asesor"
-          hidden={true}
+          rules={[{ required: true, message: 'Por favor seleccione un asesor' }]}
+          hidden={userRole === 'cliente'}
         >
-          <Input disabled={true} />
+          <Select
+            placeholder="Seleccione un asesor"
+            options={asesores.map(asesor => ({
+              label: `${asesor.nombre_usuario} ${asesor.apellido_usuario}`,
+              value: asesor.cedula_usuario
+            }))}
+            showSearch
+            optionFilterProp="label"
+            disabled={userRole === 'cliente'}
+          />
         </Form.Item>
 
         <Form.Item

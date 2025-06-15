@@ -23,6 +23,7 @@ import {
 import { PlusOutlined, RightOutlined, CloseOutlined, ReloadOutlined, EditOutlined, DeleteOutlined, EyeOutlined, InboxOutlined, UploadOutlined } from '@ant-design/icons';
 import axios from 'axios';
 import styled from 'styled-components';
+import '../../../styles/dashboard/ServicesSubpages.scss';
 import dayjs from 'dayjs';
 import { apiUrl } from '../../../config';
 
@@ -37,14 +38,14 @@ const StyledCard = styled(Card)`
   background-color: var(--color-background2);
   
   .ant-card-head {
-    background-color: var(--beige);
+    background-color: var(--color-background);
     border-radius: 15px 15px 0 0;
-    border-bottom: 2px solid var(--dark-gold);
+    border-bottom: 2px solid var(--color-shadow);
   }
 
   .ant-card-head-title {
-    color: var(--color-text2);
-    font-family: "Montserrat Alternates", sans-serif;
+    color: var(--color-text);
+    font-family: "Montserrat", sans-serif;
     font-weight: 600;
   }
 `;
@@ -56,15 +57,60 @@ const StyledModal = styled(Modal)`
   }
   
   .ant-modal-header {
-    background-color: var(--beige);
-    border-bottom: 2px solid var(--dark-gold);
+    background-color: var(--color-background);
+    border-bottom: 2px solid var(--color-shadow);
     padding: 16px 24px;
     
     .ant-modal-title {
-      color: var(--color-text2);
-      font-family: "Montserrat Alternates", sans-serif;
+      color: var(--color-text);
+      font-family: "Montserrat", sans-serif;
       font-weight: 600;
     }
+  }
+`;
+
+const StyledButton = styled(Button)`
+  &.ant-btn-primary {
+    background-color: var(--dark-gold);
+    border-color: var(--dark-gold);
+    color: white;
+    font-family: "Montserrat", sans-serif;
+    
+    &:hover {
+      background-color: var(--gold);
+      border-color: var(--gold);
+      color: white;
+    }
+  }
+
+  &.ant-btn-default {
+    border-color: var(--dark-gold);
+    color: var(--dark-gold);
+    font-family: "Montserrat", sans-serif;
+    
+    &:hover {
+      background-color: var(--color-background);
+      border-color: var(--dark-gold);
+      color: var(--dark-gold);
+    }
+  }
+`;
+
+const StyledTable = styled(Table)`
+  .ant-table-thead > tr > th {
+    background-color: var(--color-background);
+    color: var(--color-text);
+    font-family: "Montserrat", sans-serif;
+    font-weight: 600;
+  }
+
+  .ant-table-tbody > tr > td {
+    color: var(--color-text);
+    font-family: "Nunito Sans", sans-serif;
+  }
+
+  .ant-table-tbody > tr:hover > td {
+    background-color: var(--color-background);
   }
 `;
 

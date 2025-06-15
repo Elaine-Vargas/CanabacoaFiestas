@@ -537,7 +537,7 @@ const Catalog: React.FC<CatalogProps> = ({ onAddToCart, onComprarCarrito }) => {
               variant="h4" 
               component="h1"
               sx={{ 
-                fontFamily: '"Pinyon Script", sans-serif',
+                fontFamily: '"Georgia", serif',
                 fontWeight: 400,
                 color: 'var(--gold)',
                 fontSize: { xs: '2rem', sm: '2.8rem', md: '3.5rem', lg: '4rem' },

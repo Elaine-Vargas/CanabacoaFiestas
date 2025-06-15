@@ -194,20 +194,23 @@
   input {
     flex: 1;
     padding: 0.5rem;
-    border: 1px solid #ccc;
+    border: 1px solid var(--color-input-border);
     border-radius: 4px;
     font-size: 1rem;
+    background-color: var(--color-input-bg);
+    color: var(--color-text);
 
     &:focus {
       outline: none;
-      border-color: #007bff;
+      border-color: var(--dark-gold) !important;
+      box-shadow: 0 0 0 2px rgba(var(--gold-rgb), 0.2) !important;
     }
   }
 
   .verify-button {
     padding: 0.5rem 1rem;
-    background-color: #007bff;
-    color: white;
+    background-color: var(--dark-gold) !important;
+    color: var(--color-button-text) !important;
     border: none;
     border-radius: 4px;
     cursor: pointer;
@@ -215,12 +218,16 @@
     transition: background-color 0.2s;
 
     &:hover {
-      background-color: #0056b3;
+      background-color: var(--gold) !important;
     }
 
     &:disabled {
-      background-color: #ccc;
+      background-color: #ccc !important;
       cursor: not-allowed;
+    }
+    &:focus-visible {
+      outline: none !important;
+      box-shadow: 0 0 0 2px rgba(var(--gold-rgb), 0.2) !important;
     }
   }
 }

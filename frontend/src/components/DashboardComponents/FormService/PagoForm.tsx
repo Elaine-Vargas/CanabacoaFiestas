@@ -67,7 +67,7 @@ const PagoForm: React.FC<PagoFormProps> = ({
       confirmLoading={loading}
       width={500}
     >
-      <Form form={form} layout="vertical">
+      <Form form={form} layout="vertical" className="dashboard-form">
         <Form.Item
           name="id_evento"
           label="Evento"

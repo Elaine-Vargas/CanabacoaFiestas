@@ -161,7 +161,7 @@ const UsuarioForm: React.FC<UsuarioFormProps> = ({
         form={form}
         layout="vertical"
         onFinish={handleSubmit}
-        className="usuario-form"
+        className="dashboard-form"
       >
         <Form.Item
           name="cedula_usuario"

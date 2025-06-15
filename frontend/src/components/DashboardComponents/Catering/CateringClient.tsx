@@ -26,6 +26,7 @@ import {
   ReloadOutlined
 } from '@ant-design/icons';
 import styled from 'styled-components';
+import '../../../styles/dashboard/ServicesSubpages.scss';
 import axios from 'axios';
 import dayjs from 'dayjs';
 import { apiUrl } from '../../../config';
@@ -44,14 +45,14 @@ const StyledCard = styled(Card)`
   overflow: hidden;
   
   .ant-card-head {
-    background-color: var(--beige);
+    background-color: var(--color-background);
     border-radius: 15px 15px 0 0;
-    border-bottom: 2px solid var(--dark-gold);
+    border-bottom: 2px solid var(--color-shadow);
   }
 
   .ant-card-head-title {
-    color: var(--color-text2);
-    font-family: "Montserrat Alternates", sans-serif;
+    color: var(--color-text);
+    font-family: "Montserrat", sans-serif;
     font-weight: 600;
   }
   
@@ -99,7 +100,7 @@ const ContinueButton = styled(Button)`
   background-color: var(--dark-gold);
   border-color: var(--gold);
   color: var(--white);
-  font-family: "Montserrat Alternates", sans-serif;
+  font-family: "Montserrat", sans-serif;
   font-weight: 600;
   
   &:hover {
