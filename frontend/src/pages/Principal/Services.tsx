@@ -84,7 +84,18 @@ export default function Services() {
           <div className="content-grid">
             {servicesData.map((service, index) => (
               <div key={index} className="info-card">
-                <img src={service.image} alt={service.title} loading="lazy" className="card-image" />
+                <img 
+                  src={service.image} 
+                  alt={service.title} 
+                  loading="lazy" 
+                  className="card-image" 
+                  width="320" height="200"
+                  srcSet={`
+                    ${service.image} 1x,
+                    ${service.image.replace('.webp', '@2x.webp')} 2x
+                  `}
+                  sizes="(max-width: 600px) 90vw, 320px"
+                />
                 <h3 className="card-title">{service.title}</h3>
                 <p className="card-text">{service.description}</p>
               </div>

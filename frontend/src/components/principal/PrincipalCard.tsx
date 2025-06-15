@@ -11,7 +11,15 @@ const PrincipalCard = React.memo(() => {
   <h6 className="contentTitle">Podemos servirle en:</h6>
 
   <div className="card">
-    <img src={Alquiler} alt="Alquiler" className="cardIcon" loading="lazy" />
+    <img 
+      src={Alquiler} 
+      alt="Alquiler" 
+      className="cardIcon" 
+      loading="lazy" 
+      width="80" height="80"
+      srcSet={Alquiler}
+      sizes="(max-width: 600px) 60px, 80px"
+    />
     <div className="cardContent">
       <h3 className="cardTitle">Alquiler</h3>
       <p className="cardText">
@@ -21,7 +29,15 @@ const PrincipalCard = React.memo(() => {
   </div>
 
   <div className="card">
-    <img src={Decoracion} alt="Decoración" className="cardIcon" loading="lazy" />
+    <img 
+      src={Decoracion} 
+      alt="Decoración" 
+      className="cardIcon" 
+      loading="lazy" 
+      width="80" height="80"
+      srcSet={Decoracion}
+      sizes="(max-width: 600px) 60px, 80px"
+    />
     <div className="cardContent">
       <h3 className="cardTitle">Decoración</h3>
       <p className="cardText">
@@ -31,7 +47,15 @@ const PrincipalCard = React.memo(() => {
   </div>
 
   <div className="card">
-    <img src={Catering} alt="Catering" className="cardIcon" loading="lazy" />
+    <img 
+      src={Catering} 
+      alt="Catering" 
+      className="cardIcon" 
+      loading="lazy" 
+      width="80" height="80"
+      srcSet={Catering}
+      sizes="(max-width: 600px) 60px, 80px"
+    />
     <div className="cardContent">
       <h3 className="cardTitle">Catering</h3>
       <p className="cardText">

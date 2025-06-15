@@ -77,11 +77,17 @@ const NavBar = React.memo(() => {
               <BackIcon sx={{ alignSelf: "left" }} />
             </IconButton>
             <List>
-              {["Inicio", "Nosotros", "Servicios", "Catálogo", "Contacto"].map((text) => (
+              { [
+                { text: "Inicio", href: "/" },
+                { text: "Nosotros", href: "/Principal/Nosotros" },
+                { text: "Servicios", href: "/Principal/Servicios" },
+                { text: "Catálogo", href: "/Principal/Catalogo" },
+                { text: "Contacto", href: "#footer" }
+              ].map(({ text, href }) => (
                 <ListItem key={text} disablePadding>
                   <ListItemButton
                     component="a"
-                    href={`/${text === "Inicio" ? "" : text}`}
+                    href={href}
                     sx={{
                       color: "var(--color-text)",
                       fontWeight: "bold",

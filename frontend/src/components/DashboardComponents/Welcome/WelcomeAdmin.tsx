@@ -2388,7 +2388,6 @@ const WelcomeAdmin: React.FC = () => {
         provincias={provincias}
         ciudades={ciudades}
         initialValues={eventoSeleccionado}
-        userRole="admin"
       />
 
       {/* Formulario de Edición de Usuario */}

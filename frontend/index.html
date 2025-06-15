@@ -1,24 +1,57 @@
 <!doctype html>
 <html lang="en">
   <head>
+    <meta charset="UTF-8" />
  <!-- Preconnect for Google Fonts -->
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" crossorigin />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <!-- Preload Google Fonts stylesheet with onload swap -->
-  <link rel="preload" href="https://fonts.googleapis.com/css2?family=Inter&display=swap" as="style" onload="this.rel='stylesheet'" />
-  <noscript><link href="https://fonts.googleapis.com/css2?family=Inter&display=swap" rel="stylesheet" /></noscript>
-  <!-- Preload SVG logo -->
+  <!-- Combine and minimize Google Fonts families: Only Nunito Sans and Montserrat Alternates used in main UI -->
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat+Alternates:wght@400;700&family=Nunito+Sans:wght@400;700&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
+  <noscript><link href="https://fonts.googleapis.com/css2?family=Montserrat+Alternates:wght@400;700&family=Nunito+Sans:wght@400;700&display=swap" rel="stylesheet"></noscript>
+  <!-- Preload Nunito Sans font for above-the-fold text -->
+  <link rel="preload" as="font" href="https://fonts.gstatic.com/s/nunitosans/v25/pe0qMImSLYBIv1o4X1M8cce9I9tAcVw.woff2" type="font/woff2" crossorigin>
+  <!-- Preload only the logo SVG if it's above the fold -->
   <link rel="preload" as="image" href="/assets/logoVariants/CIRCULO-CF(blanco).svg" type="image/svg+xml" />
-  <!-- Preload custom font with crossorigin -->
+  <!-- Preload only critical local fonts -->
   <link rel="preload" as="font" href="/assets/Whitenice.otf" type="font/otf" crossorigin="anonymous" />
+  <link rel="preload" as="font" href="/assets/GlinaScript.otf" type="font/otf" crossorigin="anonymous" />
     
   <script src="https://cdn.userway.org/widget.js" data-account="Pc2LtGGLnJ" defer></script>
      
-<link href="https://fonts.googleapis.com/css2?family=Parisienne&display=swap&family=Montserrat+Alternates:wght@400;500;600;700;800;900&family=Nunito+Sans:ital,opsz,wght@0,6..12,200..1000;1,6..12,200..1000&family=Pinyon+Script&display=swap" rel="stylesheet">
-    <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/CF-Icon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Canabacoa Fiestas</title>
+    <style>
+      :root {
+        --color-background: #f1f0ea;
+        --color-background2: #ffffff;
+        --color-text: #0a0a0a;
+        --gradient-background: linear-gradient(to bottom, rgba(0,0,0,0.7), rgba(0, 0, 0, 0.0));
+        --gradient-background-nav: linear-gradient(to bottom, rgba(0, 0, 0, 0.9), rgba(0, 0, 0, 0.8), rgba(0, 0, 0, 0.6), rgba(0, 0, 0, 0.4),rgba(0, 0, 0, 0.0));
+        --color-text2: #6c432d;
+        --color-button-text: #000000;
+        --color-input-bg: #f3f3f3;
+        --color-input-border: #cccccc;
+        --color-shadow: #6c432d6f;
+        --white: #ffffff;
+        --light-beige: #f1f0ea;
+        --beige: #f3eddf;
+        --dark-beige: #d5cbb4;
+        --gold: #e0c55a;
+        --gold-rgb: 224,197,90;
+        --dark-gold: #c49a44;
+        --brown: #6c432d;
+        --light-brown: #ad7051;
+        --black: #0a0a0a;
+      }
+      body {
+        background: var(--color-background);
+        color: var(--color-text);
+        font-family: 'Nunito Sans', 'Montserrat Alternates', Arial, sans-serif;
+        margin: 0;
+        padding: 0;
+      }
+    </style>
   </head>
   <body>
     <div id="root"></div>
