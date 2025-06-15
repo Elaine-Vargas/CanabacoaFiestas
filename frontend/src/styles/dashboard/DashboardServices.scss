@@ -133,6 +133,27 @@ $transition-standard: all 0.3s ease;
       }
     }
   }
+
+  .theme-exit-container {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    width: 100%;
+    height: 60px;
+    margin-bottom: 1rem;
+
+    /* Elimina cualquier margen/padding extra de los hijos */
+    > * {
+      margin: 0 !important;
+      padding: 0 !important;
+    }
+
+    .logout-button {
+      position: relative;
+      top: -2px;
+    }
+  }
 }
 
 /* Menú móvil */
@@ -241,6 +262,32 @@ $transition-standard: all 0.3s ease;
 .MuiDrawer-paper .logout-button {
   margin-top: auto; /* Empuja el botón hacia abajo */
   padding: 1rem; /* Añade espacio alrededor del botón */
+}
+
+.MuiDrawer-paper {
+  z-index: 1200 !important;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding-top: 1rem;
+}
+
+.MuiDrawer-paper .theme-exit-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  width: 100%;
+  height: 60px;
+  margin-bottom: 1rem;
+  > * {
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+  .logout-button {
+    position: relative;
+    top: -2px;
+  }
 }
 
 // FORMATO DE USUARIO
@@ -397,6 +444,10 @@ $transition-standard: all 0.3s ease;
 
 .MuiDrawer-paper {
   z-index: 1200 !important;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding-top: 1rem;
 } 
 
 .edit-btn {

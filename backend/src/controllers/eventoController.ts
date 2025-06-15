@@ -1,12 +1,12 @@
 import { Request, Response } from 'express';
+import { Op } from 'sequelize';
 import Evento from '../models/Evento_model';
 import Usuario from '../models/Usuario_model';
-import { Op } from 'sequelize';
 import TipoEvento from '../models/TipoEvento_model';
-import EmpleadoEvento from '../models/EmpleadoEvento_model';
 import Direccion from '../models/Direccion_model';
 import Ciudad from '../models/Ciudad_model';
 import Provincia from '../models/Provincia_model';
+import EmpleadoEvento from '../models/EmpleadoEvento_model';
  
 export const createEvent = async (req: Request, res: Response) => {
     try {
@@ -107,12 +107,12 @@ export const createEvent = async (req: Request, res: Response) => {
             include: [
                 {
                     model: Usuario,
-                    as: 'cliente',
+                    as: 'cliente', // Asegúrate que este es el alias correcto
                     attributes: ['cedula_usuario', 'nombre_usuario', 'apellido_usuario']
                 },
                 {
                     model: Usuario,
-                    as: 'asesor',
+                    as: 'asesor', // Asegúrate que este es el alias correcto
                     attributes: ['cedula_usuario', 'nombre_usuario', 'apellido_usuario']
                 },
                 {
@@ -159,12 +159,12 @@ export const showAllEvents = async (req: Request, res: Response) => {
             include: [
                 { 
                     model: Usuario, 
-                    as: 'cliente',
+                    as: 'cliente', // Asegúrate que este es el alias correcto
                     attributes: ['nombre_usuario', 'apellido_usuario']
                 },
                 { 
                     model: Usuario, 
-                    as: 'asesor',
+                    as: 'asesor', // Asegúrate que este es el alias correcto
                     attributes: ['nombre_usuario', 'apellido_usuario']
                 },
                 { 
@@ -211,9 +211,9 @@ export const showEventsByStatus = async (req: Request, res: Response) => {
         const eventos = await Evento.findAll({
             where: { estado_solicitud: estado },
             include: [
-                { model: Usuario, as: 'cliente' },
-                { model: Usuario, as: 'asesor' },
-                { model: TipoEvento, as: 'tipo_evento' }
+                { model: Usuario, as: 'cliente' }, // Asegúrate que este es el alias correcto
+                { model: Usuario, as: 'asesor' }, // Asegúrate que este es el alias correcto
+                { model: TipoEvento, as: 'tipo_evento' } // Asegúrate que este es el alias correcto
             ]
         });
 
@@ -240,9 +240,9 @@ export const showEventsByClient = async (req: Request, res: Response) => {
         const eventos = await Evento.findAll({
             where: { cedula_cliente },
             include: [
-                { model: Usuario, as: 'cliente' },
-                { model: Usuario, as: 'asesor' },
-                { model: TipoEvento, as: 'tipo_evento' }
+                { model: Usuario, as: 'cliente' }, // Asegúrate que este es el alias correcto
+                { model: Usuario, as: 'asesor' }, // Asegúrate que este es el alias correcto
+                { model: TipoEvento, as: 'tipo_evento' } // Asegúrate que este es el alias correcto
             ]
         });
 
@@ -269,9 +269,9 @@ export const showEventsByAsesor = async (req: Request, res: Response) => {
         const eventos = await Evento.findAll({
             where: { cedula_asesor },
             include: [
-                { model: Usuario, as: 'cliente' },
-                { model: Usuario, as: 'asesor' },
-                { model: TipoEvento, as: 'tipo_evento' }
+                { model: Usuario, as: 'cliente' }, // Asegúrate que este es el alias correcto
+                { model: Usuario, as: 'asesor' }, // Asegúrate que este es el alias correcto
+                { model: TipoEvento, as: 'tipo_evento' } // Asegúrate que este es el alias correcto
             ]
         });
 
@@ -306,9 +306,6 @@ export const editEvent = async (req: Request, res: Response) => {
             desea_supervision,
             nota_cliente,
             estado_solicitud,
-            subtotal_evento,
-            itbis_evento,
-            total_evento
         } = req.body;
 
         // Verificar roles si se están actualizando
@@ -351,10 +348,7 @@ export const editEvent = async (req: Request, res: Response) => {
             estado_solicitud: estado_solicitud || evento.estado_solicitud,
             desea_supervision: desea_supervision !== undefined ? desea_supervision : evento.desea_supervision,
             nota_cliente: nota_cliente || evento.nota_cliente,
-            subtotal_evento: subtotal_evento || evento.subtotal_evento,
-            itbis_evento: itbis_evento || evento.itbis_evento,
-            total_evento: total_evento || evento.total_evento
-        });
+          });
 
         res.json(evento);
     } catch (error) {
@@ -509,7 +503,7 @@ export const getEventEmployees = async (req: Request, res: Response) => {
                 estado_empevento: 'Activo'
             },
             include: [
-                { model: Usuario, as: 'empleado' }
+                { model: Usuario, as: 'empleado' } // Asegúrate que este es el alias correcto
             ]
         });
 

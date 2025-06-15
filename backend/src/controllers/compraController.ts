@@ -14,7 +14,7 @@ export const createCompra = async (req: Request, res: Response) => {
       id_proveedor,
       detalles, // Array de detalles de compra
       costo_compra,
-      estado_compra = 'En proceso'
+      estado_compra = 'Completada' // Estado por defecto
     } = req.body;
 
     // Verificar que el proveedor existe

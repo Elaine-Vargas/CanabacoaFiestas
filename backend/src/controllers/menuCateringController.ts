@@ -9,15 +9,15 @@ import Menu from '../models/Menu_model';
 export const addMenuToCatering = async (req: Request, res: Response) => {
     const t = await sequelize.transaction();
     try {
-        const { id_catering, id_menu } = req.body;
+        const { id_catering, id_menu, personas_menucatering } = req.body;
 
         // Validaciones
-        if (!id_catering || !id_menu) {
+        if (!id_catering || !id_menu || !personas_menucatering) {
             await t.rollback();
             return res.status(400).json({
                 success: false,
                 error: 'Datos inválidos',
-                mensaje: 'ID de catering y ID de menú son requeridos'
+                mensaje: 'ID de catering, ID de menú y personas_menucatering son requeridos'
             });
         }
 
@@ -66,6 +66,7 @@ export const addMenuToCatering = async (req: Request, res: Response) => {
         const menuCatering = await MenuCatering.create({
             id_catering,
             id_menu,
+            personas_menucatering,
             estado_menucatering: 'Aceptado'
         }, { transaction: t });
 

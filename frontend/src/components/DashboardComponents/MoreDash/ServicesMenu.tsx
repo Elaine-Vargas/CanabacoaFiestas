@@ -147,8 +147,6 @@ export default function ServicesMenu({ selectedService }: ServicesMenuProps) {
           </div>
         </div>
 
-        <ColorTheme colorDark="black" colorLight="white" />
-
         <List sx={{ flexGrow: 1 }}>
           {menuItems.map((item) => (
             <ListItem key={item.text} disablePadding>
@@ -177,11 +175,11 @@ export default function ServicesMenu({ selectedService }: ServicesMenuProps) {
           ))}
         </List>
 
-        <IoIosExit 
-          className="logout-button" 
-          title="Cerrar Sesión" 
-          onClick={() => setShowLogoutModal(true)} 
-        />
+        <div className="theme-exit-container">
+          <ColorTheme colorDark="black" colorLight="white" />
+          <IoIosExit className="logout-button" title="Cerrar Sesión" onClick={() => setShowLogoutModal(true)} />
+        </div>
+
       </Drawer>
     );
   };
@@ -225,7 +223,10 @@ export default function ServicesMenu({ selectedService }: ServicesMenuProps) {
 
       {!isMobile && (
         <div className="sidebar">
-          <ColorTheme colorDark="black" colorLight="white" />
+          <div className="theme-exit-container">
+            <ColorTheme colorDark="black" colorLight="white" />
+            <IoIosExit className="logout-button" title="Cerrar Sesión" onClick={() => setShowLogoutModal(true)} />
+          </div>
           <div className="user-profile">
             <FaUserCog 
               size={30} 
@@ -254,7 +255,6 @@ export default function ServicesMenu({ selectedService }: ServicesMenuProps) {
             </div>
           </div>
           {renderMenuItems()}
-          <IoIosExit className="logout-button" title="Cerrar Sesión" onClick={() => setShowLogoutModal(true)} />
         </div>
       )}
     </>
