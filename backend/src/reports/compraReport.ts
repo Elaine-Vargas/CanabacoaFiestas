@@ -84,14 +84,12 @@ export const ReporteCompraDetalle = async (req: Request, res: Response) => {
 
       const totalCompras = compras.length;
       const totalGastos = compras.reduce((sum, comp) => sum + (Number(comp.costo_compra) || 0), 0);
-      const comprasActivas = compras.filter(comp => comp.estado_compra === 'En proceso').length;
       const comprasCompletadas = compras.filter(comp => comp.estado_compra === 'Completada').length;
       const comprasCanceladas = compras.filter(comp => comp.estado_compra === 'Cancelada').length;
 
       doc.fontSize(12);
       doc.text(`Total de Compras: ${totalCompras}`);
       doc.text(`Total de Gastos: ${formatearMoneda(totalGastos)}`);
-      doc.text(`Compras En Proceso: ${comprasActivas}`);
       doc.text(`Compras Completadas: ${comprasCompletadas}`);
       doc.text(`Compras Canceladas: ${comprasCanceladas}`);
       doc.moveDown(3);

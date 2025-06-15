@@ -15,7 +15,6 @@ export const createCatering = async (req: Request, res: Response) => {
     try {
         const {
             id_evento,
-            personas_catering,
             precioneto_catering,
             itbis_catering,
             total_catering,
@@ -35,7 +34,6 @@ export const createCatering = async (req: Request, res: Response) => {
         // Crear el servicio de catering
         const catering = await CateringServicio.create({
             id_evento,
-            personas_catering,
             precioneto_catering: precioneto_catering || 0,
             itbis_catering: itbis_catering || 0,
             total_catering: total_catering || 0,
@@ -232,7 +230,6 @@ export const editCatering = async (req: Request, res: Response) => {
     try {
         const { id_catering } = req.params;
         const {
-            personas_catering,
             precioneto_catering,
             itbis_catering,
             total_catering,
@@ -242,7 +239,6 @@ export const editCatering = async (req: Request, res: Response) => {
 
         console.log('Datos recibidos:', {
             id_catering,
-            personas_catering,
             precioneto_catering,
             itbis_catering,
             total_catering,
@@ -283,7 +279,6 @@ export const editCatering = async (req: Request, res: Response) => {
 
         // Actualizar el servicio de catering
         const updateData = {
-            personas_catering: personas_catering || catering.personas_catering,
             precioneto_catering: precioneto_catering || catering.precioneto_catering,
             itbis_catering: itbis_catering || catering.itbis_catering,
             total_catering: total_catering || catering.total_catering,

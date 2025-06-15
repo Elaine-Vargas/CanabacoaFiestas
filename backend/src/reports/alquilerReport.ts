@@ -133,7 +133,7 @@ export const ReporteAlquilerDetalle = async (req: Request, res: Response) => {
         alquiler.evento?.fecha_evento ? new Date(alquiler.evento.fecha_evento).toLocaleDateString() : 'N/A',
         alquiler.evento?.asesor ? `${alquiler.evento.asesor.nombre_usuario} ${alquiler.evento.asesor.apellido_usuario}` : 'N/A',
         (alquiler.cant_elementos_alquiler || 0).toString(),
-        formatearMoneda(Number(alquiler.precioneto_alquiler)),
+        formatearMoneda(Number(alquiler.subtotal_alquiler)),
         formatearMoneda(Number(alquiler.itbis_alquiler)),
         formatearMoneda(Number(alquiler.total_alquiler)),
         alquiler.estado_alquiler || 'N/A'
@@ -234,7 +234,7 @@ export const ReporteAlquilerDetalle = async (req: Request, res: Response) => {
       doc.text(`Fecha del Evento: ${alquiler.evento?.fecha_evento ? new Date(alquiler.evento.fecha_evento).toLocaleDateString() : 'N/A'}`);
       doc.text(`Asesor: ${alquiler.evento?.asesor ? `${alquiler.evento.asesor.nombre_usuario} ${alquiler.evento.asesor.apellido_usuario}` : 'N/A'}`);
       doc.text(`Cantidad de Elementos: ${alquiler.cant_elementos_alquiler || 0}`);
-      doc.text(`Precio Neto: ${formatearMoneda(Number(alquiler.precioneto_alquiler))}`);
+      doc.text(`Precio Neto: ${formatearMoneda(Number(alquiler.subtotal_alquiler))}`);
       doc.text(`ITBIS: ${formatearMoneda(Number(alquiler.itbis_alquiler))}`);
       doc.text(`Total: ${formatearMoneda(Number(alquiler.total_alquiler))}`);
       doc.text(`Estado: ${alquiler.estado_alquiler || 'N/A'}`);

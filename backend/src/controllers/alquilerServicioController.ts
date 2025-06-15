@@ -15,7 +15,7 @@ export const createAlquilerServicio = async (req: Request, res: Response) => {
     const {
       id_evento,
       cant_elementos_alquiler,
-      precioneto_alquiler,
+      subtotal_alquiler,
       itbis_alquiler,
       total_alquiler,
       estado_alquiler = 'Solicitado',
@@ -36,7 +36,7 @@ export const createAlquilerServicio = async (req: Request, res: Response) => {
     const alquiler = await AlquilerServicio.create({
       id_evento,
       cant_elementos_alquiler,
-      precioneto_alquiler,
+      subtotal_alquiler,
       itbis_alquiler,
       total_alquiler,
       estado_alquiler
@@ -397,7 +397,7 @@ export const editAlquilerServicio = async (req: Request, res: Response) => {
     const { id_alquiler } = req.params;
     const {
       cant_elementos_alquiler,
-      precioneto_alquiler,
+      subtotal_alquiler,
       itbis_alquiler,
       total_alquiler,
       estado_alquiler,
@@ -407,7 +407,7 @@ export const editAlquilerServicio = async (req: Request, res: Response) => {
     console.log('Datos recibidos para actualización:', {
       id_alquiler,
       cant_elementos_alquiler,
-      precioneto_alquiler,
+      subtotal_alquiler,
       itbis_alquiler,
       total_alquiler,
       estado_alquiler,
@@ -434,7 +434,7 @@ export const editAlquilerServicio = async (req: Request, res: Response) => {
     await alquiler.update({
       estado_alquiler,
       cant_elementos_alquiler,
-      precioneto_alquiler,
+      subtotal_alquiler,
       itbis_alquiler,
       total_alquiler
     }, { transaction: t });

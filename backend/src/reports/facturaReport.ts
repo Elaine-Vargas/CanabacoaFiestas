@@ -74,7 +74,7 @@ export const ReporteFacturaEvento = async (req: Request, res: Response) => {
     const itbisDecoracion = decoracion ? Number(decoracion.itbis_decoracion) : 0;
     const totalDecoracion = subtotalDecoracion + itbisDecoracion;
 
-    const subtotalAlquiler = alquiler ? Number(alquiler.precioneto_alquiler) : 0;
+    const subtotalAlquiler = alquiler ? Number(alquiler.subtotal_alquiler) : 0;
     const itbisAlquiler = alquiler ? Number(alquiler.itbis_alquiler) : 0;
     const totalAlquiler = subtotalAlquiler + itbisAlquiler;
 
