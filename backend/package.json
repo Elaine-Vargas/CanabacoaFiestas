@@ -5,8 +5,9 @@
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "build": "tsc",
-    "start": "ts-node src/app.ts"
+    "build": "tsc --project tsconfig.json",
+    "dev": "ts-node-dev --respawn --transpile-only src/app.ts",
+    "start": "node dist/src/app.ts"
   },
   "keywords": [],
   "author": "",
