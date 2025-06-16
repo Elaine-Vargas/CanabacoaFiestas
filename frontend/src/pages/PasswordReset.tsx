@@ -5,7 +5,6 @@ import CircularProgress from '@mui/material/CircularProgress';
 import VisibilityOffIcon from '@mui/icons-material/VisibilityOff';
 import VisibilityIcon from '@mui/icons-material/Visibility';
 import '../styles/mainPages/PasswordReset.scss';
-import { apiUrl } from '../config';
 
 interface ResetPasswordResponse {
   success: boolean;
@@ -28,6 +27,7 @@ const PasswordReset: React.FC = () => {
 
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
+    const apiUrl = `${import.meta.env.VITE_API_URL}/${import.meta.env.BACKEND_PORT}/${import.meta.env.VITE_API_BASE_URL}`;
 
   const token = searchParams.get("token");
 

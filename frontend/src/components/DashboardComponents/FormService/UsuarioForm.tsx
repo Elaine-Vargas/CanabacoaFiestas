@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { Modal, Form, Input, Select, Button, message } from 'antd';
 import { validateCedula, validateEmail, validatePhoneNumber, validateUsername, validatePassword } from '../../../utils/validation';
 import '../../../styles/dashboard/DashboardForms.scss';
-import { apiUrl } from '../../../config';
 
 interface Rol {
   id_rol: number;
@@ -24,6 +23,7 @@ const UsuarioForm: React.FC<UsuarioFormProps> = ({
   loading = false,
   initialValues,
 }) => {
+  const apiUrl = `${import.meta.env.VITE_API_URL}/${import.meta.env.BACKEND_PORT}/${import.meta.env.VITE_API_BASE_URL}`;
   const [form] = Form.useForm();
   const [roles, setRoles] = useState<Rol[]>([]);
   const [loadingRoles, setLoadingRoles] = useState(false);
