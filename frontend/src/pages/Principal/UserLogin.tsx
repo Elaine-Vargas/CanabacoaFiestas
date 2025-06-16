@@ -7,8 +7,6 @@ import LoginNav from "../../components/Otros/LoginNav";
 import CustomModal from "../../components/Otros/CustomModal";
 import VisibilityOffIcon from '@mui/icons-material/VisibilityOff';
 import VisibilityIcon from '@mui/icons-material/Visibility';
-import { apiUrl } from '../../config';
-
 import { 
   formatPhoneNumber, 
   formatCedula, 
@@ -23,6 +21,8 @@ import {
 import { useUser } from "../../contexts/UserContext";
 
 const UserLogin = () => {
+
+    const apiUrl = `${import.meta.env.VITE_API_BASE_URL}`;
 
   const [isActive, setIsActive] = useState(false);
   const [showLoginPassword, setShowLoginPassword] = useState(false);

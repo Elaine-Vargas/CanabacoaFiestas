@@ -3,7 +3,6 @@ import { Link } from "react-router-dom";
 
 import axios from 'axios';
 import {Card, CardContent, Typography, Grid, Container, TextField, Select, MenuItem, FormControl, InputLabel, Box, CircularProgress, IconButton, Drawer, List, ListItem, ListItemText, Button, Skeleton } from '@mui/material';
-import { apiUrl } from '../../config';
 
 // Lazy-loaded components
 
@@ -124,6 +123,8 @@ interface CatalogProps {
 }
 
 const ViewerCatalog: React.FC<CatalogProps> = () => {
+
+    const apiUrl = `${import.meta.env.VITE_API_URL}/${import.meta.env.BACKEND_PORT}/${import.meta.env.VITE_API_BASE_URL}`;
 
   const [elementos, setElementos] = useState<Elemento[]>([]);
   const [categorias, setCategorias] = useState<CategoriaElemento[]>([]);

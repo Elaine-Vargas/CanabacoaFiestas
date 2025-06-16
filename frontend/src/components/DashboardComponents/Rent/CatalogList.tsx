@@ -7,7 +7,7 @@ import {
   TableContainer, TableHead, TableRow, Paper
 } from '@mui/material';
 
-import { apiUrl } from '../../../config';
+  const apiUrl = `${import.meta.env.VITE_API_URL}/${import.meta.env.BACKEND_PORT}/${import.meta.env.VITE_API_BASE_URL}`;
 
 
 import ShoppingCartIcon from '@mui/icons-material/ShoppingCart';

@@ -1,5 +1,4 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { apiUrl } from '../config';
 
 type UserRole = 'admin' | 'cliente' | 'empleado' | null;
 
@@ -16,6 +15,7 @@ interface UserProviderProps {
 }
 
 export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
+    const apiUrl = `${import.meta.env.VITE_API_URL}/${import.meta.env.BACKEND_PORT}/${import.meta.env.VITE_API_BASE_URL}`;
   const [userRole, setUserRole] = useState<UserRole>(null);
   const [isUserLoading, setIsUserLoading] = useState(true);
 

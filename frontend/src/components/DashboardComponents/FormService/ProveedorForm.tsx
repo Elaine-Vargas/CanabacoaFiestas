@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { Modal, Form, Input, Select, Button, message, Divider } from 'antd';
 import '../../../styles/dashboard/DashboardForms.scss';
 import { validateEmail, validatePhoneNumber, formatPhoneNumber } from '../../../utils/validation';
-import { apiUrl } from '../../../config';
 
 interface Provincia {
   id_provincia: number;
@@ -54,6 +53,7 @@ const ProveedorForm: React.FC<ProveedorFormProps> = ({
   loading = false,
   initialValues,
 }) => {
+  const apiUrl = `${import.meta.env.VITE_API_URL}/${import.meta.env.BACKEND_PORT}/${import.meta.env.VITE_API_BASE_URL}`;
   const [form] = Form.useForm();
   const [provincias, setProvincias] = useState<Provincia[]>([]);
   const [ciudades, setCiudades] = useState<Ciudad[]>([]);
