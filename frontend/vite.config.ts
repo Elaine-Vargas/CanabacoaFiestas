@@ -12,5 +12,20 @@ export default defineConfig({
         secure: false,
       }
     }
-  }
+  },
+  build: {
+    minify: 'terser',
+    terserOptions: {
+      compress: {
+        drop_console: true,      // Elimina todos los console.*
+        drop_debugger: true,     // Elimina los debugger
+        pure_funcs: ['console.info', 'console.debug', 'console.warn'], // Elimina estos métodos específicos
+        passes: 2,               // Más pasadas de compresión
+      },
+      mangle: true,              // Renombra variables para menor tamaño
+      format: {
+        comments: false,         // Elimina todos los comentarios
+      },
+    },
+  },
 })
