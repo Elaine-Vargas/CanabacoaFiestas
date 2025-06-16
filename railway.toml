@@ -1,6 +1,6 @@
 [build]
 builder = "nixpacks"
-buildCommand = "npm install -g typescript && npm run build --prefix backend"
+buildCommand = "npm install && npm run build --prefix backend"
 nodeVersion = "18"
 
 [deploy]
