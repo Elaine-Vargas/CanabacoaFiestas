@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Button, Select, Space, message, Card, Modal, Row, Col, Input, Typography, DatePicker } from 'antd';
-import { DownloadOutlined, UserOutlined, TeamOutlined, CalendarOutlined, TruckOutlined, ShoppingCartOutlined, PrinterOutlined, InboxOutlined, ShopOutlined } from '@ant-design/icons';
+import { DownloadOutlined, UserOutlined, TeamOutlined, CalendarOutlined, TruckOutlined, ShoppingCartOutlined, PrinterOutlined, InboxOutlined, ShopOutlined, FileSearchOutlined } from '@ant-design/icons';
 import axios from 'axios';
 import dayjs from 'dayjs';
 import { useNavigate } from 'react-router-dom';
@@ -1030,7 +1030,7 @@ const ReportClient = () => {
   return (
     <div style={{ padding: '20px' }}>
       <Title level={2} className="welcome-title">
-          Reportes del Sistema
+          Mis Reportes
         </Title>
       <Row gutter={[16, 16]}>
         <Col xs={24} sm={12} md={8} lg={6}>
@@ -1043,8 +1043,8 @@ const ReportClient = () => {
             <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '16px' }}>
               <CalendarOutlined style={{ fontSize: '48px', color: 'var(--gold)' }} />
             </div>
-            <h3 className="reportTitle">Reportes de Eventos</h3>
-            <p>Estadísticas y métricas de eventos</p>
+            <h3 className="reportTitle">Mis Eventos</h3>
+            <p>Lista de mis de eventos</p>
           </Card>
         </Col>
         <Col xs={24} sm={12} md={8} lg={6}>
@@ -1057,7 +1057,7 @@ const ReportClient = () => {
             <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '16px' }}>
               <TeamOutlined style={{ fontSize: '48px', color: 'var(--gold)' }} />
             </div>
-            <h3 className="reportTitle">Reportes de Equipos</h3>
+            <h3 className="reportTitle">Equipos de mis Eventos</h3>
             <p>Análisis de equipos y sus eventos</p>
           </Card>
         </Col>
@@ -1069,10 +1069,11 @@ const ReportClient = () => {
             style={{ textAlign: 'center', display: 'flex', flexDirection: 'column', justifyContent: 'center', minHeight: '200px' }}
           >
             <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '16px' }}>
-              <ShoppingCartOutlined style={{ fontSize: '48px', color: 'var(--gold)' }} />
+              <FileSearchOutlined style={{ fontSize: '48px', color: 'var(--gold)' }} />
+         
             </div>
-            <h3 className="reportTitle">Reportes de Facturas</h3>
-            <p>Historial de pagos y facturas</p>
+            <h3 className="reportTitle">TODO SOBRE UN EVENTO</h3>
+            <p>Servicios, Totales, Pagos</p>
           </Card>
         </Col>
       </Row>

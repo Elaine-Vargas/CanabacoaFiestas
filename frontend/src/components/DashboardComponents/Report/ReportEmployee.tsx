@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Button, Select, Space, message, Card, Modal, Row, Col, Input, Typography, DatePicker } from 'antd';
-import { DownloadOutlined, UserOutlined, TeamOutlined, CalendarOutlined, TruckOutlined, ShoppingCartOutlined, PrinterOutlined, InboxOutlined, ShopOutlined } from '@ant-design/icons';
+import { DownloadOutlined, UserOutlined, TeamOutlined, CalendarOutlined, TruckOutlined, ShoppingCartOutlined, PrinterOutlined, InboxOutlined, ShopOutlined, FileSearchOutlined } from '@ant-design/icons';
 import axios from 'axios';
 import dayjs from 'dayjs';
 import { useNavigate } from 'react-router-dom';
@@ -693,7 +693,7 @@ const ReportEmployee = () => {
 
   const handleFacturaModalCancel = () => {
     setIsFacturaModalVisible(false);
-    setSelectedEventoId('todos');
+    setSelectedEventoId('ninguno');
   };
 
   useEffect(() => {
@@ -855,7 +855,7 @@ const ReportEmployee = () => {
       setLoading(true);
       let url = `${apiUrl}/reporte/factura/asesor/${userCedula}`;
 
-      if (selectedEventoId && selectedEventoId !== 'todos') {
+      if (selectedEventoId && selectedEventoId !== 'ninguno') {
         url = `${apiUrl}/reporte/factura/evento/${selectedEventoId}`;
       }
 
@@ -980,6 +980,38 @@ const ReportEmployee = () => {
     setFilteredCompras([]);
     setFilteredProveedores([]);
   };
+
+  // --- FETCH COMPRAS ---
+  const fetchCompras = async () => {
+    try {
+      setLoadingCompras(true);
+      const response = await axios.get(`${apiUrl}/compra`, {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      if (response.data && Array.isArray(response.data)) {
+        setCompras(response.data);
+      } else if (response.data.compras && Array.isArray(response.data.compras)) {
+        setCompras(response.data.compras);
+      } else {
+        setCompras([]);
+      }
+    } catch (error) {
+      console.error('Error al cargar compras:', error);
+      message.error('Error al cargar las compras');
+      setCompras([]);
+    } finally {
+      setLoadingCompras(false);
+    }
+  };
+
+  useEffect(() => {
+    if (isCompraModalVisible) {
+      fetchCompras();
+    }
+  }, [isCompraModalVisible]);
 
   const handleCompraReport = async () => {
     try {
@@ -1262,7 +1294,7 @@ const ReportEmployee = () => {
               <TeamOutlined style={{ fontSize: '48px', color: 'var(--gold)' }} />
             </div>
             <h3 className="reportTitle">Reportes de Equipos</h3>
-            <p>Análisis de equipos y sus eventos</p>
+            <p>Análisis de mis equipos y eventos</p>
           </Card>
         </Col>
         <Col xs={24} sm={12} md={8} lg={6}>
@@ -1289,10 +1321,10 @@ const ReportEmployee = () => {
             style={{ textAlign: 'center', display: 'flex', flexDirection: 'column', justifyContent: 'center', minHeight: '200px' }}
           >
             <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '16px' }}>
-              <PrinterOutlined style={{ fontSize: '48px', color: 'var(--gold)' }} />
+              <FileSearchOutlined style={{ fontSize: '48px', color: 'var(--gold)' }} />
             </div>
-            <h3 className="reportTitle">Facturas de Pagos</h3>
-            <p>Gestión de facturación y pagos</p>
+            <h3 className="reportTitle">Todo sobre Un Evento</h3>
+            <p>Servicios, Totales y Pagos</p>
           </Card>
         </Col>
         <Col xs={24} sm={12} md={8} lg={6}>
@@ -1628,7 +1660,7 @@ const ReportEmployee = () => {
                 icon={<DownloadOutlined />}
                 onClick={handleFacturaReport}
                 loading={loading}
-                disabled={!selectedEventoId || selectedEventoId === 'todos'}
+                disabled={!selectedEventoId || selectedEventoId === 'ninguno'}
               >
                 Generar Reporte
               </Button>
@@ -1705,32 +1737,31 @@ const ReportEmployee = () => {
                 value={selectedEstadoCompra}
                 onChange={setSelectedEstadoCompra}
               >
-                <Option value="todos">Todos los Estados</Option>
-                <Option value="En proceso">En proceso</Option>
+                <Option value="todos">Todos los estados</Option>
+                <Option value="Pendiente">Pendiente</Option>
                 <Option value="Completada">Completada</Option>
                 <Option value="Cancelada">Cancelada</Option>
               </Select>
 
+              {/* Selector de compras */}
               <Select
                 style={{ width: '100%' }}
-                placeholder="Seleccione un proveedor de elementos"
-                value={selectedProveedorCompra}
-                onChange={setSelectedProveedorCompra}
-                loading={loadingProveedores}
+                placeholder="Seleccione una compra"
+                value={selectedCompraId}
+                onChange={setSelectedCompraId}
+                loading={loadingCompras}
                 showSearch
                 optionFilterProp="label"
-                filterOption={(input, option) => 
-                  (option?.label ?? '').toString().toLowerCase().includes(input.toLowerCase())
-                }
+                filterOption={(input, option) => (option?.label ?? '').toString().toLowerCase().includes(input.toLowerCase())}
               >
-                <Option value="todos">Todos los Proveedores de Elementos</Option>
-                {filteredProveedores.map(proveedor => (
-                  <Option 
-                    key={proveedor.id_proveedor} 
-                    value={proveedor.id_proveedor.toString()}
-                    label={proveedor.nombre_proveedor}
+                <Option value="todos">Todas las Compras</Option>
+                {compras.map((compra) => (
+                  <Option
+                    key={compra.id_compra}
+                    value={compra.id_compra.toString()}
+                    label={`#${compra.id_compra} - ${compra.fecha_compra} - ${compra.estado_compra}`}
                   >
-                    {proveedor.nombre_proveedor}
+                    {`#${compra.id_compra} - ${compra.fecha_compra} - ${compra.estado_compra}`}
                   </Option>
                 ))}
               </Select>
@@ -1749,10 +1780,7 @@ const ReportEmployee = () => {
             <Button 
               type="primary" 
               icon={<DownloadOutlined />}
-              onClick={() => {
-                setSelectedCompraId('todos');
-                handleCompraReport();
-              }}
+              onClick={handleCompraReport}
               loading={loading}
             >
               Generar Reporte General
@@ -1762,42 +1790,7 @@ const ReportEmployee = () => {
           <div>
             <h4 className='reportTitle'>Reporte de Detalle de Compra</h4>
             <Space direction="vertical" style={{ width: '100%' }}>
-              <Select
-                style={{ width: '100%' }}
-                placeholder="Seleccione una compra"
-                value={selectedCompraId}
-                onChange={setSelectedCompraId}
-                loading={loadingCompras}
-                showSearch
-                optionFilterProp="label"
-                filterOption={(input, option) => 
-                  (option?.label ?? '').toString().toLowerCase().includes(input.toLowerCase())
-                }
-              >
-                <Option value="todos">Todas las Compras</Option>
-                {filteredCompras.map(compra => {
-                  const fecha = new Date(compra.fecha_compra).toLocaleDateString('es-DO');
-                  const proveedor = proveedores.find(p => p.id_proveedor === compra.id_proveedor);
-                  return (
-                    <Option 
-                      key={compra.id_compra} 
-                      value={compra.id_compra.toString()}
-                      label={`Compra #${compra.id_compra} - ${fecha} - ${proveedor?.nombre_proveedor} - ${compra.estado_compra}`}
-                    >
-                      {`Compra #${compra.id_compra} - ${fecha} - ${proveedor?.nombre_proveedor} - ${compra.estado_compra}`}
-                    </Option>
-                  );
-                })}
-              </Select>
-              <Button 
-                type="primary" 
-                icon={<DownloadOutlined />}
-                onClick={handleCompraReport}
-                loading={loading}
-                disabled={!selectedCompraId || selectedCompraId === 'todos'}
-              >
-                Generar Reporte de Detalle
-              </Button>
+              {/* Aquí puedes agregar más filtros o detalles si es necesario */}
             </Space>
           </div>
         </Space>

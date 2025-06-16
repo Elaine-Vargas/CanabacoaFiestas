@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Button, Typography, Select, Space, message, Card, Modal, Row, Col, DatePicker } from 'antd';
-import { DownloadOutlined, UserOutlined, TeamOutlined, CalendarOutlined, TruckOutlined, ShoppingCartOutlined, PrinterOutlined, InboxOutlined, ShopOutlined } from '@ant-design/icons';
+import { DownloadOutlined, UserOutlined, TeamOutlined, CalendarOutlined, TruckOutlined, ShoppingCartOutlined, PrinterOutlined, InboxOutlined, ShopOutlined, FileSearchOutlined } from '@ant-design/icons';
 import axios from 'axios';
 import dayjs from 'dayjs';
 import '../../../styles/dashboard/ServicesSubpages.scss';
@@ -1359,11 +1359,11 @@ const ReportAdmin = () => {
             style={{ textAlign: 'center', display: 'flex', flexDirection: 'column', justifyContent: 'center', minHeight: '200px' }}
           >
             <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '16px' }}>
-              <PrinterOutlined style={{ fontSize: '48px', color: 'var(--gold)' }} />
-            </div>
-            <h3 className="reportTitle">Facturas de Pagos</h3>
-            <p>Gestión de facturación y pagos</p>
-          </Card>
+           <FileSearchOutlined style={{ fontSize: '48px', color: 'var(--gold)' }} />
+          </div>
+          <h3 className="reportTitle">Todo sobre Un Evento</h3>
+          <p>Servicios, Totales y Pagos</p>
+        </Card>
         </Col>
         <Col xs={24} sm={12} md={8} lg={6}>
           <Card
