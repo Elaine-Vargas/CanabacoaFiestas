@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { Typography, Button, CircularProgress } from "@mui/material";
 import axios from "axios";
+import { apiUrl } from '../../config';
 
 interface UsuarioComentario {
   cedula_usuario: string;
@@ -21,7 +22,6 @@ interface Comentario {
 }
 
 const Comments = () => {
-    const apiUrl = `${import.meta.env.VITE_API_URL}/${import.meta.env.BACKEND_PORT}/${import.meta.env.VITE_API_BASE_URL}`;
 
   const [comentarios, setComentarios] = useState<Comentario[]>([]);
   const [loading, setLoading] = useState(true);

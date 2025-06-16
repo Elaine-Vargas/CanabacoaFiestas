@@ -7,6 +7,7 @@ import DecoracionForm from "../FormService/DecoracionForm";
 import TableFilters from "../MoreDash/TableFilters";
 import type { Dayjs } from 'dayjs';
 import dayjs from 'dayjs';
+import { apiUrl } from '../../../config';
 
 const { Title } = Typography;
 
@@ -136,7 +137,6 @@ interface Pago {
 }
 
 export default function WelcomeClient() {
-    const apiUrl = `${import.meta.env.VITE_API_URL}/${import.meta.env.BACKEND_PORT}/${import.meta.env.VITE_API_BASE_URL}`;
   const [eventos, setEventos] = useState<Evento[]>([]);
   const [decoraciones, setDecoraciones] = useState<Decoracion[]>([]);
   const [comentarios, setComentarios] = useState<Comentario[]>([]);

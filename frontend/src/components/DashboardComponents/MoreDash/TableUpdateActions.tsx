@@ -1,6 +1,6 @@
 import { message } from 'antd';
 
-  const apiUrl = `${import.meta.env.VITE_API_URL}/${import.meta.env.BACKEND_PORT}/${import.meta.env.VITE_API_BASE_URL}`;
+import { apiUrl } from '../../../config';
 
 // Función para actualizar el estado de un evento
 export const updateEventoEstado = async (id_evento: number): Promise<boolean> => {

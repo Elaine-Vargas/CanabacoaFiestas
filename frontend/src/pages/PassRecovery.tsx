@@ -2,14 +2,13 @@ import { useState } from 'react';
 import axios from 'axios';
 import { useNavigate, Link } from 'react-router-dom';
 import '../styles/mainPages/Recovery.scss';
+import { apiUrl } from '../config';
 
 const PassRecovery = () => {
   const [correo, setCorreo] = useState('');
   const [mensaje, setMensaje] = useState('');
   const [error, setError] = useState('');
   const [cargando, setCargando] = useState(false);
-
-    const apiUrl = `${import.meta.env.VITE_API_URL}/${import.meta.env.BACKEND_PORT}/${import.meta.env.VITE_API_BASE_URL}`;
 
 
   const handleSubmit = async (e: React.FormEvent) => {

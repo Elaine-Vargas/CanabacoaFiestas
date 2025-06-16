@@ -3,11 +3,11 @@ import { useNavigate } from "react-router-dom";
 import VisibilityOffIcon from '@mui/icons-material/VisibilityOff';
 import VisibilityIcon from '@mui/icons-material/Visibility';
 import "../../styles/dashboard/UserConfig.scss";
+import { apiUrl } from '../../config';
 import { validateEmail, validateUsername, validatePhoneNumber, formatPhoneNumber} from "../../utils/validation";
 
 export default function UserConfig() {
 
-    const apiUrl = `${import.meta.env.VITE_API_URL}/${import.meta.env.BACKEND_PORT}/${import.meta.env.VITE_API_BASE_URL}`;
   const [userData, setUserData] = useState({
     nombre_usuario: "",
     apellido_usuario: "",

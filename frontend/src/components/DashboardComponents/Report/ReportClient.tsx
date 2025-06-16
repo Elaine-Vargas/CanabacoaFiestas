@@ -5,6 +5,7 @@ import axios from 'axios';
 import dayjs from 'dayjs';
 import { useNavigate } from 'react-router-dom';
 import '../../../styles/dashboard/ServicesSubpages.scss';
+import { apiUrl } from '../../../config';
 
 const { Title } = Typography;
 const { Option } = Select;
@@ -94,7 +95,6 @@ interface ElementoCompra {
 }
 
 const ReportClient = () => {
-    const apiUrl = `${import.meta.env.VITE_API_URL}/${import.meta.env.BACKEND_PORT}/${import.meta.env.VITE_API_BASE_URL}`;
   const navigate = useNavigate();
   const [userRole, setUserRole] = useState<number | null>(null);
   const [userCedula, setUserCedula] = useState<string>('');

@@ -3,6 +3,7 @@ import { Box, Button, CircularProgress, IconButton } from '@mui/material';
 import CloudUploadIcon from '@mui/icons-material/CloudUpload';
 import DeleteIcon from '@mui/icons-material/Delete';
 import axios from 'axios';
+import { apiUrl } from '../../config';
 
 interface ImageUploadProps {
   elementoId: number;
@@ -13,7 +14,6 @@ interface ImageUploadProps {
 
 const ImageUpload = ({ elementoId, imagenUrl, onImageUploaded, onImageDeleted }: ImageUploadProps) => {
 
-    const apiUrl = `${import.meta.env.VITE_API_URL}/${import.meta.env.BACKEND_PORT}/${import.meta.env.VITE_API_BASE_URL}`;
   const serverUrl = import.meta.env.VITE_API_URL;
 
 
