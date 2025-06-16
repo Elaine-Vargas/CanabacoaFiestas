@@ -1,0 +1,12 @@
+{
+  "build": {
+    "env": {
+      "NODE_ENV": "production"
+    },
+    "command": "npm run build --prefix backend"
+  },
+  "deploy": {
+    "startCommand": "npm start --prefix backend"
+  },
+  "rootDirectory": "./backend"
+}

@@ -1,0 +1,11 @@
+[build]
+builder = "nixpacks"
+buildCommand = "npm install -g typescript && npm run build --prefix backend"
+nodeVersion = "18"
+
+[deploy]
+startCommand = "npm start --prefix backend"
+healthcheckPath = "/"
+healthcheckTimeout = 100
+restartPolicy = "on-failure"
+maxRetries = 10
