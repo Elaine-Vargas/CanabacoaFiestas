@@ -4,6 +4,7 @@ import { DownloadOutlined, UserOutlined, TeamOutlined, CalendarOutlined, TruckOu
 import axios from 'axios';
 import dayjs from 'dayjs';
 import '../../../styles/dashboard/ServicesSubpages.scss';
+import { apiUrl } from '../../../config';
 
 const { Title } = Typography;
 const { Option } = Select;
@@ -94,7 +95,6 @@ interface ElementoCompra {
 }
 
 const ReportAdmin = () => {
-    const apiUrl = `${import.meta.env.VITE_API_URL}/${import.meta.env.BACKEND_PORT}/${import.meta.env.VITE_API_BASE_URL}`;
   const [loading, setLoading] = useState<boolean>(false);
   const [isUserModalVisible, setIsUserModalVisible] = useState<boolean>(false);
   const [isEventModalVisible, setIsEventModalVisible] = useState<boolean>(false);
@@ -1810,8 +1810,8 @@ const ReportAdmin = () => {
               >
                 <Option value="todos">Seleccione un evento</Option>
                 {eventos.map(evento => (
-                  <Option key={evento.id_evento} value={evento.id_evento.toString()} label={evento.cliente ? `${evento.cliente.nombre_usuario} ${evento.cliente.apellido_usuario}` : evento.id_evento}>
-                    {evento.cliente ? `${evento.cliente.nombre_usuario} ${evento.cliente.apellido_usuario}` : evento.id_evento}
+                  <Option key={evento.id_evento} value={evento.id_evento.toString()} label={evento.cliente ? ` Evento #${evento.id_evento}- ${evento.cliente.nombre_usuario} ${evento.cliente.apellido_usuario}` : evento.id_evento}>
+                    {evento.cliente ? `Evento #${evento.id_evento} - ${evento.cliente.nombre_usuario} ${evento.cliente.apellido_usuario}` : evento.id_evento}
                   </Option>
                 ))}
               </Select>

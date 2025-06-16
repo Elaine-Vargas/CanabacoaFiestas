@@ -12,9 +12,7 @@ import DeleteIcon from '@mui/icons-material/Delete';
 import CloseIcon from '@mui/icons-material/Close';
 import { useNavigate } from 'react-router-dom';
 
-// Lazy-loaded components
-  const apiUrl = `${import.meta.env.VITE_API_URL}/${import.meta.env.BACKEND_PORT}/${import.meta.env.VITE_API_BASE_URL}`;
-
+import { apiUrl } from '../../../config';
 
 interface CategoriaElemento {
   id_categoria: number;

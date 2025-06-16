@@ -23,6 +23,7 @@ import {
   updateDecoracionEstado 
 } from '../MoreDash/TableUpdateActions';
 import dayjs from 'dayjs';
+import { apiUrl } from '../../../config';
 
 // Definición de tipos
 type EstadoSolicitud = 'Pendiente' | 'Aceptada' | 'Rechazada' | 'Completada' | 'Cancelada';
@@ -252,7 +253,6 @@ interface DecoracionFormProps {
 const { Title } = Typography;
 
 const WelcomeAdmin: React.FC = () => {
-    const apiUrl = `${import.meta.env.VITE_API_URL}/${import.meta.env.BACKEND_PORT}/${import.meta.env.VITE_API_BASE_URL}`;
   const [formDecoracion] = Form.useForm();
   const [formElementosDecoracion] = Form.useForm();
   const [formEditarAsignacion] = Form.useForm();

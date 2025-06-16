@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Form, Select, Button, message, Descriptions, Modal } from 'antd';
 import { EyeOutlined } from '@ant-design/icons';
 import '../../../styles/dashboard/DashboardForms.scss';
+import { apiUrl } from '../../../config';
 
 interface TipoEvento {
   id_tipo_evento: number;
@@ -90,7 +91,6 @@ const AsignacionEmpleadoForm: React.FC<AsignacionEmpleadoFormProps> = ({
   onSubmit,
   initialValues,
 }) => {
-  const apiUrl = `${import.meta.env.VITE_API_URL}/${import.meta.env.BACKEND_PORT}/${import.meta.env.VITE_API_BASE_URL}`;
   const [form] = Form.useForm();
   const [eventos, setEventos] = useState<Evento[]>([]);
   const [empleados, setEmpleados] = useState<Empleado[]>([]);
