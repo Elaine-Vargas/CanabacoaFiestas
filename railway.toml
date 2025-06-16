@@ -1,6 +1,6 @@
 [build]
 builder = "nixpacks"
-buildCommand = "npm install --prefix backend && chmod +x ./backend/node_modules/.bin/tsc && npm run build --prefix backend"
+buildCommand = "npm install && npm run build --prefix backend"
 nodeVersion = "18"
 
 [deploy]
