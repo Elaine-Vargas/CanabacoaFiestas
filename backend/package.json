@@ -6,8 +6,8 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "build": "npx tsc --project tsconfig.json",
-    "dev": "ts-node-dev --respawn --transpile-only src/app.ts",
-    "start": "node dist/src/app.ts"
+    "dev": "ts-node-dev --respawn --transpile-only src/app.js",
+    "start": "node dist/app.js"
   },
   "keywords": [],
   "author": "",

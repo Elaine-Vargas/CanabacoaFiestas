@@ -2,9 +2,10 @@
   "name": "canabacoa-fiestas",
   "version": "1.0.0",
   "description": "Proyecto Canabacoa Fiestas",
+  "private": true,
   "scripts": {
-    "start": "concurrently \"cd backend && npm start\" \"cd frontend && npm run dev\"",
-    "install-all": "npm install && cd backend && npm install && cd ../frontend && npm install"
+    "start": "concurrently \"npm start --prefix backend\" \"npm run dev --prefix frontend\"",
+    "install-all": "npm install && npm install --prefix backend && npm install --prefix frontend"
   },
   "devDependencies": {
     "concurrently": "^8.2.2",
