@@ -114,18 +114,8 @@ export const sendRecoveryEmail = async (req: Request, res: Response) => {
       throw new Error('Error al conectar con el servicio de correo');
     }
 
-    // Construir la URL base correctamente
-    let backendBase = process.env.BACKEND_FULL_URL || '';
-    // Si no tiene protocolo, agregar http://
-    if (!/^https?:\/\//i.test(backendBase)) {
-      backendBase = `http://${backendBase}`;
-    }
-    // Elimina cualquier barra final para evitar doble slash
-    backendBase = backendBase.replace(/\/+$/, '');
-    // Path de recuperación (en minúsculas)
-    const recoveryPath = '/login/Recuperar-Contrasena/Restablecer';
-    // Asegura que haya una sola barra entre base y path
-    const recoveryUrl = `${backendBase}${recoveryPath}`.replace(/([^:]\/)\/+/, '$1') + `?token=${encodeURIComponent(token)}`;
+    // URL de recuperación
+    const recoveryUrl = `${process.env.FRONTEND_URL}Login/Recuperar-Contrasena/Restablecer?token=${encodeURIComponent(token)}`;
     console.log('[Recovery] URL generada:', recoveryUrl);
 
     // Configurar el correo
@@ -273,7 +263,7 @@ export const sendWelcomeEmail = async (req: Request, res: Response) => {
           <p>¡Bienvenido/a a Canabacoa Fiestas! Estamos encantados de tenerte con nosotros.</p>
           <p>Ahora puedes iniciar sesión y comenzar a explorar todos nuestros servicios.</p>
           <p style="margin: 20px 0;">
-            <a href="${process.env.FRONTEND_FULL_URL}/Login" 
+            <a href="${process.env.FRONTEND_URL}Login" 
                style="background-color: #e0c55a; color: white; padding: 10px 15px; text-decoration: none; border-radius: 5px;">
                Ir a la página de inicio de sesión
             </a>
