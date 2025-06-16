@@ -22,7 +22,7 @@ import { useUser } from "../../contexts/UserContext";
 
 const UserLogin = () => {
 
-    const apiUrl = `${import.meta.env.VITE_API_URL}/${import.meta.env.BACKEND_PORT}/${import.meta.env.VITE_API_BASE_URL}`;
+    const apiUrl = `${import.meta.env.VITE_API_BASE_URL}`;
 
   const [isActive, setIsActive] = useState(false);
   const [showLoginPassword, setShowLoginPassword] = useState(false);

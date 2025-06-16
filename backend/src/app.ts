@@ -33,10 +33,18 @@ dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 3000;
+const HOST = process.env.FRONTEND_URL || '0.0.0.0';
 
 // Configuración de CORS
+const allowedOrigins = [
+  'http://localhost:5173',
+  'http://127.0.0.1:5173',
+  'https://canabacoafiestas-production.up.railway.app/',
+  process.env.FRONTEND_URL
+].filter((origin): origin is string => Boolean(origin));
+
 const corsOptions = {
-  origin: ['http://localhost:5173', 'http://127.0.0.1:5173'],
+  origin: allowedOrigins.length === 1 ? allowedOrigins[0] : allowedOrigins,
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization']
@@ -50,31 +58,43 @@ app.use(express.json());
 // Servir archivos estáticos desde el directorio uploads
 app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 
-// Rutas
-app.use('/api/auth', authRoutes);
-app.use('/api/elemento', elementoRoutes);
-app.use('/api/comentario', comentarioRoutes);
-app.use('/api/usuario', usersRoutes);
-app.use('/api/evento', eventoRoutes);
-app.use('/api/alquiler', alquilerRoutes);
-app.use('/api/decoracion', decoracionRoutes);
-app.use('/api/direccion', direccionRoutes);
-app.use('/api/transporte',transporteRoutes);
-app.use('/api/supervision',supervisionRoutes);
-app.use('/api/catering', cateringRoutes);
-app.use('/api/menucatering', menuCateringRoutes);
-app.use('/api/menu', menuRoutes);
-app.use('/api/plato', platoRoutes);
-app.use('/api/compra', compraRoutes);
-app.use('/api/costo-agregado', costoAgregadoRoutes);  
-app.use('/api/pago', pagoRoutes);
-app.use('/api/proveedor', proveedorRoutes);
-app.use('/api/vehiculo', vehiculoRoutes);
-app.use('/api/reporte', reporteRoutes);
+// Servir frontend compilado
+app.use(express.static(path.join(__dirname, '../../frontend/dist')));
+
+// Agrupar todas las rutas API en un router
+const apiRouter = express.Router();
+apiRouter.use('/auth', authRoutes);
+apiRouter.use('/elemento', elementoRoutes);
+apiRouter.use('/comentario', comentarioRoutes);
+apiRouter.use('/usuario', usersRoutes);
+apiRouter.use('/evento', eventoRoutes);
+apiRouter.use('/alquiler', alquilerRoutes);
+apiRouter.use('/decoracion', decoracionRoutes);
+apiRouter.use('/direccion', direccionRoutes);
+apiRouter.use('/transporte', transporteRoutes);
+apiRouter.use('/supervision', supervisionRoutes);
+apiRouter.use('/catering', cateringRoutes);
+apiRouter.use('/menucatering', menuCateringRoutes);
+apiRouter.use('/menu', menuRoutes);
+apiRouter.use('/plato', platoRoutes);
+apiRouter.use('/compra', compraRoutes);
+apiRouter.use('/costo-agregado', costoAgregadoRoutes);
+apiRouter.use('/pago', pagoRoutes);
+apiRouter.use('/proveedor', proveedorRoutes);
+apiRouter.use('/vehiculo', vehiculoRoutes);
+apiRouter.use('/reporte', reporteRoutes);
+
+// Usar el router agrupado bajo /api
+app.use('/api', apiRouter);
 
 // Ruta de prueba
 app.get('/', (req, res) => {
-  res.send('Servidor funcionando correctamente');
+  res.sendFile(path.join(__dirname, '../../frontend/dist/index.html'));
+});
+
+// Catch-all para rutas que NO sean de API (SPA React Router)
+app.get(/^\/(?!api).*/, (req, res) => {
+  res.sendFile(path.join(__dirname, '../../frontend/dist/index.html'));
 });
 
 // Middleware de manejo de errores global
@@ -87,8 +107,8 @@ app.use((err: any, req: express.Request, res: express.Response, next: express.Ne
 });
 
 // Iniciar servidor
-app.listen(PORT, async () => {
-  console.log(`Servidor escuchando en http://localhost:${PORT}`);
+app.listen(Number(PORT), HOST, async () => {
+  console.log(`Servidor escuchando en http://${HOST}:${PORT}`);
   
   try {
     await testDbConnection();
