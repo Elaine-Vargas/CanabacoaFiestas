@@ -12,9 +12,6 @@ export const ReporteAlquilerDetalle = async (req: Request, res: Response) => {
   const { cedula_asesor } = req.query;
 
   try {
-    const doc = new PDFDocument({ layout: 'landscape' });
-    res.setHeader('Content-Type', 'application/pdf');
-
     const formatearMoneda = (monto: number) => {
       return new Intl.NumberFormat('es-DO', {
         style: 'currency',
@@ -23,13 +20,6 @@ export const ReporteAlquilerDetalle = async (req: Request, res: Response) => {
     };
 
     if (id_alquiler === 'todos') {
-      res.setHeader('Content-Disposition', 'attachment; filename=reporte_alquileres_general.pdf');
-      doc.pipe(res);
-
-      doc.fontSize(20).text('Reporte General de Alquileres', { align: 'center' });
-      doc.fontSize(10).text(`Reporte generado el ${new Date().toLocaleDateString()} a las ${new Date().toLocaleTimeString()}`, { align: 'center' });
-      doc.moveDown(2);
-
       // Construir la consulta base
       const includeClause = [
         { 
@@ -76,10 +66,21 @@ export const ReporteAlquilerDetalle = async (req: Request, res: Response) => {
       });
 
       if (!alquileres || alquileres.length === 0) {
-        doc.fontSize(12).text('No se encontraron alquileres.', { align: 'center' });
-        doc.end();
-        return;
+        return res.status(404).json({
+          error: 'No se encontraron alquileres',
+          mensaje: 'No se encontraron alquileres con los filtros seleccionados.'
+        });
       }
+
+      // Solo aquí, después de verificar que hay datos, se setean los headers PDF
+      const doc = new PDFDocument({ layout: 'landscape' });
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader('Content-Disposition', 'attachment; filename=reporte_alquileres_general.pdf');
+      doc.pipe(res);
+
+      doc.fontSize(20).text('Reporte General de Alquileres', { align: 'center' });
+      doc.fontSize(10).text(`Reporte generado el ${new Date().toLocaleDateString()} a las ${new Date().toLocaleTimeString()}`, { align: 'center' });
+      doc.moveDown(2);
 
       // Mostrar información del asesor si se filtró por uno específico
       if (cedula_asesor && cedula_asesor !== 'todos' && alquileres.length > 0) {
@@ -173,10 +174,10 @@ export const ReporteAlquilerDetalle = async (req: Request, res: Response) => {
         doc.y = currentRowY + rowHeight;
       });
 
-    } else {
-      res.setHeader('Content-Disposition', `attachment; filename=reporte_alquiler_${id_alquiler}.pdf`);
-      doc.pipe(res);
+      doc.end();
 
+    } else {
+      // Individual alquiler
       const alquiler = await AlquilerServicio.findByPk(id_alquiler, {
         include: [
           { 
@@ -212,10 +213,17 @@ export const ReporteAlquilerDetalle = async (req: Request, res: Response) => {
       });
 
       if (!alquiler) {
-        doc.fontSize(12).text('Alquiler no encontrado.', { align: 'center' });
-        doc.end();
-        return;
+        return res.status(404).json({
+          error: 'No se encontró el alquiler',
+          mensaje: 'No se encontró el alquiler seleccionado.'
+        });
       }
+
+      // Solo aquí, después de verificar que hay datos, se setean los headers PDF
+      const doc = new PDFDocument({ layout: 'landscape' });
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader('Content-Disposition', `attachment; filename=reporte_alquiler_${id_alquiler}.pdf`);
+      doc.pipe(res);
 
       // Verificar si el asesor tiene permiso para ver este alquiler
       if (cedula_asesor && cedula_asesor !== 'todos' && alquiler.evento?.asesor?.cedula_usuario !== cedula_asesor) {
@@ -274,10 +282,9 @@ export const ReporteAlquilerDetalle = async (req: Request, res: Response) => {
       } else {
         doc.fontSize(12).text('No se encontraron detalles para este alquiler.', { align: 'center' });
       }
+
+      doc.end();
     }
-
-    doc.end();
-
   } catch (error) {
     console.error('Error al generar el reporte de alquileres:', error);
     if (!res.headersSent) {

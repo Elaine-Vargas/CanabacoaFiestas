@@ -37,7 +37,7 @@ router.get('/proveedores/filtro/tipo/:tipo_proveedor/estado/:estado_proveedor', 
 // Ruta para reporte de factura de evento
 router.get('/factura/evento/:id_evento', ReporteFacturaEvento as RequestHandler);
 
-router.get('/compras/:id_compra', ReporteCompraDetalle);
+router.get('/compras/:id_compra', ReporteCompraDetalle as RequestHandler);
 
 // Ruta para reporte de alquiler
 router.get('/alquiler/:id_alquiler', ReporteAlquilerDetalle as RequestHandler);

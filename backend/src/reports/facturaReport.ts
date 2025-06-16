@@ -11,18 +11,27 @@ import Usuario from '../models/Usuario_model';
 import DetalleDecoracion from '../models/DetalleDecoracion_model';
 import DetalleAlquiler from '../models/DetalleAlquiler_model';
 import Elemento from '../models/Elemento_model';
+import Pago from '../models/Pago_model';
+import TipoEvento from '../models/TipoEvento_model';
 
 export const ReporteFacturaEvento = async (req: Request, res: Response) => {
   try {
     const { id_evento } = req.params;
 
-    // Obtener el evento con la información del cliente
+    // Obtener el evento con la información del cliente y tipo de evento
     const evento = await Evento.findByPk(id_evento, {
-      include: [{
-        model: Usuario,
-        as: 'cliente',
-        attributes: ['nombre_usuario', 'apellido_usuario', 'cedula_usuario']
-      }]
+      include: [
+        {
+          model: Usuario,
+          as: 'cliente',
+          attributes: ['nombre_usuario', 'apellido_usuario', 'cedula_usuario']
+        },
+        {
+          model: TipoEvento,
+          as: 'tipo_evento',
+          attributes: ['tipo_evento']
+        }
+      ]
     });
 
     if (!evento) {
@@ -69,6 +78,11 @@ export const ReporteFacturaEvento = async (req: Request, res: Response) => {
       where: { id_evento: id_evento }
     });
 
+    // PAGOS DEL EVENTO
+    const pagos = await Pago.findAll({
+      where: { id_evento: id_evento }
+    });
+
     // Calcular subtotales y totales para cada servicio
     const subtotalDecoracion = decoracion ? Number(decoracion.precioneto_decoracion) : 0;
     const itbisDecoracion = decoracion ? Number(decoracion.itbis_decoracion) : 0;
@@ -96,6 +110,11 @@ export const ReporteFacturaEvento = async (req: Request, res: Response) => {
     const itbisGeneral = itbisDecoracion + itbisAlquiler + itbisCatering + itbisTransporte + itbisCostosAdicionales;
     const totalGeneral = totalDecoracion + totalAlquiler + totalCatering + totalTransporte + totalCostosAdicionales;
 
+    // Calcular pagos recibidos y pendiente
+    const pagosRecibidos = pagos.filter(p => p.estado_pago === 'Recibido');
+    const sumaPagosRecibidos = pagosRecibidos.reduce((sum, p) => sum + Number(p.monto), 0);
+    const pagoPendiente = totalGeneral - sumaPagosRecibidos;
+
     // Crear el PDF
     const doc = new PDFDocument();
     res.setHeader('Content-Type', 'application/pdf');
@@ -112,6 +131,7 @@ export const ReporteFacturaEvento = async (req: Request, res: Response) => {
     doc.text(`Cliente: ${evento.cliente?.nombre_usuario} ${evento.cliente?.apellido_usuario}`);
     doc.text(`Cédula: ${evento.cliente?.cedula_usuario}`);
     doc.text(`Fecha del Evento: ${new Date(evento.fecha_evento).toLocaleDateString()}`);
+    doc.text(`Tipo de Evento: ${evento.tipo_evento?.tipo_evento || 'No especificado'}`);
     doc.moveDown();
 
     // Tabla de servicios
@@ -196,6 +216,23 @@ export const ReporteFacturaEvento = async (req: Request, res: Response) => {
     doc.text(`Subtotal General: ${formatearMoneda(subtotalGeneral)}`);
     doc.text(`ITBIS General (18%): ${formatearMoneda(itbisGeneral)}`);
     doc.text(`Total General: ${formatearMoneda(totalGeneral)}`);
+    doc.moveDown();
+
+    // PAGOS REALIZADOS
+    doc.fontSize(14).text('Pagos Realizados', { align: 'center' });
+    doc.moveDown(0.5);
+    if (pagos.length > 0) {
+      pagos.forEach(pago => {
+        doc.fontSize(12).text(`- ${pago.tipo_pago}: ${formatearMoneda(Number(pago.monto))} | Fecha: ${new Date(pago.fecha_pago).toLocaleDateString()} | Estado: ${pago.estado_pago}`);
+      });
+    } else {
+      doc.fontSize(12).text('No se registran pagos para este evento.');
+    }
+    doc.moveDown();
+
+    // PAGO PENDIENTE
+    doc.fontSize(14).text('Pago Pendiente', { align: 'center' });
+    doc.fontSize(12).text(`Monto pendiente por pagar: ${formatearMoneda(pagoPendiente > 0 ? pagoPendiente : 0)}`);
 
     // Pie de página
     doc.moveDown(2);

@@ -36,4 +36,4 @@ router.patch('/:id_factura/estado', cambiarEstadoFactura as RequestHandler);
 // Eliminar lógicamente una factura
 router.delete('/:id_factura', deleteFactura as RequestHandler);
 
-export default router; 
+export default router;

@@ -6,59 +6,47 @@ import Elemento from '../models/Elemento_model';
 import { Request, Response } from 'express';
 import { Op } from 'sequelize';
 
+// Funciones utilitarias locales
+const formatearMoneda = (monto: number) => {
+  return new Intl.NumberFormat('es-DO', {
+    style: 'currency',
+    currency: 'DOP',
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2
+  }).format(monto || 0);
+};
+
+const formatearFecha = (fecha: Date | string | null) => {
+  if (!fecha) return 'N/A';
+  return new Date(fecha).toLocaleDateString('es-DO');
+};
+
+const formatearHora = (hora: string | null) => {
+  if (!hora) return 'N/A';
+  return hora;
+};
+
 export const ReporteCompraDetalle = async (req: Request, res: Response) => {
   const { id_compra } = req.params;
   const { estado, fecha_inicio, fecha_fin, id_proveedor } = req.query;
 
   try {
-    const doc = new PDFDocument({ layout: 'landscape' });
-    res.setHeader('Content-Type', 'application/pdf');
-
-    const formatearMoneda = (monto: number) => {
-      return new Intl.NumberFormat('es-DO', {
-        style: 'currency',
-        currency: 'DOP',
-        minimumFractionDigits: 2,
-        maximumFractionDigits: 2
-      }).format(monto || 0);
-    };
-
-    const formatearFecha = (fecha: Date | string | null) => {
-      if (!fecha) return 'N/A';
-      return new Date(fecha).toLocaleDateString('es-DO');
-    };
-
-    const formatearHora = (hora: string | null) => {
-      if (!hora) return 'N/A';
-      return hora;
-    };
-
     // Construir condiciones de filtro
     const whereConditions: any = {};
-    
     if (estado && estado !== 'todos') {
       whereConditions.estado_compra = estado;
     }
-    
     if (fecha_inicio && fecha_fin) {
       whereConditions.fecha_compra = {
         [Op.between]: [fecha_inicio, fecha_fin]
       };
     }
-    
     if (id_proveedor && id_proveedor !== 'todos') {
       whereConditions.id_proveedor = id_proveedor;
     }
 
     if (id_compra === 'todos') {
-      res.setHeader('Content-Disposition', 'attachment; filename=reporte_compras_general.pdf');
-      doc.pipe(res);
-
-      doc.fontSize(20).text('Reporte General de Compras', { align: 'center' });
-      doc.fontSize(10).text(`Reporte generado el ${new Date().toLocaleDateString()} a las ${new Date().toLocaleTimeString()}`, { align: 'center' });
-      doc.moveDown(2);
-
-      // Aplicar filtros si existen
+      // Buscar compras primero
       const compras = await Compra.findAll({
         where: {
           ...whereConditions,
@@ -73,10 +61,20 @@ export const ReporteCompraDetalle = async (req: Request, res: Response) => {
       });
 
       if (!compras || compras.length === 0) {
-        doc.fontSize(12).text('No se encontraron compras con los filtros seleccionados.', { align: 'center' });
-        doc.end();
-        return;
+        return res.status(404).json({
+          error: 'No se encontraron compras',
+          mensaje: 'No se encontraron compras con los filtros seleccionados.'
+        });
       }
+
+      const doc = new PDFDocument({ layout: 'landscape' });
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader('Content-Disposition', 'attachment; filename=reporte_compras_general.pdf');
+      doc.pipe(res);
+
+      doc.fontSize(20).text('Reporte General de Compras', { align: 'center' });
+      doc.fontSize(10).text(`Reporte generado el ${new Date().toLocaleDateString()} a las ${new Date().toLocaleTimeString()}`, { align: 'center' });
+      doc.moveDown(2);
 
       // Resumen general
       doc.fontSize(14).text('Resumen General', { align: 'center' });
@@ -142,10 +140,10 @@ export const ReporteCompraDetalle = async (req: Request, res: Response) => {
         doc.y = currentRowY + rowHeight;
       });
 
-    } else {
-      res.setHeader('Content-Disposition', `attachment; filename=reporte_compra_${id_compra}.pdf`);
-      doc.pipe(res);
+      doc.end();
 
+    } else {
+      // Buscar compra específica primero
       const compra = await Compra.findByPk(id_compra, {
         include: [
           { 
@@ -161,10 +159,16 @@ export const ReporteCompraDetalle = async (req: Request, res: Response) => {
       });
 
       if (!compra) {
-        doc.fontSize(12).text('Compra no encontrada.', { align: 'center' });
-        doc.end();
-        return;
+        return res.status(404).json({
+          error: 'No se encontró la compra',
+          mensaje: 'No se encontró la compra seleccionada.'
+        });
       }
+
+      const doc = new PDFDocument({ layout: 'landscape' });
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader('Content-Disposition', `attachment; filename=reporte_compra_${id_compra}.pdf`);
+      doc.pipe(res);
 
       doc.fontSize(20).text(`Reporte de Compra ID: ${compra.id_compra}`, { align: 'center' });
       doc.fontSize(10).text(`Reporte generado el ${new Date().toLocaleDateString()} a las ${new Date().toLocaleTimeString()}`, { align: 'center' });
@@ -212,9 +216,8 @@ export const ReporteCompraDetalle = async (req: Request, res: Response) => {
       } else {
         doc.fontSize(12).text('No se encontraron detalles para esta compra.', { align: 'center' });
       }
+      doc.end();
     }
-
-    doc.end();
 
   } catch (error) {
     console.error('Error al generar el reporte de compras:', error);

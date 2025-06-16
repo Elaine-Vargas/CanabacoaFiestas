@@ -1227,57 +1227,48 @@ const ReportAdmin = () => {
   }, [isAlquilerModalVisible]);
 
   const handleAlquilerReport = async () => {
+    setLoading(true);
+    let url = `${apiUrl}/reporte/alquiler`;
+    if (selectedAlquilerId && selectedAlquilerId !== 'todos') {
+      url = `${apiUrl}/reporte/alquiler/${selectedAlquilerId}`;
+    } else {
+      url = `${apiUrl}/reporte/alquiler/todos`;
+    }
     try {
-      setLoading(true);
-      let url = `${apiUrl}/reporte/alquiler`;
-
-      if (selectedAlquilerId && selectedAlquilerId !== 'todos') {
-        url = `${apiUrl}/reporte/alquiler/${selectedAlquilerId}`;
-      } else {
-        url = `${apiUrl}/reporte/alquiler/todos`;
-      }
-
       const response = await axios.get(url, {
         responseType: 'blob',
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`
         }
       });
-      
-      const file = new Blob([response.data], { type: 'application/pdf' });
-      const fileURL = window.URL.createObjectURL(file);
-      window.open(fileURL);
+      // Always try to read the blob as text and parse as JSON error first
+      const blobText = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          if (reader.result) {
+            resolve(reader.result as string);
+          } else {
+            reject(new Error('Failed to read blob as text.'));
+          }
+        };
+        reader.onerror = reject;
+        reader.readAsText(response.data);
+      });
+      try {
+        const errorData = JSON.parse(blobText);
+        if (errorData && errorData.mensaje) {
+          message.error(errorData.mensaje);
+          return;
+        }
+      } catch {
+        // Not JSON, treat as PDF
+        const file = new Blob([response.data], { type: 'application/pdf' });
+        const fileURL = window.URL.createObjectURL(file);
+        window.open(fileURL);
+      }
     } catch (error) {
       if (axios.isAxiosError(error)) {
-        const { response } = error;
-        if (response && response.data instanceof Blob) {
-          try {
-            const blobText = await new Promise<string>((resolve, reject) => {
-              const reader = new FileReader();
-              reader.onloadend = () => {
-                if (reader.result) {
-                  resolve(reader.result as string);
-                } else {
-                  reject(new Error('Failed to read blob as text.'));
-                }
-              };
-              reader.onerror = reject;
-              reader.readAsText(response.data);
-            });
-
-            const errorData = JSON.parse(blobText);
-            if (errorData.mensaje) {
-              message.error(errorData.mensaje);
-            } else {
-              message.error('Error al generar el reporte de alquileres');
-            }
-          } catch (parseError) {
-            console.error('Error parsing error response:', parseError);
-            message.error('Error al generar el reporte de alquileres');
-          }
-        } else {
-          message.error('Error al generar el reporte de alquileres');
-        }
+        message.error('Error al generar el reporte de alquileres');
       } else {
         message.error('Error al generar el reporte de alquileres');
       }
@@ -1796,41 +1787,30 @@ const ReportAdmin = () => {
           <div>
             <h4 className='reportTitle'>Generar Reporte de Factura</h4>
             <Space direction="vertical" style={{ width: '100%' }}>
-             
-            <h4 className='reportTitle'>Reporte por Evento</h4>
-            <p style={{ fontSize: '12px', color: 'var(--color-text2)', lineHeight: '0.5', marginBottom: '0px'}}>ID evento y Cliente</p>
+              {/* Selector de evento */}
               <Select
                 style={{ width: '100%' }}
                 placeholder="Seleccione un evento"
                 value={selectedEventoId}
-                onChange={(value) => {
-                  setSelectedEventoId(value);
-                }}
+                onChange={setSelectedEventoId}
                 loading={loadingEventos}
                 showSearch
                 optionFilterProp="label"
-                filterOption={(input, option) => 
-                  (option?.label ?? '').toString().toLowerCase().includes(input.toLowerCase())
-                }
+                filterOption={(input, option) => (option?.label ?? '').toString().toLowerCase().includes(input.toLowerCase())}
               >
-                <Option value="todos">Todos los Eventos</Option>
+                <Option value="todos">Seleccione un evento</Option>
                 {eventos.map(evento => (
-                  <Option 
-                    key={evento.id_evento} 
-                    value={evento.id_evento.toString()}
-                    label={`#${evento.id_evento} - ${evento.cliente?.nombre_usuario} ${evento.cliente?.apellido_usuario}`}
-                  >
-                    {`#${evento.id_evento} - ${evento.cliente?.nombre_usuario} ${evento.cliente?.apellido_usuario}`}
+                  <Option key={evento.id_evento} value={evento.id_evento.toString()} label={evento.cliente ? `${evento.cliente.nombre_usuario} ${evento.cliente.apellido_usuario}` : evento.id_evento}>
+                    {evento.cliente ? `${evento.cliente.nombre_usuario} ${evento.cliente.apellido_usuario}` : evento.id_evento}
                   </Option>
                 ))}
               </Select>
-
               <Button 
                 type="primary" 
                 icon={<DownloadOutlined />}
                 onClick={handleFacturaReport}
                 loading={loading}
-                disabled={!selectedEventoId || selectedEventoId === 'todos'}
+                disabled={loading || !selectedEventoId || selectedEventoId === 'todos'}
               >
                 Generar Reporte
               </Button>
@@ -2056,6 +2036,7 @@ const ReportAdmin = () => {
                         label={`#${alquiler.id_alquiler} - Evento #${alquiler.id_evento}`}
                       >
                         {`#${alquiler.id_alquiler} - Evento #${alquiler.id_evento}`}
+
                       </Option>
                     );
                   })}

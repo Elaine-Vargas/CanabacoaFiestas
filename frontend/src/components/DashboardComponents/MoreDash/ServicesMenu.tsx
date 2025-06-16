@@ -57,12 +57,12 @@ export default function ServicesMenu({ selectedService }: ServicesMenuProps) {
     const rolId = Number(userData.rol);
 
     return (
-      <ul>
+      <ul style={{ width: '100%', textAlign: 'center' }}>
         <li
           className={selectedService === "Bienvenida" ? "active" : ""}
           onClick={() => handleNavigation("/Menu-Servicios/Bienvenida")}
         >
-          <FaTachometerAlt /> Bienvenida
+          <FaTachometerAlt /> <span style={{ display: 'inline-block', width: '100%' }}>{'Bienvenida'}</span>
         </li>
         <li
           className={
@@ -72,19 +72,19 @@ export default function ServicesMenu({ selectedService }: ServicesMenuProps) {
           }
           onClick={() => handleNavigation("/Menu-Servicios/Alquiler")}
         >
-          <FaBoxOpen /> {rolId === 1 ? 'Alquileres y Compras' : 'Alquiler'}
+          <FaBoxOpen /> <span style={{ display: 'inline-block', width: '100%', textAlign: 'center' }}>{rolId === 1 ? 'Alquileres y Compras' : 'Alquiler'}</span>
         </li>
         <li
           className={selectedService === "Catering" ? "active" : ""}
           onClick={() => handleNavigation("/Menu-Servicios/Catering")}
         >
-          <FaConciergeBell /> Catering
+          <FaConciergeBell /> <span style={{ display: 'inline-block', width: '100%' }}>{'Catering'}</span>
         </li>
         <li
           className={selectedService === "Facturas" ? "active" : ""}
           onClick={() => handleNavigation("/Menu-Servicios/Facturas")}
         >
-          <FaFileInvoiceDollar /> {rolId === 1 ? 'Reportes y Facturas' : 'Facturas'}
+          <FaFileInvoiceDollar /> <span style={{ display: 'inline-block', width: '100%', textAlign: 'center' }}>{rolId === 1 ? 'Reportes y Facturas' : 'Facturas'}</span>
         </li>
       </ul>
     );
@@ -157,6 +157,9 @@ export default function ServicesMenu({ selectedService }: ServicesMenuProps) {
                 }}
                 sx={{
                   color: selectedService === item.text ? "var(--gold)" : "var(--color-text)",
+                  justifyContent: 'center',
+                  textAlign: 'center',
+                  '& .MuiListItemText-root': { width: '100%', textAlign: 'center' },
                   "&:hover": {
                     color: "var(--gold)",
                   },
@@ -164,10 +167,12 @@ export default function ServicesMenu({ selectedService }: ServicesMenuProps) {
               >
                 <span style={{ marginRight: 10 }}>{item.icon}</span>
                 <ListItemText 
-                  primary={item.text} 
+                  primary={<span style={{ width: '100%', display: 'inline-block', textAlign: 'center' }}>{item.text}</span>} 
                   primaryTypographyProps={{ 
                     fontFamily: 'inherit',
-                    fontWeight: selectedService === item.text ? 'bold' : 'normal'
+                    fontWeight: selectedService === item.text ? 'bold' : 'normal',
+                    width: '100%',
+                    textAlign: 'center'
                   }}
                 />
               </ListItemButton>
