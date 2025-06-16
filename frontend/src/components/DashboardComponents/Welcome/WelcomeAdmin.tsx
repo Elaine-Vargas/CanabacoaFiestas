@@ -22,6 +22,7 @@ import {
   updateProveedorEstado, 
   updateDecoracionEstado 
 } from '../MoreDash/TableUpdateActions';
+import dayjs from 'dayjs';
 
 // Definición de tipos
 type EstadoSolicitud = 'Pendiente' | 'Aceptada' | 'Rechazada' | 'Completada' | 'Cancelada';
@@ -51,19 +52,21 @@ interface Evento {
   creacion_evento: string;
   id_direccion: number;
   id_tipo_evento: number;
-  direccion?: {
+  direccion: {
     id_direccion: number;
     calle: string;
     sector: string;
     ciudad: {
+      id_ciudad: number;
       nombre_ciudad: string;
       provincia: {
+        id_provincia: number;
         nombre_provincia: string;
       };
     };
   };
-  cliente?: Usuario;
-  asesor?: Usuario;
+  cliente: Usuario;
+  asesor: Usuario;
 }
 
 interface Usuario {
@@ -351,6 +354,9 @@ const WelcomeAdmin: React.FC = () => {
   const [loadingPago, setLoadingPago] = useState(false);
 
   const [user, setUser] = useState<Usuario | null>(null);
+
+  const [modalSeleccionEventoVisible, setModalSeleccionEventoVisible] = useState(false);
+  const [eventoSeleccionadoParaElementos, setEventoSeleccionadoParaElementos] = useState<Evento | null>(null);
 
   const handleSubmitDecoracion = async (values: any) => {
     try {
@@ -1296,7 +1302,42 @@ const WelcomeAdmin: React.FC = () => {
   };
 
   const handleEditEvento = (evento: Evento) => {
-    setEventoSeleccionado(evento);
+    console.log("Evento seleccionado para editar:", evento);
+    
+    // Reconstruir el objeto de evento para asegurar que todas las propiedades anidadas necesarias existan
+    // y estén tipadas correctamente para el consumo de initialValues de EventoForm.tsx.
+    // Usar encadenamiento opcional para un acceso seguro y proporcionar valores de respaldo o objetos vacíos
+    // para propiedades anidadas que puedan faltar en el objeto 'evento' recuperado,
+    // incluso si la interfaz Evento ahora las marca como no opcionales.
+    const eventoParaFormulario: Evento = {
+      ...evento, // Copia todas las propiedades de nivel superior existentes de 'evento'
+      
+      // Asegura que los objetos 'cliente' y 'asesor' siempre estén presentes y correctamente estructurados.
+      // Usa el objeto 'Usuario' real si está presente, de lo contrario, proporciona un Usuario vacío predeterminado.
+      cliente: evento.cliente || { cedula_usuario: '', nombre_usuario: '', apellido_usuario: '', usuario_login: '', correo_usuario: '', tel_usuario: '', estado_usuario: '', id_rol: 0, rol_nombre: '', creacion_usuario: '' },
+      asesor: evento.asesor || { cedula_usuario: '', nombre_usuario: '', apellido_usuario: '', usuario_login: '', correo_usuario: '', tel_usuario: '', estado_usuario: '', id_rol: 0, rol_nombre: '', creacion_usuario: '' },
+      
+      // Asegura que el objeto 'tipo_evento' siempre esté presente y correctamente estructurado.
+      tipo_evento: evento.tipo_evento || { id_tipo_evento: 0, tipo_evento: '' },
+      
+      // Asegura que el objeto 'direccion' y sus propiedades anidadas siempre estén presentes y correctamente estructuradas.
+      // Proporciona valores de respaldo robustos para todas las propiedades relacionadas con la dirección.
+      direccion: {
+        id_direccion: evento.direccion?.id_direccion || 0,
+        calle: evento.direccion?.calle || '',
+        sector: evento.direccion?.sector || '',
+        ciudad: {
+          id_ciudad: evento.direccion?.ciudad?.id_ciudad || 0,
+          nombre_ciudad: evento.direccion?.ciudad?.nombre_ciudad || '',
+          provincia: {
+            id_provincia: evento.direccion?.ciudad?.provincia?.id_provincia || 0,
+            nombre_provincia: evento.direccion?.ciudad?.provincia?.nombre_provincia || ''
+          }
+        }
+      }
+    };
+    
+    setEventoSeleccionado(eventoParaFormulario);
     setShowEventoForm(true);
   };
 
@@ -1477,31 +1518,36 @@ const WelcomeAdmin: React.FC = () => {
 
   // Función para manejar el envío de elementos de decoración
   const handleSubmitElementosDecoracion = async (values: any) => {
+    if (!eventoSeleccionadoParaElementos) {
+      message.error('Por favor seleccione un evento primero');
+      return;
+    }
+
     try {
       setLoading(true);
-      const response = await fetch('http://localhost:3001/api/elementos-decoracion', {
+      const response = await fetch('http://localhost:3001/api/decoraciones/elementos', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
           ...values,
-          id_decoracion: decoracionSeleccionada.id_decoracion
+          id_evento: eventoSeleccionadoParaElementos.id_evento
         }),
       });
 
       if (!response.ok) {
-        throw new Error('Error al guardar los elementos de decoración');
+        throw new Error('Error al guardar los elementos');
       }
 
-      message.success('Elementos de decoración guardados exitosamente');
+      message.success('Elementos agregados exitosamente');
       setModalElementosDecoracionVisible(false);
+      setEventoSeleccionadoParaElementos(null);
       formElementosDecoracion.resetFields();
-      setDecoracionSeleccionada(null);
       fetchDecoraciones();
     } catch (error) {
       console.error('Error:', error);
-      message.error('Error al guardar los elementos de decoración');
+      message.error('Error al guardar los elementos');
     } finally {
       setLoading(false);
     }
@@ -1896,23 +1942,40 @@ const WelcomeAdmin: React.FC = () => {
         title="DECORACIONES"
         className="dashboard-card"
         extra={
-          <Button
-            type="primary"
-            icon={<PlusOutlined />}
-            onClick={() => setModalDecoracionVisible(true)}
-            className="action-button primary"
-          >
-            Nueva Decoración
-          </Button>
+          <Space>
+            <Button
+              type="primary"
+              icon={<PlusOutlined />}
+              onClick={() => setModalDecoracionVisible(true)}
+              className="action-button primary"
+            >
+              Nueva Decoración
+            </Button>
+            <Button
+              type="primary"
+              icon={<PlusOutlined />}
+              onClick={() => setModalSeleccionEventoVisible(true)}
+              className="action-button primary"
+            >
+              Agregar Elementos
+            </Button>
+          </Space>
         }
       >
         <Table
           dataSource={decoraciones}
           columns={[
             {
-              title: 'ID',
-              dataIndex: 'id_decoracion',
-              key: 'id_decoracion',
+              title: 'Evento',
+              key: 'evento',
+              render: (_, record) => (
+                <span>
+                  ID: {record.id_evento} - 
+                  {record.evento?.cliente ? 
+                    `${record.evento.cliente.nombre_usuario} ${record.evento.cliente.apellido_usuario}` : 
+                    'Cliente no disponible'}
+                </span>
+              ),
             },
             {
               title: 'Tema',
@@ -1920,51 +1983,74 @@ const WelcomeAdmin: React.FC = () => {
               key: 'tema_decoracion',
             },
             {
-              title: 'Descripción',
-              dataIndex: 'descripcion_decoracion',
-              key: 'descripcion_decoracion',
+              title: 'Colores',
+              dataIndex: 'colores_decoracion',
+              key: 'colores_decoracion',
             },
             {
-              title: 'Precio',
-              dataIndex: 'precio_decoracion',
-              key: 'precio_decoracion',
-              render: (precio) => precio ? `RD$ ${precio.toLocaleString()}` : 'N/A',
+              title: 'Total $',
+              dataIndex: 'total_decoracion',
+              key: 'total_decoracion',
+              render: (total) => total ? `RD$ ${total.toLocaleString('es-DO', { minimumFractionDigits: 2 })}` : 'N/A',
+            },
+            {
+              title: 'Estado',
+              dataIndex: 'estado_decoracion',
+              key: 'estado_decoracion',
+              render: (estado: string) => {
+                let color;
+                switch (estado) {
+                  case 'Activo':
+                    color = 'green';
+                    break;
+                  case 'Pendiente':
+                    color = 'gold';
+                    break;
+                  case 'Completada':
+                    color = 'blue';
+                    break;
+                  case 'Cancelada':
+                    color = 'red';
+                    break;
+                  default:
+                    color = 'default';
+                }
+                return <Tag color={color}>{estado}</Tag>;
+              },
             },
             {
               title: 'Acciones',
               key: 'acciones',
+              fixed: 'right',
+              width: 100,
               render: (_, record) => (
                 <Space>
                   <Button
-                    type="primary"
-                    icon={<PlusOutlined />}
-                    onClick={() => handleSelectDecoracion(record)}
-                    className="action-button primary"
-                  >
-                    Agregar Elementos
-                  </Button>
+                    type="text"
+                    icon={<EyeOutlined />}
+                    onClick={() => {
+                      setDecoracionSeleccionada(record);
+                      setModalDetallesDecoracionVisible(true);
+                    }}
+                  />
                   <Button
-                    type="primary"
+                    type="text"
                     icon={<EditOutlined />}
                     onClick={() => handleEditDecoracion(record)}
-                    className="action-button primary"
-                  >
-                    Editar
-                  </Button>
+                  />
                   <Button
-                    type="primary"
+                    type="text"
                     danger
                     icon={<DeleteOutlined />}
                     onClick={() => handleDeleteDecoracion(record.id_decoracion)}
-                    className="action-button danger"
-                  >
-                    Eliminar
-                  </Button>
+                  />
                 </Space>
               ),
             },
           ]}
           rowKey="id_decoracion"
+          scroll={{ x: 'max-content' }}
+          pagination={{ pageSize: 5 }}
           locale={{ emptyText: <span style={{ color: '#999', fontWeight: 500, fontSize: 16 }}>No hay Registros</span> }}
         />
       </Card>
@@ -1973,21 +2059,32 @@ const WelcomeAdmin: React.FC = () => {
 </div>
 
 
-      <EventoForm
-        visible={modalEventoVisible}
+      <Modal
+        title="Nuevo Evento"
+        open={modalEventoVisible}
         onCancel={() => {
           setModalEventoVisible(false);
           setEventoSeleccionado(null);
         }}
-        onSubmit={handleCreateEvento}
-        loading={loading}
-        clientes={clientes}
-        asesores={asesores}
-        tiposEvento={tiposEvento}
-        provincias={provincias}
-        ciudades={ciudades}
-        initialValues={eventoSeleccionado}
-      />
+        footer={null}
+        width={800}
+      >
+        <EventoForm
+          visible={modalEventoVisible}
+          onCancel={() => {
+            setModalEventoVisible(false);
+            setEventoSeleccionado(null);
+          }}
+          onSubmit={handleCreateEvento}
+          loading={loading}
+          clientes={clientes}
+          asesores={asesores}
+          tiposEvento={tiposEvento}
+          provincias={provincias}
+          ciudades={ciudades}
+          initialValues={eventoSeleccionado}
+        />
+      </Modal>
 
       <Modal
         title="Nuevo Usuario"
@@ -2050,17 +2147,28 @@ const WelcomeAdmin: React.FC = () => {
         ciudades={ciudades}
       />
 
-      <AsignacionEmpleadoForm
-        visible={modalAsignacionVisible}
+      <Modal
+        title="Nueva Asignación"
+        open={modalAsignacionVisible}
         onCancel={() => {
           setModalAsignacionVisible(false);
           setAsignacionSeleccionada(null);
         }}
-        onSubmit={handleCreateAsignacion}
-        loading={loading}
-        //@ts-ignore
-        initialValues={asignacionSeleccionada}
-      />
+        footer={null}
+        width={800}
+      >
+        <AsignacionEmpleadoForm
+          visible={modalAsignacionVisible}
+          onCancel={() => {
+            setModalAsignacionVisible(false);
+            setAsignacionSeleccionada(null);
+          }}
+          onSubmit={handleCreateAsignacion}
+          loading={loading}
+          //@ts-ignore
+          initialValues={asignacionSeleccionada}
+        />
+      </Modal>
 
       <DecoracionForm
         visible={modalDecoracionVisible}
@@ -2259,7 +2367,7 @@ const WelcomeAdmin: React.FC = () => {
 
             {decoracionSeleccionada.detalle_decoracion && decoracionSeleccionada.detalle_decoracion.length > 0 && (
               <div style={{ marginTop: '20px' }}>
-                <Title level={4}>Elementos de Decoración</Title>
+                <h3>Elementos de Decoración</h3>
                 <Table
                   dataSource={decoracionSeleccionada.detalle_decoracion}
                   columns={[
@@ -2277,53 +2385,22 @@ const WelcomeAdmin: React.FC = () => {
                       title: 'Precio Unitario',
                       dataIndex: 'precio_elemento',
                       key: 'precio_elemento',
-                      render: (precio: number) => `RD$ ${precio.toLocaleString('es-DO', { minimumFractionDigits: 2 })}`,
+                      render: (precio) => `RD$ ${precio?.toLocaleString('es-DO', { minimumFractionDigits: 2 })}`,
                     },
                     {
                       title: 'Precio Total',
                       dataIndex: 'precio_decoracion',
                       key: 'precio_decoracion',
-                      render: (precio: number) => `RD$ ${precio.toLocaleString('es-DO', { minimumFractionDigits: 2 })}`,
+                      render: (precio) => `RD$ ${precio?.toLocaleString('es-DO', { minimumFractionDigits: 2 })}`,
                     },
                     {
                       title: 'Estado',
                       dataIndex: 'estado_detdecoracion',
                       key: 'estado_detdecoracion',
-                      render: (estado: string) => (
-                        <Tag color={estado === 'Aceptado' ? 'green' : 'red'}>
-                          {estado}
-                        </Tag>
-                      ),
-                    },
-                    {
-                      title: 'Acciones',
-                      key: 'acciones',
-                      render: (_, record) => (
-                        <Space>
-                          <Button
-                            type="text"
-                            icon={<EditOutlined />}
-                            onClick={() => {
-                              // Aquí irá la lógica para editar el elemento
-                              console.log('Editar elemento:', record);
-                            }}
-                          />
-                          <Button
-                            type="text"
-                            danger
-                            icon={<DeleteOutlined />}
-                            onClick={() => {
-                              // Aquí irá la lógica para eliminar el elemento
-                              console.log('Eliminar elemento:', record);
-                            }}
-                          />
-                        </Space>
-                      ),
                     },
                   ]}
-                  pagination={false}
                   rowKey="id_detdecoracion"
-                  locale={{ emptyText: <span style={{ color: '#999', fontWeight: 500, fontSize: 16 }}>No hay Registros</span> }}
+                  pagination={false}
                 />
               </div>
             )}
@@ -2384,21 +2461,34 @@ const WelcomeAdmin: React.FC = () => {
       </Modal>
 
       {/* Formulario de Edición de Evento */}
-      <EventoForm
-        visible={showEventoForm}
+      <Modal
+        title="Editar Evento"
+        open={showEventoForm}
         onCancel={() => {
           setShowEventoForm(false);
           setEventoSeleccionado(null);
         }}
-        onSubmit={handleUpdateEvento}
-        loading={loading}
-        clientes={clientes}
-        asesores={asesores}
-        tiposEvento={tiposEvento}
-        provincias={provincias}
-        ciudades={ciudades}
-        initialValues={eventoSeleccionado}
-      />
+        footer={null}
+        width={800}
+      >
+        <EventoForm
+          visible={showEventoForm}
+          onCancel={() => {
+            setShowEventoForm(false);
+            setEventoSeleccionado(null);
+          }}
+          onSubmit={handleUpdateEvento}
+          loading={loading}
+          clientes={clientes}
+          asesores={asesores}
+          tiposEvento={tiposEvento}
+          provincias={provincias}
+          ciudades={ciudades}
+          initialValues={eventoSeleccionado}
+          userCedula={user?.cedula_usuario || ''}
+          userRole={user?.rol_nombre || ''}
+        />
+      </Modal>
 
       {/* Formulario de Edición de Usuario */}
       <UsuarioForm
@@ -2517,20 +2607,34 @@ const WelcomeAdmin: React.FC = () => {
       />
 
       {/* Formulario de Edición de Asignación */}
-      <AsignacionEmpleadoForm
-        visible={modalAsignacionVisible}
+      <Modal
+        title="Editar Asignación"
+        open={modalEditarAsignacionVisible}
         onCancel={() => {
-          setModalAsignacionVisible(false);
+          setModalEditarAsignacionVisible(false);
           setAsignacionSeleccionada(null);
+          formEditarAsignacion.resetFields();
         }}
-        onSubmit={handleCreateAsignacion}
-        loading={loading}
-        //@ts-ignore
-        initialValues={asignacionSeleccionada}
-      />
+        footer={null}
+        width={800}
+      >
+        <AsignacionEmpleadoForm
+          visible={modalEditarAsignacionVisible}
+          onCancel={() => {
+            setModalEditarAsignacionVisible(false);
+            setAsignacionSeleccionada(null);
+          }}
+          onSubmit={handleEditAsignacion}
+          loading={loading}
+          //@ts-ignore
+          initialValues={asignacionSeleccionada}
+          form={formEditarAsignacion}
+          eventos={eventos}
+          empleados={empleados}
+        />
+      </Modal>
 
       {/* Formulario de Edición de Decoración */}
-       {/*@ts-ignore*/}
       <DecoracionForm
         visible={modalDecoracionVisible}
         onCancel={() => {
@@ -2540,364 +2644,34 @@ const WelcomeAdmin: React.FC = () => {
         onSubmit={handleCreateDecoracion}
         loading={loading}
         initialValues={decoracionSeleccionada}
+        //@ts-ignore
+        eventosCliente={eventos}
+        userCedula={user?.cedula_usuario || ''}
       />
 
-      {/* Tarjeta de Pagos y Comentarios en formato dashboard */}
-      <div className="dashboard-row">
-        <Card
-          title="PAGOS"
-          className="dashboard-card"
-          extra={
-            <Button
-              type="primary"
-              icon={<PlusOutlined />}
-              className="action-button primary"
-              onClick={() => setModalPagoVisible(true)}
-            >
-              Nuevo Pago
-            </Button>
-          }
-        >
-          <TableFilters
-            type="pagos"
-            searchText={filtrosPagos.evento}
-            onSearchChange={(value: string) => setFiltrosPagos({ ...filtrosPagos, evento: value })}
-            clearFilters={() => setFiltrosPagos({ estado: '', evento: '', metodo: '', tipo: '' })}
-            activeFiltersCount={getActiveFiltersCount(filtrosPagos)}
-            filterContent={
-              <div style={{ padding: '8px', minWidth: '300px', backgroundColor: '#f5f5f5', borderRadius: '4px' }}>
-                <Space direction="vertical" style={{ width: '100%' }}>
-                  <div>
-                    <div style={{ marginBottom: 4 }}>Estado del pago:</div>
-                    <Select
-                      placeholder="Filtrar por estado"
-                      style={{ width: '100%' }}
-                      onChange={value => setFiltrosPagos({ ...filtrosPagos, estado: value })}
-                      value={filtrosPagos.estado}
-                      allowClear
-                    >
-                      <Select.Option value="">Todos</Select.Option>
-                      <Select.Option value="Pendiente">Pendiente</Select.Option>
-                      <Select.Option value="Recibido">Recibido</Select.Option>
-                      <Select.Option value="Rechazado">Rechazado</Select.Option>
-                    </Select>
-                  </div>
-                  <div>
-                    <div style={{ marginBottom: 4 }}>Tipo de pago:</div>
-                    <Select
-                      placeholder="Filtrar por tipo"
-                      style={{ width: '100%' }}
-                      onChange={value => setFiltrosPagos({ ...filtrosPagos, tipo: value })}
-                      value={filtrosPagos.tipo}
-                      allowClear
-                    >
-                      <Select.Option value="">Todos</Select.Option>
-                      <Select.Option value="Inicial">Inicial</Select.Option>
-                      <Select.Option value="Final">Final</Select.Option>
-                      <Select.Option value="Adicional">Adicional</Select.Option>
-                    </Select>
-                  </div>
-                  <div>
-                    <div style={{ marginBottom: 4 }}>Método de pago:</div>
-                    <Select
-                      placeholder="Filtrar por método"
-                      style={{ width: '100%' }}
-                      onChange={value => setFiltrosPagos({ ...filtrosPagos, metodo: value })}
-                      value={filtrosPagos.metodo}
-                      allowClear
-                    >
-                      <Select.Option value="">Todos</Select.Option>
-                      <Select.Option value="Efectivo">Efectivo</Select.Option>
-                      <Select.Option value="Tarjeta">Tarjeta</Select.Option>
-                      <Select.Option value="Transferencia">Transferencia</Select.Option>
-                    </Select>
-                  </div>
-                  <div>
-                    <div style={{ marginBottom: 4 }}>ID de evento:</div>
-                    <Input
-                      placeholder="Buscar por ID de evento"
-                      value={filtrosPagos.evento}
-                      onChange={e => setFiltrosPagos({ ...filtrosPagos, evento: e.target.value })}
-                      style={{ width: '100%' }}
-                    />
-                  </div>
-                </Space>
-              </div>
-            }
-          />
-          <Table
-            className="dashboard-table"
-            dataSource={getFilteredPagos()}
-            columns={[
-              {
-                title: 'Evento',
-                dataIndex: 'evento',
-                key: 'evento',
-                render: (evento) => evento ? `${evento.id_evento} - ${evento.cliente?.nombre_usuario} ${evento.cliente?.apellido_usuario}` : 'N/A'
-              },
-              {
-                title: 'Método de Pago',
-                dataIndex: 'metodo_pago',
-                key: 'metodo_pago'
-              },
-              {
-                title: 'Fecha y Hora',
-                dataIndex: 'fecha_pago',
-                key: 'fecha_pago',
-                render: (fecha, record) => `${fecha} ${record.hora_pago}`
-              },
-              {
-                title: 'Monto',
-                dataIndex: 'monto_pago',
-                key: 'monto_pago',
-                render: (monto) => `RD$ ${monto.toFixed(2)}`
-              },
-              {
-                title: 'Tipo',
-                dataIndex: 'tipo_pago',
-                key: 'tipo_pago'
-              },
-              {
-                title: 'Estado',
-                dataIndex: 'estado_pago',
-                key: 'estado_pago',
-                render: (estado) => (
-                  <Tag color={
-                    estado === 'Recibido' ? 'green' :
-                    estado === 'Pendiente' ? 'orange' :
-                    'red'
-                  }>
-                    {estado}
-                  </Tag>
-                )
-              }
-            ]}
-            rowKey="id_pago"
-            loading={loading}
-            pagination={{ pageSize: 3 }}
-            scroll={{ x: 'max-content' }}
-            locale={{ emptyText: <span style={{ color: '#999', fontWeight: 500, fontSize: 16 }}>No hay Registros</span> }}
-          />
-        </Card>
-
-        <Card
-          title="COMENTARIOS Y CALIFICACIONES"
-          className="dashboard-card"
-        >
-          <TableFilters
-            type="comentarios"
-            searchText={filtrosComentarios.calificacion}
-            onSearchChange={(value: string) => setFiltrosComentarios({ ...filtrosComentarios, calificacion: value })}
-            clearFilters={() => setFiltrosComentarios({ estado: '', calificacion: '' })}
-            activeFiltersCount={getActiveFiltersCount(filtrosComentarios)}
-            filterContent={
-              <div style={{ padding: '8px', minWidth: '300px', backgroundColor: '#f5f5f5', borderRadius: '4px' }}>
-                <Space direction="vertical" style={{ width: '100%' }}>
-                  <div>
-                    <div style={{ marginBottom: 4 }}>Estado del comentario:</div>
-                    <Select
-                      placeholder="Filtrar por estado"
-                      style={{ width: '100%' }}
-                      onChange={value => setFiltrosComentarios({ ...filtrosComentarios, estado: value })}
-                      value={filtrosComentarios.estado}
-                      allowClear
-                    >
-                      <Select.Option value="">Todos</Select.Option>
-                      <Select.Option value="Activo">Activo</Select.Option>
-                      <Select.Option value="Editado">Editado</Select.Option>
-                      <Select.Option value="Eliminado">Eliminado</Select.Option>
-                    </Select>
-                  </div>
-                  <div>
-                    <div style={{ marginBottom: 4 }}>Calificación:</div>
-                    <Select
-                      placeholder="Filtrar por calificación"
-                      style={{ width: '100%' }}
-                      onChange={value => setFiltrosComentarios({ ...filtrosComentarios, calificacion: value })}
-                      value={filtrosComentarios.calificacion}
-                      allowClear
-                    >
-                      <Select.Option value="">Todas</Select.Option>
-                      <Select.Option value="1">1 estrella</Select.Option>
-                      <Select.Option value="2">2 estrellas</Select.Option>
-                      <Select.Option value="3">3 estrellas</Select.Option>
-                      <Select.Option value="4">4 estrellas</Select.Option>
-                      <Select.Option value="5">5 estrellas</Select.Option>
-                    </Select>
-                  </div>
-                </Space>
-              </div>
-            }
-          />
-          <Table
-            className="dashboard-table"
-            dataSource={getFilteredComentarios()}
-            columns={[
-              {
-                title: 'Evento',
-                dataIndex: 'evento',
-                key: 'evento',
-                render: (evento, record) =>
-                  record.id_evento +
-                  (evento && evento.cliente
-                    ? ' - ' + evento.cliente.nombre_usuario + ' ' + evento.cliente.apellido_usuario
-                    : '')
-              },
-              {
-                title: 'Comentario',
-                dataIndex: 'comentario',
-                key: 'comentario',
-                render: (comentario) => (
-                  <span style={{ whiteSpace: 'pre-line', wordBreak: 'break-word', maxWidth: 250, display: 'block' }}>
-                    {comentario}
-                  </span>
-                )
-              },
-              {
-                title: 'Calificación',
-                dataIndex: 'calificacion',
-                key: 'calificacion',
-                render: (calificacion) => <Rate disabled defaultValue={calificacion} />
-              },
-              {
-                title: 'Estado',
-                dataIndex: 'estado_comentario',
-                key: 'estado_comentario',
-                render: (estado) => (
-                  <Tag color={
-                    estado === 'Activo' ? 'green' :
-                    estado === 'Editado' ? 'orange' :
-                    estado === 'Eliminado' ? 'red' : 'red'
-                  }>
-                    {estado}
-                  </Tag>
-                )
-              }
-            ]}
-            rowKey="id_comentario"
-            loading={loading}
-            pagination={{ pageSize: 3 }}
-            scroll={{ x: 'max-content' }}
-            locale={{ emptyText: <span style={{ color: '#999', fontWeight: 500, fontSize: 16 }}>No hay Registros</span> }}
-          />
-        </Card>
-      </div>
-
+      {/* Modal para seleccionar evento antes de agregar elementos */}
       <Modal
-        title="Editar Asignación"
-        open={modalEditarAsignacionVisible}
+        title="Seleccionar Evento"
+        open={modalSeleccionEventoVisible}
         onCancel={() => {
-          setModalEditarAsignacionVisible(false);
-          formEditarAsignacion.resetFields();
-          setAsignacionSeleccionada(null);
-        }}
-        footer={null}
-        destroyOnClose={true}
-        afterOpenChange={(visible) => {
-          if (visible && asignacionSeleccionada) {
-            console.log('Modal abierto, cargando datos:', asignacionSeleccionada);
-            formEditarAsignacion.setFieldsValue({
-              id_evento: asignacionSeleccionada.evento?.id_evento,
-              empleado_evento: asignacionSeleccionada.empleado?.cedula_usuario,
-              puesto_evento: asignacionSeleccionada.puesto_evento,
-              estado_empevento: asignacionSeleccionada.estado_empevento
-            });
-          }
-        }}
-      >
-        <Form
-          form={formEditarAsignacion}
-          layout="vertical"
-          onFinish={handleEditAsignacion}
-          preserve={false}
-          initialValues={asignacionSeleccionada ? {
-            id_evento: asignacionSeleccionada.evento?.id_evento,
-            empleado_evento: asignacionSeleccionada.empleado?.cedula_usuario,
-            puesto_evento: asignacionSeleccionada.puesto_evento,
-            estado_empevento: asignacionSeleccionada.estado_empevento
-          } : undefined}
-        >
-          <Form.Item
-            name="id_evento"
-            label="Evento"
-            rules={[{ required: true, message: 'Por favor seleccione un evento' }]}
-          >
-            <Select>
-              {eventos.map(evento => (
-                <Select.Option key={evento.id_evento} value={evento.id_evento}>
-                  {`${evento.cliente?.nombre_usuario} ${evento.cliente?.apellido_usuario} - ${evento.fecha_evento}`}
-                </Select.Option>
-              ))}
-            </Select>
-          </Form.Item>
-
-          <Form.Item
-            name="empleado_evento"
-            label="Empleado"
-            rules={[{ required: true, message: 'Por favor seleccione un empleado' }]}
-          >
-            <Select>
-              {empleados.map(empleado => (
-                <Select.Option key={empleado.cedula_usuario} value={empleado.cedula_usuario}>
-                  {`${empleado.nombre_usuario} ${empleado.apellido_usuario}`}
-                </Select.Option>
-              ))}
-            </Select>
-          </Form.Item>
-
-          <Form.Item
-            name="puesto_evento"
-            label="Cargo"
-            rules={[{ required: true, message: 'Por favor seleccione un cargo' }]}
-          >
-            <Select>
-              <Select.Option value="Decorador">Decorador</Select.Option>
-              <Select.Option value="Camarero">Camarero</Select.Option>
-              <Select.Option value="Conductor">Conductor</Select.Option>
-              <Select.Option value="Supervisor">Supervisor</Select.Option>
-              <Select.Option value="Encargado de Logística">Encargado de Logística</Select.Option>
-              <Select.Option value="Encargado de Limpieza">Encargado de Limpieza</Select.Option>
-            </Select>
-          </Form.Item>
-
-          <Form.Item
-            name="estado_empevento"
-            label="Estado"
-            rules={[{ required: true, message: 'Por favor seleccione un estado' }]}
-          >
-            <Select>
-              <Select.Option value="Activo">Activo</Select.Option>
-              <Select.Option value="Completado">Completado</Select.Option>
-            </Select>
-          </Form.Item>
-
-          <Form.Item>
-            <Button type="primary" htmlType="submit" loading={loading}>
-              Guardar Cambios
-            </Button>
-          </Form.Item>
-        </Form>
-      </Modal>
-
-      {/* Modal para seleccionar decoración */}
-      <Modal
-        title="Seleccionar Decoración"
-        open={modalElementosDecoracionVisible && !decoracionSeleccionada}
-        onCancel={() => {
-          setModalElementosDecoracionVisible(false);
-          setDecoracionSeleccionada(null);
+          setModalSeleccionEventoVisible(false);
+          setEventoSeleccionadoParaElementos(null);
         }}
         footer={null}
       >
         <List
-          dataSource={decoraciones}
-          renderItem={(decoracion) => (
+          dataSource={eventos}
+          renderItem={(evento) => (
             <List.Item>
               <Button
                 type="link"
-                onClick={() => handleSelectDecoracion(decoracion)}
+                onClick={() => {
+                  setEventoSeleccionadoParaElementos(evento);
+                  setModalSeleccionEventoVisible(false);
+                  setModalElementosDecoracionVisible(true);
+                }}
               >
-                {`ID: ${decoracion.id_decoracion} - Tema: ${decoracion.tema_decoracion}`}
+                {`ID: ${evento.id_evento} - ${evento.cliente?.nombre_usuario} ${evento.cliente?.apellido_usuario} - ${evento.tipo_evento.tipo_evento}`}
               </Button>
             </List.Item>
           )}
@@ -2906,11 +2680,11 @@ const WelcomeAdmin: React.FC = () => {
 
       {/* Modal para agregar elementos de decoración */}
       <Modal
-        title={`Agregar Elementos - Decoración: ${decoracionSeleccionada?.tema_decoracion}`}
-        open={modalElementosDecoracionVisible && decoracionSeleccionada}
+        title={`Agregar Elementos - Evento: ${eventoSeleccionadoParaElementos?.id_evento}`}
+        open={modalElementosDecoracionVisible}
         onCancel={() => {
           setModalElementosDecoracionVisible(false);
-          setDecoracionSeleccionada(null);
+          setEventoSeleccionadoParaElementos(null);
           formElementosDecoracion.resetFields();
         }}
         footer={null}
@@ -2962,60 +2736,6 @@ const WelcomeAdmin: React.FC = () => {
           <Form.Item>
             <Button type="primary" htmlType="submit" loading={loading}>
               Guardar Elementos
-            </Button>
-          </Form.Item>
-        </Form>
-      </Modal>
-
-      {/* Modal de Decoración (sin elementos) */}
-      <Modal
-        title={decoracionSeleccionada ? "Editar Decoración" : "Nueva Decoración"}
-        open={modalDecoracionVisible}
-        onCancel={() => {
-          setModalDecoracionVisible(false);
-          setDecoracionSeleccionada(null);
-        }}
-        footer={null}
-      >
-        <Form
-          form={formDecoracion}
-          layout="vertical"
-          onFinish={handleSubmitDecoracion}
-        >
-          <Form.Item
-            name="tema_decoracion"
-            label="Tema"
-            rules={[{ required: true, message: 'Por favor ingrese el tema' }]}
-          >
-            <Input />
-          </Form.Item>
-
-          <Form.Item
-            name="descripcion_decoracion"
-            label="Descripción"
-            rules={[{ required: true, message: 'Por favor ingrese la descripción' }]}
-          >
-            <Input.TextArea />
-          </Form.Item>
-
-          <Form.Item
-            name="precio_decoracion"
-            label="Precio"
-            rules={[{ required: true, message: 'Por favor ingrese el precio' }]}
-          >
-            <InputNumber
-              min={0}
-              step={0.01}
-              formatter={value => `RD$ ${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
-              //@ts-ignore
-              parser={value => value!.replace(/RD\$\s?|(,*)/g, '')}
-              style={{ width: '100%' }}
-            />
-          </Form.Item>
-
-          <Form.Item>
-            <Button type="primary" htmlType="submit" loading={loading}>
-              {decoracionSeleccionada ? "Actualizar" : "Crear"}
             </Button>
           </Form.Item>
         </Form>

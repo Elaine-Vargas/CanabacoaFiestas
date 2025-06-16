@@ -87,9 +87,7 @@ const DecoracionForm: React.FC<DecoracionFormProps> = ({
   const [selectedEvento, setSelectedEvento] = useState<Evento | null>(null);
   const [showEventoDetails, setShowEventoDetails] = useState(false);
 
-  const filteredEventos = eventosCliente?.filter(evento => 
-    evento.cliente?.cedula_usuario === userCedula
-  ) || [];
+  const filteredEventos = eventosCliente || [];
 
   useEffect(() => {
     if (visible && initialValues) {
@@ -187,7 +185,7 @@ const DecoracionForm: React.FC<DecoracionFormProps> = ({
           <Select
             placeholder="Seleccione el evento"
             options={filteredEventos.map(evento => ({
-              label: `${evento.tipo_evento.tipo_evento} - ${dayjs(evento.fecha_evento).format('DD/MM/YYYY')}`,
+              label: `ID: ${evento.id_evento} - ${evento.tipo_evento.tipo_evento} - ${dayjs(evento.fecha_evento).format('DD/MM/YYYY')} - Cliente: ${evento.cliente?.nombre_usuario}`,
               value: evento.id_evento
             }))}
             showSearch

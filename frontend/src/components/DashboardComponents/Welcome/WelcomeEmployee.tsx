@@ -8,17 +8,17 @@ import {
   Select,
   DatePicker,
   List,
-  Rate,
   Space,
   Tag,
+  Input,
 } from "antd";
 import {
-  PlusOutlined,
   EditOutlined,
   DeleteOutlined,
   EyeOutlined,
-  TeamOutlined,
   FilterOutlined,
+  PlusOutlined,
+  UserAddOutlined,
 } from "@ant-design/icons";
 import "../../../styles/dashboard/ServicesSubpages.scss";
 import EventoForm from "../FormService/EventoForm";
@@ -27,6 +27,7 @@ import AsignacionEmpleadoForm from "../FormService/AsignacionEmpleadoForm";
 import TableFilters from "../MoreDash/TableFilters";
 import type { Dayjs } from "dayjs";
 import dayjs from "dayjs";
+import PagoForm from "../FormService/PagoForm";
 
 const { Title } = Typography;
 const { Option } = Select;
@@ -166,17 +167,6 @@ interface Empleado {
   estado_usuario: string;
 }
 
-interface EventoFormProps {
-  visible: boolean;
-  onCancel: () => void;
-  onSubmit: (values: EventoFormValues) => Promise<void>;
-  loading: boolean;
-  clientes: Cliente[];
-  asesores: Asesor[];
-  tiposEvento: TipoEvento[];
-  initialValues?: Evento | null;
-}
-
 interface EventoFormValues {
   id_evento: number;
   cedula_cliente: string;
@@ -195,35 +185,53 @@ interface EventoFormValues {
   nota_cliente?: string;
 }
 
-interface AsignacionEmpleadoFormProps {
-  visible: boolean;
-  onCancel: () => void;
-  onSubmit: (values: AsignacionEmpleadoFormValues) => Promise<void>;
-  loading: boolean;
-  empleados: Empleado[];
-  eventos: Evento[];
-  initialValues?: AsignacionEmpleado | null;
+interface Decoracion {
+  id_decoracion: number;
+  id_evento: number;
+  tema_decoracion: string;
+  colores_decoracion: string;
+  precioneto_decoracion: number;
+  itbis_decoracion: number;
+  total_decoracion: number;
+  estado_decoracion: string;
+  detalle_decoracion?: {
+    id_detdecoracion: number;
+    elemento_decoracion: string;
+    cantelemento_decoracion: number;
+    precio_elemento: number;
+    precio_decoracion: number;
+    estado_detdecoracion: string;
+  }[];
+  evento?: {
+    id_evento: number;
+    fecha_evento: string;
+    tipo_evento: {
+      id_tipo_evento: number;
+      tipo_evento: string;
+    };
+    cliente?: {
+      nombre_usuario: string;
+      apellido_usuario: string;
+    };
+  };
 }
 
-interface AsignacionEmpleadoFormValues {
+interface Pago {
+  id_pago: number;
   id_evento: number;
-  empleado_evento: string;
-  puesto_evento:
-    | "Decorador"
-    | "Camarero"
-    | "Conductor"
-    | "Supervisor"
-    | "Encargado de Logística"
-    | "Encargado de Limpieza";
-}
-
-interface Comentario {
-  id_comentario: number;
-  id_evento: number;
-  calificacion: number;
-  comentario: string;
-  fecha_comentario: string;
-  evento?: Evento;
+  monto_pago: number;
+  fecha_pago: string;
+  hora_pago: string;
+  tipo_pago: 'Inicial' | 'Final' | 'Adicional';
+  estado_pago: 'Pendiente' | 'Recibido' | 'Rechazado';
+  metodo_pago: string;
+  evento?: {
+    id_evento: number;
+    cliente?: {
+      nombre_usuario: string;
+      apellido_usuario: string;
+    };
+  };
 }
 
 const WelcomeEmployee: React.FC = () => {
@@ -252,12 +260,25 @@ const WelcomeEmployee: React.FC = () => {
   const [eventoDetalles, setEventoDetalles] = useState<Evento | null>(null);
   const [clienteDetalles, setClienteDetalles] = useState<Cliente | null>(null);
 
+  // Estados para nuevas tablas: Decoraciones y Pagos
+  const [decoraciones, setDecoraciones] = useState<Decoracion[]>([]);
+  const [pagos, setPagos] = useState<Pago[]>([]);
+
+  // Modales de detalles para nuevas tablas
+  const [modalDetallesDecoracionVisible, setModalDetallesDecoracionVisible] = useState(false);
+  const [modalPagoVisible, setModalPagoVisible] = useState(false);
+  const [modalDetallesPagoVisible, setModalDetallesPagoVisible] = useState(false);
+  const [selectedDecoracion, setSelectedDecoracion] = useState<Decoracion | null>(null);
+  const [selectedPago, setSelectedPago] = useState<Pago | null>(null);
+  const [loadingPago, setLoadingPago] = useState(false);
+
   // Estados para búsqueda y filtros
   const [searchTextEventos, setSearchTextEventos] = useState("");
   const [searchTextAsignaciones, setSearchTextAsignaciones] = useState("");
-  const [searchTextParticipaciones, setSearchTextParticipaciones] =
-    useState("");
+  const [searchTextParticipaciones, setSearchTextParticipaciones] = useState("");
   const [searchTextClientes, setSearchTextClientes] = useState("");
+  const [searchTextDecoraciones, setSearchTextDecoraciones] = useState("");
+  const [searchTextPagos, setSearchTextPagos] = useState("");
 
   const [filtrosEventos, setFiltrosEventos] = useState({
     estado: "",
@@ -277,18 +298,31 @@ const WelcomeEmployee: React.FC = () => {
   const [filtrosClientes, setFiltrosClientes] = useState({
     estado: "",
   });
+  const [filtrosDecoraciones, setFiltrosDecoraciones] = useState({
+    estado: "",
+    eventoId: "",
+  });
+  const [filtrosPagos, setFiltrosPagos] = useState({
+    estado: '',
+    eventoId: '',
+    metodo: '',
+    tipo: ''
+  });
 
   const [tiposEvento, setTiposEvento] = useState<TipoEvento[]>([]);
-  const [comentarios, setComentarios] = useState<Comentario[]>([]);
-  const [loadingComentarios, setLoadingComentarios] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   // Estados para mostrar/ocultar filtros
   const [showEventosFilters, setShowEventosFilters] = useState(false);
-  const [showAsignacionesFilters, setShowAsignacionesFilters] = useState(false);
-  const [showParticipacionesFilters, setShowParticipacionesFilters] =
-    useState(false);
+  const [showAsignacionesFilters, setShowAsignacionesFilters] = useState(
+    false
+  );
+  const [showParticipacionesFilters, setShowParticipacionesFilters] = useState(
+    false
+  );
   const [showClientesFilters, setShowClientesFilters] = useState(false);
+  const [showDecoracionesFilters, setShowDecoracionesFilters] = useState(false);
+  const [showPagosFilters, setShowPagosFilters] = useState(false);
 
   // Agregar estados para provincias y ciudades
   const [provincias, setProvincias] = useState<any[]>([]);
@@ -327,6 +361,8 @@ const WelcomeEmployee: React.FC = () => {
   useEffect(() => {
     if (userCedula) {
       fetchData();
+      fetchDecoraciones();
+      fetchPagos();
     }
   }, [userCedula]);
 
@@ -489,6 +525,50 @@ const WelcomeEmployee: React.FC = () => {
     }
   };
 
+  const fetchDecoraciones = async () => {
+    try {
+      setLoading(true);
+      const token = localStorage.getItem("token");
+      if (!token) return;
+
+      const response = await fetch(`${apiUrl}/decoracion?include=evento.cliente,evento.tipo_evento,detalle_decoracion`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!response.ok) {
+        throw new Error("Error al cargar las decoraciones");
+      }
+      const data = await response.json();
+      setDecoraciones(data);
+    } catch (error) {
+      console.error("Error al cargar decoraciones:", error);
+      message.error("Error al cargar las decoraciones");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchPagos = async () => {
+    try {
+      setLoading(true);
+      const token = localStorage.getItem("token");
+      if (!token) return;
+
+      const response = await fetch(`${apiUrl}/pagos`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!response.ok) {
+        throw new Error("Error al cargar los pagos");
+      }
+      const data = await response.json();
+      setPagos(data);
+    } catch (error) {
+      console.error("Error al cargar pagos:", error);
+      message.error("Error al cargar los pagos");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const fetchTiposEvento = async () => {
     try {
       const token = localStorage.getItem("token");
@@ -511,11 +591,6 @@ const WelcomeEmployee: React.FC = () => {
       console.error("Error al cargar tipos de evento:", error);
       message.error("Error al cargar los tipos de evento");
     }
-  };
-
-  const handleCreateEvento = () => {
-    setSelectedEvento(null);
-    setModalEventoVisible(true);
   };
 
   const handleEditEvento = (evento: Evento) => {
@@ -686,7 +761,7 @@ const WelcomeEmployee: React.FC = () => {
     try {
       const token = localStorage.getItem("token");
       if (!token) {
-        message.error("No hay token de autenticación");
+        message.error("No hay sesión activa");
         return;
       }
 
@@ -770,6 +845,16 @@ const WelcomeEmployee: React.FC = () => {
   const handleVerDetallesCliente = (cliente: Cliente) => {
     setClienteDetalles(cliente);
     setModalDetallesClienteVisible(true);
+  };
+
+  const handleVerDetallesDecoracion = (decoracion: Decoracion) => {
+    setSelectedDecoracion(decoracion);
+    setModalDetallesDecoracionVisible(true);
+  };
+
+  const handleVerDetallesPago = (pago: Pago) => {
+    setSelectedPago(pago);
+    setModalDetallesPagoVisible(true);
   };
 
   // Funciones de filtrado
@@ -928,6 +1013,45 @@ const WelcomeEmployee: React.FC = () => {
     });
   };
 
+  const getFilteredDecoraciones = () => {
+    return decoraciones.filter((decoracion) => {
+      const searchLower = searchTextDecoraciones.toLowerCase();
+      const tipoEvento =
+        typeof decoracion.evento?.tipo_evento === "object"
+          ? decoracion.evento.tipo_evento.tipo_evento
+          : decoracion.evento?.tipo_evento;
+
+      const matchesSearch =
+        searchTextDecoraciones === "" ||
+        decoracion.tema_decoracion.toLowerCase().includes(searchLower) ||
+        decoracion.colores_decoracion.toLowerCase().includes(searchLower) ||
+        (tipoEvento || "").toLowerCase().includes(searchLower) ||
+        decoracion.id_decoracion.toString().includes(searchTextDecoraciones) ||
+        decoracion.id_evento.toString().includes(searchTextDecoraciones) ||
+        decoracion.precioneto_decoracion.toString().includes(searchTextDecoraciones) ||
+        decoracion.total_decoracion.toString().includes(searchTextDecoraciones);
+
+      const matchesEstado =
+        !filtrosDecoraciones.estado ||
+        decoracion.estado_decoracion === filtrosDecoraciones.estado;
+      const matchesEventoId =
+        !filtrosDecoraciones.eventoId ||
+        decoracion.id_evento.toString() === filtrosDecoraciones.eventoId;
+
+      return matchesSearch && matchesEstado && matchesEventoId;
+    });
+  };
+
+  const getFilteredPagos = () => {
+    return pagos.filter(pago => {
+      const matchEstado = !filtrosPagos.estado || pago.estado_pago === filtrosPagos.estado;
+      const matchEvento = !filtrosPagos.eventoId || pago.id_evento.toString() === filtrosPagos.eventoId;
+      const matchMetodo = !filtrosPagos.metodo || pago.metodo_pago === filtrosPagos.metodo;
+      const matchTipo = !filtrosPagos.tipo || pago.tipo_pago === filtrosPagos.tipo;
+      return matchEstado && matchEvento && matchMetodo && matchTipo;
+    });
+  };
+
   const getActiveFiltersCount = (filters: any) => {
     let count = 0;
     for (const key in filters) {
@@ -940,13 +1064,13 @@ const WelcomeEmployee: React.FC = () => {
 
   const eventosColumns = [
     {
-      title: "ID Evento",
+      title: "Evento",
       dataIndex: "id_evento",
       key: "id_evento",
       render: (text: string) => <span className="column-id">{text}</span>,
     },
     {
-      title: "Tipo de Evento",
+      title: "Tipo",
       dataIndex: ["tipo_evento", "tipo_evento"],
       key: "tipo_evento",
     },
@@ -968,17 +1092,6 @@ const WelcomeEmployee: React.FC = () => {
       dataIndex: "hora_evento",
       key: "hora_evento",
       render: (hora: Dayjs) => hora?.format("HH:mm"),
-    },
-    {
-      title: "Asesor",
-      dataIndex: ["asesor"],
-      key: "asesor",
-      render: (asesor: any) => {
-        if (!asesor) {
-          return `${userCedula ? "Tú" : "N/A"}`;
-        }
-        return `${asesor.nombre_usuario} ${asesor.apellido_usuario}`;
-      },
     },
     {
       title: "Espacio",
@@ -1020,7 +1133,7 @@ const WelcomeEmployee: React.FC = () => {
       },
     },
     {
-      title: "Total",
+      title: "Total $",
       dataIndex: "total_evento",
       key: "total_evento",
       render: (total: number) => `$${total?.toLocaleString()}`,
@@ -1055,38 +1168,13 @@ const WelcomeEmployee: React.FC = () => {
 
   const asignacionesColumns = [
     {
-      title: "ID Evento",
+      title: "Evento",
       dataIndex: ["evento", "id_evento"],
       key: "id_evento",
       render: (text: string) => <span className="column-id">{text}</span>,
     },
     {
-      title: "Tipo de Evento",
-      dataIndex: ["evento", "tipo_evento", "tipo_evento"],
-      key: "tipo_evento",
-    },
-    {
-      title: "Asesor Evento",
-      dataIndex: ["evento", "asesor"],
-      key: "asesor",
-      render: (asesor: any) => {
-        if (!asesor) {
-          return `${userCedula ? "Tú" : "N/A"}`;
-        }
-        return `${asesor.nombre_usuario} ${asesor.apellido_usuario}`;
-      },
-    },
-    {
-      title: "Cliente Evento",
-      dataIndex: ["evento", "cliente"],
-      key: "cliente",
-      render: (cliente: any) =>
-        cliente
-          ? `${cliente.nombre_usuario} ${cliente.apellido_usuario}`
-          : "N/A",
-    },
-    {
-      title: "Empleado Asignado",
+      title: "Empleado",
       dataIndex: ["empleado"],
       key: "empleado",
       render: (empleado: any) =>
@@ -1098,18 +1186,6 @@ const WelcomeEmployee: React.FC = () => {
       title: "Puesto",
       dataIndex: "puesto_evento",
       key: "puesto_evento",
-    },
-    {
-      title: "Fecha Evento",
-      dataIndex: ["evento", "fecha_evento"],
-      key: "fecha_evento",
-      render: (fecha: string) => dayjs(fecha).format("DD/MM/YYYY"),
-    },
-    {
-      title: "Hora Evento",
-      dataIndex: ["evento", "hora_evento"],
-      key: "hora_evento",
-      render: (hora: string) => dayjs(hora, "HH:mm:ss").format("HH:mm"),
     },
     {
       title: "Estado Asignación",
@@ -1166,18 +1242,13 @@ const WelcomeEmployee: React.FC = () => {
 
   const participacionesColumns = [
     {
-      title: "ID Evento",
+      title: "Evento",
       dataIndex: ["evento", "id_evento"],
       key: "id_evento",
       render: (text: string) => <span className="column-id">{text}</span>,
     },
     {
-      title: "Tipo de Evento",
-      dataIndex: ["evento", "tipo_evento", "tipo_evento"],
-      key: "tipo_evento",
-    },
-    {
-      title: "Cliente Evento",
+      title: "Cliente",
       dataIndex: ["evento", "cliente"],
       key: "cliente",
       render: (cliente: any) =>
@@ -1186,7 +1257,7 @@ const WelcomeEmployee: React.FC = () => {
           : "N/A",
     },
     {
-      title: "Asesor Evento",
+      title: "Asesor",
       dataIndex: ["evento", "asesor"],
       key: "asesor",
       render: (asesor: any) => {
@@ -1197,21 +1268,9 @@ const WelcomeEmployee: React.FC = () => {
       },
     },
     {
-      title: "Puesto",
+      title: "Mi Puesto",
       dataIndex: "puesto_evento",
       key: "puesto_evento",
-    },
-    {
-      title: "Fecha Evento",
-      dataIndex: ["evento", "fecha_evento"],
-      key: "fecha_evento",
-      render: (fecha: string) => dayjs(fecha).format("DD/MM/YYYY"),
-    },
-    {
-      title: "Hora Evento",
-      dataIndex: ["evento", "hora_evento"],
-      key: "hora_evento",
-      render: (hora: string) => dayjs(hora, "HH:mm:ss").format("HH:mm"),
     },
     {
       title: "Estado Participación",
@@ -1309,6 +1368,124 @@ const WelcomeEmployee: React.FC = () => {
             type="text"
             icon={<EyeOutlined />}
             onClick={() => handleVerDetallesCliente(record)}
+          />
+        </Space>
+      ),
+    },
+  ];
+
+  const decoracionesColumns = [
+    { title: "Evento ID", dataIndex: "id_evento", key: "id_evento" },
+    { title: "Tema", dataIndex: "tema_decoracion", key: "tema_decoracion" },
+    {
+      title: "Colores",
+      dataIndex: "colores_decoracion",
+      key: "colores_decoracion",
+    },
+    {
+      title: "Total $",
+      dataIndex: "total_decoracion",
+      key: "total_decoracion",
+      render: (total: number) => `$${total?.toLocaleString()}`,
+    },
+    {
+      title: "Estado",
+      dataIndex: "estado_decoracion",
+      key: "estado_decoracion",
+      render: (estado: string) => {
+        let color;
+        switch (estado) {
+          case "Activo":
+            color = "green";
+            break;
+          case "Pendiente":
+            color = "gold";
+            break;
+          case "Completada":
+            color = "blue";
+            break;
+          case "Cancelada":
+            color = "red";
+            break;
+          default:
+            color = "default";
+        }
+        return <Tag color={color}>{estado}</Tag>;
+      },
+    },
+    {
+      title: "Acciones",
+      key: "acciones",
+      render: (_: any, record: Decoracion) => (
+        <Space>
+          <Button
+            type="text"
+            icon={<EyeOutlined />}
+            onClick={() => handleVerDetallesDecoracion(record)}
+          />
+        </Space>
+      ),
+    },
+  ];
+
+  const pagosColumns = [
+    {
+      title: 'Evento ID',
+      dataIndex: 'id_evento',
+      key: 'id_evento',
+    },
+    {
+      title: 'Cliente',
+      dataIndex: ['evento', 'cliente'],
+      key: 'cliente',
+      render: (cliente: any) => 
+        cliente ? `${cliente.nombre_usuario} ${cliente.apellido_usuario}` : 'N/A'
+    },
+    {
+      title: 'Método de Pago',
+      dataIndex: 'metodo_pago',
+      key: 'metodo_pago'
+    },
+    {
+      title: 'Fecha y Hora',
+      dataIndex: 'fecha_pago',
+      key: 'fecha_pago',
+      render: (fecha: string, record: Pago) => `${fecha} ${record.hora_pago}`
+    },
+    {
+      title: 'Monto',
+      dataIndex: 'monto_pago',
+      key: 'monto_pago',
+      render: (monto: number) => `RD$ ${monto.toFixed(2)}`
+    },
+    {
+      title: 'Tipo',
+      dataIndex: 'tipo_pago',
+      key: 'tipo_pago'
+    },
+    {
+      title: 'Estado',
+      dataIndex: 'estado_pago',
+      key: 'estado_pago',
+      render: (estado: string) => (
+        <Tag color={
+          estado === 'Recibido' ? 'green' :
+          estado === 'Pendiente' ? 'orange' :
+          'red'
+        }>
+          {estado}
+        </Tag>
+      )
+    },
+    {
+      title: "Acciones",
+      key: "acciones",
+      render: (_: any, record: Pago) => (
+        <Space>
+          <Button
+            type="text"
+            icon={<EyeOutlined />}
+            onClick={() => handleVerDetallesPago(record)}
           />
         </Space>
       ),
@@ -1479,8 +1656,7 @@ const WelcomeEmployee: React.FC = () => {
             participacion.evento && (
               <Option
                 key={participacion.id_evento}
-                value={participacion.id_evento.toString()
-                }
+                value={participacion.id_evento.toString()}
               >
                 {participacion.evento.id_evento}
               </Option>
@@ -1512,6 +1688,95 @@ const WelcomeEmployee: React.FC = () => {
         <Option value="Inactivo">Inactivo</Option>
       </Select>
       <Button onClick={() => setFiltrosClientes({ estado: "" })}>
+        Limpiar Filtros
+      </Button>
+    </div>
+  );
+
+  const filterContentDecoraciones = (
+    <div className="filters-container">
+      <Select
+        value={filtrosDecoraciones.estado}
+        onChange={(value) =>
+          setFiltrosDecoraciones({ ...filtrosDecoraciones, estado: value })
+        }
+        placeholder="Estado"
+        style={{ width: 120 }}
+      >
+        <Option value="">Todos los estados</Option>
+        <Option value="Activo">Activo</Option>
+        <Option value="Completada">Completada</Option>
+        <Option value="Cancelada">Cancelada</Option>
+      </Select>
+      <Select
+        value={filtrosDecoraciones.eventoId}
+        onChange={(value) =>
+          setFiltrosDecoraciones({ ...filtrosDecoraciones, eventoId: value })
+        }
+        placeholder="Evento ID"
+        style={{ width: 120 }}
+      >
+        <Option value="">Todos los eventos</Option>
+        {eventos.map((evento) => (
+          <Option key={evento.id_evento} value={evento.id_evento.toString()}>
+            {evento.id_evento}
+          </Option>
+        ))}
+      </Select>
+      <Button
+        onClick={() =>
+          setFiltrosDecoraciones({ estado: "", eventoId: "" })
+        }
+      >
+        Limpiar Filtros
+      </Button>
+    </div>
+  );
+
+  const filterContentPagos = (
+    <div className="filters-container">
+      <Select
+        value={filtrosPagos.estado}
+        onChange={(value) => setFiltrosPagos({ ...filtrosPagos, estado: value })}
+        placeholder="Estado"
+        style={{ width: 120 }}
+      >
+        <Option value="">Todos los estados</Option>
+        <Option value="Pendiente">Pendiente</Option>
+        <Option value="Recibido">Recibido</Option>
+        <Option value="Rechazado">Rechazado</Option>
+      </Select>
+      <Select
+        value={filtrosPagos.metodo}
+        onChange={(value) => setFiltrosPagos({ ...filtrosPagos, metodo: value })}
+        placeholder="Método de Pago"
+        style={{ width: 150 }}
+      >
+        <Option value="">Todos los métodos</Option>
+        <Option value="Efectivo">Efectivo</Option>
+        <Option value="Tarjeta">Tarjeta</Option>
+        <Option value="Transferencia">Transferencia</Option>
+      </Select>
+      <Select
+        value={filtrosPagos.tipo}
+        onChange={(value) => setFiltrosPagos({ ...filtrosPagos, tipo: value })}
+        placeholder="Tipo de Pago"
+        style={{ width: 120 }}
+      >
+        <Option value="">Todos los tipos</Option>
+        <Option value="Inicial">Inicial</Option>
+        <Option value="Final">Final</Option>
+        <Option value="Adicional">Adicional</Option>
+      </Select>
+      <Input
+        placeholder="Buscar por ID de evento"
+        value={filtrosPagos.eventoId}
+        onChange={e => setFiltrosPagos({ ...filtrosPagos, eventoId: e.target.value })}
+        style={{ width: '100%' }}
+      />
+      <Button
+        onClick={() => setFiltrosPagos({ estado: "", eventoId: "", metodo: "", tipo: "" })}
+      >
         Limpiar Filtros
       </Button>
     </div>
@@ -1577,6 +1842,41 @@ const WelcomeEmployee: React.FC = () => {
     }
   };
 
+  const handleCrearPago = async (values: any) => {
+    setLoadingPago(true);
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        message.error('No hay sesión activa');
+        return;
+      }
+      const response = await fetch(`${apiUrl}/pago`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          ...values,
+          fecha_pago: values.fecha_pago.format('YYYY-MM-DD'),
+          hora_pago: values.hora_pago.format('HH:mm:ss'),
+        }),
+        credentials: 'include'
+      });
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.mensaje || 'Error al crear el pago');
+      }
+      setModalPagoVisible(false);
+      message.success('Pago creado exitosamente');
+      fetchPagos();
+    } catch (error) {
+      message.error(error instanceof Error ? error.message : 'Error al crear el pago');
+    } finally {
+      setLoadingPago(false);
+    }
+  };
+
   return (
     <div className="welcome-container">
       <Card className="welcome-card">
@@ -1598,13 +1898,14 @@ const WelcomeEmployee: React.FC = () => {
               extra={
                 <Button
                   type="primary"
-                  icon={<FilterOutlined />}
-                  onClick={() => setShowEventosFilters(!showEventosFilters)}
+                  icon={<PlusOutlined />}
                   className="action-button primary"
+                  onClick={() => {
+                    setSelectedEvento(null);
+                    setModalEventoVisible(true);
+                  }}
                 >
-                  Filtros{" "}
-                  {getActiveFiltersCount(filtrosEventos) > 0 &&
-                    `(${getActiveFiltersCount(filtrosEventos)})`}
+                  Nuevo Evento{" "}
                 </Button>
               }
             >
@@ -1636,15 +1937,14 @@ const WelcomeEmployee: React.FC = () => {
               extra={
                 <Button
                   type="primary"
-                  icon={<FilterOutlined />}
-                  onClick={() =>
-                    setShowAsignacionesFilters(!showAsignacionesFilters)
-                  }
+                  icon={<UserAddOutlined />}
+                  onClick={() => {
+                    setSelectedAsignacion(null);
+                    setModalAsignacionVisible(true);
+                  }}
                   className="action-button primary"
                 >
-                  Filtros{" "}
-                  {getActiveFiltersCount(filtrosAsignaciones) > 0 &&
-                    `(${getActiveFiltersCount(filtrosAsignaciones)})`}
+                  Asignar empleado{" "}
                 </Button>
               }
             >
@@ -1670,20 +1970,6 @@ const WelcomeEmployee: React.FC = () => {
             <Card
               title="MIS PARTICIPACIONES"
               className="dashboard-card"
-              extra={
-                <Button
-                  type="primary"
-                  icon={<FilterOutlined />}
-                  onClick={() =>
-                    setShowParticipacionesFilters(!showParticipacionesFilters)
-                  }
-                  className="action-button primary"
-                >
-                  Filtros{" "}
-                  {getActiveFiltersCount(filtrosParticipaciones) > 0 &&
-                    `(${getActiveFiltersCount(filtrosParticipaciones)})`}
-                </Button>
-              }
             >
               <TableFilters type=""
                 searchText={searchTextParticipaciones}
@@ -1708,24 +1994,69 @@ const WelcomeEmployee: React.FC = () => {
             </Card>
           </div>
 
+          {/* Cuarta fila: Decoraciones y Pagos */}
+          <div className="dashboard-row">
+            {/* Tarjeta de Decoraciones */}
+            <Card
+              title="DECORACIONES"
+              className="dashboard-card"
+            >
+              <TableFilters type="decoraciones"
+                searchText={searchTextDecoraciones}
+                onSearchChange={setSearchTextDecoraciones}
+                clearFilters={() =>
+                  setFiltrosDecoraciones({ estado: "", eventoId: "" })
+                }
+                activeFiltersCount={getActiveFiltersCount(filtrosDecoraciones)}
+                filterContent={filterContentDecoraciones}
+              />
+              <Table
+                columns={decoracionesColumns}
+                dataSource={getFilteredDecoraciones()}
+                loading={loading}
+                rowKey="id_decoracion"
+                locale={{ emptyText: <span style={{ color: '#999', fontWeight: 500, fontSize: 16 }}>No hay Registros</span> }}
+              />
+            </Card>
+
+            {/* Tarjeta de Pagos */}
+            <Card
+              title="PAGOS"
+              className="dashboard-card"
+              extra={
+                <Button
+                  type="primary"
+                  icon={<PlusOutlined />}
+                  className="action-button primary"
+                  onClick={() => setModalPagoVisible(true)}
+                >
+                  Nuevo Pago
+                </Button>
+              }
+            >
+              <TableFilters type="pagos"
+                searchText={filtrosPagos.eventoId}
+                onSearchChange={(value) => setFiltrosPagos({ ...filtrosPagos, eventoId: value })}
+                clearFilters={() => setFiltrosPagos({ estado: "", eventoId: "", metodo: "", tipo: "" })}
+                activeFiltersCount={getActiveFiltersCount(filtrosPagos)}
+                filterContent={filterContentPagos}
+              />
+              <Table
+                columns={pagosColumns}
+                dataSource={getFilteredPagos()}
+                loading={loading}
+                rowKey="id_pago"
+                locale={{ emptyText: <span style={{ color: '#999', fontWeight: 500, fontSize: 16 }}>No hay Registros</span> }}
+              />
+            </Card>
+          </div>
+
           {/* Tercera fila: Clientes */}
           <div className="dashboard-row">
             {/* Tarjeta de Clientes */}
             <Card
               title="CLIENTES"
               className="dashboard-card"
-              extra={
-                <Button
-                  type="primary"
-                  icon={<FilterOutlined />}
-                  onClick={() => setShowClientesFilters(!showClientesFilters)}
-                  className="action-button primary"
-                >
-                  Filtros{" "}
-                  {getActiveFiltersCount(filtrosClientes) > 0 &&
-                    `(${getActiveFiltersCount(filtrosClientes)})`}
-                </Button>
-              }
             >
               <TableFilters type="clientes"
                 searchText={searchTextClientes}
@@ -1749,10 +2080,11 @@ const WelcomeEmployee: React.FC = () => {
       {/* Modales de formularios */}
       <Modal
         title={selectedEvento ? "Editar Evento" : "Crear Evento"}
-        visible={modalEventoVisible}
+        open={modalEventoVisible}
         onCancel={() => setModalEventoVisible(false)}
         footer={null}
         width={800}
+        destroyOnClose
       >
         <EventoForm
           visible={modalEventoVisible}
@@ -1773,10 +2105,11 @@ const WelcomeEmployee: React.FC = () => {
 
       <Modal
         title={selectedAsignacion ? "Editar Asignación" : "Asignar Empleado"}
-        visible={modalAsignacionVisible}
+        open={modalAsignacionVisible}
         onCancel={() => setModalAsignacionVisible(false)}
         footer={null}
         width={600}
+        destroyOnClose
       >
         <AsignacionEmpleadoForm
           visible={modalAsignacionVisible}
@@ -1795,10 +2128,11 @@ const WelcomeEmployee: React.FC = () => {
       {/* Modal para detalles de evento */}
       <Modal
         title="Detalles del Evento"
-        visible={modalDetallesEventoVisible}
+        open={modalDetallesEventoVisible}
         onCancel={() => setModalDetallesEventoVisible(false)}
         footer={null}
         width={800}
+        destroyOnClose
       >
         {eventoDetalles && (
           <List
@@ -1811,8 +2145,9 @@ const WelcomeEmployee: React.FC = () => {
               },
               {
                 label: "Fecha del Evento",
-                value:
-                  eventoDetalles.fecha_evento?.format("DD/MM/YYYY") || "N/A",
+                value: (
+                  eventoDetalles.fecha_evento?.format("DD/MM/YYYY") || "N/A"
+                ),
               },
               {
                 label: "Hora del Evento",
@@ -1863,10 +2198,11 @@ const WelcomeEmployee: React.FC = () => {
       {/* Modal para detalles de cliente */}
       <Modal
         title="Detalles del Cliente"
-        visible={modalDetallesClienteVisible}
+        open={modalDetallesClienteVisible}
         onCancel={() => setModalDetallesClienteVisible(false)}
         footer={null}
         width={600}
+        destroyOnClose
       >
         {clienteDetalles && (
           <List
@@ -1888,6 +2224,98 @@ const WelcomeEmployee: React.FC = () => {
             )}
           />
         )}
+      </Modal>
+
+      {/* Modal para detalles de decoración */}
+      <Modal
+        title="Detalles de la Decoración"
+        open={modalDetallesDecoracionVisible}
+        onCancel={() => setModalDetallesDecoracionVisible(false)}
+        footer={null}
+        width={800}
+        destroyOnClose
+      >
+        {selectedDecoracion && (
+          <List
+            itemLayout="horizontal"
+            dataSource={[
+              { label: "ID Decoración", value: selectedDecoracion.id_decoracion },
+              { label: "ID Evento", value: selectedDecoracion.id_evento },
+              { label: "Tema", value: selectedDecoracion.tema_decoracion },
+              { label: "Colores", value: selectedDecoracion.colores_decoracion },
+              { label: "Precio Neto", value: `$${selectedDecoracion.precioneto_decoracion?.toLocaleString()}` },
+              { label: "ITBIS", value: `$${selectedDecoracion.itbis_decoracion?.toLocaleString()}` },
+              { label: "Total", value: `$${selectedDecoracion.total_decoracion?.toLocaleString()}` },
+              { label: "Estado", value: selectedDecoracion.estado_decoracion },
+              {
+                label: "Cliente del Evento",
+                value: `${selectedDecoracion.evento?.cliente?.nombre_usuario || "N/A"} ${selectedDecoracion.evento?.cliente?.apellido_usuario || ""}`,
+              },
+              {
+                label: "Tipo de Evento",
+                value: selectedDecoracion.evento?.tipo_evento?.tipo_evento || "N/A",
+              },
+            ]}
+            renderItem={(item) => (
+              <List.Item>
+                <List.Item.Meta title={item.label} description={item.value} />
+              </List.Item>
+            )}
+          />
+        )}
+      </Modal>
+
+      {/* Modal para detalles de pago */}
+      <Modal
+        title="Detalles del Pago"
+        open={modalDetallesPagoVisible}
+        onCancel={() => setModalDetallesPagoVisible(false)}
+        footer={null}
+        width={600}
+        destroyOnClose
+      >
+        {selectedPago && (
+          <List
+            itemLayout="horizontal"
+            dataSource={[
+              { label: "ID Pago", value: selectedPago.id_pago },
+              { label: "ID Evento", value: selectedPago.id_evento },
+              { label: "Monto", value: `$${selectedPago.monto_pago?.toFixed(2)}` },
+              { label: "Fecha", value: selectedPago.fecha_pago },
+              { label: "Hora", value: selectedPago.hora_pago },
+              { label: "Tipo de Pago", value: selectedPago.tipo_pago },
+              { label: "Estado", value: selectedPago.estado_pago },
+              { label: "Método de Pago", value: selectedPago.metodo_pago },
+              {
+                label: "Cliente del Evento",
+                value: `${selectedPago.evento?.cliente?.nombre_usuario || "N/A"} ${selectedPago.evento?.cliente?.apellido_usuario || ""}`,
+              },
+            ]}
+            renderItem={(item) => (
+              <List.Item>
+                <List.Item.Meta title={item.label} description={item.value} />
+              </List.Item>
+            )}
+          />
+        )}
+      </Modal>
+
+      {/* Modal para formulario de pago */}
+      <Modal
+        title="Nuevo Pago"
+        open={modalPagoVisible}
+        onCancel={() => setModalPagoVisible(false)}
+        footer={null}
+        width={600}
+        destroyOnClose
+      >
+        <PagoForm
+          visible={modalPagoVisible}
+          onCancel={() => setModalPagoVisible(false)}
+          onSubmit={handleCrearPago}
+          loading={loadingPago}
+          eventos={eventos}
+        />
       </Modal>
     </div>
   );

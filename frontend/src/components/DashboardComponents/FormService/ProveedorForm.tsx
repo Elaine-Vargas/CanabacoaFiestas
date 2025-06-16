@@ -418,7 +418,7 @@ const ProveedorForm: React.FC<ProveedorFormProps> = ({
             rules={[{ required: true, message: 'Por favor seleccione el estado' }]}
           >
             <Select>
-              <Select.Option value="Activa">Activa</Select.Option>
+              <Select.Option value="Activo">Activo</Select.Option>
               <Select.Option value="Inactivo">Inactivo</Select.Option>
             </Select>
           </Form.Item>
