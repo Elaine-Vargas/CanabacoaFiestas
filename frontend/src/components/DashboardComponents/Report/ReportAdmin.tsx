@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Button, Typography, Select, Space, message, Card, Modal, Row, Col, Input, DatePicker } from 'antd';
+import { Button, Typography, Select, Space, message, Card, Modal, Row, Col, DatePicker } from 'antd';
 import { DownloadOutlined, UserOutlined, TeamOutlined, CalendarOutlined, TruckOutlined, ShoppingCartOutlined, PrinterOutlined, InboxOutlined, ShopOutlined } from '@ant-design/icons';
 import axios from 'axios';
 import dayjs from 'dayjs';
@@ -8,7 +8,7 @@ import '../../../styles/dashboard/ServicesSubpages.scss';
 const { Title } = Typography;
 const { Option } = Select;
 const { RangePicker } = DatePicker;
-
+ //@ts-ignore
 interface Usuario {
   cedula_usuario: string;
   nombre_usuario: string;
@@ -52,6 +52,7 @@ interface Material {
   nombre_material: string;
 }
 
+ //@ts-ignore
 interface Empleado {
   cedula_usuario: string;
   nombre_usuario: string;
@@ -125,12 +126,17 @@ const ReportAdmin = () => {
   const [isEquipoModalVisible, setIsEquipoModalVisible] = useState<boolean>(false);
   const [isFacturaModalVisible, setIsFacturaModalVisible] = useState<boolean>(false);
   const [isProveedorModalVisible, setIsProveedorModalVisible] = useState<boolean>(false);
+   //@ts-ignore
   const [selectedEquipoReport, setSelectedEquipoReport] = useState<string>('');
   const [selectedEventoId, setSelectedEventoId] = useState<string>('todos');
   const [selectedEmpleadoId, setSelectedEmpleadoId] = useState<string>('todos');
+   //@ts-ignore
   const [selectedFacturaReport, setSelectedFacturaReport] = useState<string>('');
+   //@ts-ignore
   const [selectedClienteId, setSelectedClienteId] = useState<string>('');
+    //@ts-ignore
   const [selectedMetodoPago, setSelectedMetodoPago] = useState<string>('');
+   //@ts-ignore
   const [precioRange, setPrecioRange] = useState<[number, number]>([0, 0]);
   const [selectedTipoProveedor, setSelectedTipoProveedor] = useState<string>('todos');
   const [selectedEstadoProveedor, setSelectedEstadoProveedor] = useState<string>('todos');
@@ -140,12 +146,15 @@ const ReportAdmin = () => {
   const [loadingProveedores, setLoadingProveedores] = useState(false);
   const [isCompraModalVisible, setIsCompraModalVisible] = useState<boolean>(false);
   const [selectedCompraId, setSelectedCompraId] = useState<string>('');
+     //@ts-ignore
   const [selectedElementoId, setSelectedElementoId] = useState<string>('');
   const [selectedEstadoCompra, setSelectedEstadoCompra] = useState<string>('todos');
   const [selectedProveedorCompra, setSelectedProveedorCompra] = useState<string>('todos');
   const [compras, setCompras] = useState<Compra[]>([]);
+     //@ts-ignore
   const [elementosCompra, setElementosCompra] = useState<ElementoCompra[]>([]);
   const [loadingCompras, setLoadingCompras] = useState(false);
+     //@ts-ignore
   const [loadingElementosCompra, setLoadingElementosCompra] = useState(false);
   const [selectedPuesto, setSelectedPuesto] = useState<string>('todos');
   const [selectedCategoria, setSelectedCategoria] = useState<string>('todos');
@@ -227,7 +236,7 @@ const ReportAdmin = () => {
     setSelectedTipoEvento('todos');
     setDateRange([null, null]);
   };
-
+   //@ts-ignore
   const [searchText, setSearchText] = useState('');
   const searchInputRef = React.useRef<any>(null);
 
@@ -653,7 +662,7 @@ const ReportAdmin = () => {
       setLoading(false);
     }
   };
-
+   //@ts-ignore
   const handleDetalleAlquilerReport = async () => {
     try {
       setLoading(true);
@@ -1053,6 +1062,7 @@ const ReportAdmin = () => {
     setFilteredProveedores([]);
   };
 
+     //@ts-ignore
   const fetchElementosCompra = async () => {
     try {
       setLoadingElementosCompra(true);

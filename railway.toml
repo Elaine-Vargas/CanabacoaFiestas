@@ -1,10 +1,10 @@
 [build]
 builder = "nixpacks"
-buildCommand = "npm install && npm run build --prefix backend"
+buildCommand = "npm install && npm install --prefix frontend && npm run build --prefix frontend && npm install --prefix backend && npm run build --prefix backend"
 nodeVersion = "18"
 
 [deploy]
-startCommand = "npm start"
+startCommand = "npm start --prefix backend"
 healthcheckPath = "/"
 healthcheckTimeout = 100
 restartPolicy = "on-failure"

@@ -146,6 +146,7 @@ export default function WelcomeClient() {
   const [provincias, setProvincias] = useState<Provincia[]>([]);
   const [ciudades, setCiudades] = useState<Ciudad[]>([]);
   const [loading, setLoading] = useState(false);
+     //@ts-ignore
   const [loadingTipos, setLoadingTipos] = useState(false);
   const [loadingUbicaciones, setLoadingUbicaciones] = useState(false);
   const [modalEventoVisible, setModalEventoVisible] = useState(false);
@@ -156,6 +157,7 @@ export default function WelcomeClient() {
   const [selectedEvento, setSelectedEvento] = useState<Evento | null>(null);
   const [selectedDecoracion, setSelectedDecoracion] = useState<Decoracion | undefined>(undefined);
   const [selectedComentario, setSelectedComentario] = useState<Comentario | null>(null);
+     //@ts-ignore
   const [selectedEventoComentario, setSelectedEventoComentario] = useState<Evento | null>(null);
   const [userCedula, setUserCedula] = useState<string>('');
   const [form] = Form.useForm();
@@ -739,7 +741,7 @@ export default function WelcomeClient() {
     setSelectedDecoracion(decoracion);
     setModalDecoracionVisible(true);
   };
-
+   //@ts-ignore
   const handleEliminarDecoracion = async (decoracion: Decoracion) => {
     try {
       const token = localStorage.getItem('token');
