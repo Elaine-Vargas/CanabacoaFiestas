@@ -54,7 +54,7 @@ const PagoForm: React.FC<PagoFormProps> = ({
       }
       await onSubmit(values);
     } catch (error) {
-      //
+      // El error de validación ya es manejado por el Form
     }
   };
 
@@ -76,7 +76,7 @@ const PagoForm: React.FC<PagoFormProps> = ({
           <Select
             placeholder="Seleccione el evento"
             options={eventos.map(evento => ({
-              label: `#${evento.id_evento} - ${evento.nombre_cliente || evento.cliente?.nombre_usuario || ''}`,
+              label: `#${evento.id_evento} - ${evento.cliente?.nombre_usuario || ''} ${evento.cliente?.apellido_usuario || ''}`,
               value: evento.id_evento
             }))}
             showSearch
@@ -88,7 +88,13 @@ const PagoForm: React.FC<PagoFormProps> = ({
           label="Monto"
           rules={[{ required: true, message: 'Ingrese el monto' }]}
         >
-          <InputNumber min={0} style={{ width: '100%' }} prefix="$" />
+          <InputNumber 
+            min={0} 
+            style={{ width: '100%' }} 
+            prefix="RD$" 
+            formatter={value => `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
+            parser={value => value!.replace(/\$\s?|(,*)/g, '')}
+          />
         </Form.Item>
         <Form.Item
           name="tipo_pago"

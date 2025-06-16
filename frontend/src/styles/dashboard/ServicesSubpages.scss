@@ -164,7 +164,7 @@ $transition-standard: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 /* Estilos para tablas */
 .dashboard-table {
   width: 100%;
-  overflow-x: auto; /* Permite el desplazamiento horizontal si el contenido es demasiado ancho */
+  overflow-x: auto;
   
   .ant-table {
     background-color: var(--color-background2);
@@ -206,52 +206,74 @@ $transition-standard: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     overflow: visible !important;
   }
 
+  /* Estilos unificados para la paginación */
   .ant-table-pagination {
     margin: 16px 0 0 0 !important;
     padding: 8px 0;
     background-color: var(--color-background2);
     border-top: 1px solid var(--color-shadow);
 
-    .ant-pagination-item-active {
-      background-color: var(--dark-gold) !important;
-      border-color: var(--dark-gold) !important;
-
+    .ant-pagination-item {
+      border-color: var(--color-input-border);
+      
       a {
-        color: var(--color-button-text) !important;
+        color: var(--color-text);
       }
 
       &:hover {
-        background-color: var(--gold) !important;
         border-color: var(--gold) !important;
+        a {
+          color: var(--gold) !important;
+        }
+      }
+
+      &-active {
+        background-color: var(--dark-gold) !important;
+        border-color: var(--dark-gold) !important;
+
+        a {
+          color: var(--color-button-text) !important;
+        }
+
+        &:hover {
+          background-color: var(--gold) !important;
+          border-color: var(--gold) !important;
+        }
       }
     }
 
-    .ant-pagination-item:hover {
-      border-color: var(--gold) !important;
+    .ant-pagination-prev,
+    .ant-pagination-next {
+      .ant-pagination-item-link {
+        border-color: var(--color-input-border) !important;
+        color: var(--color-text) !important;
 
-      a {
-        color: var(--gold) !important;
+        &:hover {
+          border-color: var(--gold) !important;
+          color: var(--gold) !important;
+        }
       }
     }
 
-    .ant-pagination-prev:hover .ant-pagination-item-link,
-    .ant-pagination-next:hover .ant-pagination-item-link {
-      color: var(--gold) !important;
-    }
+    .ant-pagination-options {
+      .ant-select-selector {
+        background-color: var(--color-background) !important;
+        color: var(--color-text) !important;
+        border-color: var(--color-border) !important;
 
-    .ant-pagination-options-size-changer.ant-select .ant-select-selector {
-      background-color: var(--color-background) !important;
-      color: var(--color-text) !important;
-      border-color: var(--color-border) !important;
-
-      &:hover {
-        border-color: var(--gold) !important;
+        &:hover {
+          border-color: var(--gold) !important;
+        }
       }
     }
 
-    @media screen and (max-width: 480px) {
-      margin: 8px 0 0 0 !important;
-      padding: 4px 0;
+    .ant-pagination-jump-prev,
+    .ant-pagination-jump-next {
+      .ant-pagination-item-container {
+        .ant-pagination-item-ellipsis {
+          color: var(--color-text) !important;
+        }
+      }
     }
   }
 }

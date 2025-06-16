@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import '../../../styles/dashboard/ServicesSubpages.scss';
-import { Card, Button, Table, Tag, Space, Typography, Input, Select, Modal, Descriptions, message, Rate, Form, InputNumber, List } from 'antd';
-import { PlusOutlined, EditOutlined, DeleteOutlined, EyeOutlined } from '@ant-design/icons';
+import { Card, Button, Table, Tag, Space, Typography, Input, Select, Modal, Descriptions, message, Rate, Form, InputNumber, List, Dropdown, Badge } from 'antd';
+import { PlusOutlined, EditOutlined, DeleteOutlined, EyeOutlined, FilterOutlined } from '@ant-design/icons';
 import type { ColumnGroupType, ColumnType } from 'antd/es/table';
 import EventoForm from '../FormService/EventoForm';
 import UsuarioForm from '../FormService/UsuarioForm';
@@ -24,6 +24,7 @@ import {
 } from '../MoreDash/TableUpdateActions';
 import dayjs from 'dayjs';
 import { apiUrl } from '../../../config';
+import axios from 'axios';
 
 // Definición de tipos
 type EstadoSolicitud = 'Pendiente' | 'Aceptada' | 'Rechazada' | 'Completada' | 'Cancelada';
@@ -183,12 +184,12 @@ interface Ciudad {
 interface Pago {
   id_pago: number;
   id_evento: number;
-  monto_pago: number;
+  monto: number;
   fecha_pago: string;
   hora_pago: string;
   tipo_pago: 'Inicial' | 'Final' | 'Adicional';
   estado_pago: 'Pendiente' | 'Recibido' | 'Rechazado';
-  metodo_pago: string;
+  modo_pago: 'Efectivo' | 'Transferencia';
   evento?: {
     id_evento: number;
     cliente?: {
@@ -357,6 +358,33 @@ const WelcomeAdmin: React.FC = () => {
 
   const [modalSeleccionEventoVisible, setModalSeleccionEventoVisible] = useState(false);
   const [eventoSeleccionadoParaElementos, setEventoSeleccionadoParaElementos] = useState<Evento | null>(null);
+
+  const [pagoSeleccionado, setPagoSeleccionado] = useState<Pago | null>(null);
+  const [modalDetallesPagoVisible, setModalDetallesPagoVisible] = useState(false);
+  const [comentarioSeleccionado, setComentarioSeleccionado] = useState<Comentario | null>(null);
+  const [modalDetallesComentarioVisible, setModalDetallesComentarioVisible] = useState(false);
+
+  const [filtroComentarioEstado, setFiltroComentarioEstado] = useState<string>('');
+  const [filtroComentarioCalificacion, setFiltroComentarioCalificacion] = useState<number | null>(null);
+  const [filtroComentarioCliente, setFiltroComentarioCliente] = useState<string>('');
+  const [busquedaComentario, setBusquedaComentario] = useState<string>('');
+
+  // Estados para filtros de Asignación
+  const [filtroAsignacionEstado, setFiltroAsignacionEstado] = useState<string>('');
+  const [filtroAsignacionCargo, setFiltroAsignacionCargo] = useState<string>('');
+  const [filtroAsignacionEvento, setFiltroAsignacionEvento] = useState<string>('');
+  const [filtroAsignacionEmpleado, setFiltroAsignacionEmpleado] = useState<string>('');
+  const [busquedaAsignacion, setBusquedaAsignacion] = useState<string>('');
+
+  // Estados para filtros de Decoraciones
+  const [filtroDecoracionEstado, setFiltroDecoracionEstado] = useState<string>('');
+  const [busquedaDecoracion, setBusquedaDecoracion] = useState<string>('');
+
+  // Estados para filtros de Pagos
+  const [filtroPagoEstado, setFiltroPagoEstado] = useState<string>('');
+  const [filtroPagoTipo, setFiltroPagoTipo] = useState<string>('');
+  const [filtroPagoMetodo, setFiltroPagoMetodo] = useState<string>('');
+  const [busquedaPago, setBusquedaPago] = useState<string>('');
 
   const handleSubmitDecoracion = async (values: any) => {
     try {
@@ -664,7 +692,7 @@ const WelcomeAdmin: React.FC = () => {
         'Content-Type': 'application/json'
       };
 
-      const response = await fetch(`${apiUrl}/pagos`, { headers });
+      const response = await fetch(`${apiUrl}/pago?include=evento.cliente`, { headers });
       if (!response.ok) {
         throw new Error('Error al obtener pagos');
       }
@@ -899,11 +927,13 @@ const WelcomeAdmin: React.FC = () => {
           'Authorization': `Bearer ${token}`
         },
         body: JSON.stringify({
-          ...values,
+          id_evento: values.id_evento,
+          monto: values.monto,
+          tipo_pago: values.tipo_pago,
+          modo_pago: values.modo_pago,
           fecha_pago: values.fecha_pago.format('YYYY-MM-DD'),
-          hora_pago: values.hora_pago.format('HH:mm:ss'),
-        }),
-        credentials: 'include'
+          hora_pago: values.hora_pago.format('HH:mm:ss')
+        })
       });
       if (!response.ok) {
         const errorData = await response.json();
@@ -916,6 +946,72 @@ const WelcomeAdmin: React.FC = () => {
       message.error(error instanceof Error ? error.message : 'Error al crear el pago');
     } finally {
       setLoadingPago(false);
+    }
+  };
+
+  const handleUpdatePago = async (values: any) => {
+    try {
+      setLoading(true);
+      const token = localStorage.getItem('token');
+      if (!token) {
+        message.error('No hay sesión activa');
+        return;
+      }
+
+      const headers = {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      };
+
+      const response = await fetch(`${apiUrl}/pago/${pagoSeleccionado?.id_pago}`, {
+        method: 'PUT',
+        headers,
+        body: JSON.stringify(values)
+      });
+
+      if (!response.ok) {
+        throw new Error('Error al actualizar el pago');
+      }
+
+      message.success('Pago actualizado exitosamente');
+      setModalPagoVisible(false);
+      fetchPagos();
+    } catch (error) {
+      console.error('Error al actualizar pago:', error);
+      message.error('Error al actualizar el pago');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDeletePago = async (id: number) => {
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        message.error('No hay sesión activa');
+        return;
+      }
+
+      const headers = {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      };
+
+      const response = await fetch(`${apiUrl}/pago/${id}/estado`, {
+        method: 'PATCH',
+        headers,
+        body: JSON.stringify({ estado_pago: 'Rechazado' })
+      });
+
+      if (!response.ok) {
+        throw new Error('Error al eliminar el pago');
+      }
+
+      message.success('Pago eliminado exitosamente');
+      fetchPagos();
+    } catch (error) {
+      console.error('Error al eliminar pago:', error);
+      message.error('Error al eliminar el pago');
     }
   };
 
@@ -1072,228 +1168,62 @@ const WelcomeAdmin: React.FC = () => {
 
   const getFilteredAsignaciones = () => {
     return asignaciones.filter(asignacion => {
-      const searchLower = searchTextAsignaciones.toLowerCase();
-      const matchesSearch = searchTextAsignaciones === '' || 
-        asignacion.empleado_evento.toLowerCase().includes(searchLower) ||
-        asignacion.id_evento.toString().includes(searchTextAsignaciones) ||
-        asignacion.empleado?.cedula_usuario.includes(searchTextAsignaciones) ||
-        asignacion.empleado?.nombre_usuario.toLowerCase().includes(searchLower) ||
-        asignacion.empleado?.apellido_usuario.toLowerCase().includes(searchLower);
-      
-      const matchesEvento = selectedEvento === '' || 
-        asignacion.id_evento.toString() === selectedEvento;
-      
-      const matchesCargo = selectedCargo === '' || 
-        asignacion.puesto_evento === selectedCargo;
+      const matchEstado = !filtroAsignacionEstado || asignacion.estado_empevento === filtroAsignacionEstado;
+      const matchCargo = !filtroAsignacionCargo || asignacion.puesto_evento.toLowerCase().includes(filtroAsignacionCargo.toLowerCase());
+      const matchEvento = !filtroAsignacionEvento || asignacion.evento?.id_evento.toString().includes(filtroAsignacionEvento);
+      const matchEmpleado = !filtroAsignacionEmpleado || 
+        (asignacion.empleado && 
+          `${asignacion.empleado.nombre_usuario} ${asignacion.empleado.apellido_usuario}`
+            .toLowerCase()
+            .includes(filtroAsignacionEmpleado.toLowerCase()));
+      const matchBusqueda = !busquedaAsignacion || 
+        asignacion.puesto_evento.toLowerCase().includes(busquedaAsignacion.toLowerCase()) ||
+        (asignacion.empleado && 
+          `${asignacion.empleado.nombre_usuario} ${asignacion.empleado.apellido_usuario}`
+            .toLowerCase()
+            .includes(busquedaAsignacion.toLowerCase()));
 
-      const matchesEmpleado = selectedEmpleado === '' ||
-        asignacion.empleado_evento === selectedEmpleado;
-
-      return matchesSearch && matchesEvento && matchesCargo && matchesEmpleado;
+      return matchEstado && matchCargo && matchEvento && matchEmpleado && matchBusqueda;
     });
   };
 
   const getFilteredDecoraciones = () => {
     return decoraciones.filter(decoracion => {
-      const searchLower = searchTextDecoraciones.toLowerCase();
-      const tipoEvento = typeof decoracion.evento?.tipo_evento === 'object' 
-        ? decoracion.evento.tipo_evento.tipo_evento 
-        : decoracion.evento?.tipo_evento;
-      
-      const matchesSearch = searchTextDecoraciones === '' || 
-        decoracion.tema_decoracion.toLowerCase().includes(searchLower) ||
-        decoracion.colores_decoracion.toLowerCase().includes(searchLower) ||
-        (tipoEvento || '').toLowerCase().includes(searchLower) ||
-        decoracion.id_decoracion.toString().includes(searchTextDecoraciones) ||
-        decoracion.id_evento.toString().includes(searchTextDecoraciones) ||
-        decoracion.precioneto_decoracion.toString().includes(searchTextDecoraciones) ||
-        decoracion.total_decoracion.toString().includes(searchTextDecoraciones);
-      
-      const matchesEstado = selectedEstadoDecoraciones === 'todos' || 
-        decoracion.estado_decoracion === selectedEstadoDecoraciones;
+      const matchEstado = !filtroDecoracionEstado || decoracion.estado_decoracion === filtroDecoracionEstado;
+      const matchBusqueda = !busquedaDecoracion || 
+        decoracion.tema_decoracion.toLowerCase().includes(busquedaDecoracion.toLowerCase()) ||
+        decoracion.colores_decoracion.toLowerCase().includes(busquedaDecoracion.toLowerCase());
 
-      const matchesEvento = selectedEvento === '' ||
-        decoracion.id_evento?.toString() === selectedEvento;
-
-      return matchesSearch && matchesEstado && matchesEvento;
+      return matchEstado && matchBusqueda;
     });
   };
 
-  // Obtener las columnas con las acciones correspondientes
-  const columns = getEventoColumns({
-    onViewDetails: (record) => {
-      setEventoSeleccionado(record);
-      setModalDetallesEventoVisible(true);
-    },
-    onEdit: (record) => {
-      setEventoSeleccionado(record);
-      setShowEventoForm(true);
-    },
-    onDelete: async (record) => {
-      const success = await updateEventoEstado(record.id_evento);
-      if (success) {
-        fetchData(); // Recargar los datos después de eliminar
-      }
-    }
-  });
-
-  const usuarioColumns = getUsuarioColumns({
-    onViewDetails: (record) => {
-      setUsuarioSeleccionado(record);
-      setModalDetallesUsuarioVisible(true);
-    },
-    onEdit: (record) => {
-      setUsuarioSeleccionado(record);
-      setShowUsuarioForm(true);
-    },
-    onDelete: async (record) => {
-      const success = await updateUsuarioEstado(record.cedula_usuario);
-      if (success) {
-        fetchData(); // Recargar los datos después de eliminar
-      }
-    }
-  });
-
-  const proveedorColumns = getProveedorColumns({
-    onViewDetails: (record) => {
-      setProveedorSeleccionado(record);
-      setModalDetallesProveedorVisible(true);
-    },
-    onEdit: (record) => {
-      setProveedorSeleccionado(record);
-      setShowProveedorForm(true);
-    },
-    onDelete: async (record) => {
-      const success = await updateProveedorEstado(record.id_proveedor);
-      if (success) {
-        fetchData(); // Recargar los datos después de eliminar
-      }
-    }
-  });
-
-  const handleDeleteAsignacion = async (record: AsignacionEmpleado) => {
-    const token = localStorage.getItem('token');
-    if (!token) {
-      message.error('No hay sesión activa');
-      return;
-    }
-    console.log('Eliminando asignación:', record);
-    try {
-      const response = await fetch(`${apiUrl}/evento/${record.id_evento}/empleados/${record.empleado_evento}/estado`, {
-        method: 'PATCH',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ estado_empevento: 'Eliminado' })
-      });
-      const data = await response.json();
-      console.log('Respuesta del backend al eliminar asignación:', data);
-      if (!response.ok) {
-        throw new Error(data.mensaje || 'Error al eliminar asignación');
-      }
-      message.success('Asignación eliminada exitosamente');
-      fetchData(); // Recargar datos para reflejar el cambio
-    } catch (error) {
-      console.error('Error al eliminar asignación:', error);
-      message.error(`Error al eliminar asignación: ${error instanceof Error ? error.message : String(error)}`);
-    }
-  };
-  
-  const asignacionColumns: (ColumnGroupType<AsignacionEmpleado> | ColumnType<AsignacionEmpleado>)[] = [
-    {
-      title: 'Evento',
-      dataIndex: ['evento', 'id_evento'],
-      key: 'evento',
-      render: (_: unknown, record: AsignacionEmpleado) => (
-        <div>
-          <div>ID: {record.evento?.id_evento}</div>
-          <div>Fecha: {record.evento?.fecha_evento}</div>
-          <div>Hora: {record.evento?.hora_evento}</div>
-          {record.evento?.cliente && (
-            <div>Cliente: {`${record.evento.cliente.nombre_usuario} ${record.evento.cliente.apellido_usuario}`}</div>
-          )}
-        </div>
-      ),
-    },
-    {
-      title: 'Empleado',
-      dataIndex: ['empleado', 'cedula_usuario'],
-      key: 'empleado',
-      render: (_: unknown, record: AsignacionEmpleado) => (
-        <div>
-          <div>ID: {record.empleado?.cedula_usuario}</div>
-          <div>Nombre: {`${record.empleado?.nombre_usuario} ${record.empleado?.apellido_usuario}`}</div>
-        </div>
-      ),
-    },
-    {
-      title: 'Puesto',
-      dataIndex: 'puesto_evento',
-      key: 'puesto',
-    },
-    {
-      title: 'Estado',
-      dataIndex: 'estado_empevento',
-      key: 'estado',
-    },
-    {
-      title: 'Acciones',
-      key: 'acciones',
-      render: (_: unknown, record: AsignacionEmpleado) => (
-        <Space>
-          <Button
-            type="primary"
-            onClick={() => handleEditClick(record)}
-            icon={<EditOutlined />}
-          >
-            Editar
-          </Button>
-          <Button
-            danger
-            onClick={() => handleDeleteAsignacion(record)}
-            icon={<DeleteOutlined />}
-          >
-            Eliminar
-          </Button>
-        </Space>
-      ),
-    },
-  ];
-
-  const decoracionColumns = getDecoracionColumns({
-    onViewDetails: (record) => {
-      setDecoracionSeleccionada(record);
-      setModalDetallesDecoracionVisible(true);
-    },
-    onEdit: (record) => {
-      setDecoracionSeleccionada(record);
-      setShowDecoracionForm(true);
-    },
-    onDelete: async (record) => {
-      const success = await updateDecoracionEstado(record.id_decoracion);
-      if (success) {
-        fetchData(); // Recargar los datos después de eliminar
-      }
-    }
-  });
-
-  // Funciones para filtrar pagos y comentarios
   const getFilteredPagos = () => {
     return pagos.filter(pago => {
-      const matchEstado = !filtrosPagos.estado || pago.estado_pago === filtrosPagos.estado;
-      const matchEvento = !filtrosPagos.evento || pago.id_evento.toString() === filtrosPagos.evento;
-      const matchMetodo = !filtrosPagos.metodo || pago.metodo_pago === filtrosPagos.metodo;
-      const matchTipo = !filtrosPagos.tipo || pago.tipo_pago === filtrosPagos.tipo;
-      return matchEstado && matchEvento && matchMetodo && matchTipo;
+      const matchEstado = !filtroPagoEstado || pago.estado_pago === filtroPagoEstado;
+      const matchTipo = !filtroPagoTipo || pago.tipo_pago === filtroPagoTipo;
+      const matchMetodo = !filtroPagoMetodo || pago.modo_pago === filtroPagoMetodo;
+      const matchBusqueda = !busquedaPago || 
+        pago.modo_pago.toLowerCase().includes(busquedaPago.toLowerCase()) ||
+        pago.tipo_pago.toLowerCase().includes(busquedaPago.toLowerCase());
+
+      return matchEstado && matchTipo && matchMetodo && matchBusqueda;
     });
   };
 
   const getFilteredComentarios = () => {
     return comentarios.filter(comentario => {
-      const matchEstado = !filtrosComentarios.estado || comentario.estado_comentario === filtrosComentarios.estado;
-      const matchCalificacion = !filtrosComentarios.calificacion || comentario.calificacion?.toString() === filtrosComentarios.calificacion;
-      return matchEstado && matchCalificacion;
+      const matchEstado = !filtroComentarioEstado || comentario.estado_comentario === filtroComentarioEstado;
+      const matchCalificacion = !filtroComentarioCalificacion || comentario.calificacion === filtroComentarioCalificacion;
+      const matchCliente = !filtroComentarioCliente || 
+        (comentario.evento?.cliente && 
+          `${comentario.evento.cliente.nombre_usuario} ${comentario.evento.cliente.apellido_usuario}`
+            .toLowerCase()
+            .includes(filtroComentarioCliente.toLowerCase()));
+      const matchBusqueda = !busquedaComentario || 
+        comentario.comentario.toLowerCase().includes(busquedaComentario.toLowerCase());
+
+      return matchEstado && matchCalificacion && matchCliente && matchBusqueda;
     });
   };
 
@@ -1301,127 +1231,62 @@ const WelcomeAdmin: React.FC = () => {
     return Object.values(filtros).filter((value: any) => value !== '').length;
   };
 
-  const handleEditEvento = (evento: Evento) => {
-    console.log("Evento seleccionado para editar:", evento);
-    
-    // Reconstruir el objeto de evento para asegurar que todas las propiedades anidadas necesarias existan
-    // y estén tipadas correctamente para el consumo de initialValues de EventoForm.tsx.
-    // Usar encadenamiento opcional para un acceso seguro y proporcionar valores de respaldo o objetos vacíos
-    // para propiedades anidadas que puedan faltar en el objeto 'evento' recuperado,
-    // incluso si la interfaz Evento ahora las marca como no opcionales.
-    const eventoParaFormulario: Evento = {
-      ...evento, // Copia todas las propiedades de nivel superior existentes de 'evento'
-      
-      // Asegura que los objetos 'cliente' y 'asesor' siempre estén presentes y correctamente estructurados.
-      // Usa el objeto 'Usuario' real si está presente, de lo contrario, proporciona un Usuario vacío predeterminado.
-      cliente: evento.cliente || { cedula_usuario: '', nombre_usuario: '', apellido_usuario: '', usuario_login: '', correo_usuario: '', tel_usuario: '', estado_usuario: '', id_rol: 0, rol_nombre: '', creacion_usuario: '' },
-      asesor: evento.asesor || { cedula_usuario: '', nombre_usuario: '', apellido_usuario: '', usuario_login: '', correo_usuario: '', tel_usuario: '', estado_usuario: '', id_rol: 0, rol_nombre: '', creacion_usuario: '' },
-      
-      // Asegura que el objeto 'tipo_evento' siempre esté presente y correctamente estructurado.
-      tipo_evento: evento.tipo_evento || { id_tipo_evento: 0, tipo_evento: '' },
-      
-      // Asegura que el objeto 'direccion' y sus propiedades anidadas siempre estén presentes y correctamente estructuradas.
-      // Proporciona valores de respaldo robustos para todas las propiedades relacionadas con la dirección.
-      direccion: {
-        id_direccion: evento.direccion?.id_direccion || 0,
-        calle: evento.direccion?.calle || '',
-        sector: evento.direccion?.sector || '',
-        ciudad: {
-          id_ciudad: evento.direccion?.ciudad?.id_ciudad || 0,
-          nombre_ciudad: evento.direccion?.ciudad?.nombre_ciudad || '',
-          provincia: {
-            id_provincia: evento.direccion?.ciudad?.provincia?.id_provincia || 0,
-            nombre_provincia: evento.direccion?.ciudad?.provincia?.nombre_provincia || ''
-          }
-        }
-      }
-    };
-    
-    setEventoSeleccionado(eventoParaFormulario);
-    setShowEventoForm(true);
+  const handleViewEvento = (record: Evento) => {
+    setEventoSeleccionado(record);
+    setModalDetallesEventoVisible(true);
   };
 
-  const handleUpdateEvento = async (values: any) => {
+  const handleViewUsuario = (record: Usuario) => {
+    setUsuarioSeleccionado(record);
+    setModalDetallesUsuarioVisible(true);
+  };
+
+  const handleViewProveedor = (record: Proveedor) => {
+    setProveedorSeleccionado(record);
+    setModalDetallesProveedorVisible(true);
+  };
+
+  const handleEditEvento = (record: Evento) => {
+    setEventoSeleccionado(record);
+    setModalEventoVisible(true);
+  };
+
+  const handleEditUsuario = (record: Usuario) => {
+    setUsuarioSeleccionado(record);
+    setModalUsuarioVisible(true);
+  };
+
+  const handleEditProveedor = (record: Proveedor) => {
+    setProveedorSeleccionado(record);
+    setModalProveedorVisible(true);
+  };
+
+  const handleDeleteUsuario = async (record: Usuario) => {
     try {
-      setLoading(true);
-      const token = localStorage.getItem('token');
-      if (!token) {
-        message.error('No hay sesión activa');
-        return;
-      }
-
-      // Validar que las fechas sean válidas
-      if (!values.fecha_evento || !values.hora_evento) {
-        throw new Error('La fecha y hora del evento son requeridas');
-      }
-
-      // Primero actualizar la dirección
-      const direccionResponse = await fetch(`${apiUrl}/direccion/${eventoSeleccionado?.direccion?.id_direccion}`, {
-        method: 'PUT',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          id_ciudad: values.id_ciudad,
-          sector: values.sector,
-          calle: values.calle,
-          detalles: values.detalles || ''
-        })
-      });
-
-      if (!direccionResponse.ok) {
-        const errorData = await direccionResponse.json();
-        throw new Error(errorData.message || 'Error al actualizar la dirección');
-      }
-
-      // Formatear la fecha y hora correctamente
-      const fechaEvento = values.fecha_evento.format('YYYY-MM-DD');
-      const horaEvento = values.hora_evento.format('HH:mm:ss');
-
-      // Luego actualizar el evento
-      const eventoResponse = await fetch(`${apiUrl}/evento/${eventoSeleccionado?.id_evento}`, {
-        method: 'PUT',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          cedula_cliente: values.cedula_cliente,
-          cedula_asesor: values.cedula_asesor,
-          fecha_evento: fechaEvento,
-          hora_evento: horaEvento,
-          id_tipo_evento: values.id_tipo_evento,
-          espacio_evento: values.espacio_evento,
-          desea_supervision: values.desea_supervision,
-          estado_solicitud: values.estado_solicitud,
-          nota_cliente: values.nota_cliente || ''
-        })
-      });
-
-      if (!eventoResponse.ok) {
-        const errorData = await eventoResponse.json();
-        throw new Error(errorData.message || 'Error al actualizar el evento');
-      }
-
-      message.success('Evento actualizado exitosamente');
-      setShowEventoForm(false);
-      setEventoSeleccionado(null);
+      await updateUsuarioEstado(record.cedula_usuario);
       fetchData();
     } catch (error) {
-      console.error('Error al actualizar el evento:', error);
-      message.error(error instanceof Error ? error.message : 'Error al actualizar el evento');
-    } finally {
-      setLoading(false);
+      message.error('Error al eliminar el usuario');
     }
   };
 
-  // Actualizar datos cuando se cierra el modal de usuario
-  useEffect(() => {
-    if (!modalUsuarioVisible) {
+  const handleDeleteProveedor = async (record: Proveedor) => {
+    try {
+      await updateProveedorEstado(record.id_proveedor);
       fetchData();
+    } catch (error) {
+      message.error('Error al eliminar el proveedor');
     }
-  }, [modalUsuarioVisible]);
+  };
+
+  const handleCancelarEvento = async (record: Evento) => {
+    try {
+      await updateEventoEstado(record.id_evento);
+      fetchData();
+    } catch (error) {
+      message.error('Error al cancelar el evento');
+    }
+  };
 
   const handleEditAsignacion = async (values: any) => {
     const token = localStorage.getItem('token');
@@ -1579,6 +1444,493 @@ const WelcomeAdmin: React.FC = () => {
 
     fetchUserData();
   }, []);
+
+  const handleEditPago = (record: Pago) => {
+    setPagoSeleccionado(record);
+    setModalPagoVisible(true);
+  };
+
+  const handleEditComentario = (record: Comentario) => {
+    setComentarioSeleccionado(record);
+    setModalDetallesComentarioVisible(true);
+  };
+
+  const handleDeleteComentario = async (id: number) => {
+    try {
+      await axios.delete(`${apiUrl}/comentarios/${id}`);
+      message.success('Comentario eliminado exitosamente');
+      fetchComentarios();
+    } catch (error) {
+      message.error('Error al eliminar el comentario');
+    }
+  };
+
+  // Definir las columnas para la tabla de eventos
+  const columns = [
+    {
+      title: 'ID',
+      dataIndex: 'id_evento',
+      key: 'id_evento',
+      render: (text: string) => <span className="column-id">{text}</span>,
+    },
+    {
+      title: 'Cliente',
+      dataIndex: ['cliente', 'nombre_usuario'],
+      key: 'cliente',
+      render: (_: any, record: Evento) => 
+        `${record.cliente.nombre_usuario} ${record.cliente.apellido_usuario}`,
+    },
+    {
+      title: 'Fecha',
+      dataIndex: 'fecha_evento',
+      key: 'fecha_evento',
+    },
+    {
+      title: 'Tipo',
+      dataIndex: ['tipo_evento', 'tipo_evento'],
+      key: 'tipo_evento',
+    },
+    {
+      title: 'Estado',
+      dataIndex: 'estado_solicitud',
+      key: 'estado_solicitud',
+      render: (estado: EstadoSolicitud) => (
+        <Tag color={
+          estado === 'Aceptada' ? 'green' :
+          estado === 'Pendiente' ? 'orange' :
+          estado === 'Rechazada' ? 'red' :
+          estado === 'Completada' ? 'blue' :
+          'default'
+        }>
+          {estado}
+        </Tag>
+      ),
+    },
+    {
+      title: 'Total',
+      dataIndex: 'total_evento',
+      key: 'total_evento',
+      render: (total: number) => `RD$ ${total.toLocaleString('es-DO', { minimumFractionDigits: 2 })}`,
+    },
+    {
+      title: 'Acciones',
+      key: 'acciones',
+      render: (_: any, record: Evento) => (
+        <Space>
+          <Button
+            type="text"
+            icon={<EyeOutlined />}
+            onClick={() => {
+              setEventoSeleccionado(record);
+              setModalDetallesEventoVisible(true);
+            }}
+            title="Ver Detalles"
+          />
+          <Button
+            type="text"
+            icon={<EditOutlined />}
+            onClick={() => {
+              setEventoSeleccionado(record);
+              setModalEventoVisible(true);
+            }}
+            title="Editar"
+          />
+          <Button
+            type="text"
+            danger
+            icon={<DeleteOutlined />}
+            onClick={() => handleCancelarEvento(record)}
+            title="Cancelar Evento"
+          />
+        </Space>
+      ),
+    }
+  ];
+
+  // Definir las columnas para la tabla de usuarios
+  const usuarioColumns = [
+    {
+      title: 'Cédula',
+      dataIndex: 'cedula_usuario',
+      key: 'cedula_usuario',
+    },
+    {
+      title: 'Nombre',
+      dataIndex: 'nombre_usuario',
+      key: 'nombre_usuario',
+    },
+    {
+      title: 'Apellido',
+      dataIndex: 'apellido_usuario',
+      key: 'apellido_usuario',
+    },
+    {
+      title: 'Rol',
+      dataIndex: 'rol_nombre',
+      key: 'rol_nombre',
+    },
+    {
+      title: 'Estado',
+      dataIndex: 'estado_usuario',
+      key: 'estado_usuario',
+      render: (estado: string) => (
+        <Tag color={estado === 'Activo' ? 'green' : 'red'}>
+          {estado}
+        </Tag>
+      ),
+    },
+    {
+      title: 'Acciones',
+      key: 'acciones',
+      render: (_: any, record: Usuario) => (
+        <Space>
+          <Button
+            type="text"
+            icon={<EyeOutlined />}
+            onClick={() => {
+              setUsuarioSeleccionado(record);
+              setModalDetallesUsuarioVisible(true);
+            }}
+            title="Ver Detalles"
+          />
+          <Button
+            type="text"
+            icon={<EditOutlined />}
+            onClick={() => {
+              setUsuarioSeleccionado(record);
+              setModalUsuarioVisible(true);
+            }}
+            title="Editar"
+          />
+          <Button
+            type="text"
+            danger
+            icon={<DeleteOutlined />}
+            onClick={() => handleDeleteUsuario(record)}
+            title="Eliminar"
+          />
+        </Space>
+      ),
+    }
+  ];
+
+  // Definir las columnas para la tabla de proveedores
+  const proveedorColumns = [
+    {
+      title: 'ID',
+      dataIndex: 'id_proveedor',
+      key: 'id_proveedor',
+      render: (text: string) => <span className="column-id">{text}</span>,
+    },
+    {
+      title: 'Nombre',
+      dataIndex: 'nombre_proveedor',
+      key: 'nombre_proveedor',
+    },
+    {
+      title: 'Tipo',
+      dataIndex: 'tipo_proveedor',
+      key: 'tipo_proveedor',
+    },
+    {
+      title: 'Estado',
+      dataIndex: 'estado_proveedor',
+      key: 'estado_proveedor',
+      render: (estado: string) => (
+        <Tag color={
+          estado === 'Activo' ? 'green' :
+          estado === 'Inactivo' ? 'orange' :
+          'red'
+        }>
+          {estado}
+        </Tag>
+      ),
+    },
+    {
+      title: 'Acciones',
+      key: 'acciones',
+      render: (_: any, record: Proveedor) => (
+        <Space>
+          <Button
+            type="text"
+            icon={<EyeOutlined />}
+            onClick={() => {
+              setProveedorSeleccionado(record);
+              setModalDetallesProveedorVisible(true);
+            }}
+            title="Ver Detalles"
+          />
+          <Button
+            type="text"
+            icon={<EditOutlined />}
+            onClick={() => {
+              setProveedorSeleccionado(record);
+              setModalProveedorVisible(true);
+            }}
+            title="Editar"
+          />
+          <Button
+            type="text"
+            danger
+            icon={<DeleteOutlined />}
+            onClick={() => handleDeleteProveedor(record)}
+            title="Eliminar"
+          />
+        </Space>
+      ),
+    }
+  ];
+
+  // Agregar la función handleDeleteAsignacion
+  const handleDeleteAsignacion = async (record: AsignacionEmpleado) => {
+    try {
+      await axios.delete(`${apiUrl}/asignaciones/${record.id_evento}/${record.empleado_evento}`);
+      message.success('Asignación eliminada exitosamente');
+      fetchData();
+    } catch (error) {
+      message.error('Error al eliminar la asignación');
+    }
+  };
+
+  const pagosColumns = [
+    {
+      title: 'ID',
+      dataIndex: 'id_pago',
+      key: 'id_pago',
+    },
+    {
+      title: 'Cliente',
+      dataIndex: ['evento', 'cliente'],
+      key: 'cliente',
+      render: (_: any, record: Pago) => {
+        const eventoCorrespondiente = eventos.find(e => e.id_evento === record.id_evento);
+        console.log('Evento correspondiente encontrado para pago:', eventoCorrespondiente);
+        if (eventoCorrespondiente && eventoCorrespondiente.cliente) {
+          return `${eventoCorrespondiente.cliente.nombre_usuario} ${eventoCorrespondiente.cliente.apellido_usuario}`;
+        }
+        return 'N/A';
+      }
+    },
+    {
+      title: 'Monto',
+      dataIndex: 'monto',
+      key: 'monto',
+      render: (monto: number) => `RD$ ${monto.toLocaleString('es-DO', { minimumFractionDigits: 2 })}`,
+    },
+    {
+      title: 'Tipo',
+      dataIndex: 'tipo_pago',
+      key: 'tipo_pago',
+    },
+    {
+      title: 'Estado',
+      dataIndex: 'estado_pago',
+      key: 'estado_pago',
+      render: (estado: string) => (
+        <Tag color={
+          estado === 'Recibido' ? 'green' :
+          estado === 'Pendiente' ? 'orange' :
+          'red'
+        }>
+          {estado}
+        </Tag>
+      ),
+    },
+    {
+      title: 'Método',
+      dataIndex: 'modo_pago',
+      key: 'modo_pago',
+    },
+    {
+      title: 'Fecha',
+      dataIndex: 'fecha_pago',
+      key: 'fecha_pago',
+      render: (fecha: string) => new Date(fecha).toLocaleDateString(),
+    },
+    {
+      title: 'Hora',
+      dataIndex: 'hora_pago',
+      key: 'hora_pago',
+    },
+    {
+      title: 'Acciones',
+      key: 'acciones',
+      fixed: 'right' as const,
+      width: 'fit-content',
+      render: (_: any, record: Pago) => (
+        <Space>
+          <Button
+            type="text"
+            icon={<EyeOutlined />}
+            onClick={() => {
+              setPagoSeleccionado(record);
+              setModalDetallesPagoVisible(true);
+            }}
+            title="Ver Detalles"
+          />
+          <Button
+            type="text"
+            icon={<EditOutlined />}
+            onClick={() => handleEditPago(record)}
+            title="Editar"
+          />
+          <Button
+            type="text"
+            danger
+            icon={<DeleteOutlined />}
+            onClick={() => handleDeletePago(record.id_pago)}
+            title="Eliminar"
+          />
+        </Space>
+      ),
+    },
+  ];
+
+  const comentariosColumns = [
+    {
+      title: 'Cliente',
+      dataIndex: ['evento', 'cliente'],
+      key: 'cliente',
+      render: (cliente: any) => 
+        cliente ? `${cliente.nombre_usuario} ${cliente.apellido_usuario}` : 'N/A'
+    },
+    {
+      title: 'Comentario',
+      dataIndex: 'comentario',
+      key: 'comentario',
+    },
+    {
+      title: 'Calificación',
+      dataIndex: 'calificacion',
+      key: 'calificacion',
+      render: (calificacion: number) => <Rate disabled defaultValue={calificacion} />,
+    },
+    {
+      title: 'Estado',
+      dataIndex: 'estado_comentario',
+      key: 'estado_comentario',
+      render: (estado: string) => (
+        <Tag color={
+          estado === 'Activo' ? 'green' :
+          estado === 'Editado' ? 'blue' :
+          'red'
+        }>
+          {estado}
+        </Tag>
+      ),
+    },
+    {
+      title: 'Fecha',
+      dataIndex: 'fecha_creacion',
+      key: 'fecha_creacion',
+    }
+  ];
+
+  const filterContentComentarios = (
+    <div style={{ padding: '8px', minWidth: '300px', backgroundColor: '#f5f5f5', borderRadius: '4px' }}>
+      <Space direction="vertical" style={{ width: '100%' }}>
+        <div>
+          <div style={{ marginBottom: 4 }}>Estado del comentario:</div>
+          <Select
+            placeholder="Filtrar por estado"
+            style={{ width: '100%' }}
+            onChange={value => setFiltroComentarioEstado(value)}
+            value={filtroComentarioEstado}
+            options={[
+              { value: '', label: 'Todos' },
+              { value: 'Activo', label: 'Activo' },
+              { value: 'Editado', label: 'Editado' },
+              { value: 'Eliminado', label: 'Eliminado' }
+            ]}
+          />
+        </div>
+        <div>
+          <div style={{ marginBottom: 4 }}>Calificación:</div>
+          <Select
+            placeholder="Filtrar por calificación"
+            style={{ width: '100%' }}
+            onChange={value => setFiltroComentarioCalificacion(value)}
+            value={filtroComentarioCalificacion}
+            options={[
+              { value: null, label: 'Todas' },
+              { value: 5, label: '5 estrellas' },
+              { value: 4, label: '4 estrellas' },
+              { value: 3, label: '3 estrellas' },
+              { value: 2, label: '2 estrellas' },
+              { value: 1, label: '1 estrella' }
+            ]}
+          />
+        </div>
+        <div>
+          <div style={{ marginBottom: 4 }}>Cliente:</div>
+          <Select
+            placeholder="Filtrar por cliente"
+            style={{ width: '100%' }}
+            onChange={value => setFiltroComentarioCliente(value)}
+            value={filtroComentarioCliente}
+            showSearch
+            optionFilterProp="children"
+          >
+            <Select.Option value="">Todos los clientes</Select.Option>
+            {clientes.map(cliente => (
+              <Select.Option key={cliente.cedula_usuario} value={cliente.cedula_usuario}>
+                {`${cliente.nombre_usuario} ${cliente.apellido_usuario} - ${cliente.cedula_usuario}`}
+              </Select.Option>
+            ))}
+          </Select>
+        </div>
+      </Space>
+    </div>
+  );
+
+  const handleUpdateEvento = async (values: any) => {
+    try {
+      if (!eventoSeleccionado) return;
+
+      const token = localStorage.getItem('token');
+      if (!token) {
+        message.error('No hay sesión activa');
+        return;
+      }
+
+      const response = await fetch(`${apiUrl}/eventos/${eventoSeleccionado.id_evento}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          id_evento: eventoSeleccionado.id_evento,
+          cedula_cliente: values.cedula_cliente,
+          cedula_asesor: values.cedula_asesor,
+          id_tipo_evento: values.id_tipo_evento,
+          fecha_evento: values.fecha_evento,
+          hora_evento: values.hora_evento,
+          espacio_evento: values.espacio_evento,
+          desea_supervision: values.desea_supervision,
+          estado_solicitud: values.estado_solicitud,
+          total_evento: values.total_evento,
+          subtotal_evento: values.subtotal_evento,
+          itbis_evento: values.itbis_evento,
+          nota_cliente: values.nota_cliente || '',
+          id_direccion: values.id_direccion
+        })
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Error al actualizar el evento');
+      }
+
+      message.success('Evento actualizado exitosamente');
+      setModalEventoVisible(false);
+      setEventoSeleccionado(null);
+      fetchData();
+    } catch (error) {
+      console.error('Error al actualizar evento:', error);
+      message.error('Error al actualizar el evento');
+    }
+  };
 
   return (
     <div className="welcome-container">
@@ -1848,20 +2200,103 @@ const WelcomeAdmin: React.FC = () => {
 
     {/* Tercera fila: Asignación y Decoración */}
     <div className="dashboard-row">
+      {/* Tarjeta de Asignación de Equipo */}
       <Card
         title="ASIGNACIÓN DE EQUIPO"
         className="dashboard-card"
         extra={
-          <Button
-            type="primary"
-            icon={<PlusOutlined />}
-            onClick={() => setModalAsignacionVisible(true)}
-            className="action-button primary"
-          >
-            Nueva Asignación
-          </Button>
+          <Space>
+            <Button
+              type="primary"
+              icon={<PlusOutlined />}
+              onClick={() => setModalAsignacionVisible(true)}
+              className="action-button primary"
+            >
+              Nueva Asignación
+            </Button>
+          </Space>
         }
       >
+        <Space direction="vertical" style={{ width: '100%', marginBottom: 16 }}>
+          <Input.Search
+            placeholder="Buscar en asignaciones..."
+            allowClear
+            onSearch={value => setBusquedaAsignacion(value)}
+            onChange={e => setBusquedaAsignacion(e.target.value)}
+            style={{ width: '100%' }}
+          />
+          <Space>
+            <Dropdown
+              trigger={['click']}
+              overlay={
+                <div style={{ padding: '8px', background: 'white', boxShadow: '0 2px 8px rgba(0,0,0,0.15)', borderRadius: '4px' }}>
+                  <Space direction="vertical" style={{ width: 300 }}>
+                    <Select
+                      placeholder="Filtrar por estado"
+                      allowClear
+                      style={{ width: '100%' }}
+                      onChange={value => setFiltroAsignacionEstado(value)}
+                    >
+                      <Select.Option value="Activo">Activo</Select.Option>
+                      <Select.Option value="Pendiente">Pendiente</Select.Option>
+                      <Select.Option value="Cancelado">Cancelado</Select.Option>
+                    </Select>
+                    <Input
+                      placeholder="Filtrar por cargo"
+                      allowClear
+                      style={{ width: '100%' }}
+                      onChange={e => setFiltroAsignacionCargo(e.target.value)}
+                    />
+                    <Input
+                      placeholder="Filtrar por ID evento"
+                      allowClear
+                      style={{ width: '100%' }}
+                      onChange={e => setFiltroAsignacionEvento(e.target.value)}
+                    />
+                    <Input
+                      placeholder="Filtrar por empleado"
+                      allowClear
+                      style={{ width: '100%' }}
+                      onChange={e => setFiltroAsignacionEmpleado(e.target.value)}
+                    />
+                    <Button 
+                      type="primary" 
+                      onClick={() => {
+                        setFiltroAsignacionEstado('');
+                        setFiltroAsignacionCargo('');
+                        setFiltroAsignacionEvento('');
+                        setFiltroAsignacionEmpleado('');
+                      }}
+                      style={{ width: '100%' }}
+                    >
+                      Limpiar Filtros
+                    </Button>
+                  </Space>
+                </div>
+              }
+            >
+              <Button>
+                <Space>
+                  <FilterOutlined />
+                  Filtros
+                  {getActiveFiltersCount({
+                    estado: filtroAsignacionEstado,
+                    cargo: filtroAsignacionCargo,
+                    evento: filtroAsignacionEvento,
+                    empleado: filtroAsignacionEmpleado
+                  }) > 0 && (
+                    <Badge count={getActiveFiltersCount({
+                      estado: filtroAsignacionEstado,
+                      cargo: filtroAsignacionCargo,
+                      evento: filtroAsignacionEvento,
+                      empleado: filtroAsignacionEmpleado
+                    })} style={{ marginLeft: 8 }} />
+                  )}
+                </Space>
+              </Button>
+            </Dropdown>
+          </Space>
+        </Space>
         <Table
           dataSource={getFilteredAsignaciones()}
           columns={[
@@ -1962,8 +2397,62 @@ const WelcomeAdmin: React.FC = () => {
           </Space>
         }
       >
+        <Space direction="vertical" style={{ width: '100%', marginBottom: 16 }}>
+          <Input.Search
+            placeholder="Buscar en decoraciones..."
+            allowClear
+            onSearch={value => setBusquedaDecoracion(value)}
+            onChange={e => setBusquedaDecoracion(e.target.value)}
+            style={{ width: '100%' }}
+          />
+          <Space>
+            <Dropdown
+              trigger={['click']}
+              overlay={
+                <div style={{ padding: '8px', background: 'white', boxShadow: '0 2px 8px rgba(0,0,0,0.15)', borderRadius: '4px' }}>
+                  <Space direction="vertical" style={{ width: 300 }}>
+                    <Select
+                      placeholder="Filtrar por estado"
+                      allowClear
+                      style={{ width: '100%' }}
+                      onChange={value => setFiltroDecoracionEstado(value)}
+                    >
+                      <Select.Option value="Activo">Activo</Select.Option>
+                      <Select.Option value="Pendiente">Pendiente</Select.Option>
+                      <Select.Option value="Completada">Completada</Select.Option>
+                      <Select.Option value="Cancelada">Cancelada</Select.Option>
+                    </Select>
+                    <Button 
+                      type="primary" 
+                      onClick={() => {
+                        setFiltroDecoracionEstado('');
+                      }}
+                      style={{ width: '100%' }}
+                    >
+                      Limpiar Filtros
+                    </Button>
+                  </Space>
+                </div>
+              }
+            >
+              <Button>
+                <Space>
+                  <FilterOutlined />
+                  Filtros
+                  {getActiveFiltersCount({
+                    estado: filtroDecoracionEstado
+                  }) > 0 && (
+                    <Badge count={getActiveFiltersCount({
+                      estado: filtroDecoracionEstado
+                    })} style={{ marginLeft: 8 }} />
+                  )}
+                </Space>
+              </Button>
+            </Dropdown>
+          </Space>
+        </Space>
         <Table
-          dataSource={decoraciones}
+          dataSource={getFilteredDecoraciones()}
           columns={[
             {
               title: 'Evento',
@@ -2052,9 +2541,206 @@ const WelcomeAdmin: React.FC = () => {
           scroll={{ x: 'max-content' }}
           pagination={{ pageSize: 5 }}
           locale={{ emptyText: <span style={{ color: '#999', fontWeight: 500, fontSize: 16 }}>No hay Registros</span> }}
+          className="dashboard-table"
         />
       </Card>
     </div>
+
+    {/* Cuarta fila: Pagos y Comentarios */}
+    <div className="dashboard-row">
+      <Card
+        title="PAGOS"
+        className="dashboard-card"
+        extra={
+          <Space>
+            <Button
+              type="primary"
+              icon={<PlusOutlined />}
+              onClick={() => setModalPagoVisible(true)}
+              className="action-button primary"
+            >
+              Nuevo Pago
+            </Button>
+          </Space>
+        }
+      >
+        <Space direction="vertical" style={{ width: '100%', marginBottom: 16 }}>
+          <Input.Search
+            placeholder="Buscar en pagos..."
+            allowClear
+            onSearch={value => setBusquedaPago(value)}
+            onChange={e => setBusquedaPago(e.target.value)}
+            style={{ width: '100%' }}
+          />
+          <Space>
+            <Dropdown
+              trigger={['click']}
+              overlay={
+                <div style={{ padding: '8px', background: 'white', boxShadow: '0 2px 8px rgba(0,0,0,0.15)', borderRadius: '4px' }}>
+                  <Space direction="vertical" style={{ width: 300 }}>
+                    <Select
+                      placeholder="Filtrar por estado"
+                      allowClear
+                      style={{ width: '100%' }}
+                      onChange={value => setFiltroPagoEstado(value)}
+                    >
+                      <Select.Option value="Recibido">Recibido</Select.Option>
+                      <Select.Option value="Pendiente">Pendiente</Select.Option>
+                      <Select.Option value="Rechazado">Rechazado</Select.Option>
+                    </Select>
+                    <Select
+                      placeholder="Filtrar por tipo de pago"
+                      allowClear
+                      style={{ width: '100%' }}
+                      onChange={value => setFiltroPagoTipo(value)}
+                    >
+                      <Select.Option value="Inicial">Inicial</Select.Option>
+                      <Select.Option value="Final">Final</Select.Option>
+                      <Select.Option value="Adicional">Adicional</Select.Option>
+                    </Select>
+                    <Select
+                      placeholder="Filtrar por método de pago"
+                      allowClear
+                      style={{ width: '100%' }}
+                      onChange={value => setFiltroPagoMetodo(value)}
+                    >
+                      <Select.Option value="Efectivo">Efectivo</Select.Option>
+                      <Select.Option value="Transferencia">Transferencia</Select.Option>
+                    </Select>
+                    <Button 
+                      type="primary" 
+                      onClick={() => {
+                        setFiltroPagoEstado('');
+                        setFiltroPagoTipo('');
+                        setFiltroPagoMetodo('');
+                      }}
+                      style={{ width: '100%' }}
+                    >
+                      Limpiar Filtros
+                    </Button>
+                  </Space>
+                </div>
+              }
+            >
+              <Button>
+                <Space>
+                  <FilterOutlined />
+                  Filtros
+                  {getActiveFiltersCount({
+                    estado: filtroPagoEstado,
+                    tipo: filtroPagoTipo,
+                    metodo: filtroPagoMetodo
+                  }) > 0 && (
+                    <Badge count={getActiveFiltersCount({
+                      estado: filtroPagoEstado,
+                      tipo: filtroPagoTipo,
+                      metodo: filtroPagoMetodo
+                    })} style={{ marginLeft: 8 }} />
+                  )}
+                </Space>
+              </Button>
+            </Dropdown>
+          </Space>
+        </Space>
+        <Table
+          dataSource={getFilteredPagos()}
+          columns={pagosColumns}
+          rowKey="id_pago"
+          scroll={{ x: 'max-content' }}
+          pagination={{ pageSize: 5 }}
+          locale={{ emptyText: <span style={{ color: '#999', fontWeight: 500, fontSize: 16 }}>No hay Registros</span> }}
+          className="dashboard-table"
+        />
+      </Card>
+
+      <Card
+        title="COMENTARIOS"
+        className="dashboard-card"
+      >
+        <TableFilters
+          type="comentarios"
+          searchText={busquedaComentario}
+          onSearchChange={setBusquedaComentario}
+          clearFilters={() => {
+            setBusquedaComentario('');
+            setFiltroComentarioEstado('');
+            setFiltroComentarioCalificacion(null);
+            setFiltroComentarioCliente('');
+          }}
+          activeFiltersCount={
+            (filtroComentarioEstado ? 1 : 0) +
+            (filtroComentarioCalificacion ? 1 : 0) +
+            (filtroComentarioCliente ? 1 : 0)
+          }
+          filterContent={
+            <div style={{ padding: '8px', minWidth: '300px', backgroundColor: '#f5f5f5', borderRadius: '4px' }}>
+              <Space direction="vertical" style={{ width: '100%' }}>
+                <div>
+                  <div style={{ marginBottom: 4 }}>Estado del comentario:</div>
+                    <Select
+                      placeholder="Filtrar por estado"
+                      style={{ width: '100%' }}
+                      onChange={value => setFiltroComentarioEstado(value)}
+                    value={filtroComentarioEstado}
+                    options={[
+                      { value: '', label: 'Todos' },
+                      { value: 'Activo', label: 'Activo' },
+                      { value: 'Editado', label: 'Editado' },
+                      { value: 'Eliminado', label: 'Eliminado' }
+                    ]}
+                  />
+                </div>
+                <div>
+                  <div style={{ marginBottom: 4 }}>Calificación:</div>
+                    <Select
+                      placeholder="Filtrar por calificación"
+                      style={{ width: '100%' }}
+                      onChange={value => setFiltroComentarioCalificacion(value)}
+                    value={filtroComentarioCalificacion}
+                    options={[
+                      { value: null, label: 'Todas' },
+                      { value: 5, label: '5 estrellas' },
+                      { value: 4, label: '4 estrellas' },
+                      { value: 3, label: '3 estrellas' },
+                      { value: 2, label: '2 estrellas' },
+                      { value: 1, label: '1 estrella' }
+                    ]}
+                  />
+                </div>
+                <div>
+                  <div style={{ marginBottom: 4 }}>Cliente:</div>
+                  <Select
+                      placeholder="Filtrar por cliente"
+                      style={{ width: '100%' }}
+                    onChange={value => setFiltroComentarioCliente(value)}
+                    value={filtroComentarioCliente}
+                    showSearch
+                    optionFilterProp="children"
+                  >
+                    <Select.Option value="">Todos los clientes</Select.Option>
+                    {clientes.map(cliente => (
+                      <Select.Option key={cliente.cedula_usuario} value={cliente.cedula_usuario}>
+                        {`${cliente.nombre_usuario} ${cliente.apellido_usuario} - ${cliente.cedula_usuario}`}
+                      </Select.Option>
+                    ))}
+                  </Select>
+                </div>
+                  </Space>
+                </div>
+              }
+        />
+        <Table
+          dataSource={getFilteredComentarios()}
+          columns={comentariosColumns}
+          rowKey="id_comentario"
+          scroll={{ x: 'max-content' }}
+          pagination={{ pageSize: 5 }}
+          locale={{ emptyText: <span style={{ color: '#999', fontWeight: 500, fontSize: 16 }}>No hay Registros</span> }}
+          className="dashboard-table"
+        />
+      </Card>
+    </div>
+
   </div>
 </div>
 
@@ -2186,10 +2872,14 @@ const WelcomeAdmin: React.FC = () => {
 
       <PagoForm
         visible={modalPagoVisible}
-        onCancel={() => setModalPagoVisible(false)}
-        onSubmit={handleCrearPago}
+        onCancel={() => {
+          setModalPagoVisible(false);
+          setPagoSeleccionado(null);
+        }}
+        onSubmit={pagoSeleccionado ? handleUpdatePago : handleCrearPago}
         loading={loadingPago}
         eventos={eventos}
+        initialValues={pagoSeleccionado}
       />
 
       <Modal
@@ -2205,40 +2895,22 @@ const WelcomeAdmin: React.FC = () => {
       >
         {eventoSeleccionado && (
           <Descriptions bordered column={2}>
-            <Descriptions.Item label="ID del Evento" span={2}>{eventoSeleccionado.id_evento}</Descriptions.Item>
-            <Descriptions.Item label="Cliente" span={2}>
-              {`${eventoSeleccionado.cliente?.nombre_usuario || ''} ${eventoSeleccionado.cliente?.apellido_usuario || ''}`}
-            </Descriptions.Item>
-            <Descriptions.Item label="Asesor" span={2}>
-              {eventoSeleccionado.asesor 
-                ? `${eventoSeleccionado.asesor.nombre_usuario} ${eventoSeleccionado.asesor.apellido_usuario}`
-                : 'No asignado'}
-            </Descriptions.Item>
-            <Descriptions.Item label="Fecha">{new Date(eventoSeleccionado.fecha_evento).toLocaleDateString()}</Descriptions.Item>
+            <Descriptions.Item label="ID">{eventoSeleccionado.id_evento}</Descriptions.Item>
+            <Descriptions.Item label="Cliente">{`${eventoSeleccionado.cliente.nombre_usuario} ${eventoSeleccionado.cliente.apellido_usuario}`}</Descriptions.Item>
+            <Descriptions.Item label="Fecha">{eventoSeleccionado.fecha_evento}</Descriptions.Item>
             <Descriptions.Item label="Hora">{eventoSeleccionado.hora_evento}</Descriptions.Item>
-            <Descriptions.Item label="Tipo de Evento" span={2}>
-              {typeof eventoSeleccionado.tipo_evento === 'string'
-                ? eventoSeleccionado.tipo_evento
-                : eventoSeleccionado.tipo_evento.tipo_evento}
-            </Descriptions.Item>
+            <Descriptions.Item label="Tipo">{eventoSeleccionado.tipo_evento.tipo_evento}</Descriptions.Item>
+            <Descriptions.Item label="Espacio">{eventoSeleccionado.espacio_evento}</Descriptions.Item>
+            <Descriptions.Item label="Supervisión">{eventoSeleccionado.desea_supervision ? 'Sí' : 'No'}</Descriptions.Item>
+            <Descriptions.Item label="Estado">{eventoSeleccionado.estado_solicitud}</Descriptions.Item>
+            <Descriptions.Item label="Total">RD$ {eventoSeleccionado.total_evento.toLocaleString('es-DO', { minimumFractionDigits: 2 })}</Descriptions.Item>
+            <Descriptions.Item label="Subtotal">RD$ {eventoSeleccionado.subtotal_evento.toLocaleString('es-DO', { minimumFractionDigits: 2 })}</Descriptions.Item>
+            <Descriptions.Item label="ITBIS">RD$ {eventoSeleccionado.itbis_evento.toLocaleString('es-DO', { minimumFractionDigits: 2 })}</Descriptions.Item>
+            <Descriptions.Item label="Nota" span={2}>{eventoSeleccionado.nota_cliente}</Descriptions.Item>
             <Descriptions.Item label="Dirección" span={2}>
-              {eventoSeleccionado.direccion ? (
-                <>
                   {eventoSeleccionado.direccion.calle}, {eventoSeleccionado.direccion.sector}
                   <br />
                   {eventoSeleccionado.direccion.ciudad.nombre_ciudad}, {eventoSeleccionado.direccion.ciudad.provincia.nombre_provincia}
-                </>
-              ) : 'No especificada'}
-            </Descriptions.Item>
-            <Descriptions.Item label="Espacio" span={2}>{eventoSeleccionado.espacio_evento}</Descriptions.Item>
-            <Descriptions.Item label="Supervisión">{eventoSeleccionado.desea_supervision ? 'Sí' : 'No'}</Descriptions.Item>
-            <Descriptions.Item label="Estado">{eventoSeleccionado.estado_solicitud}</Descriptions.Item>
-            <Descriptions.Item label="Subtotal">RD$ {eventoSeleccionado.subtotal_evento?.toLocaleString('es-DO', { minimumFractionDigits: 2 })}</Descriptions.Item>
-            <Descriptions.Item label="ITBIS">RD$ {eventoSeleccionado.itbis_evento?.toLocaleString('es-DO', { minimumFractionDigits: 2 })}</Descriptions.Item>
-            <Descriptions.Item label="Total" span={2}>RD$ {eventoSeleccionado.total_evento?.toLocaleString('es-DO', { minimumFractionDigits: 2 })}</Descriptions.Item>
-            <Descriptions.Item label="Notas del Cliente" span={2}>{eventoSeleccionado.nota_cliente || 'Sin notas'}</Descriptions.Item>
-            <Descriptions.Item label="Fecha de Creación" span={2}>
-              {new Date(eventoSeleccionado.creacion_evento).toLocaleString()}
             </Descriptions.Item>
           </Descriptions>
         )}
@@ -2254,10 +2926,10 @@ const WelcomeAdmin: React.FC = () => {
             Cerrar
           </Button>
         ]}
-        width={600}
+        width={800}
       >
         {usuarioSeleccionado && (
-          <Descriptions bordered column={1}>
+          <Descriptions bordered column={2}>
             <Descriptions.Item label="Cédula">{usuarioSeleccionado.cedula_usuario}</Descriptions.Item>
             <Descriptions.Item label="Nombre">{usuarioSeleccionado.nombre_usuario}</Descriptions.Item>
             <Descriptions.Item label="Apellido">{usuarioSeleccionado.apellido_usuario}</Descriptions.Item>
@@ -2266,32 +2938,7 @@ const WelcomeAdmin: React.FC = () => {
             <Descriptions.Item label="Teléfono">{usuarioSeleccionado.tel_usuario}</Descriptions.Item>
             <Descriptions.Item label="Rol">{usuarioSeleccionado.rol_nombre}</Descriptions.Item>
             <Descriptions.Item label="Estado">{usuarioSeleccionado.estado_usuario}</Descriptions.Item>
-            <Descriptions.Item label="Fecha de Creación">
-              {(() => {
-                if (!usuarioSeleccionado.creacion_usuario) {
-                  return 'No disponible';
-                }
-                try {
-                  const fecha = new Date(usuarioSeleccionado.creacion_usuario);
-                 
-                  if (isNaN(fecha.getTime())) {
-                    return 'Formato de fecha inválido';
-                  }
-                  return fecha.toLocaleString('es-DO', {
-                    year: 'numeric',
-                    month: '2-digit',
-                    day: '2-digit',
-                    hour: '2-digit',
-                    minute: '2-digit',
-                    second: '2-digit',
-                    hour12: true
-                  });
-                } catch (error) {
-                  console.error('Error al procesar la fecha:', error);
-                  return 'Error al procesar la fecha';
-                }
-              })()}
-            </Descriptions.Item>
+            <Descriptions.Item label="Fecha de Creación">{usuarioSeleccionado.creacion_usuario}</Descriptions.Item>
           </Descriptions>
         )}
       </Modal>
@@ -2306,31 +2953,22 @@ const WelcomeAdmin: React.FC = () => {
             Cerrar
           </Button>
         ]}
-        width={600}
+        width={800}
       >
         {proveedorSeleccionado && (
-          <Descriptions bordered column={1}>
+          <Descriptions bordered column={2}>
             <Descriptions.Item label="ID">{proveedorSeleccionado.id_proveedor}</Descriptions.Item>
-            <Descriptions.Item label="Tipo">{proveedorSeleccionado.tipo_proveedor}</Descriptions.Item>
             <Descriptions.Item label="Nombre">{proveedorSeleccionado.nombre_proveedor}</Descriptions.Item>
+            <Descriptions.Item label="Tipo">{proveedorSeleccionado.tipo_proveedor}</Descriptions.Item>
             <Descriptions.Item label="Teléfono">{proveedorSeleccionado.tel_proveedor}</Descriptions.Item>
             <Descriptions.Item label="Correo">{proveedorSeleccionado.correo_proveedor}</Descriptions.Item>
-            <Descriptions.Item label="Dirección" span={2}>
-              {(() => {
-                if (!proveedorSeleccionado.direccion) {
-                  return 'No especificada';
-                }
-                const { calle, sector, ciudad } = proveedorSeleccionado.direccion;
-                return (
-                  <>
-                    {calle}, {sector}
-                    <br />
-                    {ciudad?.nombre_ciudad}, {ciudad?.provincia?.nombre_provincia}
-                  </>
-                );
-              })()}
-            </Descriptions.Item>
             <Descriptions.Item label="Estado">{proveedorSeleccionado.estado_proveedor}</Descriptions.Item>
+            <Descriptions.Item label="Dirección" span={2}>
+              {proveedorSeleccionado.direccion.calle}, {proveedorSeleccionado.direccion.sector}
+                    <br />
+              {proveedorSeleccionado.direccion.ciudad.nombre_ciudad}, {proveedorSeleccionado.direccion.ciudad.provincia.nombre_provincia}
+            </Descriptions.Item>
+            <Descriptions.Item label="Fecha de Creación">{proveedorSeleccionado.creacion_proveedor}</Descriptions.Item>
           </Descriptions>
         )}
       </Modal>
@@ -2739,6 +3377,74 @@ const WelcomeAdmin: React.FC = () => {
             </Button>
           </Form.Item>
         </Form>
+      </Modal>
+
+      <Modal
+        title="Detalles del Pago"
+        open={modalDetallesPagoVisible}
+        onCancel={() => setModalDetallesPagoVisible(false)}
+        footer={[
+          <Button key="close" onClick={() => setModalDetallesPagoVisible(false)}>
+            Cerrar
+          </Button>
+        ]}
+        width={800}
+      >
+        {pagoSeleccionado && (
+          <Descriptions bordered column={2}>
+            <Descriptions.Item label="ID del Pago" span={2}>{pagoSeleccionado.id_pago}</Descriptions.Item>
+            <Descriptions.Item label="Evento" span={2}>
+              ID: {pagoSeleccionado.evento?.id_evento} - 
+              {pagoSeleccionado.evento?.cliente ? 
+                `${pagoSeleccionado.evento.cliente.nombre_usuario} ${pagoSeleccionado.evento.cliente.apellido_usuario}` : 
+                'Cliente no disponible'}
+            </Descriptions.Item>
+            <Descriptions.Item label="Monto">RD$ {pagoSeleccionado.monto.toLocaleString('es-DO', { minimumFractionDigits: 2 })}</Descriptions.Item>
+            <Descriptions.Item label="Tipo">
+              {pagoSeleccionado.tipo_pago === 'Inicial' ? 'Inicial' : pagoSeleccionado.tipo_pago === 'Final' ? 'Final' : 'Adicional'}
+            </Descriptions.Item>
+            <Descriptions.Item label="Estado">
+              {pagoSeleccionado.estado_pago === 'Recibido' ? 'Recibido' : pagoSeleccionado.estado_pago === 'Pendiente' ? 'Pendiente' : 'Rechazado'}
+            </Descriptions.Item>
+            <Descriptions.Item label="Método de Pago">{pagoSeleccionado.modo_pago}</Descriptions.Item>
+            <Descriptions.Item label="Fecha">
+              {new Date(pagoSeleccionado.fecha_pago).toLocaleDateString()}
+            </Descriptions.Item>
+            <Descriptions.Item label="Hora">{pagoSeleccionado.hora_pago}</Descriptions.Item>
+          </Descriptions>
+        )}
+      </Modal>
+
+      <Modal
+        title="Detalles del Comentario"
+        open={modalDetallesComentarioVisible}
+        onCancel={() => setModalDetallesComentarioVisible(false)}
+        footer={[
+          <Button key="close" onClick={() => setModalDetallesComentarioVisible(false)}>
+            Cerrar
+          </Button>
+        ]}
+        width={800}
+      >
+        {comentarioSeleccionado && (
+          <Descriptions bordered column={2}>
+            <Descriptions.Item label="ID del Comentario" span={2}>{comentarioSeleccionado.id_comentario}</Descriptions.Item>
+            <Descriptions.Item label="Evento" span={2}>
+              ID: {comentarioSeleccionado.evento?.id_evento} - 
+              {comentarioSeleccionado.evento?.cliente ? 
+                `${comentarioSeleccionado.evento.cliente.nombre_usuario} ${comentarioSeleccionado.evento.cliente.apellido_usuario}` : 
+                'Cliente no disponible'}
+            </Descriptions.Item>
+            <Descriptions.Item label="Comentario">{comentarioSeleccionado.comentario}</Descriptions.Item>
+            <Descriptions.Item label="Calificación">{comentarioSeleccionado.calificacion}</Descriptions.Item>
+            <Descriptions.Item label="Estado">
+              {comentarioSeleccionado.estado_comentario === 'Activo' ? 'Activo' : comentarioSeleccionado.estado_comentario === 'Editado' ? 'Editado' : 'Eliminado'}
+            </Descriptions.Item>
+            <Descriptions.Item label="Fecha de Creación">
+              {new Date(comentarioSeleccionado.fecha_creacion).toLocaleString()}
+            </Descriptions.Item>
+          </Descriptions>
+        )}
       </Modal>
 
     </div>
