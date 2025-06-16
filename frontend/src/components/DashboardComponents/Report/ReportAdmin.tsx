@@ -93,7 +93,7 @@ interface ElementoCompra {
 }
 
 const ReportAdmin = () => {
-  const apiUrl = import.meta.env.VITE_API_BASE_URL;
+    const apiUrl = `${import.meta.env.VITE_API_URL}/${import.meta.env.BACKEND_PORT}/${import.meta.env.VITE_API_BASE_URL}`;
   const [loading, setLoading] = useState<boolean>(false);
   const [isUserModalVisible, setIsUserModalVisible] = useState<boolean>(false);
   const [isEventModalVisible, setIsEventModalVisible] = useState<boolean>(false);

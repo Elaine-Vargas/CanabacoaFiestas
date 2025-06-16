@@ -7,7 +7,7 @@ import { validateEmail, validateUsername, validatePhoneNumber, formatPhoneNumber
 
 export default function UserConfig() {
 
-  const apiUrl = import.meta.env.VITE_API_BASE_URL;
+    const apiUrl = `${import.meta.env.VITE_API_URL}/${import.meta.env.BACKEND_PORT}/${import.meta.env.VITE_API_BASE_URL}`;
   const [userData, setUserData] = useState({
     nombre_usuario: "",
     apellido_usuario: "",

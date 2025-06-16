@@ -235,7 +235,7 @@ interface Pago {
 }
 
 const WelcomeEmployee: React.FC = () => {
-  const apiUrl = import.meta.env.VITE_API_BASE_URL;
+    const apiUrl = `${import.meta.env.VITE_API_URL}/${import.meta.env.BACKEND_PORT}/${import.meta.env.VITE_API_BASE_URL}`;
   const [eventos, setEventos] = useState<Evento[]>([]);
   const [empleadosEventos, setEmpleadosEventos] = useState<
     AsignacionEmpleado[]

@@ -90,7 +90,7 @@ const AsignacionEmpleadoForm: React.FC<AsignacionEmpleadoFormProps> = ({
   onSubmit,
   initialValues,
 }) => {
-  const apiUrl = import.meta.env.VITE_API_BASE_URL;
+  const apiUrl = `${import.meta.env.VITE_API_URL}/${import.meta.env.BACKEND_PORT}/${import.meta.env.VITE_API_BASE_URL}`;
   const [form] = Form.useForm();
   const [eventos, setEventos] = useState<Evento[]>([]);
   const [empleados, setEmpleados] = useState<Empleado[]>([]);
@@ -353,7 +353,7 @@ const AsignacionEmpleadoForm: React.FC<AsignacionEmpleadoFormProps> = ({
             <Descriptions.Item label="Fecha">{selectedEvento.fecha_evento}</Descriptions.Item>
             <Descriptions.Item label="Hora">{selectedEvento.hora_evento}</Descriptions.Item>
             <Descriptions.Item label="Tipo">{typeof selectedEvento.tipo_evento === 'object' ? selectedEvento.tipo_evento.tipo_evento : selectedEvento.tipo_evento}</Descriptions.Item>
-            <Descriptions.Item label="Dirección">{`${selectedEvento.direccion?.calle || 'N/A'}, ${selectedEvento.direccion?.sector || 'N/A'}, ${selectedEvento.direccion?.ciudad?.nombre_ciudad || 'N/A'}, ${selectedEvento.direccion?.ciudad?.provincia?.nombre_provincia || 'N/A'}`}</Descriptions.Item>
+            <Descriptions.Item label="Dirección">{`${selectedEvento.direccion?.calle || 'N/A'}, ${selectedEvento.direccion?.sector || 'N/A'}, ${selectedEvento.direccion?.ciudad?.nombre_ciudad || 'N/A'}, ${selectedEvento.direccion?.provincia?.nombre_provincia || 'N/A'}`}</Descriptions.Item>
             <Descriptions.Item label="Espacio">{selectedEvento.espacio_evento}</Descriptions.Item>
             <Descriptions.Item label="Supervisión">{selectedEvento.desea_supervision ? 'Sí' : 'No'}</Descriptions.Item>
             <Descriptions.Item label="Estado">{selectedEvento.estado_solicitud}</Descriptions.Item>

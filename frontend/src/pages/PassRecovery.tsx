@@ -9,7 +9,7 @@ const PassRecovery = () => {
   const [error, setError] = useState('');
   const [cargando, setCargando] = useState(false);
 
-  const apiUrl = import.meta.env.VITE_API_BASE_URL;
+    const apiUrl = `${import.meta.env.VITE_API_URL}/${import.meta.env.BACKEND_PORT}/${import.meta.env.VITE_API_BASE_URL}`;
 
 
   const handleSubmit = async (e: React.FormEvent) => {

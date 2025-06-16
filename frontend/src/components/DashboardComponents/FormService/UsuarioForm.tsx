@@ -23,7 +23,7 @@ const UsuarioForm: React.FC<UsuarioFormProps> = ({
   loading = false,
   initialValues,
 }) => {
-  const apiUrl = import.meta.env.VITE_API_BASE_URL;
+  const apiUrl = `${import.meta.env.VITE_API_URL}/${import.meta.env.BACKEND_PORT}/${import.meta.env.VITE_API_BASE_URL}`;
   const [form] = Form.useForm();
   const [roles, setRoles] = useState<Rol[]>([]);
   const [loadingRoles, setLoadingRoles] = useState(false);
@@ -103,7 +103,8 @@ const UsuarioForm: React.FC<UsuarioFormProps> = ({
         correo_usuario: values.correo_usuario,
         tel_usuario: values.tel_usuario,
         id_rol: values.id_rol,
-        estado_usuario: values.estado_usuario
+        estado_usuario: values.estado_usuario,
+        contrasena_login: values.contrasena_login,
       };
 
       if (!initialValues) {

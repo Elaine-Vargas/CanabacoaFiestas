@@ -27,7 +27,7 @@ const PasswordReset: React.FC = () => {
 
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
-  const apiUrl = import.meta.env.VITE_API_BASE_URL;
+    const apiUrl = `${import.meta.env.VITE_API_URL}/${import.meta.env.BACKEND_PORT}/${import.meta.env.VITE_API_BASE_URL}`;
 
   const token = searchParams.get("token");
 
