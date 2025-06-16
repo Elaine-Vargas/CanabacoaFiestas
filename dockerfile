@@ -9,20 +9,21 @@ WORKDIR /app
 
 # Copy package files
 COPY package*.json ./
-COPY Frontend/package*.json ./Frontend/
-COPY Backend/package*.json ./Backend/
+COPY frontend/package*.json ./frontend/
+COPY backend/package*.json ./backend/
 
 # Install dependencies
 RUN npm install
-RUN cd Frontend && npm install --legacy-peer-deps
-RUN cd Backend && npm install --legacy-peer-deps
+RUN cd frontend && npm install --legacy-peer-deps
+RUN cd backend && npm install --legacy-peer-deps
 RUN npm install -g typescript
 
 # Copy the rest of the application
 COPY . .
 
 # Build frontend and backend
-RUN npm run build
+RUN cd frontend && npm run build
+RUN cd ../backend && npm run build
 
 # Expose port
 EXPOSE 3000
