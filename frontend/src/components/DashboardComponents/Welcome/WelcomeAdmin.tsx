@@ -60,6 +60,7 @@ interface Evento {
     id_direccion: number;
     calle: string;
     sector: string;
+    detalles?: string;
     ciudad: {
       id_ciudad: number;
       nombre_ciudad: string;
@@ -1906,11 +1907,65 @@ const handleEditEvento = (record: Evento) => {
     try {
       if (!eventoSeleccionado) return;
 
+      console.log('Valores recibidos del formulario:', values);
+      console.log('Evento seleccionado:', eventoSeleccionado);
+
       const token = localStorage.getItem('token');
       if (!token) {
         message.error('No hay sesión activa');
         return;
       }
+
+      // Verificar si se han cambiado los campos de dirección
+      const direccionCambiada = 
+        values.id_ciudad !== eventoSeleccionado.direccion?.ciudad?.id_ciudad ||
+        values.sector !== eventoSeleccionado.direccion?.sector ||
+        values.calle !== eventoSeleccionado.direccion?.calle ||
+        values.detalles !== eventoSeleccionado.direccion?.detalles;
+
+      console.log('¿Dirección cambiada?', direccionCambiada);
+
+      // Si se cambió la dirección, actualizarla primero
+      if (direccionCambiada && eventoSeleccionado.id_direccion) {
+        console.log('Actualizando dirección...');
+        const direccionResponse = await fetch(`${apiUrl}/direccion/${eventoSeleccionado.id_direccion}`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({
+            id_ciudad: values.id_ciudad,
+            sector: values.sector,
+            calle: values.calle,
+            detalles: values.detalles || null
+          })
+        });
+
+        console.log('Respuesta de actualización de dirección:', direccionResponse.status);
+
+        if (!direccionResponse.ok) {
+          const errorData = await direccionResponse.json();
+          console.error('Error al actualizar dirección:', errorData);
+          throw new Error(errorData.mensaje || errorData.message || 'Error al actualizar la dirección');
+        }
+      }
+
+      // Formatear los datos correctamente para el backend
+      const datosActualizados = {
+        cedula_cliente: values.cedula_cliente,
+        cedula_asesor: values.cedula_asesor || null,
+        id_tipo_evento: values.id_tipo_evento,
+        fecha_evento: values.fecha_evento.format('YYYY-MM-DD'),
+        hora_evento: values.hora_evento.format('HH:mm:ss'),
+        espacio_evento: values.espacio_evento,
+        desea_supervision: values.desea_supervision !== undefined ? values.desea_supervision : false,
+        estado_solicitud: values.estado_solicitud || 'Pendiente',
+        nota_cliente: values.nota_cliente || '',
+        id_direccion: eventoSeleccionado.id_direccion // Usar el id_direccion existente
+      };
+
+      console.log('Datos a enviar al backend:', datosActualizados);
 
       const response = await fetch(`${apiUrl}/evento/${eventoSeleccionado.id_evento}`, {
         method: 'PUT',
@@ -1918,27 +1973,15 @@ const handleEditEvento = (record: Evento) => {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
         },
-        body: JSON.stringify({
-          id_evento: eventoSeleccionado.id_evento,
-          cedula_cliente: values.cedula_cliente,
-          cedula_asesor: values.cedula_asesor,
-          id_tipo_evento: values.id_tipo_evento,
-          fecha_evento: values.fecha_evento,
-          hora_evento: values.hora_evento,
-          espacio_evento: values.espacio_evento,
-          desea_supervision: values.desea_supervision,
-          estado_solicitud: values.estado_solicitud,
-          total_evento: values.total_evento,
-          subtotal_evento: values.subtotal_evento,
-          itbis_evento: values.itbis_evento,
-          nota_cliente: values.nota_cliente || '',
-          id_direccion: values.id_direccion
-        })
+        body: JSON.stringify(datosActualizados)
       });
+
+      console.log('Respuesta del backend:', response.status);
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.message || 'Error al actualizar el evento');
+        console.error('Error del backend:', errorData);
+        throw new Error(errorData.mensaje || errorData.message || 'Error al actualizar el evento');
       }
 
       message.success('Evento actualizado exitosamente');
@@ -1947,7 +1990,11 @@ const handleEditEvento = (record: Evento) => {
       fetchData();
     } catch (error) {
       console.error('Error al actualizar evento:', error);
-      message.error('Error al actualizar el evento');
+      if (error instanceof Error) {
+        message.error(error.message);
+      } else {
+        message.error('Error al actualizar el evento');
+      }
     }
   };
 

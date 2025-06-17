@@ -96,10 +96,44 @@ const EventoForm: React.FC<EventoFormProps> = ({
   const handleSubmit = async () => {
     try {
       const values = await form.validateFields();
+      console.log('Valores del formulario antes de enviar:', values);
+      
+      // Validar campos obligatorios
       if (!values.fecha_evento || !values.hora_evento) {
         message.error('La fecha y hora del evento son requeridas');
         return;
       }
+
+      if (!values.cedula_cliente) {
+        message.error('El cliente es requerido');
+        return;
+      }
+
+      if (!values.id_tipo_evento) {
+        message.error('El tipo de evento es requerido');
+        return;
+      }
+
+      if (!values.espacio_evento) {
+        message.error('El espacio del evento es requerido');
+        return;
+      }
+
+      if (!values.id_ciudad) {
+        message.error('La ciudad es requerida');
+        return;
+      }
+
+      if (!values.sector) {
+        message.error('El sector es requerido');
+        return;
+      }
+
+      if (!values.calle) {
+        message.error('La calle es requerida');
+        return;
+      }
+
       await onSubmit(values);
     } catch (error) {
       console.error('Error al validar el formulario:', error);

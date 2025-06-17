@@ -11,6 +11,7 @@ import {
   Space,
   Tag,
   Input,
+  Descriptions,
 } from "antd";
 import {
   EditOutlined,
@@ -220,7 +221,7 @@ interface Decoracion {
 interface Pago {
   id_pago: number;
   id_evento: number;
-  monto_pago: number;
+  monto: number;
   fecha_pago: string;
   hora_pago: string;
   tipo_pago: 'Inicial' | 'Final' | 'Adicional';
@@ -235,42 +236,52 @@ interface Pago {
   };
 }
 
-const WelcomeEmployee: React.FC = () => {
-  const [eventos, setEventos] = useState<Evento[]>([]);
-  const [empleadosEventos, setEmpleadosEventos] = useState<
-    AsignacionEmpleado[]
-  >([]);
-  const [empleadosParticipantes, setEmpleadosParticipantes] = useState<
-    AsignacionEmpleado[]
-  >([]);
-  const [clientes, setClientes] = useState<Cliente[]>([]);
-  const [asesores, setAsesores] = useState<Asesor[]>([]);
-  const [empleados, setEmpleados] = useState<Empleado[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [modalEventoVisible, setModalEventoVisible] = useState(false);
-  const [modalAsignacionVisible, setModalAsignacionVisible] = useState(false);
-  const [selectedEvento, setSelectedEvento] = useState<Evento | null>(null);
-  const [selectedAsignacion, setSelectedAsignacion] =
-    useState<AsignacionEmpleado | null>(null);
-  const [userCedula, setUserCedula] = useState<string | null>(null);
-  const [modalDetallesEventoVisible, setModalDetallesEventoVisible] =
-    useState(false);
-  const [modalDetallesClienteVisible, setModalDetallesClienteVisible] =
-    useState(false);
-  const [eventoDetalles, setEventoDetalles] = useState<Evento | null>(null);
-  const [clienteDetalles, setClienteDetalles] = useState<Cliente | null>(null);
+interface Provincia {
+  id_provincia: number;
+  nombre_provincia: string;
+}
 
-  // Estados para nuevas tablas: Decoraciones y Pagos
+interface Ciudad {
+  id_ciudad: number;
+  nombre_ciudad: string;
+  id_provincia: number;
+}
+
+interface Usuario {
+  cedula_usuario: string;
+  nombre_usuario: string;
+  apellido_usuario: string;
+  usuario_login: string;
+  correo_usuario: string;
+  tel_usuario: string;
+  estado_usuario: string;
+  id_rol: number;
+  rol_nombre: string;
+  creacion_usuario: string;
+}
+
+const WelcomeEmployee: React.FC = () => {
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [eventos, setEventos] = useState<Evento[]>([]);
+  const [asignaciones, setAsignaciones] = useState<AsignacionEmpleado[]>([]);
+  const [clientes, setClientes] = useState<Cliente[]>([]);
   const [decoraciones, setDecoraciones] = useState<Decoracion[]>([]);
   const [pagos, setPagos] = useState<Pago[]>([]);
-
-  // Modales de detalles para nuevas tablas
-  const [modalDetallesDecoracionVisible, setModalDetallesDecoracionVisible] = useState(false);
+  const [tiposEvento, setTiposEvento] = useState<TipoEvento[]>([]);
+  const [provincias, setProvincias] = useState<Provincia[]>([]);
+  const [ciudades, setCiudades] = useState<Ciudad[]>([]);
+  const [user, setUser] = useState<Usuario | null>(null);
+  const [userCedula, setUserCedula] = useState<string | null>(null);
+  const [empleadosParticipantes, setEmpleadosParticipantes] = useState<AsignacionEmpleado[]>([]);
+  const [asesores, setAsesores] = useState<Asesor[]>([]);
+  const [empleados, setEmpleados] = useState<Empleado[]>([]);
+  const [modalEventoVisible, setModalEventoVisible] = useState(false);
+  const [modalAsignacionVisible, setModalAsignacionVisible] = useState(false);
   const [modalPagoVisible, setModalPagoVisible] = useState(false);
-  const [modalDetallesPagoVisible, setModalDetallesPagoVisible] = useState(false);
-  const [selectedDecoracion, setSelectedDecoracion] = useState<Decoracion | null>(null);
-  const [selectedPago, setSelectedPago] = useState<Pago | null>(null);
-  const [loadingPago, setLoadingPago] = useState(false);
+  const [selectedEvento, setSelectedEvento] = useState<Evento | null>(null);
+  const [eventoDetalles, setEventoDetalles] = useState<Evento | null>(null);
+  const [selectedAsignacion, setSelectedAsignacion] = useState<AsignacionEmpleado | null>(null);
 
   // Estados para búsqueda y filtros
   const [searchTextEventos, setSearchTextEventos] = useState("");
@@ -280,6 +291,7 @@ const WelcomeEmployee: React.FC = () => {
   const [searchTextDecoraciones, setSearchTextDecoraciones] = useState("");
   const [searchTextPagos, setSearchTextPagos] = useState("");
 
+  // Estados para los filtros
   const [filtrosEventos, setFiltrosEventos] = useState({
     estado: "",
     tipo: "",
@@ -309,24 +321,19 @@ const WelcomeEmployee: React.FC = () => {
     tipo: ''
   });
 
-  const [tiposEvento, setTiposEvento] = useState<TipoEvento[]>([]);
-  const [error, setError] = useState<string | null>(null);
+  // Estados para los modales de detalles
+  const [modalDetallesEventoVisible, setModalDetallesEventoVisible] = useState(false);
+  const [modalDetallesAsignacionVisible, setModalDetallesAsignacionVisible] = useState(false);
+  const [modalDetallesClienteVisible, setModalDetallesClienteVisible] = useState(false);
+  const [modalDetallesDecoracionVisible, setModalDetallesDecoracionVisible] = useState(false);
+  const [modalDetallesPagoVisible, setModalDetallesPagoVisible] = useState(false);
 
-  // Estados para mostrar/ocultar filtros
-  const [showEventosFilters, setShowEventosFilters] = useState(false);
-  const [showAsignacionesFilters, setShowAsignacionesFilters] = useState(
-    false
-  );
-  const [showParticipacionesFilters, setShowParticipacionesFilters] = useState(
-    false
-  );
-  const [showClientesFilters, setShowClientesFilters] = useState(false);
-  const [showDecoracionesFilters, setShowDecoracionesFilters] = useState(false);
-  const [showPagosFilters, setShowPagosFilters] = useState(false);
-
-  // Agregar estados para provincias y ciudades
-  const [provincias, setProvincias] = useState<any[]>([]);
-  const [ciudades, setCiudades] = useState<any[]>([]);
+  // Estados para los datos seleccionados
+  const [eventoSeleccionado, setEventoSeleccionado] = useState<Evento | null>(null);
+  const [asignacionSeleccionada, setAsignacionSeleccionada] = useState<AsignacionEmpleado | null>(null);
+  const [clienteSeleccionado, setClienteSeleccionado] = useState<Cliente | null>(null);
+  const [decoracionSeleccionada, setDecoracionSeleccionada] = useState<Decoracion | null>(null);
+  const [pagoSeleccionado, setPagoSeleccionado] = useState<Pago | null>(null);
 
   useEffect(() => {
     const fetchUserData = async () => {
@@ -458,7 +465,7 @@ const WelcomeEmployee: React.FC = () => {
         "Datos de asignaciones recibidos (equipo de asesor):",
         asignacionesData
       );
-      setEmpleadosEventos(asignacionesData);
+      setAsignaciones(asignacionesData);
 
       // Obtener participaciones del empleado (donde el empleado es el asignado)
       const participacionesResponse = await fetch(
@@ -553,8 +560,11 @@ const WelcomeEmployee: React.FC = () => {
       const token = localStorage.getItem("token");
       if (!token) return;
 
-      const response = await fetch(`${apiUrl}/pagos`, {
-        headers: { Authorization: `Bearer ${token}` },
+      const response = await fetch(`${apiUrl}/pago?include=evento.cliente`, {
+        headers: { 
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
       });
       if (!response.ok) {
         throw new Error("Error al cargar los pagos");
@@ -626,90 +636,88 @@ const WelcomeEmployee: React.FC = () => {
     }
   };
 
-  const handleVerDetallesEvento = (evento: Evento) => {
-    setEventoDetalles(evento);
+  const handleVerDetallesEvento = async (evento: Evento) => {
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        message.error('No hay sesión activa');
+        return;
+      }
+
+      // Obtener detalles de la dirección
+      const direccionResponse = await fetch(`${apiUrl}/direccion/${evento.id_direccion}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      if (!direccionResponse.ok) {
+        throw new Error('Error al obtener detalles de la dirección');
+      }
+
+      const direccionData = await direccionResponse.json();
+      
+      // Combinar los datos del evento con los datos de la dirección
+      const eventoCompleto = {
+        ...evento,
+        direccion: direccionData
+      };
+
+      setEventoSeleccionado(eventoCompleto);
     setModalDetallesEventoVisible(true);
+    } catch (error) {
+      console.error('Error al obtener detalles:', error);
+      message.error('Error al cargar los detalles del evento');
+    }
   };
 
   const handleVerDetallesAsignacion = (asignacion: AsignacionEmpleado) => {
-    if (!asignacion.evento || !asignacion.empleado) {
-      message.error("Datos incompletos de la asignación");
-      return;
-    }
+    setAsignacionSeleccionada(asignacion);
+    setModalDetallesAsignacionVisible(true);
+  };
 
-    const eventoDetallesParaModal: Evento = {
-      id_evento: asignacion.evento.id_evento,
-      tipo_evento: asignacion.evento.tipo_evento || {
-        id_tipo_evento: 0,
-        tipo_evento: "No especificado",
-      },
-      fecha_evento: asignacion.evento.fecha_evento
-        ? dayjs(asignacion.evento.fecha_evento)
-        : null,
-      hora_evento: asignacion.evento.hora_evento
-        ? dayjs(asignacion.evento.hora_evento, "HH:mm:ss")
-        : null,
-      estado_solicitud: asignacion.evento.estado_solicitud || 'N/A',
-      sector: asignacion.evento.sector || '',
-      calle: asignacion.evento.calle || '',
-      detalles: asignacion.evento.detalles || '',
-      cedula_cliente: asignacion.evento.cedula_cliente || '',
-      cedula_asesor: asignacion.evento.cedula_asesor || '',
-      id_tipo_evento: asignacion.evento.id_tipo_evento || 0,
-      nota_cliente: asignacion.evento.nota_cliente || '',
-      id_direccion: asignacion.evento.id_direccion || 0,
-      espacio_evento: asignacion.evento.espacio_evento || '',
-      desea_supervision: asignacion.evento.desea_supervision || false,
-      cliente: asignacion.evento.cliente || {
-        cedula_usuario: "",
-        nombre_usuario: "",
-        apellido_usuario: "",
-      },
-      asesor: asignacion.evento.asesor || {
-        cedula_usuario: "",
-        nombre_usuario: "",
-        apellido_usuario: "",
-      },
-      total_evento: asignacion.evento.total_evento || 0,
-      subtotal_evento: asignacion.evento.subtotal_evento || 0,
-      itbis_evento: asignacion.evento.itbis_evento || 0,
-      creacion_evento: asignacion.evento.creacion_evento || '',
-      direccion: asignacion.evento.direccion,
-    };
-    setEventoDetalles(eventoDetallesParaModal);
-    setModalDetallesEventoVisible(true);
+  const handleVerDetallesCliente = (cliente: Cliente) => {
+    setClienteSeleccionado(cliente);
+    setModalDetallesClienteVisible(true);
+  };
+
+  const handleVerDetallesDecoracion = (decoracion: Decoracion) => {
+    setDecoracionSeleccionada(decoracion);
+    setModalDetallesDecoracionVisible(true);
+  };
+
+  const handleVerDetallesPago = (pago: Pago) => {
+    setPagoSeleccionado(pago);
+    setModalDetallesPagoVisible(true);
   };
 
   const handleCreateAsignacion = async (values: any) => {
     try {
-      const token = localStorage.getItem("token");
+      setLoading(true);
+      const token = localStorage.getItem('token');
       if (!token) {
-        message.error("No hay token de autenticación");
-        return;
+        throw new Error('No hay token de autenticación');
       }
 
-      setLoading(true);
-      const response = await fetch(`${apiUrl}/evento/asignar-empleados`, {
-        method: "POST",
+      const response = await fetch(`${apiUrl}/empleadoevento`, {
+        method: 'POST',
         headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
         },
-        body: JSON.stringify(values),
+        body: JSON.stringify(values)
       });
 
       if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || "Error al crear la asignación");
+        throw new Error('Error al crear la asignación');
       }
 
-      message.success("Asignación creada exitosamente");
+      message.success('Asignación creada exitosamente');
       setModalAsignacionVisible(false);
       fetchData();
     } catch (error) {
-      message.error(
-        error instanceof Error ? error.message : "Error al crear la asignación"
-      );
+      console.error('Error al crear asignación:', error);
+      message.error('Error al crear la asignación');
     } finally {
       setLoading(false);
     }
@@ -791,159 +799,138 @@ const WelcomeEmployee: React.FC = () => {
     }
   };
 
-  const handleVerDetallesParticipacion = (
-    participacion: AsignacionEmpleado
-  ) => {
-    if (!participacion.evento || !participacion.empleado) {
-      message.error("Datos incompletos de la participación");
-      return;
+      // Obtener detalles del evento
+      const handleVerDetallesParticipacion = async (participacion: AsignacionEmpleado) => {
+        try {
+          const token = localStorage.getItem('token');
+          if (!token) {
+            message.error('No hay sesión activa');
+            return;
+          }
+
+          // Obtener detalles del evento usando el endpoint correcto
+          const eventoResponse = await fetch(`${apiUrl}/evento/${participacion.id_evento}?include=cliente,asesor,tipo_evento,direccion`, {
+            headers: {
+              'Authorization': `Bearer ${token}`
+            }
+          });
+
+          if (!eventoResponse.ok) {
+            throw new Error('Error al obtener detalles del evento');
+          }
+
+          const eventoData = await eventoResponse.json();
+
+          // Combinar los datos
+          const eventoCompleto = {
+            ...eventoData,
+            fecha_evento: eventoData.fecha_evento ? dayjs(eventoData.fecha_evento) : null,
+            hora_evento: eventoData.hora_evento ? dayjs(eventoData.hora_evento, "HH:mm:ss") : null
+          };
+
+          setEventoSeleccionado(eventoCompleto);
+          setModalDetallesEventoVisible(true);
+        } catch (error) {
+          console.error('Error al obtener detalles:', error);
+          message.error('Error al cargar los detalles del evento');
+        }
+      };
+
+  const handleCreateEventoSubmit = async (values: EventoFormValues) => {
+    try {
+      setLoading(true);
+      const token = localStorage.getItem('token');
+      if (!token) {
+        throw new Error('No hay token de autenticación');
+      }
+
+      const response = await fetch(`${apiUrl}/evento`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify(values)
+      });
+
+      if (!response.ok) {
+        throw new Error('Error al crear el evento');
+      }
+
+      message.success('Evento creado exitosamente');
+      setModalEventoVisible(false);
+      fetchData();
+    } catch (error) {
+      console.error('Error al crear evento:', error);
+      message.error('Error al crear el evento');
+    } finally {
+      setLoading(false);
     }
-
-    const eventoDetallesParaModal: Evento = {
-      id_evento: participacion.evento.id_evento,
-      tipo_evento: participacion.evento.tipo_evento || {
-        id_tipo_evento: 0,
-        tipo_evento: "No especificado",
-      },
-      fecha_evento: participacion.evento.fecha_evento
-        ? dayjs(participacion.evento.fecha_evento)
-        : null,
-      hora_evento: participacion.evento.hora_evento
-        ? dayjs(participacion.evento.hora_evento, "HH:mm:ss")
-        : null,
-      estado_solicitud: participacion.evento.estado_solicitud || 'N/A',
-      sector: participacion.evento.sector || '',
-      calle: participacion.evento.calle || '',
-      detalles: participacion.evento.detalles || '',
-      cedula_cliente: participacion.evento.cedula_cliente || '',
-      cedula_asesor: participacion.evento.cedula_asesor || '',
-      id_tipo_evento: participacion.evento.id_tipo_evento || 0,
-      nota_cliente: participacion.evento.nota_cliente || '',
-      id_direccion: participacion.evento.id_direccion || 0,
-      espacio_evento: participacion.evento.espacio_evento || '',
-      desea_supervision: participacion.evento.desea_supervision || false,
-      cliente: participacion.evento.cliente || {
-        cedula_usuario: "",
-        nombre_usuario: "",
-        apellido_usuario: "",
-      },
-      asesor: participacion.evento.asesor || {
-        cedula_usuario: "",
-        nombre_usuario: "",
-        apellido_usuario: "",
-      },
-      total_evento: participacion.evento.total_evento || 0,
-      subtotal_evento: participacion.evento.subtotal_evento || 0,
-      itbis_evento: participacion.evento.itbis_evento || 0,
-      creacion_evento: participacion.evento.creacion_evento || '',
-      direccion: participacion.evento.direccion,
-    };
-    setEventoDetalles(eventoDetallesParaModal);
-    setModalDetallesEventoVisible(true);
   };
 
-  const handleVerDetallesCliente = (cliente: Cliente) => {
-    setClienteDetalles(cliente);
-    setModalDetallesClienteVisible(true);
+  const handleCrearPago = async (values: any) => {
+    try {
+      setLoading(true);
+      const token = localStorage.getItem('token');
+      if (!token) {
+        throw new Error('No hay token de autenticación');
+      }
+
+      const response = await fetch(`${apiUrl}/pago`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify(values)
+      });
+
+      if (!response.ok) {
+        throw new Error('Error al crear el pago');
+      }
+
+      message.success('Pago creado exitosamente');
+      setModalPagoVisible(false);
+      fetchData();
+    } catch (error) {
+      console.error('Error al crear pago:', error);
+      message.error('Error al crear el pago');
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const handleVerDetallesDecoracion = (decoracion: Decoracion) => {
-    setSelectedDecoracion(decoracion);
-    setModalDetallesDecoracionVisible(true);
-  };
-
-  const handleVerDetallesPago = (pago: Pago) => {
-    setSelectedPago(pago);
-    setModalDetallesPagoVisible(true);
-  };
-
-  // Funciones de filtrado
   const getFilteredEventos = () => {
     return eventos.filter((evento) => {
       const searchLower = searchTextEventos.toLowerCase();
-      const tipoEventoStr =
-        typeof evento.tipo_evento === "string"
-          ? evento.tipo_evento
-          : evento.tipo_evento.tipo_evento;
-
       const matchesSearch =
-        searchTextEventos === "" ||
-        (evento.cliente?.nombre_usuario || "")
-          .toLowerCase()
-          .includes(searchLower) ||
-        (evento.cliente?.apellido_usuario || "")
-          .toLowerCase()
-          .includes(searchLower) ||
-        (evento.asesor?.nombre_usuario || "")
-          .toLowerCase()
-          .includes(searchLower) ||
-        (evento.asesor?.apellido_usuario || "")
-          .toLowerCase()
-          .includes(searchLower) ||
-        tipoEventoStr.toLowerCase().includes(searchLower) ||
-        (evento.espacio_evento || "").toLowerCase().includes(searchLower) ||
-        evento.id_evento.toString().includes(searchTextEventos) ||
-        (evento.fecha_evento?.format("DD/MM/YYYY") || "").includes(
-          searchTextEventos
-        ) ||
-        (evento.hora_evento?.format("HH:mm") || "").includes(
-          searchTextEventos
-        ) ||
-        (evento.desea_supervision ? "sí" : "no").includes(searchLower) ||
-        (evento.estado_solicitud || "").toLowerCase().includes(searchLower);
+        evento.tipo_evento.tipo_evento.toLowerCase().includes(searchLower) ||
+        evento.estado_solicitud.toLowerCase().includes(searchLower) ||
+        evento.cliente.nombre_usuario.toLowerCase().includes(searchLower) ||
+        evento.cliente.apellido_usuario.toLowerCase().includes(searchLower) ||
+        evento.sector.toLowerCase().includes(searchLower) ||
+        evento.calle.toLowerCase().includes(searchLower);
 
-      const matchesEstado =
-        !filtrosEventos.estado ||
-        evento.estado_solicitud === filtrosEventos.estado;
-      const matchesTipo =
-        !filtrosEventos.tipo ||
-        (typeof evento.tipo_evento === "object"
-          ? evento.tipo_evento.tipo_evento
-          : evento.tipo_evento) === filtrosEventos.tipo;
-      const matchesFecha =
-        !filtrosEventos.fecha ||
-        (evento.fecha_evento?.format("YYYY-MM-DD") || "") ===
-          filtrosEventos.fecha;
+      const matchesEstado = !filtrosEventos.estado || evento.estado_solicitud === filtrosEventos.estado;
+      const matchesTipo = !filtrosEventos.tipo || evento.tipo_evento.tipo_evento === filtrosEventos.tipo;
+      const matchesFecha = !filtrosEventos.fecha || evento.fecha_evento?.format('YYYY-MM-DD') === filtrosEventos.fecha;
 
       return matchesSearch && matchesEstado && matchesTipo && matchesFecha;
     });
   };
 
   const getFilteredAsignaciones = () => {
-    return empleadosEventos.filter((asignacion) => {
+    return asignaciones.filter((asignacion) => {
       const searchLower = searchTextAsignaciones.toLowerCase();
       const matchesSearch =
-        searchTextAsignaciones === "" ||
-        asignacion.id_evento.toString().includes(searchTextAsignaciones) ||
-        (asignacion.empleado?.nombre_usuario || "")
-          .toLowerCase()
-          .includes(searchLower) ||
-        (asignacion.empleado?.apellido_usuario || "")
-          .toLowerCase()
-          .includes(searchLower) ||
-        (asignacion.puesto_evento || "").toLowerCase().includes(searchLower) ||
-        (asignacion.estado_empevento || "")
-          .toLowerCase()
-          .includes(searchLower) ||
-        (asignacion.evento?.cliente?.nombre_usuario || "")
-          .toLowerCase()
-          .includes(searchLower) ||
-        (asignacion.evento?.cliente?.apellido_usuario || "")
-          .toLowerCase()
-          .includes(searchLower) ||
-        (asignacion.evento?.tipo_evento?.tipo_evento || "")
-          .toLowerCase()
-          .includes(searchLower);
+        asignacion.puesto_evento.toLowerCase().includes(searchLower) ||
+        asignacion.estado_empevento.toLowerCase().includes(searchLower) ||
+        (asignacion.empleado?.nombre_usuario.toLowerCase().includes(searchLower) || false) ||
+        (asignacion.empleado?.apellido_usuario.toLowerCase().includes(searchLower) || false);
 
-      const matchesRol =
-        !filtrosAsignaciones.rol ||
-        asignacion.puesto_evento === filtrosAsignaciones.rol;
-      const matchesEstado =
-        !filtrosAsignaciones.estado ||
-        asignacion.estado_empevento === filtrosAsignaciones.estado;
-      const matchesEvento =
-        !filtrosAsignaciones.eventoId ||
-        asignacion.id_evento.toString() === filtrosAsignaciones.eventoId;
+      const matchesRol = !filtrosAsignaciones.rol || asignacion.puesto_evento === filtrosAsignaciones.rol;
+      const matchesEstado = !filtrosAsignaciones.estado || asignacion.estado_empevento === filtrosAsignaciones.estado;
+      const matchesEvento = !filtrosAsignaciones.eventoId || asignacion.id_evento.toString() === filtrosAsignaciones.eventoId;
 
       return matchesSearch && matchesRol && matchesEstado && matchesEvento;
     });
@@ -953,41 +940,14 @@ const WelcomeEmployee: React.FC = () => {
     return empleadosParticipantes.filter((participacion) => {
       const searchLower = searchTextParticipaciones.toLowerCase();
       const matchesSearch =
-        searchTextParticipaciones === "" ||
-        participacion.id_evento
-          .toString()
-          .includes(searchTextParticipaciones) ||
-        (participacion.empleado?.nombre_usuario || "")
-          .toLowerCase()
-          .includes(searchLower) ||
-        (participacion.empleado?.apellido_usuario || "")
-          .toLowerCase()
-          .includes(searchLower) ||
-        (participacion.puesto_evento || "")
-          .toLowerCase()
-          .includes(searchLower) ||
-        (participacion.estado_empevento || "")
-          .toLowerCase()
-          .includes(searchLower) ||
-        (participacion.evento?.cliente?.nombre_usuario || "")
-          .toLowerCase()
-          .includes(searchLower) ||
-        (participacion.evento?.cliente?.apellido_usuario || "")
-          .toLowerCase()
-          .includes(searchLower) ||
-        (participacion.evento?.tipo_evento?.tipo_evento || "")
-          .toLowerCase()
-          .includes(searchLower);
+        participacion.puesto_evento.toLowerCase().includes(searchLower) ||
+        participacion.estado_empevento.toLowerCase().includes(searchLower) ||
+        (participacion.evento?.cliente?.nombre_usuario.toLowerCase().includes(searchLower) || false) ||
+        (participacion.evento?.cliente?.apellido_usuario.toLowerCase().includes(searchLower) || false);
 
-      const matchesRol =
-        !filtrosParticipaciones.rol ||
-        participacion.puesto_evento === filtrosParticipaciones.rol;
-      const matchesEstado =
-        !filtrosParticipaciones.estado ||
-        participacion.estado_empevento === filtrosParticipaciones.estado;
-      const matchesEvento =
-        !filtrosParticipaciones.eventoId ||
-        participacion.id_evento.toString() === filtrosParticipaciones.eventoId;
+      const matchesRol = !filtrosParticipaciones.rol || participacion.puesto_evento === filtrosParticipaciones.rol;
+      const matchesEstado = !filtrosParticipaciones.estado || participacion.estado_empevento === filtrosParticipaciones.estado;
+      const matchesEvento = !filtrosParticipaciones.eventoId || participacion.id_evento.toString() === filtrosParticipaciones.eventoId;
 
       return matchesSearch && matchesRol && matchesEstado && matchesEvento;
     });
@@ -997,17 +957,13 @@ const WelcomeEmployee: React.FC = () => {
     return clientes.filter((cliente) => {
       const searchLower = searchTextClientes.toLowerCase();
       const matchesSearch =
-        searchTextClientes === "" ||
-        (cliente.nombre_usuario || "").toLowerCase().includes(searchLower) ||
-        (cliente.apellido_usuario || "").toLowerCase().includes(searchLower) ||
-        (cliente.cedula_usuario || "").includes(searchTextClientes) ||
-        (cliente.tel_usuario || "").includes(searchTextClientes) ||
-        (cliente.correo_usuario || "").toLowerCase().includes(searchLower) ||
-        (cliente.estado_usuario || "").toLowerCase().includes(searchLower);
+        cliente.nombre_usuario.toLowerCase().includes(searchLower) ||
+        cliente.apellido_usuario.toLowerCase().includes(searchLower) ||
+        cliente.cedula_usuario.toLowerCase().includes(searchLower) ||
+        cliente.correo_usuario.toLowerCase().includes(searchLower) ||
+        cliente.tel_usuario.toLowerCase().includes(searchLower);
 
-      const matchesEstado =
-        !filtrosClientes.estado ||
-        cliente.estado_usuario === filtrosClientes.estado;
+      const matchesEstado = !filtrosClientes.estado || cliente.estado_usuario === filtrosClientes.estado;
 
       return matchesSearch && matchesEstado;
     });
@@ -1016,39 +972,36 @@ const WelcomeEmployee: React.FC = () => {
   const getFilteredDecoraciones = () => {
     return decoraciones.filter((decoracion) => {
       const searchLower = searchTextDecoraciones.toLowerCase();
-      const tipoEvento =
-        typeof decoracion.evento?.tipo_evento === "object"
-          ? decoracion.evento.tipo_evento.tipo_evento
-          : decoracion.evento?.tipo_evento;
-
       const matchesSearch =
-        searchTextDecoraciones === "" ||
         decoracion.tema_decoracion.toLowerCase().includes(searchLower) ||
         decoracion.colores_decoracion.toLowerCase().includes(searchLower) ||
-        (tipoEvento || "").toLowerCase().includes(searchLower) ||
-        decoracion.id_decoracion.toString().includes(searchTextDecoraciones) ||
-        decoracion.id_evento.toString().includes(searchTextDecoraciones) ||
-        decoracion.precioneto_decoracion.toString().includes(searchTextDecoraciones) ||
-        decoracion.total_decoracion.toString().includes(searchTextDecoraciones);
+        decoracion.estado_decoracion.toLowerCase().includes(searchLower) ||
+        (decoracion.evento?.cliente?.nombre_usuario.toLowerCase().includes(searchLower) || false) ||
+        (decoracion.evento?.cliente?.apellido_usuario.toLowerCase().includes(searchLower) || false);
 
-      const matchesEstado =
-        !filtrosDecoraciones.estado ||
-        decoracion.estado_decoracion === filtrosDecoraciones.estado;
-      const matchesEventoId =
-        !filtrosDecoraciones.eventoId ||
-        decoracion.id_evento.toString() === filtrosDecoraciones.eventoId;
+      const matchesEstado = !filtrosDecoraciones.estado || decoracion.estado_decoracion === filtrosDecoraciones.estado;
+      const matchesEvento = !filtrosDecoraciones.eventoId || decoracion.id_evento.toString() === filtrosDecoraciones.eventoId;
 
-      return matchesSearch && matchesEstado && matchesEventoId;
+      return matchesSearch && matchesEstado && matchesEvento;
     });
   };
 
   const getFilteredPagos = () => {
-    return pagos.filter(pago => {
-      const matchEstado = !filtrosPagos.estado || pago.estado_pago === filtrosPagos.estado;
-      const matchEvento = !filtrosPagos.eventoId || pago.id_evento.toString() === filtrosPagos.eventoId;
-      const matchMetodo = !filtrosPagos.metodo || pago.metodo_pago === filtrosPagos.metodo;
-      const matchTipo = !filtrosPagos.tipo || pago.tipo_pago === filtrosPagos.tipo;
-      return matchEstado && matchEvento && matchMetodo && matchTipo;
+    return pagos.filter((pago) => {
+      const searchLower = searchTextPagos.toLowerCase();
+      const matchesSearch =
+        pago.tipo_pago.toLowerCase().includes(searchLower) ||
+        pago.estado_pago.toLowerCase().includes(searchLower) ||
+        pago.metodo_pago.toLowerCase().includes(searchLower) ||
+        (pago.evento?.cliente?.nombre_usuario.toLowerCase().includes(searchLower) || false) ||
+        (pago.evento?.cliente?.apellido_usuario.toLowerCase().includes(searchLower) || false);
+
+      const matchesEstado = !filtrosPagos.estado || pago.estado_pago === filtrosPagos.estado;
+      const matchesTipo = !filtrosPagos.tipo || pago.tipo_pago === filtrosPagos.tipo;
+      const matchesMetodo = !filtrosPagos.metodo || pago.metodo_pago === filtrosPagos.metodo;
+      const matchesEvento = !filtrosPagos.eventoId || pago.id_evento.toString() === filtrosPagos.eventoId;
+
+      return matchesSearch && matchesEstado && matchesTipo && matchesMetodo && matchesEvento;
     });
   };
 
@@ -1438,13 +1391,30 @@ const WelcomeEmployee: React.FC = () => {
       title: 'Cliente',
       dataIndex: ['evento', 'cliente'],
       key: 'cliente',
-      render: (cliente: any) => 
-        cliente ? `${cliente.nombre_usuario} ${cliente.apellido_usuario}` : 'N/A'
+      render: (_: any, record: Pago) => {
+        const eventoCorrespondiente = eventos.find(e => e.id_evento === record.id_evento);
+        if (eventoCorrespondiente && eventoCorrespondiente.cliente) {
+          return `${eventoCorrespondiente.cliente.nombre_usuario} ${eventoCorrespondiente.cliente.apellido_usuario}`;
+        }
+        return 'N/A';
+      }
     },
     {
       title: 'Método de Pago',
       dataIndex: 'metodo_pago',
-      key: 'metodo_pago'
+      key: 'metodo_pago',
+      render: (metodo: string) => {
+        switch(metodo) {
+          case 'Efectivo':
+            return 'Efectivo';
+          case 'Tarjeta':
+            return 'Tarjeta';
+          case 'Transferencia':
+            return 'Transferencia';
+          default:
+            return metodo;
+        }
+      }
     },
     {
       title: 'Fecha y Hora',
@@ -1454,9 +1424,9 @@ const WelcomeEmployee: React.FC = () => {
     },
     {
       title: 'Monto',
-      dataIndex: 'monto_pago',
-      key: 'monto_pago',
-      render: (monto: number) => `RD$ ${monto.toFixed(2)}`
+      dataIndex: 'monto',
+      key: 'monto',
+      render: (monto: number) => `RD$ ${monto.toLocaleString('es-DO', { minimumFractionDigits: 2 })}`
     },
     {
       title: 'Tipo',
@@ -1480,6 +1450,8 @@ const WelcomeEmployee: React.FC = () => {
     {
       title: "Acciones",
       key: "acciones",
+      fixed: 'right' as const,
+      width: 'fit-content',
       render: (_: any, record: Pago) => (
         <Space>
           <Button
@@ -1583,7 +1555,7 @@ const WelcomeEmployee: React.FC = () => {
         style={{ width: 120 }}
       >
         <Option value="">Todos los eventos</Option>
-        {empleadosEventos.map(
+        {asignaciones.map(
           (asignacion) =>
             asignacion.evento && (
               <Option
@@ -1812,70 +1784,248 @@ const WelcomeEmployee: React.FC = () => {
     }
   };
 
-  const handleCreateEventoSubmit = async (values: EventoFormValues) => {
-    try {
-      const token = localStorage.getItem("token");
-      if (!token) {
-        message.error("No hay token de autenticación");
-        return;
-      }
+  // Modales de detalles
+  const renderModalDetallesEvento = () => (
+    <Modal
+      title="Detalles del Evento"
+      open={modalDetallesEventoVisible}
+      onCancel={() => setModalDetallesEventoVisible(false)}
+      footer={null}
+      width={800}
+    >
+      {eventoSeleccionado && (
+        <Descriptions bordered column={2}>
+          <Descriptions.Item label="ID del Evento" span={2}>
+            {eventoSeleccionado.id_evento}
+          </Descriptions.Item>
+          <Descriptions.Item label="Tipo de Evento">
+            {eventoSeleccionado.tipo_evento?.tipo_evento}
+          </Descriptions.Item>
+          <Descriptions.Item label="Estado">
+            {eventoSeleccionado.estado_solicitud}
+          </Descriptions.Item>
+          <Descriptions.Item label="Fecha">
+            {eventoSeleccionado.fecha_evento?.format('DD/MM/YYYY')}
+          </Descriptions.Item>
+          <Descriptions.Item label="Hora">
+            {eventoSeleccionado.hora_evento?.format('HH:mm')}
+          </Descriptions.Item>
+          <Descriptions.Item label="Cliente" span={2}>
+            {eventoSeleccionado.cliente ? 
+              `${eventoSeleccionado.cliente.nombre_usuario} ${eventoSeleccionado.cliente.apellido_usuario}` : 
+              'No disponible'}
+          </Descriptions.Item>
+          <Descriptions.Item label="Asesor" span={2}>
+            {eventoSeleccionado.asesor ? 
+              `${eventoSeleccionado.asesor.nombre_usuario} ${eventoSeleccionado.asesor.apellido_usuario}` : 
+              'No asignado'}
+          </Descriptions.Item>
+          <Descriptions.Item label="Dirección" span={2}>
+            {`${eventoSeleccionado.sector}, ${eventoSeleccionado.calle}`}
+          </Descriptions.Item>
+          <Descriptions.Item label="Espacio del Evento" span={2}>
+            {eventoSeleccionado.espacio_evento}
+          </Descriptions.Item>
+        </Descriptions>
+      )}
+    </Modal>
+  );
 
-      const response = await fetch(`${apiUrl}/evento`, {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(values),
-      });
+  const renderModalDetallesAsignacion = () => (
+    <Modal
+      title="Detalles de la Asignación"
+      open={modalDetallesAsignacionVisible}
+      onCancel={() => setModalDetallesAsignacionVisible(false)}
+      footer={null}
+      width={800}
+    >
+      {asignacionSeleccionada && (
+        <Descriptions bordered column={2}>
+          <Descriptions.Item label="ID del Evento">
+            {asignacionSeleccionada.id_evento}
+          </Descriptions.Item>
+          <Descriptions.Item label="Estado">
+            {asignacionSeleccionada.estado_empevento}
+          </Descriptions.Item>
+          <Descriptions.Item label="Puesto">
+            {asignacionSeleccionada.puesto_evento}
+          </Descriptions.Item>
+          <Descriptions.Item label="Empleado" span={2}>
+            {asignacionSeleccionada.empleado ? 
+              `${asignacionSeleccionada.empleado.nombre_usuario} ${asignacionSeleccionada.empleado.apellido_usuario}` : 
+              'No asignado'}
+          </Descriptions.Item>
+          {asignacionSeleccionada.evento && (
+            <>
+              <Descriptions.Item label="Fecha del Evento">
+                {asignacionSeleccionada.evento.fecha_evento}
+              </Descriptions.Item>
+              <Descriptions.Item label="Hora del Evento">
+                {asignacionSeleccionada.evento.hora_evento}
+              </Descriptions.Item>
+              <Descriptions.Item label="Cliente" span={2}>
+                {asignacionSeleccionada.evento.cliente ? 
+                  `${asignacionSeleccionada.evento.cliente.nombre_usuario} ${asignacionSeleccionada.evento.cliente.apellido_usuario}` : 
+                  'No disponible'}
+              </Descriptions.Item>
+            </>
+          )}
+        </Descriptions>
+      )}
+    </Modal>
+  );
 
-      if (!response.ok) {
-        throw new Error("Error al crear el evento");
-      }
+  const renderModalDetallesCliente = () => (
+    <Modal
+      title="Detalles del Cliente"
+      open={modalDetallesClienteVisible}
+      onCancel={() => setModalDetallesClienteVisible(false)}
+      footer={null}
+      width={800}
+    >
+      {clienteSeleccionado && (
+        <Descriptions bordered column={2}>
+          <Descriptions.Item label="Cédula">
+            {clienteSeleccionado.cedula_usuario}
+          </Descriptions.Item>
+          <Descriptions.Item label="Estado">
+            {clienteSeleccionado.estado_usuario}
+          </Descriptions.Item>
+          <Descriptions.Item label="Nombre" span={2}>
+            {`${clienteSeleccionado.nombre_usuario} ${clienteSeleccionado.apellido_usuario}`}
+          </Descriptions.Item>
+          <Descriptions.Item label="Teléfono">
+            {clienteSeleccionado.tel_usuario}
+          </Descriptions.Item>
+          <Descriptions.Item label="Correo">
+            {clienteSeleccionado.correo_usuario}
+          </Descriptions.Item>
+        </Descriptions>
+      )}
+    </Modal>
+  );
 
-      message.success("Evento creado exitosamente");
-      setModalEventoVisible(false);
-      fetchData();
-    } catch (error) {
-      console.error("Error al crear evento:", error);
-      message.error("Error al crear el evento");
-    }
-  };
+  const renderModalDetallesDecoracion = () => (
+    <Modal
+      title="Detalles de la Decoración"
+      open={modalDetallesDecoracionVisible}
+      onCancel={() => setModalDetallesDecoracionVisible(false)}
+      footer={null}
+      width={800}
+    >
+      {decoracionSeleccionada && (
+        <Descriptions bordered column={2}>
+          <Descriptions.Item label="ID de Decoración">
+            {decoracionSeleccionada.id_decoracion}
+          </Descriptions.Item>
+          <Descriptions.Item label="Estado">
+            {decoracionSeleccionada.estado_decoracion}
+          </Descriptions.Item>
+          <Descriptions.Item label="Tema">
+            {decoracionSeleccionada.tema_decoracion}
+          </Descriptions.Item>
+          <Descriptions.Item label="Colores">
+            {decoracionSeleccionada.colores_decoracion}
+          </Descriptions.Item>
+          <Descriptions.Item label="Precio Neto">
+            {decoracionSeleccionada.precioneto_decoracion ? 
+              `RD$ ${decoracionSeleccionada.precioneto_decoracion.toLocaleString('es-DO', { minimumFractionDigits: 2 })}` 
+              : 'No disponible'}
+          </Descriptions.Item>
+          <Descriptions.Item label="ITBIS">
+            {decoracionSeleccionada.itbis_decoracion ? 
+              `RD$ ${decoracionSeleccionada.itbis_decoracion.toLocaleString('es-DO', { minimumFractionDigits: 2 })}` 
+              : 'No disponible'}
+          </Descriptions.Item>
+          <Descriptions.Item label="Total">
+            {decoracionSeleccionada.total_decoracion ? 
+              `RD$ ${decoracionSeleccionada.total_decoracion.toLocaleString('es-DO', { minimumFractionDigits: 2 })}` 
+              : 'No disponible'}
+          </Descriptions.Item>
+          {decoracionSeleccionada.evento && (
+            <>
+              <Descriptions.Item label="Evento" span={2}>
+                {`${decoracionSeleccionada.evento.tipo_evento.tipo_evento} - ${decoracionSeleccionada.evento.fecha_evento}`}
+              </Descriptions.Item>
+              <Descriptions.Item label="Cliente" span={2}>
+                {decoracionSeleccionada.evento.cliente ? 
+                  `${decoracionSeleccionada.evento.cliente.nombre_usuario} ${decoracionSeleccionada.evento.cliente.apellido_usuario}` : 
+                  'No disponible'}
+              </Descriptions.Item>
+            </>
+          )}
+          {decoracionSeleccionada.detalle_decoracion && decoracionSeleccionada.detalle_decoracion.length > 0 && (
+            <Descriptions.Item label="Elementos de Decoración" span={2}>
+              <List
+                dataSource={decoracionSeleccionada.detalle_decoracion}
+                renderItem={(item) => (
+                  <List.Item>
+                    {item.elemento_decoracion} - Cantidad: {item.cantelemento_decoracion} - 
+                    Precio: {item.precio_elemento ? 
+                      `RD$ ${item.precio_elemento.toLocaleString('es-DO', { minimumFractionDigits: 2 })}` 
+                      : 'No disponible'} - 
+                    Total: {item.precio_decoracion ? 
+                      `RD$ ${item.precio_decoracion.toLocaleString('es-DO', { minimumFractionDigits: 2 })}` 
+                      : 'No disponible'}
+                  </List.Item>
+                )}
+              />
+            </Descriptions.Item>
+          )}
+        </Descriptions>
+      )}
+    </Modal>
+  );
 
-  const handleCrearPago = async (values: any) => {
-    setLoadingPago(true);
-    try {
-      const token = localStorage.getItem('token');
-      if (!token) {
-        message.error('No hay sesión activa');
-        return;
-      }
-      const response = await fetch(`${apiUrl}/pago`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({
-          ...values,
-          fecha_pago: values.fecha_pago.format('YYYY-MM-DD'),
-          hora_pago: values.hora_pago.format('HH:mm:ss'),
-        }),
-        credentials: 'include'
-      });
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.mensaje || 'Error al crear el pago');
-      }
-      setModalPagoVisible(false);
-      message.success('Pago creado exitosamente');
-      fetchPagos();
-    } catch (error) {
-      message.error(error instanceof Error ? error.message : 'Error al crear el pago');
-    } finally {
-      setLoadingPago(false);
-    }
-  };
+  const renderModalDetallesPago = () => (
+    <Modal
+      title="Detalles del Pago"
+      open={modalDetallesPagoVisible}
+      onCancel={() => setModalDetallesPagoVisible(false)}
+      footer={[
+        <Button key="close" onClick={() => setModalDetallesPagoVisible(false)}>
+          Cerrar
+        </Button>
+      ]}
+      width={800}
+    >
+      {pagoSeleccionado && (
+        <Descriptions bordered column={2}>
+          <Descriptions.Item label="ID del Pago" span={2}>
+            {pagoSeleccionado.id_pago}
+          </Descriptions.Item>
+          <Descriptions.Item label="Evento" span={2}>
+            ID: {pagoSeleccionado.id_evento} - 
+            {pagoSeleccionado.evento?.cliente ? 
+              `${pagoSeleccionado.evento.cliente.nombre_usuario} ${pagoSeleccionado.evento.cliente.apellido_usuario}` : 
+              'Cliente no disponible'}
+          </Descriptions.Item>
+          <Descriptions.Item label="Monto">
+            {pagoSeleccionado.monto ? 
+              `RD$ ${pagoSeleccionado.monto.toLocaleString('es-DO', { minimumFractionDigits: 2 })}` 
+              : 'No disponible'}
+          </Descriptions.Item>
+          <Descriptions.Item label="Tipo">
+            {pagoSeleccionado.tipo_pago === 'Inicial' ? 'Inicial' : 
+             pagoSeleccionado.tipo_pago === 'Final' ? 'Final' : 'Adicional'}
+          </Descriptions.Item>
+          <Descriptions.Item label="Estado">
+            {pagoSeleccionado.estado_pago === 'Recibido' ? 'Recibido' : 
+             pagoSeleccionado.estado_pago === 'Pendiente' ? 'Pendiente' : 'Rechazado'}
+          </Descriptions.Item>
+          <Descriptions.Item label="Método de Pago">
+            {pagoSeleccionado.metodo_pago}
+          </Descriptions.Item>
+          <Descriptions.Item label="Fecha">
+            {new Date(pagoSeleccionado.fecha_pago).toLocaleDateString()}
+          </Descriptions.Item>
+          <Descriptions.Item label="Hora">
+            {pagoSeleccionado.hora_pago}
+          </Descriptions.Item>
+        </Descriptions>
+      )}
+    </Modal>
+  );
 
   return (
     <div className="welcome-container">
@@ -2046,6 +2196,8 @@ const WelcomeEmployee: React.FC = () => {
                 dataSource={getFilteredPagos()}
                 loading={loading}
                 rowKey="id_pago"
+                scroll={{ x: 'max-content' }}
+                pagination={{ pageSize: 5 }}
                 locale={{ emptyText: <span style={{ color: '#999', fontWeight: 500, fontSize: 16 }}>No hay Registros</span> }}
               />
             </Card>
@@ -2126,179 +2278,19 @@ const WelcomeEmployee: React.FC = () => {
       </Modal>
 
       {/* Modal para detalles de evento */}
-      <Modal
-        title="Detalles del Evento"
-        open={modalDetallesEventoVisible}
-        onCancel={() => setModalDetallesEventoVisible(false)}
-        footer={null}
-        width={800}
-        destroyOnClose
-      >
-        {eventoDetalles && (
-          <List
-            itemLayout="horizontal"
-            dataSource={[
-              { label: "ID Evento", value: eventoDetalles.id_evento },
-              {
-                label: "Tipo de Evento",
-                value: eventoDetalles.tipo_evento?.tipo_evento || "N/A",
-              },
-              {
-                label: "Fecha del Evento",
-                value: (
-                  eventoDetalles.fecha_evento?.format("DD/MM/YYYY") || "N/A"
-                ),
-              },
-              {
-                label: "Hora del Evento",
-                value: eventoDetalles.hora_evento?.format("HH:mm") || "N/A",
-              },
-              {
-                label: "Estado de Solicitud",
-                value: eventoDetalles.estado_solicitud,
-              },
-              {
-                label: "Cliente",
-                value: `${eventoDetalles.cliente?.nombre_usuario || "N/A"} ${eventoDetalles.cliente?.apellido_usuario || ""}`,
-              },
-              {
-                label: "Asesor",
-                value: `${eventoDetalles.asesor?.nombre_usuario || "N/A"} ${eventoDetalles.asesor?.apellido_usuario || ""}`,
-              },
-              {
-                label: "Espacio del Evento",
-                value: eventoDetalles.espacio_evento,
-              },
-              {
-                label: "Desea Supervisión",
-                value: eventoDetalles.desea_supervision ? "Sí" : "No",
-              },
-              {
-                label: "Total del Evento",
-                value: `$${eventoDetalles.total_evento?.toLocaleString()}`,
-              },
-              {
-                label: "Nota del Cliente",
-                value: eventoDetalles.nota_cliente || "N/A",
-              },
-              {
-                label: "Dirección",
-                value: `${eventoDetalles.direccion?.calle || "N/A"}, ${eventoDetalles.direccion?.sector || "N/A"}, ${eventoDetalles.direccion?.ciudad?.nombre_ciudad || "N/A"}, ${eventoDetalles.direccion?.ciudad?.provincia?.nombre_provincia || "N/A"}`,
-              },
-            ]}
-            renderItem={(item) => (
-              <List.Item>
-                <List.Item.Meta title={item.label} description={item.value} />
-              </List.Item>
-            )}
-          />
-        )}
-      </Modal>
+      {renderModalDetallesEvento()}
+
+      {/* Modal para detalles de asignación */}
+      {renderModalDetallesAsignacion()}
 
       {/* Modal para detalles de cliente */}
-      <Modal
-        title="Detalles del Cliente"
-        open={modalDetallesClienteVisible}
-        onCancel={() => setModalDetallesClienteVisible(false)}
-        footer={null}
-        width={600}
-        destroyOnClose
-      >
-        {clienteDetalles && (
-          <List
-            itemLayout="horizontal"
-            dataSource={[
-              { label: "Cédula", value: clienteDetalles.cedula_usuario },
-              {
-                label: "Nombre",
-                value: `${clienteDetalles.nombre_usuario} ${clienteDetalles.apellido_usuario}`,
-              },
-              { label: "Teléfono", value: clienteDetalles.tel_usuario },
-              { label: "Correo", value: clienteDetalles.correo_usuario },
-              { label: "Estado", value: clienteDetalles.estado_usuario },
-            ]}
-            renderItem={(item) => (
-              <List.Item>
-                <List.Item.Meta title={item.label} description={item.value} />
-              </List.Item>
-            )}
-          />
-        )}
-      </Modal>
+      {renderModalDetallesCliente()}
 
       {/* Modal para detalles de decoración */}
-      <Modal
-        title="Detalles de la Decoración"
-        open={modalDetallesDecoracionVisible}
-        onCancel={() => setModalDetallesDecoracionVisible(false)}
-        footer={null}
-        width={800}
-        destroyOnClose
-      >
-        {selectedDecoracion && (
-          <List
-            itemLayout="horizontal"
-            dataSource={[
-              { label: "ID Decoración", value: selectedDecoracion.id_decoracion },
-              { label: "ID Evento", value: selectedDecoracion.id_evento },
-              { label: "Tema", value: selectedDecoracion.tema_decoracion },
-              { label: "Colores", value: selectedDecoracion.colores_decoracion },
-              { label: "Precio Neto", value: `$${selectedDecoracion.precioneto_decoracion?.toLocaleString()}` },
-              { label: "ITBIS", value: `$${selectedDecoracion.itbis_decoracion?.toLocaleString()}` },
-              { label: "Total", value: `$${selectedDecoracion.total_decoracion?.toLocaleString()}` },
-              { label: "Estado", value: selectedDecoracion.estado_decoracion },
-              {
-                label: "Cliente del Evento",
-                value: `${selectedDecoracion.evento?.cliente?.nombre_usuario || "N/A"} ${selectedDecoracion.evento?.cliente?.apellido_usuario || ""}`,
-              },
-              {
-                label: "Tipo de Evento",
-                value: selectedDecoracion.evento?.tipo_evento?.tipo_evento || "N/A",
-              },
-            ]}
-            renderItem={(item) => (
-              <List.Item>
-                <List.Item.Meta title={item.label} description={item.value} />
-              </List.Item>
-            )}
-          />
-        )}
-      </Modal>
+      {renderModalDetallesDecoracion()}
 
       {/* Modal para detalles de pago */}
-      <Modal
-        title="Detalles del Pago"
-        open={modalDetallesPagoVisible}
-        onCancel={() => setModalDetallesPagoVisible(false)}
-        footer={null}
-        width={600}
-        destroyOnClose
-      >
-        {selectedPago && (
-          <List
-            itemLayout="horizontal"
-            dataSource={[
-              { label: "ID Pago", value: selectedPago.id_pago },
-              { label: "ID Evento", value: selectedPago.id_evento },
-              { label: "Monto", value: `$${selectedPago.monto_pago?.toFixed(2)}` },
-              { label: "Fecha", value: selectedPago.fecha_pago },
-              { label: "Hora", value: selectedPago.hora_pago },
-              { label: "Tipo de Pago", value: selectedPago.tipo_pago },
-              { label: "Estado", value: selectedPago.estado_pago },
-              { label: "Método de Pago", value: selectedPago.metodo_pago },
-              {
-                label: "Cliente del Evento",
-                value: `${selectedPago.evento?.cliente?.nombre_usuario || "N/A"} ${selectedPago.evento?.cliente?.apellido_usuario || ""}`,
-              },
-            ]}
-            renderItem={(item) => (
-              <List.Item>
-                <List.Item.Meta title={item.label} description={item.value} />
-              </List.Item>
-            )}
-          />
-        )}
-      </Modal>
+      {renderModalDetallesPago()}
 
       {/* Modal para formulario de pago */}
       <Modal
@@ -2313,7 +2305,7 @@ const WelcomeEmployee: React.FC = () => {
           visible={modalPagoVisible}
           onCancel={() => setModalPagoVisible(false)}
           onSubmit={handleCrearPago}
-          loading={loadingPago}
+          loading={loading}
           eventos={eventos}
         />
       </Modal>

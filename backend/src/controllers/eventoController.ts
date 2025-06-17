@@ -308,6 +308,20 @@ export const editEvent = async (req: Request, res: Response) => {
             estado_solicitud,
         } = req.body;
 
+        console.log('Datos recibidos para editar evento:', {
+            id_evento,
+            cedula_cliente,
+            cedula_asesor,
+            fecha_evento,
+            hora_evento,
+            id_direccion,
+            espacio_evento,
+            id_tipo_evento,
+            desea_supervision,
+            nota_cliente,
+            estado_solicitud,
+        });
+
         // Verificar roles si se están actualizando
         if (cedula_cliente) {
             const cliente = await Usuario.findOne({ where: { cedula_usuario: cedula_cliente, id_rol: 2 } });
@@ -337,7 +351,8 @@ export const editEvent = async (req: Request, res: Response) => {
             });
         }
 
-        await evento.update({
+        // Validar que los campos obligatorios no sean nulos
+        const datosActualizados = {
             cedula_cliente: cedula_cliente || evento.cedula_cliente,
             cedula_asesor: cedula_asesor || evento.cedula_asesor,
             fecha_evento: fecha_evento || evento.fecha_evento,
@@ -347,15 +362,63 @@ export const editEvent = async (req: Request, res: Response) => {
             id_tipo_evento: id_tipo_evento || evento.id_tipo_evento,
             estado_solicitud: estado_solicitud || evento.estado_solicitud,
             desea_supervision: desea_supervision !== undefined ? desea_supervision : evento.desea_supervision,
-            nota_cliente: nota_cliente || evento.nota_cliente,
-          });
+            nota_cliente: nota_cliente !== undefined ? nota_cliente : evento.nota_cliente,
+        };
+
+        // Validar que los campos obligatorios no sean nulos
+        if (!datosActualizados.cedula_cliente) {
+            return res.status(400).json({
+                error: 'Cliente requerido',
+                mensaje: 'El cliente es un campo obligatorio'
+            });
+        }
+
+        if (!datosActualizados.fecha_evento) {
+            return res.status(400).json({
+                error: 'Fecha requerida',
+                mensaje: 'La fecha del evento es un campo obligatorio'
+            });
+        }
+
+        if (!datosActualizados.hora_evento) {
+            return res.status(400).json({
+                error: 'Hora requerida',
+                mensaje: 'La hora del evento es un campo obligatorio'
+            });
+        }
+
+        if (!datosActualizados.id_tipo_evento) {
+            return res.status(400).json({
+                error: 'Tipo de evento requerido',
+                mensaje: 'El tipo de evento es un campo obligatorio'
+            });
+        }
+
+        if (!datosActualizados.id_direccion) {
+            return res.status(400).json({
+                error: 'Dirección requerida',
+                mensaje: 'La dirección es un campo obligatorio'
+            });
+        }
+
+        if (!datosActualizados.espacio_evento) {
+            return res.status(400).json({
+                error: 'Espacio requerido',
+                mensaje: 'El espacio del evento es un campo obligatorio'
+            });
+        }
+
+        console.log('Evento encontrado:', evento.toJSON());
+        console.log('Datos a actualizar:', datosActualizados);
+
+        await evento.update(datosActualizados);
 
         res.json(evento);
     } catch (error) {
-        console.error('Error al editar evento:', error);
+        console.error('Error detallado al editar evento:', error);
         res.status(500).json({ 
             error: 'Error al editar el evento',
-            mensaje: 'Ocurrió un error al actualizar el evento'
+            mensaje: error instanceof Error ? error.message : 'Ocurrió un error al actualizar el evento'
         });
     }
 };
