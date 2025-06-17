@@ -11,7 +11,15 @@ $transition-standard: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   position: relative;
   padding-bottom: 40px;
   overflow-y: visible; 
+  
+  .welcome-card {
+    background-color: var(--color-background2);
+    color: var(--color-text);
 
+    .welcome-title {
+      color: var(--color-text);
+    }
+  }
   &::-webkit-scrollbar {
     width: 8px;
   }
@@ -121,13 +129,14 @@ $transition-standard: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   flex-direction: column;
   width: 100%;
   box-sizing: border-box;
+  border: 1px solid var(--gold) !important;
   
   &.full-width {
     grid-column: 1 / -1;
   }
 
   .ant-card-head {
-    border-bottom: 2px solid var(--color-shadow);
+    border-bottom: 2px solid var(--gold) !important;
     padding: 12px 16px;
     background-color: var(--color-background);
     
@@ -158,6 +167,26 @@ $transition-standard: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     @media screen and (max-width: 480px) {
       padding: 12px;
     }
+  }
+}
+
+/* Override para las cards de Ant Design */
+.ant-card {
+  background-color: var(--color-background2) !important;
+  border: 1px solid var(--gold) !important;
+  border-radius: 8px !important;
+
+  .ant-card-head {
+    border-bottom: 2px solid var(--gold) !important;
+    background-color: var(--color-background) !important;
+  }
+
+  .ant-card-head-title {
+    color: var(--color-text) !important;
+  }
+
+  .ant-card-body {
+    color: var(--color-text) !important;
   }
 }
 
@@ -198,10 +227,6 @@ $transition-standard: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     }
   }
 
-  .ant-table-tbody > tr:hover > td {
-    background-color: var(--color-background);
-  }
-
   .ant-table-body {
     overflow: visible !important;
   }
@@ -214,16 +239,18 @@ $transition-standard: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     border-top: 1px solid var(--color-shadow);
 
     .ant-pagination-item {
-      border-color: var(--color-input-border);
+      background-color: var(--color-background) !important;
+      border-color: var(--color-input-border) !important;
       
       a {
-        color: var(--color-text);
+        color: var(--color-text) !important;
       }
 
       &:hover {
         border-color: var(--gold) !important;
+        background-color: var(--color-background) !important;
         a {
-          color: var(--gold) !important;
+          color: var(--brown) !important;
         }
       }
 
@@ -244,13 +271,17 @@ $transition-standard: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 
     .ant-pagination-prev,
     .ant-pagination-next {
+      background-color: var(--color-background) !important;
+      
       .ant-pagination-item-link {
+        background-color: var(--color-background) !important;
         border-color: var(--color-input-border) !important;
         color: var(--color-text) !important;
 
         &:hover {
           border-color: var(--gold) !important;
           color: var(--gold) !important;
+          background-color: var(--color-background) !important;
         }
       }
     }
@@ -269,6 +300,8 @@ $transition-standard: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 
     .ant-pagination-jump-prev,
     .ant-pagination-jump-next {
+      background-color: var(--color-background) !important;
+      
       .ant-pagination-item-container {
         .ant-pagination-item-ellipsis {
           color: var(--color-text) !important;
@@ -321,27 +354,38 @@ $transition-standard: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 
 /* Estilos para el Input.Search (barra de búsqueda) */
 .ant-input-search {
-  .ant-input-suffix {
-    .anticon-search {
-      color: var(--color-text2) !important; /* Lupa de búsqueda */
+  .ant-input-group {
+    background: var(--color-background2) !important;
+    border-radius: 4px !important;
+    border: 1px solid var(--color-input-border) !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    display: flex;
+    align-items: center;
+  }
+  .ant-input {
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+    color: var(--color-text) !important;
+    &::placeholder {
+      color: var(--gold) !important;
+      opacity: 0.7;
     }
   }
   .ant-input-group-addon {
-    .ant-btn {
-      border-color: var(--color-input-border) !important;
-      color: var(--color-text) !important;
-      background-color: var(--color-background2) !important;
-
-      &:hover {
-        border-color: var(--gold) !important;
-        color: var(--dark-gold) !important;
-      }
-      &:focus,
-      &:active {
-        border-color: var(--dark-gold) !important;
-        box-shadow: 0 0 0 2px rgba(var(--gold-rgb), 0.2) !important;
-        outline: none !important;
-      }
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+    padding: 0 8px !important;
+    margin: 0 !important;
+    display: flex;
+    align-items: center;
+  }
+  .ant-input-suffix {
+    .anticon-search {
+      color: var(--gold) !important;
     }
   }
 }
@@ -561,14 +605,14 @@ $transition-standard: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 /* Dropdowns de filtros */
 .ant-dropdown {
   .ant-dropdown-menu {
-    background-color: var(--color-background2) !important;
+    background-color: var(--color-background) !important;
     border: 1px solid var(--color-input-border) !important;
 
     .ant-dropdown-menu-item {
       color: var(--color-text) !important;
 
       &:hover {
-        background-color: var(--color-background) !important;
+        background-color: var(--color-background2) !important;
       }
 
       &-selected {
@@ -980,14 +1024,14 @@ $transition-standard: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 /* Dropdowns de filtros */
 .ant-dropdown {
   .ant-dropdown-menu {
-    background-color: var(--color-background2) !important;
+    background-color: var(--color-background) !important;
     border: 1px solid var(--color-input-border) !important;
 
     .ant-dropdown-menu-item {
       color: var(--color-text) !important;
 
       &:hover {
-        background-color: var(--color-background) !important;
+        background-color: var(--color-background2) !important;
       }
 
       &-selected {
@@ -1011,5 +1055,370 @@ $transition-standard: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 
   &:hover .ant-checkbox-inner {
     border-color: var(--gold) !important;
+  }
+}
+:where(.css-dev-only-do-not-override-mc1tut).ant-table-wrapper .ant-table-tbody .ant-table-row >.ant-table-cell-row-hover
+ {
+    background: none;
+}
+
+/* Override para las tablas en RentAdmin */
+.ant-table-wrapper {
+  .ant-table {
+    background-color: var(--color-background2) !important;
+  }
+
+  .ant-table-thead > tr > th {
+    background-color: var(--color-background2) !important;
+    color: var(--color-text) !important;
+    border-bottom: 1px solid var(--color-shadow) !important;
+  }
+
+  .ant-table-tbody > tr > td {
+    background-color: var(--color-background2) !important;
+    color: var(--color-text) !important;
+    border-bottom: 1px solid var(--color-shadow) !important;
+  }
+
+  .ant-table-tbody > tr:hover > td {
+    background-color: var(--color-background2) !important;
+  }
+
+  .ant-table-pagination {
+    background-color: var(--color-background2) !important;
+    border-top: 1px solid var(--color-shadow) !important;
+  }
+
+  .ant-table-pagination .ant-pagination-item {
+    background-color: var(--color-background) !important;
+    border-color: var(--color-input-border) !important;
+  }
+
+  .ant-table-pagination .ant-pagination-item a {
+    color: var(--color-text) !important;
+  }
+
+  .ant-table-pagination .ant-pagination-item-active {
+    background-color: var(--dark-gold) !important;
+    border-color: var(--dark-gold) !important;
+  }
+
+  .ant-table-pagination .ant-pagination-item-active a {
+    color: var(--color-button-text) !important;
+  }
+
+  .ant-table-pagination .ant-pagination-prev .ant-pagination-item-link,
+  .ant-table-pagination .ant-pagination-next .ant-pagination-item-link {
+    background-color: var(--color-background) !important;
+    border-color: var(--color-input-border) !important;
+    color: var(--color-text) !important;
+  }
+}
+
+/* Estilos para los filtros y placeholders */
+.ant-input,
+.ant-select-selector,
+.ant-picker,
+.ant-input-number {
+  background-color: var(--color-background) !important;
+  color: var(--color-text) !important;
+  border-color: var(--color-input-border) !important;
+
+  &::placeholder {
+    color: var(--gold) !important;
+    opacity: 0.7;
+  }
+
+  &:hover {
+    border-color: var(--gold) !important;
+  }
+
+  &:focus,
+  &-focused {
+    border-color: var(--dark-gold) !important;
+    box-shadow: 0 0 0 2px rgba(var(--gold-rgb), 0.2) !important;
+    outline: none !important;
+  }
+}
+
+/* Estilos específicos para los selectores */
+.ant-select {
+  .ant-select-selector {
+    background-color: var(--color-background) !important;
+    color: var(--color-text) !important;
+    border-color: var(--color-input-border) !important;
+
+    &::placeholder {
+      color: var(--gold) !important;
+      opacity: 0.7;
+    }
+  }
+
+  .ant-select-selection-placeholder {
+    color: var(--gold) !important;
+    opacity: 0.7;
+  }
+
+  .ant-select-arrow {
+    color: var(--gold) !important;
+  }
+}
+
+/* Estilos para el dropdown de los selectores */
+.ant-select-dropdown {
+  background-color: var(--color-background) !important;
+  border: 1px solid var(--color-shadow) !important;
+
+  .ant-select-item {
+    color: var(--color-text) !important;
+
+    &-option-selected {
+      background-color: var(--dark-gold) !important;
+      color: var(--color-button-text) !important;
+    }
+
+    &-option-active {
+      background-color: var(--color-background2) !important;
+    }
+  }
+}
+
+/* Estilos para el Input.Search */
+.ant-input-search {
+  .ant-input-group {
+    background: var(--color-background2) !important;
+    border-radius: 4px !important;
+    border: 1px solid var(--color-input-border) !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    display: flex;
+    align-items: center;
+  }
+  .ant-input {
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+    color: var(--color-text) !important;
+    &::placeholder {
+      color: var(--gold) !important;
+      opacity: 0.7;
+    }
+  }
+  .ant-input-group-addon {
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+    padding: 0 8px !important;
+    margin: 0 !important;
+    display: flex;
+    align-items: center;
+  }
+  .ant-input-suffix {
+    .anticon-search {
+      color: var(--gold) !important;
+    }
+  }
+}
+
+/* Estilos para los inputs de búsqueda en tablas */
+.ant-table-filter-dropdown {
+  background-color: var(--color-background) !important;
+  border: 1px solid var(--color-shadow) !important;
+
+  .ant-input-search {
+    .ant-input-group {
+      background: var(--color-background2) !important;
+      border-radius: 4px !important;
+      border: 1px solid var(--color-input-border) !important;
+      box-shadow: none !important;
+      padding: 0 !important;
+      margin: 0 !important;
+      display: flex;
+      align-items: center;
+    }
+    .ant-input {
+      background: transparent !important;
+      border: none !important;
+      box-shadow: none !important;
+      color: var(--color-text) !important;
+      &::placeholder {
+        color: var(--gold) !important;
+        opacity: 0.7;
+      }
+    }
+    .ant-input-group-addon {
+      background: transparent !important;
+      border: none !important;
+      box-shadow: none !important;
+      padding: 0 8px !important;
+      margin: 0 !important;
+      display: flex;
+      align-items: center;
+    }
+    .ant-input-suffix {
+      .anticon-search {
+        color: var(--gold) !important;
+      }
+    }
+  }
+
+  .ant-checkbox-wrapper {
+    color: var(--color-text) !important;
+  }
+
+  .ant-checkbox-checked .ant-checkbox-inner {
+    background-color: var(--dark-gold) !important;
+    border-color: var(--dark-gold) !important;
+  }
+
+  .ant-checkbox-inner {
+    border-color: var(--color-input-border) !important;
+  }
+
+  .ant-checkbox-wrapper:hover .ant-checkbox-inner {
+    border-color: var(--gold) !important;
+  }
+}
+
+/* Estilos para los inputs de búsqueda en selectores */
+.ant-select-dropdown {
+  .ant-select-search {
+    .ant-input-group {
+      background: var(--color-background2) !important;
+      border-radius: 4px !important;
+      border: 1px solid var(--color-input-border) !important;
+      box-shadow: none !important;
+      padding: 0 !important;
+      margin: 0 !important;
+      display: flex;
+      align-items: center;
+    }
+    .ant-input {
+      background: transparent !important;
+      border: none !important;
+      box-shadow: none !important;
+      color: var(--color-text) !important;
+      &::placeholder {
+        color: var(--gold) !important;
+        opacity: 0.7;
+      }
+    }
+    .ant-input-group-addon {
+      background: transparent !important;
+      border: none !important;
+      box-shadow: none !important;
+      padding: 0 8px !important;
+      margin: 0 !important;
+      display: flex;
+      align-items: center;
+    }
+    .ant-input-suffix {
+      .anticon-search {
+        color: var(--gold) !important;
+      }
+    }
+  }
+}
+
+/* Estilos para los inputs de búsqueda en dropdowns */
+.ant-dropdown {
+  .ant-input-search {
+    .ant-input-group {
+      background: var(--color-background2) !important;
+      border-radius: 4px !important;
+      border: 1px solid var(--color-input-border) !important;
+      box-shadow: none !important;
+      padding: 0 !important;
+      margin: 0 !important;
+      display: flex;
+      align-items: center;
+    }
+    .ant-input {
+      background: transparent !important;
+      border: none !important;
+      box-shadow: none !important;
+      color: var(--color-text) !important;
+      &::placeholder {
+        color: var(--gold) !important;
+        opacity: 0.7;
+      }
+    }
+    .ant-input-group-addon {
+      background: transparent !important;
+      border: none !important;
+      box-shadow: none !important;
+      padding: 0 8px !important;
+      margin: 0 !important;
+      display: flex;
+      align-items: center;
+    }
+    .ant-input-suffix {
+      .anticon-search {
+        color: var(--gold) !important;
+      }
+    }
+  }
+}
+
+/* Estilos para los placeholders en modo claro */
+[data-theme="light"] {
+  .ant-input,
+  .ant-select-selector,
+  .ant-picker,
+  .ant-input-number {
+    &::placeholder {
+      color: var(--brown) !important;
+      opacity: 0.7;
+    }
+  }
+
+  .ant-select {
+    .ant-select-selection-placeholder {
+      color: var(--brown) !important;
+      opacity: 0.7;
+    }
+  }
+
+  .ant-input-search {
+    .ant-input {
+      &::placeholder {
+        color: var(--brown) !important;
+        opacity: 0.7;
+      }
+    }
+  }
+
+  .ant-table-filter-dropdown {
+    .ant-input-search {
+      .ant-input {
+        &::placeholder {
+          color: var(--brown) !important;
+          opacity: 0.7;
+        }
+      }
+    }
+  }
+
+  .ant-select-dropdown {
+    .ant-select-search {
+      .ant-input {
+        &::placeholder {
+          color: var(--brown) !important;
+          opacity: 0.7;
+        }
+      }
+    }
+  }
+
+  .ant-dropdown {
+    .ant-input-search {
+      .ant-input {
+        &::placeholder {
+          color: var(--brown) !important;
+          opacity: 0.7;
+        }
+      }
+    }
   }
 }

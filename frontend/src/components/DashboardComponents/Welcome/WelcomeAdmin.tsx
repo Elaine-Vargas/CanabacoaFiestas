@@ -86,8 +86,6 @@ interface Usuario {
   rol_nombre: string;
   creacion_usuario: string;
   contrasena_login?: string;
-  codigo_recuperacion?: string | null;
-  expiracion_codigo?: string | null;
 }
 
 interface Proveedor {
@@ -2043,7 +2041,7 @@ const handleEditEvento = (record: Evento) => {
     (selectedAsesor ? 1 : 0)
   }
   filterContent={
-    <div style={{ padding: '8px', minWidth: '300px', backgroundColor: '#f5f5f5', borderRadius: '4px' }}>
+    <div style={{ padding: '8px', minWidth: '300px', backgroundColor: 'var(--color-background2)', borderRadius: '4px' }}>
       <Space direction="vertical" style={{ width: '100%' }}>
         <div>
           <div style={{ marginBottom: 4 }}>Estado del evento:</div>

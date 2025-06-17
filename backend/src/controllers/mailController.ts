@@ -212,9 +212,7 @@ export const resetPassword = async (req: Request, res: Response) => {
     try {
       // Intentar actualizar la contraseña
       await usuario.update({ 
-        contrasena_login: nueva_contrasena, 
-        codigo_recuperacion: null, 
-        expiracion_codigo: null 
+        contrasena_login: nueva_contrasena
       });
 
       res.status(200).json({ 
@@ -332,10 +330,6 @@ export const verifyEmailCode = async (req: Request, res: Response) => {
 
     if (!usuario) {
       return res.status(404).json({ error: 'Usuario no encontrado' });
-    }
-
-    if (usuario.codigo_recuperacion !== codigo || !usuario.expiracion_codigo || Date.now() > usuario.expiracion_codigo) {
-      return res.status(400).json({ error: 'Código inválido o expirado' });
     }
 
     res.status(200).json({ message: 'Código verificado exitosamente' });

@@ -52,8 +52,6 @@ interface Usuario {
   rol_nombre: string;
   creacion_usuario: string;
   contrasena_login?: string;
-  codigo_recuperacion?: string | null;
-  expiracion_codigo?: string | null;
 }
 
 interface Proveedor {
