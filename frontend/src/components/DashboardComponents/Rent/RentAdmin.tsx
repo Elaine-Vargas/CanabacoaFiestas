@@ -18,15 +18,26 @@ import {
   Card,
   Table,
   Upload,
-  Radio
+  Radio,
+  Grid
 } from 'antd';
+import type { ColumnType } from 'antd/es/table';
+import type { SelectProps } from 'antd/es/select';
+import type { TableProps } from 'antd';
+import type { DefaultOptionType } from 'antd/es/select';
 import { PlusOutlined, RightOutlined, CloseOutlined, ReloadOutlined, EditOutlined, DeleteOutlined, EyeOutlined, InboxOutlined, UploadOutlined } from '@ant-design/icons';
 import axios from 'axios';
 import styled from 'styled-components';
 import '../../../styles/dashboard/ServicesSubpages.scss';
 import dayjs from 'dayjs';
 import { apiUrl } from '../../../config';
-import type { ColumnType } from 'antd/es/table';
+
+// Define responsive breakpoints
+type Breakpoint = 'xs' | 'sm' | 'md' | 'lg' | 'xl' | 'xxl';
+
+// Define types for Select components
+type ValueType = string | undefined;
+type OptionType = { value: string; label: string };
 
 interface DetalleCompraForm {
   id_elemento: number;
@@ -51,6 +62,81 @@ interface CompraData {
   detalles: DetalleCompraData[];
 }
 
+interface Elemento {
+  id_elemento: number;
+  nombre_elemento: string;
+  precio_elemento: number;
+  cantidad_disponible: number;
+  cantidad_total: number;
+  imagen_url?: string;
+  estado_elemento: string;
+  material: {
+    id_material: number;
+    nombre_material: string;
+  };
+  color: {
+    id_color: number;
+    nombre_color: string;
+  };
+  subcategoria: {
+    id_subcategoria: number;
+    nombre_subcategoria: string;
+    categoria: {
+      id_categoria: number;
+      nombre_categoria: string;
+    };
+  };
+}
+
+interface ElementoSeleccionado extends Elemento {
+  cantidad_seleccionada: number;
+}
+
+interface DetalleAlquiler {
+  id_elemento: number;
+  elemento: Elemento;
+  cantidad_alquiler: number;
+  precio_unitario: number;
+  total_alquiler: number;
+  estado_detalquiler: string;
+}
+
+interface Alquiler {
+  id_alquiler: number;
+  estado_alquiler: string;
+  precioneto_alquiler: number;
+  itbis_alquiler: number;
+  total_alquiler: number;
+  cant_elementos_alquiler: number;
+  evento?: {
+    id_evento: number;
+    nombre_evento: string;
+    fecha_evento: string;
+  };
+  detalles?: DetalleAlquiler[];
+}
+
+interface Compra {
+  id_compra: number;
+  id_proveedor: number;
+  fecha_compra: string;
+  hora_compra: string;
+  costo_compra: number;
+  estado_compra: string;
+  proveedor?: {
+    nombre_proveedor: string;
+  };
+  detalles?: DetalleCompra[];
+}
+
+interface DetalleCompra {
+  id_elemento: number;
+  elemento: Elemento;
+  cantidad_compra: number;
+  precio_unitario: number;
+  total_compra: number;
+}
+
 const { Search } = Input;
 const { Option } = Select;
 const { Title } = Typography;
@@ -72,6 +158,29 @@ const StyledCard = styled(Card)`
     font-family: "Montserrat", sans-serif;
     font-weight: 600;
   }
+
+  @media (max-width: 768px) {
+    margin: 10px;
+    
+    .ant-card-head-wrapper {
+      flex-direction: column;
+      align-items: stretch;
+      
+      .ant-card-head-title {
+        padding-bottom: 0;
+      }
+      
+      .ant-card-extra {
+        margin-left: 0;
+        padding-top: 16px;
+        width: 100%;
+      }
+    }
+
+    .ant-card-body {
+      padding: 12px;
+    }
+  }
 `;
 
 const StyledModal = styled(Modal)`
@@ -89,6 +198,63 @@ const StyledModal = styled(Modal)`
       color: var(--color-text);
       font-family: "Montserrat", sans-serif;
       font-weight: 600;
+    }
+  }
+
+  @media (max-width: 768px) {
+    margin: 0;
+    padding: 0;
+    max-width: 100vw !important;
+    top: 0;
+    
+    .ant-modal-content {
+      border-radius: 0;
+      min-height: 100vh;
+      
+      .ant-modal-header {
+        padding: 12px 16px;
+        
+        .ant-modal-title {
+          font-size: 16px;
+        }
+      }
+      
+      .ant-modal-body {
+        padding: 16px;
+        
+        .ant-form-item {
+          margin-bottom: 16px;
+        }
+        
+        .ant-input,
+        .ant-select-selector,
+        .ant-input-number {
+          height: 32px;
+          font-size: 14px;
+        }
+        
+        .ant-input-number {
+          width: 100%;
+        }
+        
+        .ant-form-item-label {
+          padding-bottom: 4px;
+          
+          label {
+            font-size: 14px;
+          }
+        }
+      }
+      
+      .ant-modal-footer {
+        padding: 12px 16px;
+        
+        .ant-btn {
+          height: 32px;
+          font-size: 14px;
+          padding: 4px 15px;
+        }
+      }
     }
   }
 `;
@@ -118,6 +284,25 @@ const StyledButton = styled(Button)`
       color: var(--dark-gold);
     }
   }
+
+  @media (max-width: 768px) {
+    width: 100%;
+    height: 32px;
+    padding: 4px 15px;
+    font-size: 14px;
+    border-radius: 6px;
+    margin-bottom: 8px;
+
+    &.ant-btn-icon-only {
+      width: 32px;
+      padding: 0;
+      margin-bottom: 0;
+    }
+
+    .anticon {
+      font-size: 14px;
+    }
+  }
 `;
 
 const StyledTable = styled(Table)`
@@ -136,6 +321,268 @@ const StyledTable = styled(Table)`
   .ant-table-tbody > tr:hover > td {
     background-color: var(--color-background);
   }
+
+  @media (max-width: 768px) {
+    .ant-table {
+      font-size: 12px;
+      
+      .ant-table-container {
+        border-radius: 8px;
+        overflow: hidden;
+      }
+    }
+
+    .ant-table-thead > tr > th,
+    .ant-table-tbody > tr > td {
+      padding: 8px 4px;
+      white-space: nowrap;
+      
+      &:first-child {
+        padding-left: 8px;
+      }
+      
+      &:last-child {
+        padding-right: 8px;
+      }
+    }
+
+    .ant-table-thead > tr > th {
+      font-size: 12px;
+      background-color: var(--color-background);
+      
+      &[colspan] {
+        text-align: center;
+      }
+    }
+
+    .ant-table-tbody > tr > td {
+      font-size: 12px;
+      
+      .ant-tag {
+        margin: 0;
+        padding: 0 4px;
+        font-size: 11px;
+        line-height: 18px;
+      }
+    }
+
+    .ant-table-cell {
+      .ant-space {
+        gap: 4px !important;
+      }
+    }
+
+    .ant-table-content {
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+      
+      &::-webkit-scrollbar {
+        height: 6px;
+      }
+      
+      &::-webkit-scrollbar-thumb {
+        background-color: var(--dark-gold);
+        border-radius: 3px;
+      }
+      
+      &::-webkit-scrollbar-track {
+        background-color: var(--color-background);
+      }
+    }
+
+    .ant-pagination {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      padding: 8px 0;
+      
+      .ant-pagination-item,
+      .ant-pagination-prev,
+      .ant-pagination-next {
+        margin: 4px;
+        min-width: 28px;
+        height: 28px;
+        line-height: 26px;
+        
+        a {
+          padding: 0 4px;
+        }
+      }
+      
+      .ant-pagination-options {
+        margin: 4px;
+        
+        .ant-select {
+          width: 80px !important;
+        }
+      }
+    }
+
+    .ant-table-fixed-left,
+    .ant-table-fixed-right {
+      .ant-table-cell {
+        background-color: var(--color-background2) !important;
+      }
+    }
+  }
+`;
+
+const ResponsiveSpace = styled(Space)`
+  @media (max-width: 768px) {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    width: 100%;
+    margin-bottom: 16px;
+    
+    .ant-space-item {
+      width: 100%;
+      margin-right: 0 !important;
+    }
+
+    &.ant-space-horizontal {
+      gap: 8px !important;
+    }
+  }
+`;
+
+const ActionButtons = styled(Space)`
+  @media (max-width: 768px) {
+    display: flex;
+    flex-direction: row;
+    justify-content: flex-start;
+    gap: 4px;
+    
+    .ant-btn {
+      padding: 4px 8px;
+      font-size: 12px;
+      width: auto;
+      margin-bottom: 0;
+      
+      &.ant-btn-icon-only {
+        width: 24px;
+        height: 24px;
+        padding: 0;
+        
+        .anticon {
+          font-size: 12px;
+        }
+      }
+    }
+  }
+`;
+
+const StyledSearch = styled(Search)`
+  @media (max-width: 768px) {
+    width: 100% !important;
+    margin-bottom: 8px !important;
+    
+    .ant-input-wrapper {
+      display: flex;
+      
+      .ant-input {
+        flex: 1;
+        font-size: 14px;
+      }
+      
+      .ant-input-group-addon {
+        width: auto;
+      }
+      
+      .ant-btn {
+        height: 32px;
+        padding: 0 8px;
+        
+        .anticon {
+          font-size: 14px;
+        }
+      }
+    }
+  }
+`;
+
+const StyledSelect = styled(Select)`
+  @media (max-width: 768px) {
+    width: 100% !important;
+    margin-bottom: 8px !important;
+    
+    .ant-select-selector {
+      height: 32px !important;
+      padding: 0 11px !important;
+      
+      .ant-select-selection-item {
+        line-height: 30px !important;
+        font-size: 14px;
+      }
+    }
+    
+    &.ant-select-single:not(.ant-select-customize-input) .ant-select-selector {
+      padding: 0 11px;
+    }
+  }
+`;
+
+const ResponsivePagination = styled.div`
+  @media (max-width: 768px) {
+    .ant-pagination {
+      display: flex;
+      justify-content: center;
+      flex-wrap: wrap;
+      
+      .ant-pagination-item,
+      .ant-pagination-prev,
+      .ant-pagination-next {
+        margin: 4px;
+        min-width: 28px;
+        height: 28px;
+        line-height: 26px;
+        
+        a {
+          padding: 0 4px;
+        }
+      }
+      
+      .ant-pagination-options {
+        margin: 4px;
+        
+        .ant-select {
+          width: 80px !important;
+        }
+      }
+    }
+  }
+`;
+
+const FilterContainer = styled.div`
+  @media (max-width: 768px) {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-bottom: 16px;
+    
+    .ant-radio-group {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      
+      .ant-radio-button-wrapper {
+        width: 100%;
+        text-align: center;
+        margin-right: 0;
+        height: 32px;
+        line-height: 30px;
+        font-size: 14px;
+        
+        &:first-child {
+          border-radius: 6px 6px 0 0;
+        }
+        
+        &:last-child {
+          border-radius: 0 0 6px 6px;
+        }
+      }
+    }
+  }
 `;
 
 const CatalogModal = styled(StyledModal)`
@@ -149,6 +596,23 @@ const CatalogModal = styled(StyledModal)`
   
   .ant-modal-mask {
     z-index: 1099 !important;
+  }
+
+  @media (max-width: 768px) {
+    .ant-modal-content {
+      .ant-modal-body {
+        padding: 12px;
+        
+        .ant-card {
+          margin: 0;
+          border-radius: 8px;
+          
+          .ant-card-body {
+            padding: 12px;
+          }
+        }
+      }
+    }
   }
 `;
 
@@ -349,28 +813,10 @@ interface DetalleCompra {
   total_compra: number;
 }
 
-interface DetalleCompraForm {
-  id_elemento: number;
-  cantidad_compra: number;
-  precio_unitario: number;
-}
-
-interface DetalleCompraData {
-  id_elemento: number;
-  cantidad_compra: number;
-  precio_unitario: number;
-  total_compra: number;
-  precio_total: number;
-}
-
-interface CompraData {
-  id_proveedor: number;
-  fecha_compra: string;
-  hora_compra: string;
-  costo_compra: number;
-  estado_compra: string;
-  detalles: DetalleCompraData[];
-}
+const ScrollableContent = styled.div<{ hasSelection: boolean }>`
+  position: relative;
+  z-index: 1100;
+`;
 
 const RentAdmin: React.FC = () => {
   const [alquileres, setAlquileres] = useState<Alquiler[]>([]);
@@ -1117,16 +1563,18 @@ const RentAdmin: React.FC = () => {
     }
   };
 
-  const columns = [
+  const columns: ColumnType<Alquiler>[] = [
     {
       title: 'ID',
       dataIndex: 'id_alquiler',
       key: 'id_alquiler',
+      responsive: ['md' as Breakpoint],
     },
     {
-      title: 'ID Evento',
+      title: 'Evento',
       dataIndex: ['evento', 'id_evento'],
       key: 'evento',
+      responsive: ['md' as Breakpoint],
       render: (id_evento: number, record: any) => (
         <span>
           {id_evento}
@@ -1159,21 +1607,10 @@ const RentAdmin: React.FC = () => {
       },
     },
     {
-      title: 'Cantidad Elementos',
+      title: 'Elementos',
       dataIndex: 'cant_elementos_alquiler',
       key: 'cant_elementos_alquiler',
-    },
-    {
-      title: 'Precio Neto',
-      dataIndex: 'precioneto_alquiler',
-      key: 'precioneto_alquiler',
-      render: (precio: number) => `$${Number(precio).toFixed(2)}`,
-    },
-    {
-      title: 'ITBIS',
-      dataIndex: 'itbis_alquiler',
-      key: 'itbis_alquiler',
-      render: (itbis: number) => `$${Number(itbis).toFixed(2)}`,
+      responsive: ['md' as Breakpoint],
     },
     {
       title: 'Total',
@@ -1184,8 +1621,9 @@ const RentAdmin: React.FC = () => {
     {
       title: 'Acciones',
       key: 'acciones',
+      fixed: 'left',
       render: (_: any, record: any) => (
-        <Space>
+        <ActionButtons>
           <Tooltip title="Ver alquiler">
             <Button
               type="text"
@@ -1214,7 +1652,7 @@ const RentAdmin: React.FC = () => {
               />
             </Tooltip>
           )}
-        </Space>
+        </ActionButtons>
       ),
     },
   ];
@@ -1424,11 +1862,12 @@ const RentAdmin: React.FC = () => {
   };
 
   // Columns for elements table
-  const elementColumns = [
+  const elementColumns: ColumnType<Elemento>[] = [
     {
       title: 'ID',
       dataIndex: 'id_elemento',
       key: 'id_elemento',
+      responsive: ['md' as Breakpoint],
     },
     {
       title: 'Nombre',
@@ -1439,32 +1878,13 @@ const RentAdmin: React.FC = () => {
       title: 'Categoría',
       dataIndex: ['subcategoria', 'categoria', 'nombre_categoria'],
       key: 'categoria',
-    },
-    {
-      title: 'Subcategoría',
-      dataIndex: ['subcategoria', 'nombre_subcategoria'],
-      key: 'subcategoria',
-    },
-    {
-      title: 'Material',
-      dataIndex: ['material', 'nombre_material'],
-      key: 'material',
-    },
-    {
-      title: 'Color',
-      dataIndex: ['color', 'nombre_color'],
-      key: 'color',
+      responsive: ['md' as Breakpoint],
     },
     {
       title: 'Precio',
       dataIndex: 'precio_elemento',
       key: 'precio_elemento',
       render: (precio: number) => `$${Number(precio).toFixed(2)}`,
-    },
-    {
-      title: 'Cantidad Disponible',
-      dataIndex: 'cantidad_disponible',
-      key: 'cantidad_disponible',
     },
     {
       title: 'Estado',
@@ -1489,8 +1909,9 @@ const RentAdmin: React.FC = () => {
     {
       title: 'Acciones',
       key: 'acciones',
+      fixed: 'left',
       render: (_: any, record: Elemento) => (
-        <Space>
+        <ActionButtons>
           <Tooltip title="Ver">
             <Button
               type="text"
@@ -1518,7 +1939,6 @@ const RentAdmin: React.FC = () => {
                   imagen_url: record.imagen_url,
                   estado_elemento: record.estado_elemento
                 };
-                console.log('Valores del formulario:', formValues);
                 elementForm.setFieldsValue(formValues);
                 setShowElementModal(true);
               }}
@@ -1534,7 +1954,7 @@ const RentAdmin: React.FC = () => {
               />
             </Tooltip>
           )}
-        </Space>
+        </ActionButtons>
       ),
     },
   ];
@@ -1574,17 +1994,19 @@ const RentAdmin: React.FC = () => {
   };
 
   // Actualizar las columnas de la tabla de compras
-  const compraColumns = [
+  const compraColumns: ColumnType<Compra>[] = [
     {
       title: 'ID',
       dataIndex: 'id_compra',
       key: 'id_compra',
+      responsive: ['md' as Breakpoint],
       sorter: (a: Compra, b: Compra) => a.id_compra - b.id_compra,
     },
     {
       title: 'Proveedor',
       dataIndex: ['proveedor', 'nombre_proveedor'],
       key: 'proveedor',
+      responsive: ['md' as Breakpoint],
       sorter: (a: Compra, b: Compra) => (a.proveedor?.nombre_proveedor || '').localeCompare(b.proveedor?.nombre_proveedor || ''),
     },
     {
@@ -1595,13 +2017,7 @@ const RentAdmin: React.FC = () => {
       sorter: (a: Compra, b: Compra) => dayjs(a.fecha_compra).unix() - dayjs(b.fecha_compra).unix(),
     },
     {
-      title: 'Hora',
-      dataIndex: 'hora_compra',
-      key: 'hora_compra',
-      render: (hora: string) => dayjs(hora, 'HH:mm:ss').format('HH:mm'),
-    },
-    {
-      title: 'Costo',
+      title: 'Total',
       dataIndex: 'costo_compra',
       key: 'costo_compra',
       render: (costo: number) => `$${Number(costo || 0).toFixed(2)}`,
@@ -1628,8 +2044,9 @@ const RentAdmin: React.FC = () => {
     {
       title: 'Acciones',
       key: 'acciones',
+      fixed: 'left',
       render: (_: any, record: Compra) => (
-        <Space>
+        <ActionButtons>
           <Tooltip title="Ver compra">
             <Button
               type="text"
@@ -1654,10 +2071,10 @@ const RentAdmin: React.FC = () => {
               />
             </Tooltip>
           )}
-        </Space>
+        </ActionButtons>
       ),
     },
-  ] as ColumnType<Compra>[];
+  ];
 
   // Función para manejar la cancelación de una compra
   const handleCancelarCompra = async (record: Compra) => {
@@ -1863,7 +2280,7 @@ const RentAdmin: React.FC = () => {
       });
 
       // Calcular el costo total
-      const costoTotal = detallesValidados.reduce<number>((sum, detalle) => 
+      const costoTotal = detallesValidados.reduce((sum: number, detalle: DetalleCompraData) => 
         sum + (detalle.precio_total || detalle.total_compra), 0
       );
 
@@ -1935,42 +2352,57 @@ const RentAdmin: React.FC = () => {
     }
   };
 
+  const handleCategoriaChange = (value: string | undefined, option: any) => {
+    setFilterElementCategoria(value || null);
+  };
+
+  const handleEstadoChange = (value: string | undefined, option: any) => {
+    setFilterElementEstado(value || null);
+  };
+
+  const handleEventoChange = (value: string | undefined, option: any) => {
+    setFilterEvento(value || null);
+  };
+
+  const handleEstadoAlquilerChange = (value: string | undefined, option: any) => {
+    setFilterEstado(value || null);
+  };
+
   return (
     <>
       {/* Elements Section */}
       <StyledCard
         title="Gestión de Elementos"
         extra={
-          <Space>
-            <Search
+          <ResponsiveSpace>
+            <StyledSearch
               placeholder="Buscar elementos..."
               onChange={(e) => setSearchElement(e.target.value)}
               style={{ width: 200 }}
             />
-            <Select
+            <StyledSelect
               style={{ width: 200 }}
               placeholder="Filtrar por categoría"
               allowClear
-              value={filterElementCategoria}
-              onChange={setFilterElementCategoria}
+              value={filterElementCategoria || undefined}
+              onChange={handleCategoriaChange}
             >
               {categorias.map((categoria: any) => (
                 <Option key={categoria.id_categoria} value={categoria.id_categoria.toString()}>
                   {categoria.nombre_categoria}
                 </Option>
               ))}
-            </Select>
-            <Select
+            </StyledSelect>
+            <StyledSelect
               style={{ width: 150 }}
               placeholder="Filtrar por estado"
               allowClear
-              value={filterElementEstado}
-              onChange={setFilterElementEstado}
+              value={filterElementEstado || undefined}
+              onChange={handleEstadoChange}
             >
               <Option value="Activo">Activo</Option>
               <Option value="Inactivo">Inactivo</Option>
-              <Option value="Eliminado">Eliminado</Option>
-            </Select>
+            </StyledSelect>
             <Button
               type="primary"
               icon={<PlusOutlined />}
@@ -1983,16 +2415,14 @@ const RentAdmin: React.FC = () => {
             >
               Nuevo Elemento
             </Button>
-          </Space>
+          </ResponsiveSpace>
         }
       >
-        <Table
+        <StyledTable
           columns={elementColumns}
           dataSource={filterElements(elementos)}
           loading={loadingElement}
           rowKey="id_elemento"
-          pagination={{ pageSize: 10 }}
-          locale={{ emptyText: 'No hay elementos registrados' }}
         />
       </StyledCard>
 
@@ -2234,8 +2664,8 @@ const RentAdmin: React.FC = () => {
       </Modal>
 
       <StyledCard title="Gestión de Alquileres">
-        <Space direction="vertical" style={{ width: '100%', marginBottom: 16 }}>
-          <Space wrap>
+        <ResponsiveSpace direction="vertical" style={{ width: '100%', marginBottom: 16 }}>
+          <ResponsiveSpace wrap>
             <Button
               type="primary"
               icon={<PlusOutlined />}
@@ -2250,51 +2680,47 @@ const RentAdmin: React.FC = () => {
             >
               Recargar
             </Button>
-          </Space>
+          </ResponsiveSpace>
 
-          <Space wrap>
-            <Input.Search
+          <ResponsiveSpace wrap>
+            <StyledSearch
               placeholder="Buscar por ID de alquiler"
               allowClear
               style={{ width: 200 }}
               value={searchAlquiler}
               onChange={(e) => setSearchAlquiler(e.target.value)}
             />
-            <Select
+            <StyledSelect
               placeholder="Filtrar por evento"
               allowClear
               style={{ width: 200 }}
-              value={filterEvento}
-              onChange={setFilterEvento}
+              value={filterEvento || undefined}
+              onChange={handleEventoChange}
             >
               {eventos.map((evento: any) => (
                 <Option key={evento.id_evento} value={evento.id_evento.toString()}>
-                  ID: {evento.id_evento}
+                  {evento.nombre_evento}
                 </Option>
               ))}
-            </Select>
-            <Select
-              placeholder="Filtrar por estado"
-              allowClear
+            </StyledSelect>
+            <StyledSelect
               style={{ width: 200 }}
-              value={filterEstado}
-              onChange={setFilterEstado}
+              value={filterEstado || undefined}
+              onChange={handleEstadoAlquilerChange}
             >
               <Option value="Solicitado">Solicitado</Option>
               <Option value="Aceptado">Aceptado</Option>
               <Option value="Completado">Completado</Option>
               <Option value="Cancelado">Cancelado</Option>
-            </Select>
-          </Space>
-        </Space>
+            </StyledSelect>
+          </ResponsiveSpace>
+        </ResponsiveSpace>
 
-        <Table
+        <StyledTable<Alquiler>
           columns={columns}
           dataSource={filteredAlquileres}
           loading={loading}
           rowKey="id_alquiler"
-          pagination={{ pageSize: 10 }}
-          locale={{ emptyText: <span style={{ color: '#999', fontWeight: 500, fontSize: 16 }}>No hay Registros</span> }}
         />
       </StyledCard>
 
@@ -2302,8 +2728,8 @@ const RentAdmin: React.FC = () => {
       <StyledCard
         title="Gestión de Compras"
         extra={
-          <Space>
-            <Search
+          <ResponsiveSpace>
+            <StyledSearch
               placeholder="Buscar por ID o proveedor..."
               allowClear
               value={searchCompra}
@@ -2328,29 +2754,14 @@ const RentAdmin: React.FC = () => {
             >
               Recargar
             </Button>
-          </Space>
+          </ResponsiveSpace>
         }
       >
-        <div style={{ marginBottom: 16 }}>
-          <Typography.Text>
-            Mostrando todas las compras ({compras.length} en total)
-          </Typography.Text>
-        </div>
-        <Table
+        <StyledTable<Compra>
           columns={compraColumns}
           dataSource={handleFilterCompras(compras)}
           loading={loadingCompra}
           rowKey="id_compra"
-          pagination={{ 
-            pageSize: 10,
-            showTotal: (total, range) => `${range[0]}-${range[1]} de ${total} compras`
-          }}
-          locale={{ 
-            emptyText: 'No hay compras registradas',
-            filterConfirm: 'Aceptar',
-            filterReset: 'Resetear',
-            filterEmptyText: 'Sin filtros'
-          }}
         />
       </StyledCard>
 
@@ -2555,12 +2966,12 @@ const RentAdmin: React.FC = () => {
         style={{ top: 20 }}
       >
         <Space style={{ marginBottom: 16 }}>
-          <Search
+          <StyledSearch
             placeholder="Buscar elementos..."
             onChange={(e) => setSearchText(e.target.value)}
             style={{ width: 200 }}
           />
-          <Select
+          <StyledSelect
             style={{ width: 200 }}
             placeholder="Filtrar por categoría"
             allowClear
@@ -2571,7 +2982,7 @@ const RentAdmin: React.FC = () => {
                 {categoria.nombre_categoria}
               </Option>
             ))}
-          </Select>
+          </StyledSelect>
           <Button onClick={handleReset} icon={<ReloadOutlined />}>
             Resetear Filtros
           </Button>
