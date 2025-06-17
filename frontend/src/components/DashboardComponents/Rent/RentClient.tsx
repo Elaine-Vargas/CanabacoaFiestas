@@ -610,7 +610,7 @@ const RentClient: React.FC = () => {
     }
   };
 
-  const columns = [
+  const alquilerColumns = [
     {
       title: 'ID',
       dataIndex: 'id_alquiler',
@@ -618,8 +618,20 @@ const RentClient: React.FC = () => {
     },
     {
       title: 'Evento',
-      dataIndex: ['evento', 'nombre_evento'],
       key: 'evento',
+      render: (_: any, record: Alquiler) => {
+        if (!record.evento) {
+          return <span>Evento no disponible</span>;
+        }
+
+        const fecha = record.evento.fecha_evento ? dayjs(record.evento.fecha_evento).format('DD/MM/YYYY') : 'Fecha no disponible';
+        
+        return (
+          <span>
+            {`ID: ${record.evento.id_evento} - Fecha: ${fecha}`}
+          </span>
+        );
+      },
     },
     {
       title: 'Estado',
@@ -728,7 +740,7 @@ const RentClient: React.FC = () => {
         </Space>
 
         <Table
-          columns={columns}
+          columns={alquilerColumns}
           dataSource={alquileres}
           loading={loading}
           rowKey="id_alquiler"
