@@ -162,7 +162,7 @@ interface DetalleAlquiler {
 interface Alquiler {
   id_alquiler: number;
   estado_alquiler: string;
-  precioneto_alquiler: number;
+  subtotal_alquiler: number;
   itbis_alquiler: number;
   total_alquiler: number;
   cant_elementos_alquiler: number;
@@ -431,22 +431,26 @@ const RentClient: React.FC = () => {
       }
 
       const detallesValidos = elementosSeleccionados.map(elemento => ({
-          id_elemento: elemento.id_elemento,
-          cantidad_alquiler: elemento.cantidad_seleccionada,
+        id_elemento: elemento.id_elemento,
+        cantidad: elemento.cantidad_seleccionada,
         precio_unitario: elemento.precio_elemento,
-        total_alquiler: elemento.cantidad_seleccionada * elemento.precio_elemento
+        subtotal: elemento.cantidad_seleccionada * elemento.precio_elemento
       }));
 
-      const response = await axios.post(`${apiUrl}/alquiler`, {
-        id_evento: selectedEvento,
-        detalles: detallesValidos,
-        precioneto_alquiler: calculateTotal(),
-        itbis_alquiler: calculateTotal() * 0.18,
-        total_alquiler: calculateTotal() * 1.18,
-        cant_elementos_alquiler: elementosSeleccionados.reduce((total, elem) => total + elem.cantidad_seleccionada, 0)
-      }, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      const response = await axios.post(
+        `${apiUrl}/alquiler`,
+        {
+          id_evento: selectedEvento,
+          elementos: detallesValidos,
+          cant_elementos_alquiler: elementosSeleccionados.reduce((total, elem) => total + elem.cantidad_seleccionada, 0),
+          subtotal_alquiler: calculateTotal(),
+          itbis_alquiler: calculateTotal() * 0.18,
+          total_alquiler: calculateTotal() * 1.18
+        },
+        {
+          headers: { Authorization: `Bearer ${token}` }
+        }
+      );
 
       message.success('Alquiler procesado exitosamente');
       setShowEventoSelect(false);
@@ -582,7 +586,7 @@ const RentClient: React.FC = () => {
         `${apiUrl}/alquiler/${selectedRecord.id_alquiler}`,
         {
           detalles: detallesValidos,
-          precioneto_alquiler: calculateTotal(),
+          subtotal_alquiler: calculateTotal(),
           itbis_alquiler: calculateTotal() * 0.18,
           total_alquiler: calculateTotal() * 1.18,
           cant_elementos_alquiler: elementosSeleccionados.reduce((total, elem) => total + elem.cantidad_seleccionada, 0)
@@ -978,6 +982,7 @@ const RentClient: React.FC = () => {
               message.error('Por favor seleccione al menos un elemento');
               return;
             }
+            setShowCart(false);
             await fetchEventosDisponibles();
             setShowEventoSelect(true);
           }}
@@ -1084,7 +1089,7 @@ const RentClient: React.FC = () => {
                 {selectedRecord.cant_elementos_alquiler}
               </Descriptions.Item>
               <Descriptions.Item label="Precio Neto">
-                  ${Number(selectedRecord.precioneto_alquiler || 0).toFixed(2)}
+                  ${Number(selectedRecord.subtotal_alquiler || 0).toFixed(2)}
               </Descriptions.Item>
               <Descriptions.Item label="ITBIS">
                   ${Number(selectedRecord.itbis_alquiler || 0).toFixed(2)}
