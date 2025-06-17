@@ -327,7 +327,6 @@ const RentClient: React.FC = () => {
         const user = await fetchUserData();
         if (user) {
           await Promise.all([
-            fetchAlquileres(),
             fetchElementos(),
             fetchEventosDisponibles()
           ]);
@@ -499,18 +498,18 @@ const RentClient: React.FC = () => {
     try {
       setLoading(true);
       const token = localStorage.getItem('token');
-      const response = await axios.put(
-        `${apiUrl}/alquiler/actualizar/${id_alquiler}`,
+      const response = await axios.patch(
+        `${apiUrl}/alquiler/${id_alquiler}`,
         {
           estado_alquiler: 'Cancelado'
         },
         {
-        headers: { Authorization: `Bearer ${token}` }
+          headers: { Authorization: `Bearer ${token}` }
         }
       );
 
       if (response.data) {
-      message.success('Alquiler cancelado exitosamente');
+        message.success('Alquiler cancelado exitosamente');
         await fetchAlquileres(); // Recargar la lista de alquileres
       } else {
         message.error('No se pudo cancelar el alquiler');
@@ -544,8 +543,8 @@ const RentClient: React.FC = () => {
         }));
 
         setElementosSeleccionados(elementosEdit);
-      setSelectedRecord(response.data);
-      setShowEditModal(true);
+        setSelectedRecord(response.data);
+        setShowEditModal(true);
       } else {
         message.error('No se pudieron cargar los detalles del alquiler');
       }
@@ -579,8 +578,8 @@ const RentClient: React.FC = () => {
         total_alquiler: elemento.cantidad_seleccionada * elemento.precio_elemento
       }));
 
-      const response = await axios.put(
-        `${apiUrl}/alquiler/actualizar/${selectedRecord.id_alquiler}`,
+      const response = await axios.patch(
+        `${apiUrl}/alquiler/${selectedRecord.id_alquiler}`,
         {
           detalles: detallesValidos,
           precioneto_alquiler: calculateTotal(),
@@ -930,7 +929,7 @@ const RentClient: React.FC = () => {
         <List
           dataSource={elementosSeleccionados}
           renderItem={(elemento) => (
-            <List.Item>
+            <List.Item key={elemento.id_elemento}>
               <List.Item.Meta
                 avatar={
                   elemento.imagen_url ? (
