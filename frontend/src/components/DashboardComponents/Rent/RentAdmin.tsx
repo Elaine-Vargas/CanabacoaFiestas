@@ -112,6 +112,13 @@ interface Alquiler {
     id_evento: number;
     nombre_evento: string;
     fecha_evento: string;
+    tipo_evento?: {
+      tipo_evento: string;
+    };
+    cliente?: {
+      nombre_usuario: string;
+      apellido_usuario: string;
+    };
   };
   detalles?: DetalleAlquiler[];
 }
@@ -135,6 +142,19 @@ interface DetalleCompra {
   cantidad_compra: number;
   precio_unitario: number;
   total_compra: number;
+}
+
+interface Evento {
+  id_evento: number;
+  nombre_evento: string;
+  fecha_evento: string;
+  tipo_evento?: {
+    tipo_evento: string;
+  };
+  cliente?: {
+    nombre_usuario: string;
+    apellido_usuario: string;
+  };
 }
 
 const { Search } = Input;
@@ -788,6 +808,13 @@ interface Alquiler {
     id_evento: number;
     nombre_evento: string;
     fecha_evento: string;
+    tipo_evento?: {
+      tipo_evento: string;
+    };
+    cliente?: {
+      nombre_usuario: string;
+      apellido_usuario: string;
+    };
   };
   detalles?: DetalleAlquiler[];
 }
@@ -826,7 +853,7 @@ const RentAdmin: React.FC = () => {
   const [showFormulario, setShowFormulario] = useState(false);
   const [loading, setLoading] = useState(false);
   const [loadingSubmit, setLoadingSubmit] = useState(false);
-  const [eventos, setEventos] = useState<any[]>([]);
+  const [eventos, setEventos] = useState<Evento[]>([]);
   const [form] = Form.useForm();
   const [searchText, setSearchText] = useState('');
   const [filterCategoria, setFilterCategoria] = useState('');
@@ -957,6 +984,10 @@ const RentAdmin: React.FC = () => {
       const response = await axios.get(`${apiUrl}/evento`, {
         headers: {
           'Authorization': `Bearer ${token}`
+        },
+        params: {
+          includeCliente: true,
+          includeTipoEvento: true
         }
       });
       setEventos(response.data);
@@ -1270,39 +1301,23 @@ const RentAdmin: React.FC = () => {
         return;
       }
 
-      if (!values.id_evento) {
-        message.error('Por favor seleccione un evento');
+      // Asegurarse de que id_evento sea un número
+      const id_evento = Number(values.id_evento);
+      if (isNaN(id_evento)) {
+        message.error('ID de evento inválido');
         return;
       }
-
-      if (elementosSeleccionados.length === 0) {
-        message.error('Por favor seleccione al menos un elemento');
-        return;
-      }
-
-      // Calcular subtotales y totales
-      const precioNeto = elementosSeleccionados.reduce<number>((sum, elem) => 
-        sum + (elem.precio_elemento * elem.cantidad_seleccionada), 0
-      );
-      const itbis = precioNeto * 0.18; // 18% ITBIS
-      const total = precioNeto + itbis;
 
       const alquilerData = {
-        id_evento: values.id_evento,
-        estado_alquiler: 'Solicitado',
-        precioneto_alquiler: Number(precioNeto.toFixed(2)),
-        itbis_alquiler: Number(itbis.toFixed(2)),
-        total_alquiler: Number(total.toFixed(2)),
-        cant_elementos_alquiler: elementosSeleccionados.reduce<number>((sum, elem) => sum + elem.cantidad_seleccionada, 0),
-        elementos: elementosSeleccionados.map(elem => ({
-          id_elemento: elem.id_elemento,
-          cantidad: elem.cantidad_seleccionada,
-          precio_unitario: elem.precio_elemento,
-          subtotal: (elem.precio_elemento * elem.cantidad_seleccionada).toFixed(2)
+        id_evento: id_evento,
+        detalles: elementosSeleccionados.map(elemento => ({
+          id_elemento: elemento.id_elemento,
+          cantidad_alquiler: elemento.cantidad_seleccionada,
+          precio_unitario: elemento.precio_elemento
         }))
       };
 
-      console.log('Enviando datos de alquiler:', JSON.stringify(alquilerData, null, 2));
+      console.log('Enviando datos de alquiler:', alquilerData);
 
       const response = await axios.post(`${apiUrl}/alquiler`, alquilerData, {
         headers: {
@@ -1311,17 +1326,20 @@ const RentAdmin: React.FC = () => {
         }
       });
 
-      console.log('Respuesta del servidor:', response.data);
-
-      message.success('Alquiler creado exitosamente');
-      setShowFormulario(false);
-      setElementosSeleccionados([]);
-      form.resetFields();
-      fetchAlquileres();
-    } catch (error: any) {
-      console.error('Error completo:', error);
-      console.error('Error response:', error.response?.data);
-      message.error(error.response?.data?.message || 'Error al crear el alquiler. Por favor, verifica los datos e intenta nuevamente.');
+      if (response.status === 201) {
+        message.success('Alquiler creado exitosamente');
+        setShowFormulario(false);
+        setElementosSeleccionados([]);
+        form.resetFields();
+        fetchAlquileres();
+      }
+    } catch (error) {
+      console.error('Error al crear el alquiler:', error);
+      if (axios.isAxiosError(error)) {
+        message.error(`Error: ${error.response?.data?.mensaje || 'Error al crear el alquiler'}`);
+      } else {
+        message.error('Error al crear el alquiler');
+      }
     }
   };
 
@@ -1563,96 +1581,87 @@ const RentAdmin: React.FC = () => {
     }
   };
 
-  const columns: ColumnType<Alquiler>[] = [
+  const alquilerColumns: ColumnType<Alquiler>[] = [
     {
       title: 'ID',
       dataIndex: 'id_alquiler',
       key: 'id_alquiler',
-      responsive: ['md' as Breakpoint],
+      width: 80,
     },
     {
       title: 'Evento',
       dataIndex: ['evento', 'id_evento'],
       key: 'evento',
-      responsive: ['md' as Breakpoint],
-      render: (id_evento: number, record: any) => (
-        <span>
-          {id_evento}
-        </span>
-      ),
+      width: 300,
+      render: (_: any, record: Alquiler) => {
+        const evento = eventos.find(e => e.id_evento === record.evento?.id_evento);
+        return evento ? (
+          <span>
+            ID: {evento.id_evento} - {evento.nombre_evento}
+            {evento.tipo_evento && (
+              <div style={{ fontSize: '0.85em', color: 'rgba(0, 0, 0, 0.45)' }}>
+                {evento.tipo_evento.tipo_evento}
+              </div>
+            )}
+            {evento.cliente && (
+              <div style={{ fontSize: '0.85em', color: 'rgba(0, 0, 0, 0.45)' }}>
+                Cliente: {evento.cliente.nombre_usuario} {evento.cliente.apellido_usuario}
+              </div>
+            )}
+          </span>
+        ) : (
+          <span>Evento no encontrado</span>
+        );
+      },
     },
     {
       title: 'Estado',
       dataIndex: 'estado_alquiler',
       key: 'estado_alquiler',
-      render: (estado: string) => {
-        let color = 'default';
-        let text = estado;
-        switch (estado) {
-          case 'Solicitado':
-            color = 'processing';
-            break;
-          case 'Aceptado':
-            color = 'warning';
-            break;
-          case 'Completado':
-            color = 'success';
-            break;
-          case 'Cancelado':
-            color = 'error';
-            text = 'Cancelado';
-            break;
-        }
-        return <Tag color={color}>{text}</Tag>;
-      },
-    },
-    {
-      title: 'Elementos',
-      dataIndex: 'cant_elementos_alquiler',
-      key: 'cant_elementos_alquiler',
-      responsive: ['md' as Breakpoint],
+      width: 120,
+      render: (estado: string) => (
+        <Tag color={
+          estado === 'Solicitado' ? 'processing' :
+          estado === 'Aceptado' ? 'warning' :
+          estado === 'Completado' ? 'success' : 'error'
+        }>
+          {estado}
+        </Tag>
+      ),
     },
     {
       title: 'Total',
       dataIndex: 'total_alquiler',
       key: 'total_alquiler',
+      width: 120,
       render: (total: number) => `$${Number(total).toFixed(2)}`,
     },
     {
       title: 'Acciones',
       key: 'acciones',
-      fixed: 'left',
-      render: (_: any, record: any) => (
-        <ActionButtons>
-          <Tooltip title="Ver alquiler">
-            <Button
-              type="text"
-              icon={<EyeOutlined />}
-              onClick={() => {
-                setViewingAlquiler(null);
-                handleView(record);
-                setShowViewAlquilerModal(true);
-              }}
-            />
-          </Tooltip>
-          <Tooltip title="Editar alquiler">
-            <Button 
-              type="text" 
-              icon={<EditOutlined />} 
-              onClick={() => handleEdit(record)}
-            />
-          </Tooltip>
-          {record.estado_alquiler !== 'Cancelado' && (
-            <Tooltip title="Cancelar alquiler">
-              <Button 
-                type="text" 
-                danger 
-                icon={<DeleteOutlined />}
-                onClick={() => handleDelete(record)}
-              />
-            </Tooltip>
-          )}
-        </ActionButtons>
+      fixed: 'right',
+      width: 150,
+      render: (_: any, record: Alquiler) => (
+        <Space>
+          <Button
+            type="primary"
+            icon={<EyeOutlined />}
+            onClick={() => handleView(record)}
+          />
+          <Button
+            type="default"
+            icon={<EditOutlined />}
+            onClick={() => handleEdit(record)}
+            disabled={record.estado_alquiler === 'Completado'}
+          />
+          <Button
+            type="text"
+            danger
+            icon={<DeleteOutlined />}
+            onClick={() => handleDelete(record)}
+            disabled={record.estado_alquiler === 'Completado' || record.estado_alquiler === 'Cancelado'}
+          />
+        </Space>
       ),
     },
   ];
@@ -2054,22 +2063,22 @@ const RentAdmin: React.FC = () => {
               onClick={() => handleViewCompra(record)}
             />
           </Tooltip>
-          <Tooltip title="Editar compra">
-            <Button
-              type="text"
-              icon={<EditOutlined />}
-              onClick={() => handleEditCompra(record)}
-            />
-          </Tooltip>
+              <Tooltip title="Editar compra">
+                <Button
+                  type="text"
+                  icon={<EditOutlined />}
+                  onClick={() => handleEditCompra(record)}
+                />
+              </Tooltip>
           {record.estado_compra !== 'Cancelada' && (
-            <Tooltip title="Cancelar compra">
-              <Button
-                type="text"
-                danger
-                icon={<DeleteOutlined />}
-                onClick={() => handleCancelarCompra(record)}
-              />
-            </Tooltip>
+              <Tooltip title="Cancelar compra">
+                <Button
+                  type="text"
+                  danger
+                  icon={<DeleteOutlined />}
+                  onClick={() => handleCancelarCompra(record)}
+                />
+              </Tooltip>
           )}
         </ActionButtons>
       ),
@@ -2258,12 +2267,12 @@ const RentAdmin: React.FC = () => {
         if (!detalle.id_elemento || !detalle.cantidad_compra || !detalle.precio_unitario) {
           throw new Error('Todos los campos de los elementos son requeridos');
         }
-
+        
         // Convertir a números y validar
         const cantidad = Number(detalle.cantidad_compra);
         const precio = Number(detalle.precio_unitario);
         const total = Number((cantidad * precio).toFixed(2));
-
+        
         if (isNaN(cantidad) || cantidad <= 0) {
           throw new Error('La cantidad debe ser un número mayor a 0');
         }
@@ -2314,15 +2323,15 @@ const RentAdmin: React.FC = () => {
         } else {
           // Si estamos creando, hacer un POST
           response = await axios.post(
-            `${apiUrl}/compra`,
-            compraData,
-            {
-              headers: {
-                'Authorization': `Bearer ${token}`,
-                'Content-Type': 'application/json'
-              }
+          `${apiUrl}/compra`,
+          compraData,
+          {
+            headers: {
+              'Authorization': `Bearer ${token}`,
+              'Content-Type': 'application/json'
             }
-          );
+          }
+        );
           message.success('Compra creada exitosamente');
         }
 
@@ -2352,20 +2361,20 @@ const RentAdmin: React.FC = () => {
     }
   };
 
-  const handleCategoriaChange = (value: string | undefined, option: any) => {
-    setFilterElementCategoria(value || null);
+  const handleCategoriaChange = (value: string) => {
+    setFilterElementCategoria(value);
   };
 
-  const handleEstadoChange = (value: string | undefined, option: any) => {
-    setFilterElementEstado(value || null);
+  const handleEstadoChange = (value: string) => {
+    setFilterElementEstado(value);
   };
 
-  const handleEventoChange = (value: string | undefined, option: any) => {
-    setFilterEvento(value || null);
+  const handleEventoChange = (value: string) => {
+    setFilterEvento(value);
   };
 
-  const handleEstadoAlquilerChange = (value: string | undefined, option: any) => {
-    setFilterEstado(value || null);
+  const handleEstadoAlquilerChange = (value: string) => {
+    setFilterEstado(value);
   };
 
   return (
@@ -2385,7 +2394,7 @@ const RentAdmin: React.FC = () => {
               placeholder="Filtrar por categoría"
               allowClear
               value={filterElementCategoria || undefined}
-              onChange={handleCategoriaChange}
+              onChange={(value: string) => handleCategoriaChange(value)}
             >
               {categorias.map((categoria: any) => (
                 <Option key={categoria.id_categoria} value={categoria.id_categoria.toString()}>
@@ -2398,7 +2407,7 @@ const RentAdmin: React.FC = () => {
               placeholder="Filtrar por estado"
               allowClear
               value={filterElementEstado || undefined}
-              onChange={handleEstadoChange}
+              onChange={(value: string) => handleEstadoChange(value)}
             >
               <Option value="Activo">Activo</Option>
               <Option value="Inactivo">Inactivo</Option>
@@ -2415,15 +2424,32 @@ const RentAdmin: React.FC = () => {
             >
               Nuevo Elemento
             </Button>
+            <Button
+              onClick={fetchElementos}
+              icon={<ReloadOutlined />}
+            >
+              Recargar
+            </Button>
           </ResponsiveSpace>
         }
       >
-        <StyledTable
-          columns={elementColumns}
-          dataSource={filterElements(elementos)}
-          loading={loadingElement}
-          rowKey="id_elemento"
-        />
+        <div style={{ overflowX: 'auto', width: '100%' }}>
+          <Table<Elemento>
+            columns={elementColumns}
+            dataSource={filterElements(elementos)}
+            loading={loadingElement}
+            rowKey="id_elemento"
+            scroll={{ x: 1000 }}
+            pagination={{
+              total: elementos.length,
+              pageSize: 10,
+              showSizeChanger: true,
+              showTotal: (total) => `Total ${total} registros`,
+              position: ['bottomLeft']
+            }}
+            style={{ minWidth: '800px' }}
+          />
+        </div>
       </StyledCard>
 
       {/* View Element Modal */}
@@ -2490,8 +2516,19 @@ const RentAdmin: React.FC = () => {
         {viewingAlquiler && (
           <Descriptions column={1}>
             <Descriptions.Item label="ID Alquiler">{viewingAlquiler.id_alquiler}</Descriptions.Item>
-            <Descriptions.Item label="ID Evento">{viewingAlquiler.evento?.id_evento}</Descriptions.Item>
-            <Descriptions.Item label="Nombre Evento">{viewingAlquiler.evento?.nombre_evento}</Descriptions.Item>
+            <Descriptions.Item label="Evento">
+              ID: {viewingAlquiler.evento?.id_evento} - {viewingAlquiler.evento?.nombre_evento}
+              {viewingAlquiler.evento?.tipo_evento && (
+                <div style={{ fontSize: '0.85em', color: 'rgba(0, 0, 0, 0.45)' }}>
+                  Tipo: {viewingAlquiler.evento.tipo_evento.tipo_evento}
+                </div>
+              )}
+              {viewingAlquiler.evento?.cliente && (
+                <div style={{ fontSize: '0.85em', color: 'rgba(0, 0, 0, 0.45)' }}>
+                  Cliente: {viewingAlquiler.evento.cliente.nombre_usuario} {viewingAlquiler.evento.cliente.apellido_usuario}
+                </div>
+              )}
+            </Descriptions.Item>
             <Descriptions.Item label="Fecha Evento">{viewingAlquiler.evento?.fecha_evento}</Descriptions.Item>
             <Descriptions.Item label="Estado">
               <Tag color={
@@ -2663,65 +2700,83 @@ const RentAdmin: React.FC = () => {
         </Form>
       </Modal>
 
-      <StyledCard title="Gestión de Alquileres">
-        <ResponsiveSpace direction="vertical" style={{ width: '100%', marginBottom: 16 }}>
-          <ResponsiveSpace wrap>
-            <Button
-              type="primary"
-              icon={<PlusOutlined />}
-              onClick={() => setShowCatalogo(true)}
-              style={{ backgroundColor: 'var(--dark-gold)', borderColor: 'var(--dark-gold)' }}
-            >
-              Nuevo Alquiler
-            </Button>
-            <Button
-              icon={<ReloadOutlined />}
-              onClick={fetchAlquileres}
-            >
-              Recargar
-            </Button>
-          </ResponsiveSpace>
-
-          <ResponsiveSpace wrap>
+      {/* Tabla de Alquileres */}
+      <StyledCard
+        title="Gestión de Alquileres"
+        extra={
+          <ResponsiveSpace>
             <StyledSearch
-              placeholder="Buscar por ID de alquiler"
-              allowClear
-              style={{ width: 200 }}
-              value={searchAlquiler}
+              placeholder="Buscar alquileres..."
               onChange={(e) => setSearchAlquiler(e.target.value)}
+              style={{ width: 200 }}
             />
             <StyledSelect
+              style={{ width: 300 }}
               placeholder="Filtrar por evento"
               allowClear
-              style={{ width: 200 }}
               value={filterEvento || undefined}
-              onChange={handleEventoChange}
+              onChange={(value: string) => handleEventoChange(value)}
+              showSearch
+              optionFilterProp="children"
+              dropdownMatchSelectWidth={false}
+              dropdownStyle={{ minWidth: '300px' }}
             >
-              {eventos.map((evento: any) => (
+              {eventos.map((evento: Evento) => (
                 <Option key={evento.id_evento} value={evento.id_evento.toString()}>
-                  {evento.nombre_evento}
+                  ID: {evento.id_evento} - {evento.nombre_evento}
+                  {evento.tipo_evento && ` (${evento.tipo_evento.tipo_evento})`}
+                  {evento.cliente && ` - ${evento.cliente.nombre_usuario} ${evento.cliente.apellido_usuario}`}
                 </Option>
               ))}
             </StyledSelect>
             <StyledSelect
-              style={{ width: 200 }}
+              style={{ width: 150 }}
+              placeholder="Filtrar por estado"
+              allowClear
               value={filterEstado || undefined}
-              onChange={handleEstadoAlquilerChange}
+              onChange={(value: string) => handleEstadoAlquilerChange(value)}
             >
               <Option value="Solicitado">Solicitado</Option>
               <Option value="Aceptado">Aceptado</Option>
               <Option value="Completado">Completado</Option>
               <Option value="Cancelado">Cancelado</Option>
             </StyledSelect>
+            <Button
+              type="primary"
+              icon={<PlusOutlined />}
+              onClick={() => {
+                setElementosSeleccionados([]);
+                setShowCatalogo(true);
+              }}
+            >
+              Nuevo Alquiler
+            </Button>
+            <Button
+              onClick={fetchAlquileres}
+              icon={<ReloadOutlined />}
+            >
+              Recargar
+            </Button>
           </ResponsiveSpace>
-        </ResponsiveSpace>
-
-        <StyledTable<Alquiler>
-          columns={columns}
-          dataSource={filteredAlquileres}
-          loading={loading}
-          rowKey="id_alquiler"
-        />
+        }
+      >
+        <div style={{ overflowX: 'auto', width: '100%' }}>
+          <Table<Alquiler>
+            columns={alquilerColumns}
+            dataSource={filteredAlquileres}
+            loading={loading}
+            rowKey="id_alquiler"
+            scroll={{ x: 1000 }}
+            pagination={{
+              total: filteredAlquileres.length,
+              pageSize: 10,
+              showSizeChanger: true,
+              showTotal: (total) => `Total ${total} registros`,
+              position: ['bottomLeft']
+            }}
+            style={{ minWidth: '800px' }}
+          />
+        </div>
       </StyledCard>
 
       {/* Tabla de Compras */}
@@ -2757,12 +2812,23 @@ const RentAdmin: React.FC = () => {
           </ResponsiveSpace>
         }
       >
-        <StyledTable<Compra>
-          columns={compraColumns}
-          dataSource={handleFilterCompras(compras)}
-          loading={loadingCompra}
-          rowKey="id_compra"
-        />
+        <div style={{ overflowX: 'auto', width: '100%' }}>
+          <Table<Compra>
+            columns={compraColumns}
+            dataSource={handleFilterCompras(compras)}
+            loading={loadingCompra}
+            rowKey="id_compra"
+            scroll={{ x: 1000 }}
+            pagination={{
+              total: compras.length,
+              pageSize: 10,
+              showSizeChanger: true,
+              showTotal: (total) => `Total ${total} registros`,
+              position: ['bottomLeft']
+            }}
+            style={{ minWidth: '800px' }}
+          />
+        </div>
       </StyledCard>
 
       {/* Modal de Crear/Editar Compra */}
@@ -2809,10 +2875,10 @@ const RentAdmin: React.FC = () => {
                         {elementos
                           .filter(elemento => elemento.estado_elemento === 'Activo')
                           .map((elemento) => (
-                            <Option key={elemento.id_elemento} value={elemento.id_elemento}>
-                              {elemento.nombre_elemento}
-                            </Option>
-                          ))}
+                          <Option key={elemento.id_elemento} value={elemento.id_elemento}>
+                            {elemento.nombre_elemento}
+                          </Option>
+                        ))}
                       </Select>
                     </Form.Item>
                     <Form.Item
@@ -3106,10 +3172,12 @@ const RentAdmin: React.FC = () => {
             label="Evento"
             rules={[{ required: true, message: 'Por favor seleccione un evento' }]}
           >
-            <Select>
-              {eventos.map((evento: any) => (
+            <Select style={{ width: '100%' }}>
+              {eventos.map((evento: Evento) => (
                 <Option key={evento.id_evento} value={evento.id_evento}>
-                  {evento.nombre_evento}
+                  ID: {evento.id_evento} - {evento.nombre_evento}
+                  {evento.tipo_evento && ` (${evento.tipo_evento.tipo_evento})`}
+                  {evento.cliente && ` - ${evento.cliente.nombre_usuario} ${evento.cliente.apellido_usuario}`}
                 </Option>
               ))}
             </Select>
