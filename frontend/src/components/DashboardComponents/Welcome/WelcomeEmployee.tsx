@@ -12,6 +12,8 @@ import {
   Tag,
   Input,
   Descriptions,
+  InputNumber,
+  Form,
 } from "antd";
 import {
   EditOutlined,
@@ -30,6 +32,7 @@ import type { Dayjs } from "dayjs";
 import dayjs from "dayjs";
 import PagoForm from "../FormService/PagoForm";
 import { apiUrl } from '../../../config';
+import DecoracionForm from "../FormService/DecoracionForm";
 
 const { Title } = Typography;
 const { Option } = Select;
@@ -215,6 +218,11 @@ interface Decoracion {
       nombre_usuario: string;
       apellido_usuario: string;
     };
+    asesor?: {
+      cedula_usuario: string;
+      nombre_usuario: string;
+      apellido_usuario: string;
+    };
   };
 }
 
@@ -226,7 +234,7 @@ interface Pago {
   hora_pago: string;
   tipo_pago: 'Inicial' | 'Final' | 'Adicional';
   estado_pago: 'Pendiente' | 'Recibido' | 'Rechazado';
-  metodo_pago: string;
+  modo_pago: string; // Cambiado de 'metodo_pago'
   evento?: {
     id_evento: number;
     cliente?: {
@@ -273,15 +281,16 @@ const WelcomeEmployee: React.FC = () => {
   const [ciudades, setCiudades] = useState<Ciudad[]>([]);
   const [user, setUser] = useState<Usuario | null>(null);
   const [userCedula, setUserCedula] = useState<string | null>(null);
+  const [userRole, setUserRole] = useState<string | null>(null);
   const [empleadosParticipantes, setEmpleadosParticipantes] = useState<AsignacionEmpleado[]>([]);
   const [asesores, setAsesores] = useState<Asesor[]>([]);
   const [empleados, setEmpleados] = useState<Empleado[]>([]);
   const [modalEventoVisible, setModalEventoVisible] = useState(false);
   const [modalAsignacionVisible, setModalAsignacionVisible] = useState(false);
-  const [modalPagoVisible, setModalPagoVisible] = useState(false);
   const [selectedEvento, setSelectedEvento] = useState<Evento | null>(null);
   const [eventoDetalles, setEventoDetalles] = useState<Evento | null>(null);
   const [selectedAsignacion, setSelectedAsignacion] = useState<AsignacionEmpleado | null>(null);
+  const [showEventoForm, setShowEventoForm] = useState(false);
 
   // Estados para búsqueda y filtros
   const [searchTextEventos, setSearchTextEventos] = useState("");
@@ -327,6 +336,7 @@ const WelcomeEmployee: React.FC = () => {
   const [modalDetallesClienteVisible, setModalDetallesClienteVisible] = useState(false);
   const [modalDetallesDecoracionVisible, setModalDetallesDecoracionVisible] = useState(false);
   const [modalDetallesPagoVisible, setModalDetallesPagoVisible] = useState(false);
+  const [modalPagoVisible, setModalPagoVisible] = useState(false);
 
   // Estados para los datos seleccionados
   const [eventoSeleccionado, setEventoSeleccionado] = useState<Evento | null>(null);
@@ -334,6 +344,14 @@ const WelcomeEmployee: React.FC = () => {
   const [clienteSeleccionado, setClienteSeleccionado] = useState<Cliente | null>(null);
   const [decoracionSeleccionada, setDecoracionSeleccionada] = useState<Decoracion | null>(null);
   const [pagoSeleccionado, setPagoSeleccionado] = useState<Pago | null>(null);
+  const [loadingPago, setLoadingPago] = useState(false);
+
+  // Estados para decoraciones
+  const [modalDecoracionVisible, setModalDecoracionVisible] = useState(false);
+  const [modalSeleccionEventoVisible, setModalSeleccionEventoVisible] = useState(false);
+  const [modalElementosDecoracionVisible, setModalElementosDecoracionVisible] = useState(false);
+  const [eventoSeleccionadoParaElementos, setEventoSeleccionadoParaElementos] = useState<Evento | null>(null);
+  const [busquedaDecoracion, setBusquedaDecoracion] = useState("");
 
   useEffect(() => {
     const fetchUserData = async () => {
@@ -356,6 +374,8 @@ const WelcomeEmployee: React.FC = () => {
 
         const userData = await response.json();
         setUserCedula(userData.cedula_usuario);
+        setUserRole(userData.rol_nombre);
+        setUser(userData);
       } catch (error) {
         console.error("Error al obtener datos del usuario:", error);
         message.error("Error al obtener datos del usuario");
@@ -368,7 +388,7 @@ const WelcomeEmployee: React.FC = () => {
   useEffect(() => {
     if (userCedula) {
       fetchData();
-      fetchDecoraciones();
+      fetchDecoracionesAlternativo();
       fetchPagos();
     }
   }, [userCedula]);
@@ -383,12 +403,12 @@ const WelcomeEmployee: React.FC = () => {
       try {
         const token = localStorage.getItem("token");
         if (!token) return;
-        const response = await fetch(`${apiUrl}/provincia`, {
+        const response = await fetch(`${apiUrl}/direccion/provincias`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         if (response.ok) {
           const data = await response.json();
-          setProvincias(data);
+          setProvincias(Array.isArray(data) ? data : []);
         }
       } catch (e) { /* opcional: manejar error */ }
     };
@@ -396,12 +416,12 @@ const WelcomeEmployee: React.FC = () => {
       try {
         const token = localStorage.getItem("token");
         if (!token) return;
-        const response = await fetch(`${apiUrl}/ciudad`, {
+        const response = await fetch(`${apiUrl}/direccion/ciudades`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         if (response.ok) {
           const data = await response.json();
-          setCiudades(data);
+          setCiudades(Array.isArray(data) ? data : []);
         }
       } catch (e) { /* opcional: manejar error */ }
     };
@@ -435,7 +455,34 @@ const WelcomeEmployee: React.FC = () => {
         "Datos de eventos recibidos (antes de parsear):",
         eventosData
       );
-      const parsedEventos = eventosData.map((evento: Evento) => ({
+
+      // Obtener información de dirección para cada evento
+      const eventosConDireccion = await Promise.all(
+        eventosData.map(async (evento: Evento) => {
+          if (evento.id_direccion) {
+            try {
+              const direccionResponse = await fetch(`${apiUrl}/direccion/${evento.id_direccion}`, {
+                headers: {
+                  Authorization: `Bearer ${token}`,
+                },
+              });
+              
+              if (direccionResponse.ok) {
+                const direccionData = await direccionResponse.json();
+                return {
+                  ...evento,
+                  direccion: direccionData
+                };
+              }
+            } catch (error) {
+              console.error(`Error al obtener dirección para evento ${evento.id_evento}:`, error);
+            }
+          }
+          return evento;
+        })
+      );
+
+      const parsedEventos = eventosConDireccion.map((evento: Evento) => ({
         ...evento,
         fecha_evento: evento.fecha_evento ? dayjs(evento.fecha_evento) : null,
         hora_evento: evento.hora_evento
@@ -507,7 +554,7 @@ const WelcomeEmployee: React.FC = () => {
       }
       const asesoresData = await asesoresResponse.json();
       console.log("Datos de asesores recibidos:", asesoresData);
-      setAsesores(asesoresData);
+      setAsesores(Array.isArray(asesoresData) ? asesoresData : asesoresData.usuarios || []);
 
       // Obtener empleados
       const empleadosResponse = await fetch(`${apiUrl}/usuario/rol/3`, {
@@ -520,7 +567,7 @@ const WelcomeEmployee: React.FC = () => {
       }
       const empleadosData = await empleadosResponse.json();
       console.log("Datos de empleados recibidos:", empleadosData);
-      setEmpleados(empleadosData);
+      setEmpleados(Array.isArray(empleadosData) ? empleadosData : empleadosData.usuarios || []);
 
       setError(null);
     } catch (error) {
@@ -538,14 +585,45 @@ const WelcomeEmployee: React.FC = () => {
       const token = localStorage.getItem("token");
       if (!token) return;
 
-      const response = await fetch(`${apiUrl}/decoracion?include=evento.cliente,evento.tipo_evento,detalle_decoracion`, {
+      console.log('Fetching decoraciones para empleado:', userCedula);
+
+      // Obtener todas las decoraciones y filtrar por eventos donde el empleado es asesor
+      const response = await fetch(`${apiUrl}/decoracion?include=evento.cliente,evento.asesor,evento.tipo_evento,detalle_decoracion`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (!response.ok) {
         throw new Error("Error al cargar las decoraciones");
       }
       const data = await response.json();
-      setDecoraciones(data);
+      
+      console.log('Todas las decoraciones recibidas:', data);
+      
+      // Filtrar solo las decoraciones de eventos donde el empleado es asesor
+      const decoracionesFiltradas = data.filter((decoracion: Decoracion) => {
+        console.log('Procesando decoración:', decoracion.id_decoracion, 'para evento:', decoracion.id_evento);
+        console.log('Datos del evento:', decoracion.evento);
+        
+        // Verificar si el evento existe
+        if (!decoracion.evento) {
+          console.log('Decoración sin evento, descartando');
+          return false;
+        }
+        
+        // Verificar si el evento tiene asesor
+        if (!decoracion.evento.asesor) {
+          console.log('Evento sin asesor, descartando');
+          return false;
+        }
+        
+        // Verificar si el asesor del evento es el empleado actual
+        const esAsesor = decoracion.evento.asesor.cedula_usuario === userCedula;
+        console.log('¿Es asesor?', esAsesor, 'Asesor del evento:', decoracion.evento.asesor.cedula_usuario, 'Empleado actual:', userCedula);
+        
+        return esAsesor;
+      });
+      
+      console.log('Decoraciones filtradas:', decoracionesFiltradas);
+      setDecoraciones(decoracionesFiltradas);
     } catch (error) {
       console.error("Error al cargar decoraciones:", error);
       message.error("Error al cargar las decoraciones");
@@ -554,28 +632,97 @@ const WelcomeEmployee: React.FC = () => {
     }
   };
 
-  const fetchPagos = async () => {
+  // Función alternativa más robusta para obtener decoraciones
+  const fetchDecoracionesAlternativo = async () => {
     try {
       setLoading(true);
       const token = localStorage.getItem("token");
       if (!token) return;
 
-      const response = await fetch(`${apiUrl}/pago?include=evento.cliente`, {
-        headers: { 
-          Authorization: `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        }
+      console.log('Fetching decoraciones (método alternativo) para empleado:', userCedula);
+
+      // Primero obtener los eventos donde el empleado es asesor
+      const eventosResponse = await fetch(`${apiUrl}/evento/asesor/${userCedula}`, {
+        headers: { Authorization: `Bearer ${token}` },
       });
-      if (!response.ok) {
-        throw new Error("Error al cargar los pagos");
+      
+      if (!eventosResponse.ok) {
+        throw new Error("Error al cargar los eventos del asesor");
       }
-      const data = await response.json();
-      setPagos(data);
+      
+      const eventosAsesor = await eventosResponse.json();
+      console.log('Eventos donde el empleado es asesor:', eventosAsesor);
+      
+      // Obtener los IDs de los eventos
+      const idsEventos = eventosAsesor.map((evento: any) => evento.id_evento);
+      console.log('IDs de eventos del asesor:', idsEventos);
+      
+      if (idsEventos.length === 0) {
+        console.log('No hay eventos donde el empleado sea asesor');
+        setDecoraciones([]);
+        return;
+      }
+      
+      // Obtener todas las decoraciones
+      const decoracionesResponse = await fetch(`${apiUrl}/decoracion?include=evento.cliente,evento.asesor,evento.tipo_evento,detalle_decoracion`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      
+      if (!decoracionesResponse.ok) {
+        throw new Error("Error al cargar las decoraciones");
+      }
+      
+      const todasDecoraciones = await decoracionesResponse.json();
+      console.log('Todas las decoraciones:', todasDecoraciones);
+      
+      // Filtrar decoraciones que pertenezcan a los eventos del asesor
+      const decoracionesFiltradas = todasDecoraciones.filter((decoracion: Decoracion) => {
+        const perteneceAEventoAsesor = idsEventos.includes(decoracion.id_evento);
+        console.log(`Decoración ${decoracion.id_decoracion} para evento ${decoracion.id_evento}: ${perteneceAEventoAsesor ? 'SÍ pertenece' : 'NO pertenece'}`);
+        return perteneceAEventoAsesor;
+      });
+      
+      console.log('Decoraciones filtradas (método alternativo):', decoracionesFiltradas);
+      setDecoraciones(decoracionesFiltradas);
+      
     } catch (error) {
-      console.error("Error al cargar pagos:", error);
-      message.error("Error al cargar los pagos");
+      console.error("Error al cargar decoraciones (método alternativo):", error);
+      message.error("Error al cargar las decoraciones");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchPagos = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        message.error('No hay sesión activa');
+        return;
+      }
+
+      const headers = {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      };
+
+      const response = await fetch(`${apiUrl}/pago?include=evento.cliente`, { headers });
+      if (!response.ok) {
+        throw new Error('Error al obtener pagos');
+      }
+
+      const data = await response.json();
+      console.log('Datos de pagos recibidos de la API:', data); // Añadido para depuración
+      // Filtrar solo los pagos de eventos donde el empleado es el encargado
+      const pagosFiltrados = data.filter((pago: Pago) => {
+        const evento = eventos.find(e => e.id_evento === pago.id_evento);
+        return evento && evento.cedula_asesor === user?.cedula_usuario;
+      });
+      console.log('Pagos filtrados (modo_pago incluido?):', pagosFiltrados); // Añadido para depuración
+      setPagos(pagosFiltrados);
+    } catch (error) {
+      console.error('Error al cargar pagos:', error);
+      message.error('Error al cargar los pagos');
     }
   };
 
@@ -596,7 +743,7 @@ const WelcomeEmployee: React.FC = () => {
         throw new Error("Error al obtener tipos de evento");
       }
       const data = await response.json();
-      setTiposEvento(data);
+      setTiposEvento(Array.isArray(data) ? data : []);
     } catch (error) {
       console.error("Error al cargar tipos de evento:", error);
       message.error("Error al cargar los tipos de evento");
@@ -604,8 +751,10 @@ const WelcomeEmployee: React.FC = () => {
   };
 
   const handleEditEvento = (evento: Evento) => {
+    console.log('Evento para editar:', evento);
+    console.log('Datos de dirección disponibles:', evento.direccion);
     setSelectedEvento(evento);
-    setModalEventoVisible(true);
+    setShowEventoForm(true);
   };
 
   const handleEliminarEvento = async (evento: Evento) => {
@@ -844,6 +993,10 @@ const WelcomeEmployee: React.FC = () => {
         throw new Error('No hay token de autenticación');
       }
 
+      console.log('Datos que se van a enviar al backend:', values);
+      console.log('Tipo de datos de fecha_evento:', typeof values.fecha_evento);
+      console.log('Tipo de datos de hora_evento:', typeof values.hora_evento);
+
       const response = await fetch(`${apiUrl}/evento`, {
         method: 'POST',
         headers: {
@@ -853,22 +1006,185 @@ const WelcomeEmployee: React.FC = () => {
         body: JSON.stringify(values)
       });
 
+      console.log('Respuesta del servidor:', response.status, response.statusText);
+
       if (!response.ok) {
-        throw new Error('Error al crear el evento');
+        const errorData = await response.json().catch(() => ({}));
+        console.error('Error del servidor:', errorData);
+        throw new Error(`Error al crear el evento: ${errorData.mensaje || errorData.error || response.statusText}`);
       }
+
+      const result = await response.json();
+      console.log('Respuesta exitosa:', result);
 
       message.success('Evento creado exitosamente');
       setModalEventoVisible(false);
       fetchData();
     } catch (error) {
       console.error('Error al crear evento:', error);
-      message.error('Error al crear el evento');
+      message.error(error instanceof Error ? error.message : 'Error al crear el evento');
     } finally {
       setLoading(false);
     }
   };
 
   const handleCrearPago = async (values: any) => {
+    setLoadingPago(true);
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        message.error('No hay sesión activa');
+        return;
+      }
+
+      // Verificar que el evento existe y el empleado es el encargado
+      const evento = eventos.find(e => e.id_evento === values.id_evento);
+      if (!evento) {
+        throw new Error('Evento no encontrado');
+      }
+      if (evento.cedula_asesor !== user?.cedula_usuario) {
+        throw new Error('No tienes permiso para registrar pagos de este evento');
+      }
+
+      const response = await fetch(`${apiUrl}/pago`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          id_evento: values.id_evento,
+          monto: values.monto,
+          tipo_pago: values.tipo_pago,
+          modo_pago: values.modo_pago,
+          fecha_pago: values.fecha_pago.format('YYYY-MM-DD'),
+          hora_pago: values.hora_pago.format('HH:mm:ss')
+        })
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.mensaje || 'Error al crear el pago');
+      }
+
+      setModalPagoVisible(false);
+      message.success('Pago creado exitosamente');
+      fetchPagos();
+    } catch (error) {
+      message.error(error instanceof Error ? error.message : 'Error al crear el pago');
+    } finally {
+      setLoadingPago(false);
+    }
+  };
+
+  const handleUpdatePago = async (values: any) => {
+    try {
+      setLoading(true);
+      const token = localStorage.getItem('token');
+      if (!token) {
+        message.error('No hay sesión activa');
+        return;
+      }
+
+      // Verificar que el evento existe y el empleado es el encargado
+      const evento = eventos.find(e => e.id_evento === values.id_evento);
+      if (!evento) {
+        throw new Error('Evento no encontrado');
+      }
+      if (evento.cedula_asesor !== user?.cedula_usuario) {
+        throw new Error('No tienes permiso para modificar pagos de este evento');
+      }
+
+      const headers = {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      };
+
+      const response = await fetch(`${apiUrl}/pago/${pagoSeleccionado?.id_pago}`, {
+        method: 'PUT',
+        headers,
+        body: JSON.stringify(values)
+      });
+
+      if (!response.ok) {
+        throw new Error('Error al actualizar el pago');
+      }
+
+      message.success('Pago actualizado exitosamente');
+      setModalPagoVisible(false);
+      fetchPagos();
+    } catch (error) {
+      console.error('Error al actualizar pago:', error);
+      message.error('Error al actualizar el pago');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDeletePago = async (id: number) => {
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        message.error('No hay sesión activa');
+        return;
+      }
+
+      // Verificar que el pago existe y el empleado es el encargado del evento
+      const pago = pagos.find(p => p.id_pago === id);
+      if (!pago) {
+        throw new Error('Pago no encontrado');
+      }
+      const evento = eventos.find(e => e.id_evento === pago.id_evento);
+      if (!evento || evento.cedula_asesor !== user?.cedula_usuario) {
+        throw new Error('No tienes permiso para eliminar este pago');
+      }
+
+      const headers = {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      };
+
+      const response = await fetch(`${apiUrl}/pago/${id}/estado`, {
+        method: 'PATCH',
+        headers,
+        body: JSON.stringify({ estado_pago: 'Rechazado' })
+      });
+
+      if (!response.ok) {
+        throw new Error('Error al eliminar el pago');
+      }
+
+      message.success('Pago eliminado exitosamente');
+      fetchPagos();
+    } catch (error) {
+      console.error('Error al eliminar pago:', error);
+      message.error('Error al eliminar el pago');
+    }
+  };
+
+  const handleEditPago = (record: Pago) => {
+    setPagoSeleccionado(record);
+    setModalPagoVisible(true);
+  };
+
+  const getFilteredPagos = () => {
+    return pagos.filter(pago => {
+      const searchLower = searchTextPagos.toLowerCase();
+      const matchesSearch =
+        pago.id_pago.toString().includes(searchLower) ||
+        pago.monto.toString().includes(searchLower) ||
+        pago.tipo_pago.toLowerCase().includes(searchLower) ||
+        pago.estado_pago.toLowerCase().includes(searchLower) ||
+        pago.modo_pago.toLowerCase().includes(searchLower) ||
+        (pago.evento?.cliente?.nombre_usuario.toLowerCase().includes(searchLower) || false) ||
+        (pago.evento?.cliente?.apellido_usuario.toLowerCase().includes(searchLower) || false);
+
+      return matchesSearch;
+    });
+  };
+
+  // Funciones para manejar decoraciones
+  const handleCreateDecoracion = async (values: any) => {
     try {
       setLoading(true);
       const token = localStorage.getItem('token');
@@ -876,7 +1192,7 @@ const WelcomeEmployee: React.FC = () => {
         throw new Error('No hay token de autenticación');
       }
 
-      const response = await fetch(`${apiUrl}/pago`, {
+      const response = await fetch(`${apiUrl}/decoracion`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -886,15 +1202,125 @@ const WelcomeEmployee: React.FC = () => {
       });
 
       if (!response.ok) {
-        throw new Error('Error al crear el pago');
+        const errorData = await response.json();
+        throw new Error(errorData.mensaje || 'Error al crear la decoración');
       }
 
-      message.success('Pago creado exitosamente');
-      setModalPagoVisible(false);
-      fetchData();
+      message.success('Decoración creada exitosamente');
+      setModalDecoracionVisible(false);
+      setDecoracionSeleccionada(null);
+      fetchDecoracionesAlternativo();
     } catch (error) {
-      console.error('Error al crear pago:', error);
-      message.error('Error al crear el pago');
+      console.error('Error al crear decoración:', error);
+      message.error(error instanceof Error ? error.message : 'Error al crear la decoración');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleEditDecoracion = async (values: any) => {
+    try {
+      setLoading(true);
+      const token = localStorage.getItem('token');
+      if (!token) {
+        throw new Error('No hay token de autenticación');
+      }
+
+      const response = await fetch(`${apiUrl}/decoracion/${decoracionSeleccionada?.id_decoracion}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify(values)
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.mensaje || 'Error al actualizar la decoración');
+      }
+
+      message.success('Decoración actualizada exitosamente');
+      setModalDecoracionVisible(false);
+      setDecoracionSeleccionada(null);
+      fetchDecoracionesAlternativo();
+    } catch (error) {
+      console.error('Error al actualizar decoración:', error);
+      message.error(error instanceof Error ? error.message : 'Error al actualizar la decoración');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDeleteDecoracion = async (id: number) => {
+    try {
+      setLoading(true);
+      const token = localStorage.getItem('token');
+      if (!token) {
+        throw new Error('No hay token de autenticación');
+      }
+
+      const response = await fetch(`${apiUrl}/decoracion/${id}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.mensaje || 'Error al eliminar la decoración');
+      }
+
+      message.success('Decoración eliminada exitosamente');
+      fetchDecoracionesAlternativo();
+    } catch (error) {
+      console.error('Error al eliminar decoración:', error);
+      message.error(error instanceof Error ? error.message : 'Error al eliminar la decoración');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSubmitElementosDecoracion = async (values: any) => {
+    if (!eventoSeleccionadoParaElementos) {
+      message.error('Por favor seleccione un evento primero');
+      return;
+    }
+
+    try {
+      setLoading(true);
+      const token = localStorage.getItem('token');
+      if (!token) {
+        throw new Error('No hay token de autenticación');
+      }
+
+      const response = await fetch(`${apiUrl}/decoracion/detalle`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          id_decoracion: values.id_decoracion,
+          elemento_decoracion: values.elemento_decoracion,
+          cantelemento_decoracion: values.cantelemento_decoracion,
+          precio_elemento: values.precio_elemento
+        })
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.mensaje || 'Error al guardar los elementos');
+      }
+
+      message.success('Elementos agregados exitosamente');
+      setModalElementosDecoracionVisible(false);
+      setEventoSeleccionadoParaElementos(null);
+      fetchDecoracionesAlternativo();
+    } catch (error) {
+      console.error('Error al guardar elementos:', error);
+      message.error(error instanceof Error ? error.message : 'Error al guardar los elementos');
     } finally {
       setLoading(false);
     }
@@ -971,7 +1397,7 @@ const WelcomeEmployee: React.FC = () => {
 
   const getFilteredDecoraciones = () => {
     return decoraciones.filter((decoracion) => {
-      const searchLower = searchTextDecoraciones.toLowerCase();
+      const searchLower = busquedaDecoracion.toLowerCase();
       const matchesSearch =
         decoracion.tema_decoracion.toLowerCase().includes(searchLower) ||
         decoracion.colores_decoracion.toLowerCase().includes(searchLower) ||
@@ -979,29 +1405,7 @@ const WelcomeEmployee: React.FC = () => {
         (decoracion.evento?.cliente?.nombre_usuario.toLowerCase().includes(searchLower) || false) ||
         (decoracion.evento?.cliente?.apellido_usuario.toLowerCase().includes(searchLower) || false);
 
-      const matchesEstado = !filtrosDecoraciones.estado || decoracion.estado_decoracion === filtrosDecoraciones.estado;
-      const matchesEvento = !filtrosDecoraciones.eventoId || decoracion.id_evento.toString() === filtrosDecoraciones.eventoId;
-
-      return matchesSearch && matchesEstado && matchesEvento;
-    });
-  };
-
-  const getFilteredPagos = () => {
-    return pagos.filter((pago) => {
-      const searchLower = searchTextPagos.toLowerCase();
-      const matchesSearch =
-        pago.tipo_pago.toLowerCase().includes(searchLower) ||
-        pago.estado_pago.toLowerCase().includes(searchLower) ||
-        pago.metodo_pago.toLowerCase().includes(searchLower) ||
-        (pago.evento?.cliente?.nombre_usuario.toLowerCase().includes(searchLower) || false) ||
-        (pago.evento?.cliente?.apellido_usuario.toLowerCase().includes(searchLower) || false);
-
-      const matchesEstado = !filtrosPagos.estado || pago.estado_pago === filtrosPagos.estado;
-      const matchesTipo = !filtrosPagos.tipo || pago.tipo_pago === filtrosPagos.tipo;
-      const matchesMetodo = !filtrosPagos.metodo || pago.metodo_pago === filtrosPagos.metodo;
-      const matchesEvento = !filtrosPagos.eventoId || pago.id_evento.toString() === filtrosPagos.eventoId;
-
-      return matchesSearch && matchesEstado && matchesTipo && matchesMetodo && matchesEvento;
+      return matchesSearch;
     });
   };
 
@@ -1383,9 +1787,9 @@ const WelcomeEmployee: React.FC = () => {
 
   const pagosColumns = [
     {
-      title: 'Evento ID',
-      dataIndex: 'id_evento',
-      key: 'id_evento',
+      title: 'ID',
+      dataIndex: 'id_pago',
+      key: 'id_pago',
     },
     {
       title: 'Cliente',
@@ -1400,38 +1804,15 @@ const WelcomeEmployee: React.FC = () => {
       }
     },
     {
-      title: 'Método de Pago',
-      dataIndex: 'metodo_pago',
-      key: 'metodo_pago',
-      render: (metodo: string) => {
-        switch(metodo) {
-          case 'Efectivo':
-            return 'Efectivo';
-          case 'Tarjeta':
-            return 'Tarjeta';
-          case 'Transferencia':
-            return 'Transferencia';
-          default:
-            return metodo;
-        }
-      }
-    },
-    {
-      title: 'Fecha y Hora',
-      dataIndex: 'fecha_pago',
-      key: 'fecha_pago',
-      render: (fecha: string, record: Pago) => `${fecha} ${record.hora_pago}`
-    },
-    {
       title: 'Monto',
       dataIndex: 'monto',
       key: 'monto',
-      render: (monto: number) => `RD$ ${monto.toLocaleString('es-DO', { minimumFractionDigits: 2 })}`
+      render: (monto: number) => `RD$ ${monto.toLocaleString('es-DO', { minimumFractionDigits: 2 })}`,
     },
     {
       title: 'Tipo',
       dataIndex: 'tipo_pago',
-      key: 'tipo_pago'
+      key: 'tipo_pago',
     },
     {
       title: 'Estado',
@@ -1445,11 +1826,27 @@ const WelcomeEmployee: React.FC = () => {
         }>
           {estado}
         </Tag>
-      )
+      ),
     },
     {
-      title: "Acciones",
-      key: "acciones",
+      title: 'Método',
+      dataIndex: 'modo_pago',
+      key: 'modo_pago',
+    },
+    {
+      title: 'Fecha',
+      dataIndex: 'fecha_pago',
+      key: 'fecha_pago',
+      render: (fecha: string) => new Date(fecha).toLocaleDateString(),
+    },
+    {
+      title: 'Hora',
+      dataIndex: 'hora_pago',
+      key: 'hora_pago',
+    },
+    {
+      title: 'Acciones',
+      key: 'acciones',
       fixed: 'right' as const,
       width: 'fit-content',
       render: (_: any, record: Pago) => (
@@ -1457,7 +1854,24 @@ const WelcomeEmployee: React.FC = () => {
           <Button
             type="text"
             icon={<EyeOutlined />}
-            onClick={() => handleVerDetallesPago(record)}
+            onClick={() => {
+              setPagoSeleccionado(record);
+              setModalDetallesPagoVisible(true);
+            }}
+            title="Ver Detalles"
+          />
+          <Button
+            type="text"
+            icon={<EditOutlined />}
+            onClick={() => handleEditPago(record)}
+            title="Editar"
+          />
+          <Button
+            type="text"
+            danger
+            icon={<DeleteOutlined />}
+            onClick={() => handleDeletePago(record.id_pago)}
+            title="Eliminar"
           />
         </Space>
       ),
@@ -1726,7 +2140,6 @@ const WelcomeEmployee: React.FC = () => {
       >
         <Option value="">Todos los métodos</Option>
         <Option value="Efectivo">Efectivo</Option>
-        <Option value="Tarjeta">Tarjeta</Option>
         <Option value="Transferencia">Transferencia</Option>
       </Select>
       <Select
@@ -1744,7 +2157,7 @@ const WelcomeEmployee: React.FC = () => {
         placeholder="Buscar por ID de evento"
         value={filtrosPagos.eventoId}
         onChange={e => setFiltrosPagos({ ...filtrosPagos, eventoId: e.target.value })}
-        style={{ width: '100%' }}
+        style={{ width: 120 }} // Ancho fijo
       />
       <Button
         onClick={() => setFiltrosPagos({ estado: "", eventoId: "", metodo: "", tipo: "" })}
@@ -1781,6 +2194,102 @@ const WelcomeEmployee: React.FC = () => {
     } catch (error) {
       console.error("Error al actualizar evento:", error);
       message.error("Error al actualizar el evento");
+    }
+  };
+
+  const handleUpdateEvento = async (values: any) => {
+    try {
+      if (!selectedEvento) return;
+
+      console.log('Valores recibidos del formulario:', values);
+      console.log('Evento seleccionado:', selectedEvento);
+
+      const token = localStorage.getItem('token');
+      if (!token) {
+        message.error('No hay sesión activa');
+        return;
+      }
+
+      // Verificar si se han cambiado los campos de dirección
+      const direccionCambiada = 
+        values.sector !== selectedEvento.sector ||
+        values.calle !== selectedEvento.calle ||
+        values.detalles !== selectedEvento.detalles;
+
+      console.log('¿Dirección cambiada?', direccionCambiada);
+
+      // Si se cambió la dirección, actualizarla primero
+      if (direccionCambiada && selectedEvento.id_direccion) {
+        console.log('Actualizando dirección...');
+        const direccionResponse = await fetch(`${apiUrl}/direccion/${selectedEvento.id_direccion}`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({
+            id_ciudad: values.id_ciudad,
+            sector: values.sector,
+            calle: values.calle,
+            detalles: values.detalles || null
+          })
+        });
+
+        console.log('Respuesta de actualización de dirección:', direccionResponse.status);
+
+        if (!direccionResponse.ok) {
+          const errorData = await direccionResponse.json();
+          console.error('Error al actualizar dirección:', errorData);
+          throw new Error(errorData.mensaje || errorData.message || 'Error al actualizar la dirección');
+        }
+      }
+
+      // Formatear los datos correctamente para el backend
+      const datosActualizados = {
+        cedula_cliente: values.cedula_cliente,
+        cedula_asesor: values.cedula_asesor || null,
+        id_tipo_evento: values.id_tipo_evento,
+        fecha_evento: typeof values.fecha_evento === 'object' && values.fecha_evento.format ? 
+          values.fecha_evento.format('YYYY-MM-DD') : values.fecha_evento,
+        hora_evento: typeof values.hora_evento === 'object' && values.hora_evento.format ? 
+          values.hora_evento.format('HH:mm:ss') : values.hora_evento,
+        espacio_evento: values.espacio_evento,
+        desea_supervision: values.desea_supervision !== undefined ? values.desea_supervision : false,
+        estado_solicitud: values.estado_solicitud || 'Pendiente',
+        nota_cliente: values.nota_cliente || '',
+        id_direccion: selectedEvento.id_direccion // Usar el id_direccion existente
+      };
+
+      console.log('Datos a enviar al backend:', datosActualizados);
+
+      const response = await fetch(`${apiUrl}/evento/${selectedEvento.id_evento}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify(datosActualizados)
+      });
+
+      console.log('Respuesta del backend:', response.status);
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.error('Error del backend:', errorData);
+        throw new Error(errorData.mensaje || errorData.message || 'Error al actualizar el evento');
+      }
+
+      message.success('Evento actualizado exitosamente');
+      setShowEventoForm(false);
+      setSelectedEvento(null);
+      fetchData();
+    } catch (error) {
+      console.error('Error al actualizar evento:', error);
+      if (error instanceof Error) {
+        message.error(error.message);
+      } else {
+        message.error('Error al actualizar el evento');
+      }
     }
   };
 
@@ -2014,7 +2523,7 @@ const WelcomeEmployee: React.FC = () => {
              pagoSeleccionado.estado_pago === 'Pendiente' ? 'Pendiente' : 'Rechazado'}
           </Descriptions.Item>
           <Descriptions.Item label="Método de Pago">
-            {pagoSeleccionado.metodo_pago}
+            {pagoSeleccionado.modo_pago}
           </Descriptions.Item>
           <Descriptions.Item label="Fecha">
             {new Date(pagoSeleccionado.fecha_pago).toLocaleDateString()}
@@ -2044,7 +2553,7 @@ const WelcomeEmployee: React.FC = () => {
           <div className="dashboard-row">
             <Card
               title="EVENTOS"
-              className="dashboard-card full-width"
+              className="dashboard-card"
               extra={
                 <Button
                   type="primary"
@@ -2073,6 +2582,8 @@ const WelcomeEmployee: React.FC = () => {
                 dataSource={getFilteredEventos()}
                 loading={loading}
                 rowKey="id_evento"
+                className="dashboard-table"
+                pagination={{ pageSize: 5 }}
                 locale={{ emptyText: <span style={{ color: '#999', fontWeight: 500, fontSize: 16 }}>No hay Registros</span> }}
               />
             </Card>
@@ -2082,7 +2593,7 @@ const WelcomeEmployee: React.FC = () => {
           <div className="dashboard-row">
             {/* Tarjeta de Asignaciones de Equipo (Eventos donde es asesor) */}
             <Card
-              title="ASIGNACIONES DE EQUIPO"
+              title="ASIGNACIÓN DE EQUIPO"
               className="dashboard-card"
               extra={
                 <Button
@@ -2111,14 +2622,16 @@ const WelcomeEmployee: React.FC = () => {
                 columns={asignacionesColumns}
                 dataSource={getFilteredAsignaciones()}
                 loading={loading}
-                rowKey="id_asignacion"
+                rowKey="id_evento"
+                className="dashboard-table"
+                pagination={{ pageSize: 5 }}
                 locale={{ emptyText: <span style={{ color: '#999', fontWeight: 500, fontSize: 16 }}>No hay Registros</span> }}
               />
             </Card>
 
             {/* Tarjeta de Mis Participaciones (Eventos donde es participante) */}
             <Card
-              title="MIS PARTICIPACIONES"
+              title="PARTICIPACIONES"
               className="dashboard-card"
             >
               <TableFilters type=""
@@ -2138,7 +2651,9 @@ const WelcomeEmployee: React.FC = () => {
                 columns={participacionesColumns}
                 dataSource={getFilteredParticipaciones()}
                 loading={loading}
-                rowKey="id_participacion"
+                rowKey="id_evento"
+                className="dashboard-table"
+                pagination={{ pageSize: 5 }}
                 locale={{ emptyText: <span style={{ color: '#999', fontWeight: 500, fontSize: 16 }}>No hay Registros</span> }}
               />
             </Card>
@@ -2150,53 +2665,154 @@ const WelcomeEmployee: React.FC = () => {
             <Card
               title="DECORACIONES"
               className="dashboard-card"
+              extra={
+                <Space>
+                  <Button
+                    type="primary"
+                    icon={<PlusOutlined />}
+                    onClick={() => {
+                      setDecoracionSeleccionada(null);
+                      setModalDecoracionVisible(true);
+                    }}
+                    className="action-button primary"
+                  >
+                    Nueva Decoración
+                  </Button>
+                  <Button
+                    type="primary"
+                    icon={<PlusOutlined />}
+                    onClick={() => setModalSeleccionEventoVisible(true)}
+                    className="action-button primary"
+                  >
+                    Agregar Elementos
+                  </Button>
+                </Space>
+              }
             >
-              <TableFilters type="decoraciones"
-                searchText={searchTextDecoraciones}
-                onSearchChange={setSearchTextDecoraciones}
-                clearFilters={() =>
-                  setFiltrosDecoraciones({ estado: "", eventoId: "" })
-                }
-                activeFiltersCount={getActiveFiltersCount(filtrosDecoraciones)}
-                filterContent={filterContentDecoraciones}
-              />
+              <Space direction="vertical" style={{ width: '100%', marginBottom: 16 }}>
+                <Input.Search
+                  placeholder="Buscar en decoraciones..."
+                  allowClear
+                  onSearch={value => setBusquedaDecoracion(value)}
+                  onChange={e => setBusquedaDecoracion(e.target.value)}
+                  style={{ width: '100%' }}
+                />
+              </Space>
               <Table
-                columns={decoracionesColumns}
+                columns={[
+                  { title: "Evento ID", dataIndex: "id_evento", key: "id_evento" },
+                  { title: "Tema", dataIndex: "tema_decoracion", key: "tema_decoracion" },
+                  {
+                    title: "Colores",
+                    dataIndex: "colores_decoracion",
+                    key: "colores_decoracion",
+                  },
+                  {
+                    title: "Total $",
+                    dataIndex: "total_decoracion",
+                    key: "total_decoracion",
+                    render: (total: number) => `$${total?.toLocaleString()}`,
+                  },
+                  {
+                    title: "Estado",
+                    dataIndex: "estado_decoracion",
+                    key: "estado_decoracion",
+                    render: (estado: string) => {
+                      let color;
+                      switch (estado) {
+                        case "Activo":
+                          color = "green";
+                          break;
+                        case "Pendiente":
+                          color = "gold";
+                          break;
+                        case "Completada":
+                          color = "blue";
+                          break;
+                        case "Cancelada":
+                          color = "red";
+                          break;
+                        default:
+                          color = "default";
+                      }
+                      return <Tag color={color}>{estado}</Tag>;
+                    },
+                  },
+                  {
+                    title: "Acciones",
+                    key: "acciones",
+                    fixed: 'right' as const,
+                    width: 'fit-content',
+                    render: (_: any, record: Decoracion) => (
+                      <Space>
+                        <Button
+                          type="text"
+                          icon={<EyeOutlined />}
+                          onClick={() => handleVerDetallesDecoracion(record)}
+                        />
+                        <Button
+                          type="text"
+                          icon={<EditOutlined />}
+                          onClick={() => {
+                            setDecoracionSeleccionada(record);
+                            setModalDecoracionVisible(true);
+                          }}
+                        />
+                        <Button
+                          type="text"
+                          danger
+                          icon={<DeleteOutlined />}
+                          onClick={() => handleDeleteDecoracion(record.id_decoracion)}
+                        />
+                      </Space>
+                    ),
+                  },
+                ]}
                 dataSource={getFilteredDecoraciones()}
                 loading={loading}
                 rowKey="id_decoracion"
+                scroll={{ x: 'max-content' }}
+                pagination={{ pageSize: 5 }}
                 locale={{ emptyText: <span style={{ color: '#999', fontWeight: 500, fontSize: 16 }}>No hay Registros</span> }}
+                className="dashboard-table"
               />
             </Card>
 
             {/* Tarjeta de Pagos */}
             <Card
-              title="PAGOS"
-              className="dashboard-card"
-              extra={
-                <Button
-                  type="primary"
-                  icon={<PlusOutlined />}
-                  className="action-button primary"
-                  onClick={() => setModalPagoVisible(true)}
-                >
-                  Nuevo Pago
-                </Button>
+              title={
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span style={{ fontSize: '1.2em', fontWeight: 'bold' }}>PAGOS</span>
+                  <Button
+                    type="primary"
+                    onClick={() => {
+                      setPagoSeleccionado(null);
+                      setModalPagoVisible(true);
+                    }}
+                    icon={<PlusOutlined />}
+                  >
+                    Crear Pago
+                  </Button>
+                </div>
               }
+              className="dashboard-card"
+              style={{ marginBottom: 16 }}
             >
-              <TableFilters type="pagos"
-                searchText={filtrosPagos.eventoId}
-                onSearchChange={(value) => setFiltrosPagos({ ...filtrosPagos, eventoId: value })}
-                clearFilters={() => setFiltrosPagos({ estado: "", eventoId: "", metodo: "", tipo: "" })}
-                activeFiltersCount={getActiveFiltersCount(filtrosPagos)}
-                filterContent={filterContentPagos}
-              />
+              <Space direction="vertical" style={{ width: '100%', marginBottom: 16 }}>
+                <Input.Search
+                  placeholder="Buscar en pagos..."
+                  allowClear
+                  onSearch={value => setSearchTextPagos(value)}
+                  onChange={e => setSearchTextPagos(e.target.value)}
+                  style={{ width: '100%' }}
+                />
+              </Space>
               <Table
                 columns={pagosColumns}
                 dataSource={getFilteredPagos()}
                 loading={loading}
                 rowKey="id_pago"
-                scroll={{ x: 'max-content' }}
+                className="dashboard-table"
                 pagination={{ pageSize: 5 }}
                 locale={{ emptyText: <span style={{ color: '#999', fontWeight: 500, fontSize: 16 }}>No hay Registros</span> }}
               />
@@ -2222,6 +2838,8 @@ const WelcomeEmployee: React.FC = () => {
                 dataSource={getFilteredClientes()}
                 loading={loading}
                 rowKey="cedula_usuario"
+                className="dashboard-table"
+                pagination={{ pageSize: 5 }}
                 locale={{ emptyText: <span style={{ color: '#999', fontWeight: 500, fontSize: 16 }}>No hay Registros</span> }}
               />
             </Card>
@@ -2229,9 +2847,58 @@ const WelcomeEmployee: React.FC = () => {
         </div>
       </div>
 
+      {/* Modales */}
+      <Modal
+        title="Detalles del Pago"
+        open={modalDetallesPagoVisible}
+        onCancel={() => setModalDetallesPagoVisible(false)}
+        footer={[
+          <Button key="close" onClick={() => setModalDetallesPagoVisible(false)}>
+            Cerrar
+          </Button>
+        ]}
+        width={800}
+      >
+        {pagoSeleccionado && (
+          <Descriptions bordered column={2}>
+            <Descriptions.Item label="ID del Pago" span={2}>{pagoSeleccionado.id_pago}</Descriptions.Item>
+            <Descriptions.Item label="Evento" span={2}>
+              ID: {pagoSeleccionado.evento?.id_evento} - 
+              {pagoSeleccionado.evento?.cliente ? 
+                `${pagoSeleccionado.evento.cliente.nombre_usuario} ${pagoSeleccionado.evento.cliente.apellido_usuario}` : 
+                'Cliente no disponible'}
+            </Descriptions.Item>
+            <Descriptions.Item label="Monto">RD$ {pagoSeleccionado.monto.toLocaleString('es-DO', { minimumFractionDigits: 2 })}</Descriptions.Item>
+            <Descriptions.Item label="Tipo">
+              {pagoSeleccionado.tipo_pago === 'Inicial' ? 'Inicial' : pagoSeleccionado.tipo_pago === 'Final' ? 'Final' : 'Adicional'}
+            </Descriptions.Item>
+            <Descriptions.Item label="Estado">
+              {pagoSeleccionado.estado_pago === 'Recibido' ? 'Recibido' : pagoSeleccionado.estado_pago === 'Pendiente' ? 'Pendiente' : 'Rechazado'}
+            </Descriptions.Item>
+            <Descriptions.Item label="Método de Pago">{pagoSeleccionado.modo_pago}</Descriptions.Item>
+            <Descriptions.Item label="Fecha">
+              {new Date(pagoSeleccionado.fecha_pago).toLocaleDateString()}
+            </Descriptions.Item>
+            <Descriptions.Item label="Hora">{pagoSeleccionado.hora_pago}</Descriptions.Item>
+          </Descriptions>
+        )}
+      </Modal>
+
+      <PagoForm
+        visible={modalPagoVisible}
+        onCancel={() => {
+          setModalPagoVisible(false);
+          setPagoSeleccionado(null);
+        }}
+        onSubmit={pagoSeleccionado ? handleUpdatePago : handleCrearPago}
+        loading={loadingPago}
+        eventos={eventos.filter(evento => evento.cedula_asesor === user?.cedula_usuario)}
+        initialValues={pagoSeleccionado}
+      />
+
       {/* Modales de formularios */}
       <Modal
-        title={selectedEvento ? "Editar Evento" : "Crear Evento"}
+        title="Crear Evento"
         open={modalEventoVisible}
         onCancel={() => setModalEventoVisible(false)}
         footer={null}
@@ -2241,9 +2908,38 @@ const WelcomeEmployee: React.FC = () => {
         <EventoForm
           visible={modalEventoVisible}
           onCancel={() => setModalEventoVisible(false)}
-          onSubmit={
-            selectedEvento ? handleEditEventoSubmit : handleCreateEventoSubmit
-          }
+          onSubmit={handleCreateEventoSubmit}
+          loading={loading}
+          clientes={clientes}
+          asesores={asesores}
+          tiposEvento={tiposEvento}
+          provincias={provincias}
+          ciudades={ciudades}
+          initialValues={null}
+          userRole={userRole || ''}
+          userCedula={userCedula || ''}
+        />
+      </Modal>
+
+      {/* Formulario de Edición de Evento */}
+      <Modal
+        title="Editar Evento"
+        open={showEventoForm}
+        onCancel={() => {
+          setShowEventoForm(false);
+          setSelectedEvento(null);
+        }}
+        footer={null}
+        width={800}
+        destroyOnClose
+      >
+        <EventoForm
+          visible={showEventoForm}
+          onCancel={() => {
+            setShowEventoForm(false);
+            setSelectedEvento(null);
+          }}
+          onSubmit={handleUpdateEvento}
           loading={loading}
           clientes={clientes}
           asesores={asesores}
@@ -2251,7 +2947,8 @@ const WelcomeEmployee: React.FC = () => {
           provincias={provincias}
           ciudades={ciudades}
           initialValues={selectedEvento}
-          userRole="empleado"
+          userRole={userRole || ''}
+          userCedula={userCedula || ''}
         />
       </Modal>
 
@@ -2292,22 +2989,123 @@ const WelcomeEmployee: React.FC = () => {
       {/* Modal para detalles de pago */}
       {renderModalDetallesPago()}
 
-      {/* Modal para formulario de pago */}
+      {/* Modal para formulario de decoración */}
+      <DecoracionForm
+        visible={modalDecoracionVisible}
+        onCancel={() => {
+          setModalDecoracionVisible(false);
+          setDecoracionSeleccionada(null);
+        }}
+        onSubmit={decoracionSeleccionada ? handleEditDecoracion : handleCreateDecoracion}
+        loading={loading}
+        //@ts-ignore
+        initialValues={decoracionSeleccionada || undefined}
+        //@ts-ignore
+        eventosCliente={eventos} // Solo eventos donde el empleado es asesor
+        userCedula={userCedula || ''}
+      />
+
+      {/* Modal para seleccionar evento antes de agregar elementos */}
       <Modal
-        title="Nuevo Pago"
-        open={modalPagoVisible}
-        onCancel={() => setModalPagoVisible(false)}
+        title="Seleccionar Evento"
+        open={modalSeleccionEventoVisible}
+        onCancel={() => {
+          setModalSeleccionEventoVisible(false);
+          setEventoSeleccionadoParaElementos(null);
+        }}
         footer={null}
-        width={600}
-        destroyOnClose
       >
-        <PagoForm
-          visible={modalPagoVisible}
-          onCancel={() => setModalPagoVisible(false)}
-          onSubmit={handleCrearPago}
-          loading={loading}
-          eventos={eventos}
+        <List
+          dataSource={eventos} // Solo eventos donde el empleado es asesor
+          renderItem={(evento) => (
+            <List.Item>
+              <Button
+                type="link"
+                onClick={() => {
+                  setEventoSeleccionadoParaElementos(evento);
+                  setModalSeleccionEventoVisible(false);
+                  setModalElementosDecoracionVisible(true);
+                }}
+              >
+                {`ID: ${evento.id_evento} - ${evento.cliente?.nombre_usuario} ${evento.cliente?.apellido_usuario} - ${evento.tipo_evento.tipo_evento}`}
+              </Button>
+            </List.Item>
+          )}
         />
+      </Modal>
+
+      {/* Modal para agregar elementos de decoración */}
+      <Modal
+        title={`Agregar Elementos - Evento: ${eventoSeleccionadoParaElementos?.id_evento}`}
+        open={modalElementosDecoracionVisible}
+        onCancel={() => {
+          setModalElementosDecoracionVisible(false);
+          setEventoSeleccionadoParaElementos(null);
+        }}
+        footer={null}
+      >
+        <Form
+          layout="vertical"
+          onFinish={handleSubmitElementosDecoracion}
+        >
+          <Form.Item
+            name="id_decoracion"
+            label="Decoración"
+            rules={[{ required: true, message: 'Por favor seleccione una decoración' }]}
+          >
+            <Select
+              placeholder="Seleccione la decoración"
+              options={decoraciones
+                .filter(d => d.id_evento === eventoSeleccionadoParaElementos?.id_evento)
+                .map(d => ({
+                  label: `${d.tema_decoracion} - ${d.colores_decoracion}`,
+                  value: d.id_decoracion
+                }))}
+            />
+          </Form.Item>
+
+          <Form.Item
+            name="elemento_decoracion"
+            label="Nombre del Elemento"
+            rules={[{ required: true, message: 'Por favor ingrese el nombre del elemento' }]}
+          >
+            <Input />
+          </Form.Item>
+
+          <Form.Item
+            name="cantelemento_decoracion"
+            label="Cantidad"
+            rules={[{ required: true, message: 'Por favor ingrese la cantidad' }]}
+          >
+            <InputNumber min={1} style={{ width: '100%' }} />
+          </Form.Item>
+
+          <Form.Item
+            name="precio_elemento"
+            label="Precio Unitario"
+            rules={[{ required: true, message: 'Por favor ingrese el precio unitario' }]}
+          >
+            <InputNumber
+              min={0}
+              step={0.01}
+              style={{ width: '100%' }}
+            />
+          </Form.Item>
+
+          <Form.Item>
+            <Space>
+              <Button type="primary" htmlType="submit" loading={loading}>
+                Agregar Elemento
+              </Button>
+              <Button onClick={() => {
+                setModalElementosDecoracionVisible(false);
+                setEventoSeleccionadoParaElementos(null);
+              }}>
+                Cancelar
+              </Button>
+            </Space>
+          </Form.Item>
+        </Form>
       </Modal>
     </div>
   );

@@ -31,10 +31,10 @@ export default class Direccion extends Model {
   sector!: string;
 
   @Column({ type: DataType.STRING(50), field: 'calle', allowNull: false })
-  calle?: string;
+  calle!: string;
 
   @Column({ type: DataType.STRING(200), field: 'detalles', allowNull: true })
-  detalles!: string;
+  detalles?: string;
 
 
   @HasMany(() => Evento)
