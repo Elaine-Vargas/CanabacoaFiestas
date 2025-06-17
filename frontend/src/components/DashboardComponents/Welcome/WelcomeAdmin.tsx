@@ -10,6 +10,8 @@ import AsignacionEmpleadoForm from '../FormService/AsignacionEmpleadoForm';
 import DecoracionForm from '../FormService/DecoracionForm';
 import PagoForm from '../FormService/PagoForm';
 import TableFilters from '../MoreDash/TableFilters';
+import { DownloadOutlined } from '@ant-design/icons';
+
 import { 
   getEventoColumns, 
   getUsuarioColumns, 
@@ -258,6 +260,8 @@ const WelcomeAdmin: React.FC = () => {
   const [formElementosDecoracion] = Form.useForm();
   const [formEditarAsignacion] = Form.useForm();
 
+  const [loadingFactura, setLoadingFactura] = useState(false);
+
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [eventos, setEventos] = useState<Evento[]>([]);
@@ -385,6 +389,27 @@ const WelcomeAdmin: React.FC = () => {
   const [filtroPagoTipo, setFiltroPagoTipo] = useState<string>('');
   const [filtroPagoMetodo, setFiltroPagoMetodo] = useState<string>('');
   const [busquedaPago, setBusquedaPago] = useState<string>('');
+
+  const handleFacturaReport = async (eventId: number) => {
+    try {
+      setLoadingFactura(true);
+      const response = await axios.get(`${apiUrl}/reporte/factura/evento/${eventId}`, {
+        responseType: 'blob',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        }
+      });
+      
+      const file = new Blob([response.data], { type: 'application/pdf' });
+      const fileURL = window.URL.createObjectURL(file);
+      window.open(fileURL);
+    } catch (error) {
+      message.error('Error al generar la factura');
+    } finally {
+      setLoadingFactura(false);
+    }
+  };
+
 
   const handleSubmitDecoracion = async (values: any) => {
     try {
@@ -2881,12 +2906,20 @@ const handleEditEvento = (record: Evento) => {
         open={modalDetallesEventoVisible}
         onCancel={() => setModalDetallesEventoVisible(false)}
         footer={[
-          <Button key="close" onClick={() => setModalDetallesEventoVisible(false)}>
-            Cerrar
-          </Button>
-        ]}
-        width={800}
-      >
+        <Button key="close" onClick={() => setModalDetallesEventoVisible(false)}>
+          Cerrar
+        </Button>,
+        <Button 
+          key="factura"
+          type="primary"
+          icon={<DownloadOutlined />}
+          loading={loadingFactura}
+onClick={() => eventoSeleccionado && handleFacturaReport(eventoSeleccionado.id_evento)}        >
+          Generar Factura
+        </Button>
+      ]}
+      width={800}
+    >
         {eventoSeleccionado && (
           <Descriptions bordered column={2}>
             <Descriptions.Item label="ID">{eventoSeleccionado.id_evento}</Descriptions.Item>
