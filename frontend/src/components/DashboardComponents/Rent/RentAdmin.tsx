@@ -927,18 +927,27 @@ const CatalogHeader = styled.div`
 
 const CompraModal = styled(Modal)`
   .ant-modal-content {
+    margin: 0 auto;
+    max-width: 800px;
+    width: calc(100% - 32px);
+    padding: 24px;
+    position: relative;
+    
     @media (max-width: 768px) {
-      margin: 10px;
+      margin: 10px auto;
       padding: 16px;
+      width: calc(100% - 20px);
       
       .ant-modal-header {
         padding: 16px 0;
+        margin-bottom: 16px;
       }
       
       .ant-modal-body {
         padding: 0;
         max-height: calc(100vh - 200px);
         overflow-y: auto;
+        overflow-x: hidden;
       }
 
       .ant-form {
@@ -960,6 +969,10 @@ const CompraModal = styled(Modal)`
         }
       }
     }
+  }
+
+  .ant-modal-wrap {
+    overflow: hidden;
   }
 `;
 
@@ -2479,20 +2492,20 @@ const RentAdmin: React.FC = () => {
     }
   };
 
-  const handleCategoriaChange = (value: string) => {
-    setFilterElementCategoria(value);
+  const handleCategoriaChange = (value: unknown) => {
+    setFilterElementCategoria(value as string);
   };
 
-  const handleEstadoChange = (value: string) => {
-    setFilterElementEstado(value);
+  const handleEstadoChange = (value: unknown) => {
+    setFilterElementEstado(value as string);
   };
 
-  const handleEventoChange = (value: string) => {
-    setFilterEvento(value);
+  const handleEventoChange = (value: unknown) => {
+    setFilterEvento(value as string);
   };
 
-  const handleEstadoAlquilerChange = (value: string) => {
-    setFilterEstado(value);
+  const handleEstadoAlquilerChange = (value: unknown) => {
+    setFilterEstado(value as string);
   };
 
   return (
@@ -2512,7 +2525,7 @@ const RentAdmin: React.FC = () => {
               placeholder="Filtrar por categoría"
               allowClear
               value={filterElementCategoria || undefined}
-              onChange={(value: string) => handleCategoriaChange(value)}
+              onChange={handleCategoriaChange}
             >
               {categorias.map((categoria: any) => (
                 <Option key={categoria.id_categoria} value={categoria.id_categoria.toString()}>
@@ -2525,7 +2538,7 @@ const RentAdmin: React.FC = () => {
               placeholder="Filtrar por estado"
               allowClear
               value={filterElementEstado || undefined}
-              onChange={(value: string) => handleEstadoChange(value)}
+              onChange={handleEstadoChange}
             >
               <Option value="Activo">Activo</Option>
               <Option value="Inactivo">Inactivo</Option>
@@ -2833,7 +2846,7 @@ const RentAdmin: React.FC = () => {
               placeholder="Filtrar por evento"
               allowClear
               value={filterEvento || undefined}
-              onChange={(value: string) => handleEventoChange(value)}
+              onChange={(value: unknown) => handleEventoChange(value)}
               showSearch
               optionFilterProp="children"
               dropdownMatchSelectWidth={false}
@@ -2852,8 +2865,8 @@ const RentAdmin: React.FC = () => {
               placeholder="Filtrar por estado"
               allowClear
               value={filterEstado || undefined}
-              onChange={(value: string) => handleEstadoAlquilerChange(value)}
-            >
+                            onChange={(value: unknown) => handleEstadoAlquilerChange(value)}
+              >
               <Option value="Solicitado">Solicitado</Option>
               <Option value="Aceptado">Aceptado</Option>
               <Option value="Completado">Completado</Option>
@@ -2959,11 +2972,12 @@ const RentAdmin: React.FC = () => {
           compraForm.resetFields();
         }}
         footer={null}
-        width="100%"
+        centered
+        maskClosable={false}
         style={{ 
-          maxWidth: '800px',
           top: 20
         }}
+        wrapClassName="modal-fixed"
       >
         <Form
           form={compraForm}
