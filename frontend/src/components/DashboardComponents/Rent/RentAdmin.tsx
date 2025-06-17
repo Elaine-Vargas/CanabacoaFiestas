@@ -659,28 +659,43 @@ const ModalContent = styled.div<{ hasSelection?: boolean }>`
   &::-webkit-scrollbar-thumb:hover {
     background: var(--dark-gold);
   }
+
+  @media (max-width: 768px) {
+    max-height: none;
+    margin-bottom: 0;
+  }
 `;
 
 const ContinueButton = styled(Button)`
-  position: fixed;
-  bottom: 20px;
-  right: 20px;
-  border-radius: 25px;
-  padding: 0 25px;
+  background-color: var(--dark-gold);
+  border-color: var(--gold);
+  color: white;
   height: 50px;
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 8px;
-  background-color: var(--dark-gold);
-  border-color: var(--gold);
-  color: white;
-  z-index: 1000;
+  width: 100%;
+  margin-top: 16px;
+  border-radius: 8px;
+  font-family: "Montserrat", sans-serif;
+  font-weight: 600;
   
   &:hover {
     background-color: var(--gold) !important;
     border-color: var(--dark-gold) !important;
     color: white !important;
+  }
+
+  @media (min-width: 769px) {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    width: auto;
+    margin-top: 0;
+    border-radius: 25px;
+    padding: 0 25px;
+    z-index: 1000;
   }
 `;
 
@@ -714,6 +729,18 @@ const ButtonGroup = styled(Space)`
   z-index: 1000;
   display: flex;
   gap: 12px;
+
+  @media (max-width: 768px) {
+    .ant-btn {
+      .ant-btn-icon {
+        margin-right: 0;
+      }
+      
+      span:not(.anticon) {
+        display: none;
+      }
+    }
+  }
 `;
 
 const ResetButton = styled(Button)`
@@ -725,6 +752,20 @@ const ResetButton = styled(Button)`
     background-color: var(--beige-light) !important;
     border-color: var(--dark-gold) !important;
     color: var(--dark-gold) !important;
+  }
+
+  @media (max-width: 768px) {
+    margin-right: 0;
+    width: 40px;
+    height: 40px;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    .anticon {
+      margin-right: 0;
+    }
   }
 `;
 
@@ -843,6 +884,83 @@ interface DetalleCompra {
 const ScrollableContent = styled.div<{ hasSelection: boolean }>`
   position: relative;
   z-index: 1100;
+`;
+
+const CatalogHeader = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  padding: 16px;
+  background-color: var(--beige);
+  border-radius: 12px;
+  border: 1px solid var(--dark-gold);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+
+  @media (max-width: 768px) {
+    flex-direction: column;
+    gap: 16px;
+    
+    .ant-space {
+      width: 100%;
+      flex-direction: column !important;
+      
+      .ant-space-item {
+        width: 100%;
+        margin-right: 0 !important;
+
+        .ant-input-search {
+          width: 100% !important;
+        }
+
+        .ant-select {
+          width: 100% !important;
+        }
+      }
+    }
+
+    .ant-btn {
+      width: 100%;
+    }
+  }
+`;
+
+const CompraModal = styled(Modal)`
+  .ant-modal-content {
+    @media (max-width: 768px) {
+      margin: 10px;
+      padding: 16px;
+      
+      .ant-modal-header {
+        padding: 16px 0;
+      }
+      
+      .ant-modal-body {
+        padding: 0;
+        max-height: calc(100vh - 200px);
+        overflow-y: auto;
+      }
+
+      .ant-form {
+        .ant-form-item {
+          margin-bottom: 16px;
+        }
+
+        .ant-space {
+          width: 100%;
+          
+          .ant-space-item {
+            width: 100%;
+            
+            .ant-btn {
+              width: 100%;
+              margin-bottom: 8px;
+            }
+          }
+        }
+      }
+    }
+  }
 `;
 
 const RentAdmin: React.FC = () => {
@@ -2832,7 +2950,7 @@ const RentAdmin: React.FC = () => {
       </StyledCard>
 
       {/* Modal de Crear/Editar Compra */}
-      <Modal
+      <CompraModal
         title={editingCompra ? "Editar Compra" : "Nueva Compra"}
         open={showCompraModal}
         onCancel={() => {
@@ -2841,18 +2959,25 @@ const RentAdmin: React.FC = () => {
           compraForm.resetFields();
         }}
         footer={null}
+        width="100%"
+        style={{ 
+          maxWidth: '800px',
+          top: 20
+        }}
       >
         <Form
           form={compraForm}
           layout="vertical"
           onFinish={onFinish}
+          style={{ width: '100%' }}
         >
           <Form.Item
             name="id_proveedor"
             label="Proveedor"
             rules={[{ required: true, message: 'Por favor seleccione un proveedor' }]}
+            style={{ width: '100%' }}
           >
-            <Select placeholder="Seleccione un proveedor">
+            <Select placeholder="Seleccione un proveedor" style={{ width: '100%' }}>
               {proveedores.map((proveedor: any) => (
                 <Option key={proveedor.id_proveedor} value={proveedor.id_proveedor}>
                   {proveedor.nombre_proveedor}
@@ -2863,132 +2988,107 @@ const RentAdmin: React.FC = () => {
 
           <Form.List name="detalles">
             {(fields, { add, remove }) => (
-              <>
+              <div style={{ width: '100%' }}>
                 {fields.map(({ key, name, ...restField }) => (
-                  <Space key={key} style={{ display: 'flex', marginBottom: 8 }} align="baseline">
+                  <Space key={key} style={{ display: 'flex', flexDirection: 'column', width: '100%', marginBottom: 8 }} align="baseline">
                     <Form.Item
                       {...restField}
                       name={[name, 'id_elemento']}
                       rules={[{ required: true, message: 'Seleccione un elemento' }]}
+                      style={{ width: '100%' }}
                     >
-                      <Select style={{ width: 200 }} placeholder="Seleccione elemento">
-                        {elementos
-                          .filter(elemento => elemento.estado_elemento === 'Activo')
-                          .map((elemento) => (
+                      <Select placeholder="Seleccione un elemento" style={{ width: '100%' }}>
+                        {elementos.map((elemento: Elemento) => (
                           <Option key={elemento.id_elemento} value={elemento.id_elemento}>
                             {elemento.nombre_elemento}
                           </Option>
                         ))}
                       </Select>
                     </Form.Item>
-                    <Form.Item
-                      {...restField}
-                      name={[name, 'cantidad_compra']}
-                      rules={[{ required: true, message: 'Ingrese cantidad' }]}
-                    >
-                      <InputNumber 
-                        min={1} 
-                        placeholder="Cantidad"
-                        onChange={(value) => {
-                          const values = compraForm.getFieldsValue();
-                          if (values.detalles) {
-                            const detalles = values.detalles.map((detalle: DetalleCompraForm) => ({
-                              ...detalle,
-                              total_compra: detalle.cantidad_compra * detalle.precio_unitario
-                            }));
-                            const total = detalles.reduce((sum: number, detalle: any) => 
-                              sum + (detalle.total_compra || 0), 0
-                            );
-                            compraForm.setFieldsValue({ 
-                              costo_compra: Number(total.toFixed(2)),
-                              detalles: detalles
-                            });
-                          }
-                        }}
-                      />
-                    </Form.Item>
-                    <Form.Item
-                      {...restField}
-                      name={[name, 'precio_unitario']}
-                      rules={[{ required: true, message: 'Ingrese precio' }]}
-                    >
-                      <InputNumber
-                        min={0}
-                        step={0.01}
-                        placeholder="Precio unitario"
-                        formatter={value => `$ ${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
-                        parser={(value: string | undefined) => value ? Number(value.replace(/\$\s?|(,*)/g, '')) : 0}
-                        onChange={(value) => {
-                          const values = compraForm.getFieldsValue();
-                          if (values.detalles) {
-                            const detalles = values.detalles.map((detalle: DetalleCompraForm) => ({
-                              ...detalle,
-                              total_compra: detalle.cantidad_compra * detalle.precio_unitario
-                            }));
-                            const total = detalles.reduce((sum: number, detalle: any) => 
-                              sum + (detalle.total_compra || 0), 0
-                            );
-                            compraForm.setFieldsValue({ 
-                              costo_compra: Number(total.toFixed(2)),
-                              detalles: detalles
-                            });
-                          }
-                        }}
-                      />
-                    </Form.Item>
-                    <Button type="text" danger onClick={() => {
-                      remove(name);
-                      setTimeout(() => {
-                        const values = compraForm.getFieldsValue();
-                        if (values.detalles) {
-                          const detalles = values.detalles.map((detalle: DetalleCompraForm) => ({
-                            ...detalle,
-                            total_compra: detalle.cantidad_compra * detalle.precio_unitario
-                          }));
-                          const total = detalles.reduce((sum: number, detalle: any) => 
-                            sum + (detalle.total_compra || 0), 0
-                          );
-                          compraForm.setFieldsValue({ 
-                            costo_compra: Number(total.toFixed(2)),
-                            detalles: detalles
-                          });
-                        }
-                      }, 0);
-                    }}>
-                      <DeleteOutlined />
-                    </Button>
+                    
+                    <Space style={{ width: '100%', gap: 8 }}>
+                      <Form.Item
+                        {...restField}
+                        name={[name, 'cantidad_compra']}
+                        rules={[{ required: true, message: 'Ingrese cantidad' }]}
+                        style={{ flex: 1 }}
+                      >
+                        <InputNumber 
+                          min={1} 
+                          placeholder="Cantidad"
+                          style={{ width: '100%' }}
+                          onChange={(value) => {
+                            const values = compraForm.getFieldsValue();
+                            if (values.detalles) {
+                              const detalles = values.detalles.map((detalle: DetalleCompraForm) => ({
+                                ...detalle,
+                                total_compra: detalle.cantidad_compra * detalle.precio_unitario
+                              }));
+                              const total = detalles.reduce((sum: number, detalle: any) => 
+                                sum + (detalle.total_compra || 0), 0
+                              );
+                              compraForm.setFieldsValue({ 
+                                costo_compra: Number(total.toFixed(2)),
+                                detalles: detalles
+                              });
+                            }
+                          }}
+                        />
+                      </Form.Item>
+
+                      <Form.Item
+                        {...restField}
+                        name={[name, 'precio_unitario']}
+                        rules={[{ required: true, message: 'Ingrese precio' }]}
+                        style={{ flex: 1 }}
+                      >
+                        <InputNumber
+                          min={0.01}
+                          step={0.01}
+                          placeholder="Precio unitario"
+                          style={{ width: '100%' }}
+                          onChange={(value) => {
+                            const values = compraForm.getFieldsValue();
+                            if (values.detalles) {
+                              const detalles = values.detalles.map((detalle: DetalleCompraForm) => ({
+                                ...detalle,
+                                total_compra: detalle.cantidad_compra * detalle.precio_unitario
+                              }));
+                              const total = detalles.reduce((sum: number, detalle: any) => 
+                                sum + (detalle.total_compra || 0), 0
+                              );
+                              compraForm.setFieldsValue({ 
+                                costo_compra: Number(total.toFixed(2)),
+                                detalles: detalles
+                              });
+                            }
+                          }}
+                        />
+                      </Form.Item>
+
+                      <Button type="link" danger onClick={() => remove(name)} style={{ padding: 0 }}>
+                        <DeleteOutlined />
+                      </Button>
+                    </Space>
                   </Space>
                 ))}
-                <Form.Item>
+                <Form.Item style={{ marginTop: 16 }}>
                   <Button type="dashed" onClick={() => add()} block icon={<PlusOutlined />}>
-                    Agregar elemento
+                    Agregar Elemento
                   </Button>
                 </Form.Item>
-              </>
+              </div>
             )}
           </Form.List>
-
-          <Form.Item
-            name="costo_compra"
-            label="Costo Total"
-          >
-            <InputNumber
-              min={0}
-              step={0.01}
-              style={{ width: '100%' }}
-              formatter={value => `$ ${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
-              parser={(value: string | undefined) => value ? Number(value.replace(/\$\s?|(,*)/g, '')) : 0}
-              disabled={true}
-            />
-          </Form.Item>
 
           {editingCompra && (
             <Form.Item
               name="estado_compra"
               label="Estado"
               rules={[{ required: true, message: 'Por favor seleccione el estado' }]}
+              style={{ width: '100%' }}
             >
-              <Select>
+              <Select style={{ width: '100%' }}>
                 <Option value="Completada">Completada</Option>
                 <Option value="Cancelada">Cancelada</Option>
               </Select>
@@ -2996,25 +3096,32 @@ const RentAdmin: React.FC = () => {
           )}
 
           <Form.Item>
-            <Space style={{ width: '100%', justifyContent: 'flex-end' }}>
-              <Button onClick={() => {
-                setShowCompraModal(false);
-                compraForm.resetFields();
-              }}>
-                Cancelar
-              </Button>
+            <Space style={{ width: '100%', justifyContent: 'flex-end', flexDirection: 'column' }}>
               <Button 
                 type="primary" 
                 htmlType="submit"
                 loading={loadingCompraSubmit}
-                style={{ backgroundColor: 'var(--dark-gold)', borderColor: 'var(--dark-gold)' }}
+                style={{ 
+                  backgroundColor: 'var(--dark-gold)', 
+                  borderColor: 'var(--dark-gold)',
+                  width: '100%'
+                }}
               >
                 {editingCompra ? 'Actualizar' : 'Crear'}
+              </Button>
+              <Button 
+                onClick={() => {
+                  setShowCompraModal(false);
+                  compraForm.resetFields();
+                }}
+                style={{ width: '100%' }}
+              >
+                Cancelar
               </Button>
             </Space>
           </Form.Item>
         </Form>
-      </Modal>
+      </CompraModal>
 
       {/* Modal del catálogo */}
       <Modal
@@ -3031,28 +3138,30 @@ const RentAdmin: React.FC = () => {
         zIndex={1100}
         style={{ top: 20 }}
       >
-        <Space style={{ marginBottom: 16 }}>
-          <StyledSearch
-            placeholder="Buscar elementos..."
-            onChange={(e) => setSearchText(e.target.value)}
-            style={{ width: 200 }}
-          />
-          <StyledSelect
-            style={{ width: 200 }}
-            placeholder="Filtrar por categoría"
-            allowClear
-            onChange={(value) => setFilterCategoria(value)}
-          >
-            {categorias.map((categoria: any) => (
-              <Option key={categoria.id_categoria} value={categoria.id_categoria}>
-                {categoria.nombre_categoria}
-              </Option>
-            ))}
-          </StyledSelect>
-          <Button onClick={handleReset} icon={<ReloadOutlined />}>
+        <CatalogHeader>
+          <Space direction="horizontal" size={16} style={{ width: 'auto' }}>
+            <Search
+              placeholder="Buscar elementos..."
+              onChange={(e) => setSearchText(e.target.value)}
+              style={{ width: 200 }}
+            />
+            <Select
+              style={{ width: 200 }}
+              placeholder="Filtrar por categoría"
+              allowClear
+              onChange={(value) => setFilterCategoria(value)}
+            >
+              {categorias.map((categoria: any) => (
+                <Option key={categoria.id_categoria} value={categoria.id_categoria}>
+                  {categoria.nombre_categoria}
+                </Option>
+              ))}
+            </Select>
+          </Space>
+          <ResetButton onClick={handleReset} icon={<ReloadOutlined />}>
             Resetear Filtros
-          </Button>
-        </Space>
+          </ResetButton>
+        </CatalogHeader>
 
         <ModalContent hasSelection={elementosSeleccionados.length > 0 || (editingAlquiler?.detalles?.length ?? 0) > 0}>
           <List
