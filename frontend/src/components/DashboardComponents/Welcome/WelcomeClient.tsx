@@ -1276,7 +1276,17 @@ export default function WelcomeClient() {
       </div>
 
       {/* Modal de Evento */}
-      {modalEventoVisible && (
+      <Modal
+        title={selectedEvento ? "Editar Evento" : "Solicitar Evento"}
+        open={modalEventoVisible}
+        onCancel={() => {
+          setModalEventoVisible(false);
+          setSelectedEvento(null);
+        }}
+        footer={null}
+        width={800}
+        destroyOnClose
+      >
         <EventoForm
           visible={modalEventoVisible}
           onCancel={() => {
@@ -1341,9 +1351,9 @@ export default function WelcomeClient() {
           provincias={provincias}
           ciudades={ciudades}
           userCedula={userCedula}
-          userRole="cliente"
+          userRole="Cliente"
         />
-      )}
+      </Modal>
 
       {/* Modal de Decoración */}
       {modalDecoracionVisible && (

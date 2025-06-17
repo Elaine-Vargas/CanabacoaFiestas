@@ -39,15 +39,24 @@ const EventoForm: React.FC<EventoFormProps> = ({
     if (visible) {
       if (initialValues) {
         setIsEditMode(true);
+        console.log('=== INICIO EDICIÓN EVENTO ===');
+        console.log('Initial values recibidos:', initialValues);
+        console.log('Datos de dirección disponibles:', initialValues.direccion);
+        console.log('Estructura completa de dirección:', JSON.stringify(initialValues.direccion, null, 2));
+        
         // Mapear todos los campos relevantes del evento
         let provinciaId = null;
         if (initialValues.id_provincia != null) {
           provinciaId = Number(initialValues.id_provincia);
+          console.log('Provincia ID desde initialValues.id_provincia:', provinciaId);
         } else if (initialValues.direccion?.ciudad?.provincia?.id_provincia != null) {
           provinciaId = Number(initialValues.direccion.ciudad.provincia.id_provincia);
+          console.log('Provincia ID desde direccion.ciudad.provincia.id_provincia:', provinciaId);
         } else if (initialValues.direccion?.ciudad?.id_provincia != null) {
           provinciaId = Number(initialValues.direccion.ciudad.id_provincia);
+          console.log('Provincia ID desde direccion.ciudad.id_provincia:', provinciaId);
         }
+        
         const values = {
           ...initialValues,
           fecha_evento: initialValues.fecha_evento ? dayjs(initialValues.fecha_evento) : null,
@@ -63,22 +72,45 @@ const EventoForm: React.FC<EventoFormProps> = ({
           nota_cliente: initialValues.nota_cliente ?? '',
           cedula_cliente: initialValues.cliente?.cedula_usuario ?? initialValues.cedula_cliente ?? '',
           cedula_asesor: initialValues.asesor?.cedula_usuario ?? initialValues.cedula_asesor ?? '',
-          estado_solicitud: initialValues.estado_solicitud ?? 'Pendiente',
+          estado_solicitud: userRole === 'Cliente' ? 'Pendiente' : (initialValues.estado_solicitud ?? 'Pendiente'),
           total_evento: initialValues.total_evento ?? '',
           subtotal_evento: initialValues.subtotal_evento ?? '',
           itbis_evento: initialValues.itbis_evento ?? '',
           id_direccion: initialValues.id_direccion ?? initialValues.direccion?.id_direccion ?? '',
         };
+        
+        console.log('Valores mapeados para el formulario:', values);
+        console.log('Provincia ID final:', values.id_provincia);
+        console.log('Ciudad ID final:', values.id_ciudad);
+        console.log('Sector final:', values.sector);
+        console.log('Calle final:', values.calle);
+        
         form.setFieldsValue(values);
         setSelectedProvincia(provinciaId);
+        console.log('=== FIN EDICIÓN EVENTO ===');
       } else {
         setIsEditMode(false);
-        // Si es un nuevo evento, establecer la cédula del usuario actual
-        form.setFieldsValue({
-          cedula_cliente: userCedula,
+        // Si es un nuevo evento, establecer valores según el rol
+        const formValues: any = {
           estado_solicitud: 'Pendiente',
           desea_supervision: false
-        });
+        };
+
+        // Lógica según el rol del usuario
+        if (userRole === 'Cliente') {
+          // Cliente: se auto-asigna como cliente, no puede seleccionar asesor
+          formValues.cedula_cliente = userCedula;
+          formValues.cedula_asesor = null; // El asesor se asigna después por el admin
+          formValues.estado_solicitud = 'Pendiente'; // Clientes siempre inician con estado pendiente
+        } else if (userRole === 'Empleado') {
+          // Empleado: puede seleccionar cliente, se auto-asigna como asesor
+          formValues.cedula_asesor = userCedula;
+        } else if (userRole === 'Administrador') {
+          // Admin: puede seleccionar tanto cliente como asesor
+          // No se establecen valores por defecto
+        }
+
+        form.setFieldsValue(formValues);
         setSelectedProvincia(null);
       }
     } else {
@@ -86,7 +118,7 @@ const EventoForm: React.FC<EventoFormProps> = ({
       setSelectedProvincia(null);
       setIsEditMode(false);
     }
-  }, [visible, initialValues, form, userCedula]);
+  }, [visible, initialValues, form, userCedula, userRole]);
 
   const handleProvinciaChange = (value: number) => {
     setSelectedProvincia(value);
@@ -134,7 +166,34 @@ const EventoForm: React.FC<EventoFormProps> = ({
         return;
       }
 
-      await onSubmit(values);
+      // Formatear fecha y hora para el backend
+      const formattedValues = {
+        ...values,
+        fecha_evento: values.fecha_evento ? values.fecha_evento.format('YYYY-MM-DD') : null,
+        hora_evento: values.hora_evento ? values.hora_evento.format('HH:mm:ss') : null
+      };
+
+      console.log('Valores formateados para enviar:', formattedValues);
+
+      // Lógica específica según el rol
+      if (userRole === 'Cliente') {
+        // Cliente: se auto-asigna como cliente, no puede seleccionar asesor
+        formattedValues.cedula_cliente = userCedula;
+        formattedValues.cedula_asesor = null; // El asesor se asigna después por el admin
+        formattedValues.estado_solicitud = 'Pendiente'; // Clientes siempre mantienen estado pendiente
+      } else if (userRole === 'Empleado') {
+        // Empleado: puede seleccionar cliente, se auto-asigna como asesor
+        formattedValues.cedula_asesor = userCedula;
+      } else if (userRole === 'Administrador') {
+        // Admin: puede seleccionar tanto cliente como asesor
+        // Validar que se haya seleccionado un asesor
+        if (!formattedValues.cedula_asesor) {
+          message.error('El asesor es requerido para el administrador');
+          return;
+        }
+      }
+
+      await onSubmit(formattedValues);
     } catch (error) {
       console.error('Error al validar el formulario:', error);
     }
@@ -154,35 +213,35 @@ const EventoForm: React.FC<EventoFormProps> = ({
         name="cedula_cliente"
         label="Cliente"
         rules={[{ required: true, message: 'Por favor seleccione un cliente' }]}
-        hidden={userRole === 'cliente'}
+        hidden={userRole === 'Cliente'}
       >
         <Select
           placeholder="Seleccione un cliente"
-          options={clientes.map(cliente => ({
+          options={Array.isArray(clientes) ? clientes.map(cliente => ({
             label: `${cliente.nombre_usuario} ${cliente.apellido_usuario}`,
             value: cliente.cedula_usuario
-          }))}
+          })) : []}
           showSearch
           optionFilterProp="label"
-          disabled={userRole === 'cliente'}
+          disabled={userRole === 'Cliente'}
         />
       </Form.Item>
 
       <Form.Item
         name="cedula_asesor"
         label="Asesor"
-        rules={[{ required: true, message: 'Por favor seleccione un asesor' }]}
-        hidden={userRole === 'cliente'}
+        rules={[{ required: userRole === 'Administrador', message: 'Por favor seleccione un asesor' }]}
+        hidden={userRole === 'Cliente'}
       >
         <Select
-          placeholder="Seleccione un asesor"
-          options={asesores.map(asesor => ({
+          placeholder={userRole === 'Empleado' ? 'Se auto-asignará como asesor' : 'Seleccione un asesor'}
+          options={Array.isArray(asesores) ? asesores.map(asesor => ({
             label: `${asesor.nombre_usuario} ${asesor.apellido_usuario}`,
             value: asesor.cedula_usuario
-          }))}
+          })) : []}
           showSearch
           optionFilterProp="label"
-          disabled={userRole === 'cliente'}
+          disabled={userRole === 'Cliente' || userRole === 'Empleado'}
         />
       </Form.Item>
 
@@ -190,6 +249,7 @@ const EventoForm: React.FC<EventoFormProps> = ({
         name="estado_solicitud"
         label="Estado"
         rules={[{ required: true, message: 'Por favor seleccione un estado' }]}
+        hidden={userRole === 'Cliente'}
       >
         <Select
           placeholder="Seleccione un estado"
@@ -200,7 +260,7 @@ const EventoForm: React.FC<EventoFormProps> = ({
             { value: 'Completada', label: 'Completada' },
             { value: 'Cancelada', label: 'Cancelada' }
           ]}
-          disabled={false}
+          disabled={userRole === 'Cliente'}
         />
       </Form.Item>
 
@@ -234,10 +294,10 @@ const EventoForm: React.FC<EventoFormProps> = ({
       >
         <Select
           placeholder="Seleccione un tipo de evento"
-          options={tiposEvento.map(tipo => ({
+          options={Array.isArray(tiposEvento) ? tiposEvento.map(tipo => ({
             label: tipo.tipo_evento,
             value: tipo.id_tipo_evento
-          }))}
+          })) : []}
           showSearch
           optionFilterProp="label"
           disabled={false}
@@ -252,10 +312,10 @@ const EventoForm: React.FC<EventoFormProps> = ({
         <Select
           placeholder="Seleccione una provincia"
           onChange={handleProvinciaChange}
-          options={provincias.map(provincia => ({
+          options={Array.isArray(provincias) ? provincias.map(provincia => ({
             label: provincia.nombre_provincia,
             value: provincia.id_provincia
-          }))}
+          })) : []}
           showSearch
           optionFilterProp="label"
           disabled={false}
@@ -270,12 +330,12 @@ const EventoForm: React.FC<EventoFormProps> = ({
         <Select
           placeholder="Seleccione una ciudad"
           disabled={!selectedProvincia}
-          options={ciudades
+          options={Array.isArray(ciudades) ? ciudades
             .filter(ciudad => ciudad.id_provincia === selectedProvincia)
             .map(ciudad => ({
               label: ciudad.nombre_ciudad,
               value: ciudad.id_ciudad
-            }))}
+            })) : []}
           showSearch
           optionFilterProp="label"
         />
