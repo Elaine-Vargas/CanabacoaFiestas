@@ -400,6 +400,7 @@ const RentEmployee: React.FC = () => {
   const [loadingCompraSubmit, setLoadingCompraSubmit] = useState(false);
   const [proveedores, setProveedores] = useState<any[]>([]);
   const [compraForm] = Form.useForm();
+  const [editingCompra, setEditingCompra] = useState<Compra | null>(null);
 
   useEffect(() => {
     fetchAlquileres();
@@ -534,26 +535,20 @@ const RentEmployee: React.FC = () => {
         return;
       }
 
-      const response = await axios.get(`${apiUrl}/compra/all`, {
+      const response = await axios.get(`${apiUrl}/compra`, {
         headers: {
           'Authorization': `Bearer ${token}`
         }
       });
-      
-      if (Array.isArray(response.data)) {
-        console.log('Compras recibidas:', response.data);
+
+      if (response.data) {
         setCompras(response.data);
       } else {
-        console.warn('La respuesta no es un array:', response.data);
         setCompras([]);
       }
-    } catch (error: any) {
+    } catch (error) {
       console.error('Error al cargar las compras:', error);
-      if (axios.isAxiosError(error)) {
-        message.error(`Error: ${error.response?.data?.mensaje || error.message}`);
-      } else {
-        message.error('Error al cargar las compras');
-      }
+      message.error('Error al cargar las compras');
       setCompras([]);
     } finally {
       setLoadingCompra(false);
@@ -567,6 +562,7 @@ const RentEmployee: React.FC = () => {
         message.error('No hay sesión activa');
         return;
       }
+
       const response = await axios.get(`${apiUrl}/proveedor/search?tipo=Elementos`, {
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -575,6 +571,7 @@ const RentEmployee: React.FC = () => {
       });
       
       if (response.data && Array.isArray(response.data)) {
+        // Filtrar solo proveedores activos y ordenar por nombre
         const proveedoresElementos = response.data
           .filter((proveedor: any) => proveedor.estado_proveedor === 'Activo')
           .sort((a: any, b: any) => a.nombre_proveedor.localeCompare(b.nombre_proveedor));
@@ -583,8 +580,9 @@ const RentEmployee: React.FC = () => {
         setProveedores([]);
       }
     } catch (error: any) {
-      console.error('Error al obtener proveedores:', error);
+      console.error('Error al cargar los proveedores:', error);
       message.error('Error al cargar los proveedores');
+      setProveedores([]);
     }
   };
 
@@ -1194,6 +1192,115 @@ const RentEmployee: React.FC = () => {
     return matchesSearch && matchesEvento && matchesEstado;
   });
 
+  // Función para editar una compra
+  const handleEditCompra = async (record: Compra) => {
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        message.error('No hay sesión activa');
+        return;
+      }
+
+      const response = await axios.get(`${apiUrl}/compra/${record.id_compra}/detalles`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      // Formatear los detalles para el formulario
+      const detalles = response.data.map((detalle: any) => ({
+        id_elemento: detalle.id_elemento,
+        cantidad_compra: Number(detalle.cantidad_compra),
+        precio_unitario: Number(detalle.precio_unitario)
+      }));
+
+      // Calcular el costo total
+      const costoTotal = detalles.reduce((sum: number, detalle: any) => 
+        sum + (detalle.cantidad_compra * detalle.precio_unitario), 0
+      );
+
+      setEditingCompra({
+        ...record,
+        detalles: response.data
+      });
+      
+      // Establecer los valores iniciales en el formulario
+      compraForm.setFieldsValue({
+        id_proveedor: record.id_proveedor,
+        estado_compra: record.estado_compra,
+        costo_compra: Number(costoTotal.toFixed(2)),
+        detalles: detalles
+      });
+      
+      setShowCompraModal(true);
+    } catch (error) {
+      console.error('Error al obtener detalles de la compra:', error);
+      message.error('Error al cargar los detalles de la compra');
+    }
+  };
+
+  // Función para cancelar una compra
+  const handleCancelarCompra = async (record: Compra) => {
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        message.error('No hay sesión activa');
+        return;
+      }
+
+      // Obtener los detalles actuales de la compra
+      const detallesResponse = await axios.get(`${apiUrl}/compra/${record.id_compra}/detalles`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      Modal.confirm({
+        title: '¿Estás seguro de cancelar esta compra?',
+        content: 'Esta acción no se puede deshacer',
+        okText: 'Sí, cancelar',
+        cancelText: 'No',
+        onOk: async () => {
+          try {
+            // Preparar los datos manteniendo toda la información original
+            const updateData = {
+              id_proveedor: record.id_proveedor,
+              fecha_compra: record.fecha_compra,
+              hora_compra: record.hora_compra,
+              costo_compra: record.costo_compra,
+              estado_compra: 'Cancelada',
+              detalles: detallesResponse.data.map((detalle: any) => ({
+                id_elemento: detalle.id_elemento,
+                cantidad_compra: detalle.cantidad_compra,
+                precio_unitario: detalle.precio_unitario,
+                precio_total: detalle.cantidad_compra * detalle.precio_unitario
+              }))
+            };
+
+            await axios.put(
+              `${apiUrl}/compra/${record.id_compra}`,
+              updateData,
+              {
+                headers: {
+                  'Authorization': `Bearer ${token}`,
+                  'Content-Type': 'application/json'
+                }
+              }
+            );
+            message.success('Compra cancelada exitosamente');
+            fetchCompras();
+          } catch (error) {
+            console.error('Error al cancelar la compra:', error);
+            message.error('Error al cancelar la compra');
+          }
+        }
+      });
+    } catch (error) {
+      console.error('Error al cancelar la compra:', error);
+      message.error('Error al cancelar la compra');
+    }
+  };
+
   // Función para ver detalles de una compra
   const handleViewCompra = async (record: Compra) => {
     try {
@@ -1209,6 +1316,7 @@ const RentEmployee: React.FC = () => {
         }
       });
 
+      // Asegurarse de que los números sean válidos
       const detalles = response.data.map((detalle: any) => ({
         ...detalle,
         cantidad_compra: Number(detalle.cantidad_compra || 0),
@@ -1216,6 +1324,7 @@ const RentEmployee: React.FC = () => {
         total_compra: Number((detalle.cantidad_compra || 0) * (detalle.precio_unitario || 0))
       }));
 
+      // Calcular el total general
       const totalGeneral = detalles.reduce((sum: number, detalle: any) => 
         sum + (detalle.cantidad_compra * detalle.precio_unitario), 0
       );
@@ -1232,82 +1341,133 @@ const RentEmployee: React.FC = () => {
     }
   };
 
-  // Función para filtrar compras
+  const onFinish = async (values: any) => {
+    try {
+      setLoadingCompraSubmit(true);
+      const token = localStorage.getItem('token');
+      if (!token) {
+        message.error('No hay sesión activa');
+        return;
+      }
+
+      // Validar el proveedor
+      if (!values.id_proveedor) {
+        message.error('Por favor seleccione un proveedor');
+        return;
+      }
+
+      // Validar que haya detalles
+      if (!values.detalles || values.detalles.length === 0) {
+        message.error('Debe agregar al menos un elemento a la compra');
+        return;
+      }
+
+      // Validar y formatear los detalles
+      const detallesValidados = values.detalles.map((detalle: {
+        id_elemento: number;
+        cantidad_compra: number;
+        precio_unitario: number;
+      }) => {
+        if (!detalle.id_elemento || !detalle.cantidad_compra || !detalle.precio_unitario) {
+          throw new Error('Todos los campos de los elementos son requeridos');
+        }
+
+        const cantidad = Number(detalle.cantidad_compra);
+        const precio = Number(detalle.precio_unitario);
+        const total = Number((cantidad * precio).toFixed(2));
+
+        if (isNaN(cantidad) || cantidad <= 0) {
+          throw new Error('La cantidad debe ser un número mayor a 0');
+        }
+        if (isNaN(precio) || precio <= 0) {
+          throw new Error('El precio debe ser un número mayor a 0');
+        }
+
+        return {
+          id_elemento: Number(detalle.id_elemento),
+          cantidad_compra: cantidad,
+          precio_unitario: precio,
+          precio_total: total
+        };
+      });
+
+      // Calcular el costo total
+      const costoTotal = detallesValidados.reduce((sum: number, detalle: any) => 
+        sum + (detalle.precio_total || detalle.total_compra), 0
+      );
+
+      // Preparar los datos para enviar
+      const compraData = {
+        id_proveedor: Number(values.id_proveedor),
+        fecha_compra: editingCompra ? editingCompra.fecha_compra : dayjs().format('YYYY-MM-DD'),
+        hora_compra: editingCompra ? editingCompra.hora_compra : dayjs().format('HH:mm:ss'),
+        costo_compra: Number(costoTotal.toFixed(2)),
+        estado_compra: values.estado_compra || 'Completada',
+        detalles: detallesValidados
+      };
+
+      try {
+        let response;
+        if (editingCompra) {
+          response = await axios.put(
+            `${apiUrl}/compra/${editingCompra.id_compra}`,
+            compraData,
+            {
+              headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+              }
+            }
+          );
+          message.success('Compra actualizada exitosamente');
+        } else {
+          response = await axios.post(
+            `${apiUrl}/compra`,
+            compraData,
+            {
+              headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+              }
+            }
+          );
+          message.success('Compra creada exitosamente');
+        }
+
+        if (response.data) {
+          setShowCompraModal(false);
+          setEditingCompra(null);
+          compraForm.resetFields();
+          fetchCompras();
+        }
+      } catch (error: any) {
+        console.error('Error en la petición HTTP:', error);
+        if (error.response?.data?.mensaje) {
+          message.error(`Error del servidor: ${error.response.data.mensaje}`);
+        } else if (error.message) {
+          message.error(`Error: ${error.message}`);
+        } else {
+          message.error(editingCompra ? 'Error al actualizar la compra' : 'Error al crear la compra');
+        }
+      }
+    } catch (error: any) {
+      console.error('Error al procesar la compra:', error);
+      if (!error.isAxiosError) {
+        message.error(error.message);
+      }
+    } finally {
+      setLoadingCompraSubmit(false);
+    }
+  };
+
   const handleFilterCompras = (compras: Compra[]) => {
     return compras.filter(compra => {
-      const searchLower = searchCompra ? searchCompra.toLowerCase() : '';
+      const searchLower = searchCompra.toLowerCase();
       return !searchCompra ||
         compra.id_compra.toString().includes(searchLower) ||
         (compra.proveedor?.nombre_proveedor || '').toLowerCase().includes(searchLower);
     });
   };
-
-  // Columnas para la tabla de compras
-  const compraColumns = [
-    {
-      title: 'ID',
-      dataIndex: 'id_compra',
-      key: 'id_compra',
-      sorter: (a: Compra, b: Compra) => a.id_compra - b.id_compra,
-    },
-    {
-      title: 'Proveedor',
-      dataIndex: ['proveedor', 'nombre_proveedor'],
-      key: 'proveedor',
-      sorter: (a: Compra, b: Compra) => (a.proveedor?.nombre_proveedor || '').localeCompare(b.proveedor?.nombre_proveedor || ''),
-    },
-    {
-      title: 'Fecha',
-      dataIndex: 'fecha_compra',
-      key: 'fecha_compra',
-      render: (fecha: string) => dayjs(fecha).format('DD/MM/YYYY'),
-      sorter: (a: Compra, b: Compra) => dayjs(a.fecha_compra).unix() - dayjs(b.fecha_compra).unix(),
-    },
-    {
-      title: 'Hora',
-      dataIndex: 'hora_compra',
-      key: 'hora_compra',
-      render: (hora: string) => dayjs(hora, 'HH:mm:ss').format('HH:mm'),
-    },
-    {
-      title: 'Costo',
-      dataIndex: 'costo_compra',
-      key: 'costo_compra',
-      render: (costo: number) => `$${Number(costo || 0).toFixed(2)}`,
-      sorter: (a: Compra, b: Compra) => (a.costo_compra || 0) - (b.costo_compra || 0),
-    },
-    {
-      title: 'Estado',
-      dataIndex: 'estado_compra',
-      key: 'estado_compra',
-      render: (estado: string) => {
-        let color = 'default';
-        if (estado === 'Completada') color = 'success';
-        else if (estado === 'Cancelada') color = 'error';
-        return <Tag color={color}>{estado}</Tag>;
-      },
-      filters: [
-        { text: 'Completada', value: 'Completada' },
-        { text: 'Cancelada', value: 'Cancelada' }
-      ],
-      onFilter: (value: any, record: Compra) => record.estado_compra === value,
-    },
-    {
-      title: 'Acciones',
-      key: 'acciones',
-      render: (_: any, record: Compra) => (
-        <Space>
-          <Tooltip title="Ver compra">
-            <Button
-              type="text"
-              icon={<EyeOutlined />}
-              onClick={() => handleViewCompra(record)}
-            />
-          </Tooltip>
-        </Space>
-      ),
-    },
-  ];
 
   return (
     <>
@@ -1793,18 +1953,29 @@ const RentEmployee: React.FC = () => {
         )}
       </Modal>
 
-      {/* Tabla de Compras */}
-      <StyledCard
-        title="Gestión de Compras"
-        extra={
-          <Space>
-            <Search
-              placeholder="Buscar por ID o proveedor..."
+      {/* Sección de Compras */}
+      <StyledCard title="Gestión de Compras">
+        <Space direction="vertical" style={{ width: '100%', marginBottom: 16 }}>
+          <Space wrap>
+            <Input.Search
+              placeholder="Buscar compra"
               allowClear
               value={searchCompra}
               onChange={(e) => setSearchCompra(e.target.value)}
               style={{ width: 200 }}
             />
+            <Button
+              type="primary"
+              icon={<PlusOutlined />}
+              style={{ backgroundColor: 'var(--dark-gold)', borderColor: 'var(--dark-gold)' }}
+              onClick={() => {
+                setEditingCompra(null);
+                compraForm.resetFields();
+                setShowCompraModal(true);
+              }}
+            >
+              Nueva Compra
+            </Button>
             <Button
               onClick={fetchCompras}
               icon={<ReloadOutlined />}
@@ -1812,15 +1983,97 @@ const RentEmployee: React.FC = () => {
               Recargar
             </Button>
           </Space>
-        }
-      >
+        </Space>
+
         <div style={{ marginBottom: 16 }}>
           <Typography.Text>
             Mostrando todas las compras ({compras.length} en total)
           </Typography.Text>
         </div>
+
         <Table
-          columns={compraColumns}
+          columns={[
+            {
+              title: 'ID',
+              dataIndex: 'id_compra',
+              key: 'id_compra',
+              sorter: (a: Compra, b: Compra) => a.id_compra - b.id_compra,
+            },
+            {
+              title: 'Proveedor',
+              dataIndex: ['proveedor', 'nombre_proveedor'],
+              key: 'proveedor',
+              sorter: (a: Compra, b: Compra) => (a.proveedor?.nombre_proveedor || '').localeCompare(b.proveedor?.nombre_proveedor || ''),
+            },
+            {
+              title: 'Fecha',
+              dataIndex: 'fecha_compra',
+              key: 'fecha_compra',
+              render: (fecha: string) => dayjs(fecha).format('DD/MM/YYYY'),
+              sorter: (a: Compra, b: Compra) => dayjs(a.fecha_compra).unix() - dayjs(b.fecha_compra).unix(),
+            },
+            {
+              title: 'Hora',
+              dataIndex: 'hora_compra',
+              key: 'hora_compra',
+              render: (hora: string) => dayjs(hora, 'HH:mm:ss').format('HH:mm'),
+            },
+            {
+              title: 'Costo',
+              dataIndex: 'costo_compra',
+              key: 'costo_compra',
+              render: (costo: number) => `$${Number(costo || 0).toFixed(2)}`,
+              sorter: (a: Compra, b: Compra) => (a.costo_compra || 0) - (b.costo_compra || 0),
+            },
+            {
+              title: 'Estado',
+              dataIndex: 'estado_compra',
+              key: 'estado_compra',
+              render: (estado: string) => {
+                let color = 'default';
+                if (estado === 'Completada') color = 'success';
+                else if (estado === 'Pendiente') color = 'processing';
+                return <Tag color={color}>{estado}</Tag>;
+              },
+              filters: [
+                { text: 'Completada', value: 'Completada' },
+                { text: 'Cancelada', value: 'Cancelada' }
+              ],
+              onFilter: (value: any, record: Compra) => record.estado_compra === value,
+            },
+            {
+              title: 'Acciones',
+              key: 'acciones',
+              render: (_: any, record: Compra) => (
+                <Space>
+                  <Tooltip title="Ver compra">
+                    <Button
+                      type="text"
+                      icon={<EyeOutlined />}
+                      onClick={() => handleViewCompra(record)}
+                    />
+                  </Tooltip>
+                  <Tooltip title="Editar compra">
+                    <Button
+                      type="text"
+                      icon={<EditOutlined />}
+                      onClick={() => handleEditCompra(record)}
+                    />
+                  </Tooltip>
+                  {record.estado_compra !== 'Cancelada' && (
+                    <Tooltip title="Cancelar compra">
+                      <Button
+                        type="text"
+                        danger
+                        icon={<DeleteOutlined />}
+                        onClick={() => handleCancelarCompra(record)}
+                      />
+                    </Tooltip>
+                  )}
+                </Space>
+              ),
+            },
+          ]}
           dataSource={handleFilterCompras(compras)}
           loading={loadingCompra}
           rowKey="id_compra"
@@ -1836,6 +2089,191 @@ const RentEmployee: React.FC = () => {
           }}
         />
       </StyledCard>
+
+      {/* Modal de Crear/Editar Compra */}
+      <Modal
+        title={editingCompra ? "Editar Compra" : "Nueva Compra"}
+        open={showCompraModal}
+        onCancel={() => {
+          setShowCompraModal(false);
+          setEditingCompra(null);
+          compraForm.resetFields();
+        }}
+        footer={null}
+      >
+        <Form
+          form={compraForm}
+          layout="vertical"
+          onFinish={onFinish}
+        >
+          <Form.Item
+            name="id_proveedor"
+            label="Proveedor"
+            rules={[{ required: true, message: 'Por favor seleccione un proveedor' }]}
+          >
+            <Select placeholder="Seleccione un proveedor">
+              {proveedores.map((proveedor: any) => (
+                <Option key={proveedor.id_proveedor} value={proveedor.id_proveedor}>
+                  {proveedor.nombre_proveedor}
+                </Option>
+              ))}
+            </Select>
+          </Form.Item>
+
+          <Form.List name="detalles">
+            {(fields, { add, remove }) => (
+              <>
+                {fields.map(({ key, name, ...restField }) => (
+                  <Space key={key} style={{ display: 'flex', marginBottom: 8 }} align="baseline">
+                    <Form.Item
+                      {...restField}
+                      name={[name, 'id_elemento']}
+                      rules={[{ required: true, message: 'Seleccione un elemento' }]}
+                    >
+                      <Select style={{ width: 200 }} placeholder="Seleccione elemento">
+                        {elementos
+                          .filter(elemento => elemento.estado_elemento === 'Activo')
+                          .map((elemento) => (
+                            <Option key={elemento.id_elemento} value={elemento.id_elemento}>
+                              {elemento.nombre_elemento}
+                            </Option>
+                          ))}
+                      </Select>
+                    </Form.Item>
+                    <Form.Item
+                      {...restField}
+                      name={[name, 'cantidad_compra']}
+                      rules={[{ required: true, message: 'Ingrese cantidad' }]}
+                    >
+                      <InputNumber 
+                        min={1} 
+                        placeholder="Cantidad"
+                        onChange={(value) => {
+                          const values = compraForm.getFieldsValue();
+                          if (values.detalles) {
+                            const detalles = values.detalles.map((detalle: DetalleCompraForm) => ({
+                              ...detalle,
+                              total_compra: detalle.cantidad_compra * detalle.precio_unitario
+                            }));
+                            const total = detalles.reduce((sum: number, detalle: any) => 
+                              sum + (detalle.total_compra || 0), 0
+                            );
+                            compraForm.setFieldsValue({ 
+                              costo_compra: Number(total.toFixed(2)),
+                              detalles: detalles
+                            });
+                          }
+                        }}
+                      />
+                    </Form.Item>
+                    <Form.Item
+                      {...restField}
+                      name={[name, 'precio_unitario']}
+                      rules={[{ required: true, message: 'Ingrese precio' }]}
+                    >
+                      <InputNumber
+                        min={0}
+                        step={0.01}
+                        placeholder="Precio unitario"
+                        formatter={value => `$ ${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
+                        parser={(value: string | undefined) => value ? Number(value.replace(/\$\s?|(,*)/g, '')) : 0}
+                        onChange={(value) => {
+                          const values = compraForm.getFieldsValue();
+                          if (values.detalles) {
+                            const detalles = values.detalles.map((detalle: DetalleCompraForm) => ({
+                              ...detalle,
+                              total_compra: detalle.cantidad_compra * detalle.precio_unitario
+                            }));
+                            const total = detalles.reduce((sum: number, detalle: any) => 
+                              sum + (detalle.total_compra || 0), 0
+                            );
+                            compraForm.setFieldsValue({ 
+                              costo_compra: Number(total.toFixed(2)),
+                              detalles: detalles
+                            });
+                          }
+                        }}
+                      />
+                    </Form.Item>
+                    <Button type="text" danger onClick={() => {
+                      remove(name);
+                      setTimeout(() => {
+                        const values = compraForm.getFieldsValue();
+                        if (values.detalles) {
+                          const detalles = values.detalles.map((detalle: DetalleCompraForm) => ({
+                            ...detalle,
+                            total_compra: detalle.cantidad_compra * detalle.precio_unitario
+                          }));
+                          const total = detalles.reduce((sum: number, detalle: any) => 
+                            sum + (detalle.total_compra || 0), 0
+                          );
+                          compraForm.setFieldsValue({ 
+                            costo_compra: Number(total.toFixed(2)),
+                            detalles: detalles
+                          });
+                        }
+                      }, 0);
+                    }}>
+                      <DeleteOutlined />
+                    </Button>
+                  </Space>
+                ))}
+                <Form.Item>
+                  <Button type="dashed" onClick={() => add()} block icon={<PlusOutlined />}>
+                    Agregar elemento
+                  </Button>
+                </Form.Item>
+              </>
+            )}
+          </Form.List>
+
+          <Form.Item
+            name="costo_compra"
+            label="Costo Total"
+          >
+            <InputNumber
+              min={0}
+              step={0.01}
+              style={{ width: '100%' }}
+              formatter={value => `$ ${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
+              parser={(value: string | undefined) => value ? Number(value.replace(/\$\s?|(,*)/g, '')) : 0}
+              disabled={true}
+            />
+          </Form.Item>
+
+          {editingCompra && (
+            <Form.Item
+              name="estado_compra"
+              label="Estado"
+              rules={[{ required: true, message: 'Por favor seleccione el estado' }]}
+            >
+              <Select>
+                <Option value="Completada">Completada</Option>
+                <Option value="Cancelada">Cancelada</Option>
+              </Select>
+            </Form.Item>
+          )}
+
+          <Form.Item>
+            <Space style={{ width: '100%', justifyContent: 'flex-end' }}>
+              <Button onClick={() => {
+                setShowCompraModal(false);
+                compraForm.resetFields();
+              }}>
+                Cancelar
+              </Button>
+              <Button 
+                type="primary" 
+                htmlType="submit"
+                loading={loadingCompraSubmit}
+                style={{ backgroundColor: 'var(--dark-gold)', borderColor: 'var(--dark-gold)' }}
+              >
+                {editingCompra ? 'Actualizar' : 'Crear'}
+              </Button>
+            </Space>
+          </Form.Item>
+        </Form>
+      </Modal>
 
       {/* Modal para ver detalles de compra */}
       <Modal
@@ -1853,39 +2291,31 @@ const RentEmployee: React.FC = () => {
             Cerrar
           </Button>
         ]}
-        width={800}
       >
         {viewingCompra && (
           <div>
-            <Card>
-              <Descriptions column={2} bordered>
-                <Descriptions.Item label="ID Compra" span={1}>{viewingCompra.id_compra}</Descriptions.Item>
-                <Descriptions.Item label="Proveedor" span={1}>{viewingCompra.proveedor?.nombre_proveedor}</Descriptions.Item>
-                <Descriptions.Item label="Fecha" span={1}>{dayjs(viewingCompra.fecha_compra).format('DD/MM/YYYY')}</Descriptions.Item>
-                <Descriptions.Item label="Hora" span={1}>{dayjs(viewingCompra.hora_compra, 'HH:mm:ss').format('HH:mm')}</Descriptions.Item>
-                <Descriptions.Item label="Estado" span={1}>
-                  <Tag color={
-                    viewingCompra.estado_compra === 'Completada' ? 'success' :
-                    viewingCompra.estado_compra === 'Cancelada' ? 'error' : 'default'
-                  }>
-                    {viewingCompra.estado_compra}
-                  </Tag>
-                </Descriptions.Item>
-                <Descriptions.Item label="Costo Total" span={1}>
-                  <Typography.Text strong>${Number(viewingCompra.costo_compra).toFixed(2)}</Typography.Text>
-                </Descriptions.Item>
-              </Descriptions>
-            </Card>
-            
+            <Descriptions bordered column={1}>
+              <Descriptions.Item label="ID de Compra">{viewingCompra.id_compra}</Descriptions.Item>
+              <Descriptions.Item label="Proveedor">{viewingCompra.proveedor?.nombre_proveedor}</Descriptions.Item>
+              <Descriptions.Item label="Fecha">{dayjs(viewingCompra.fecha_compra).format('DD/MM/YYYY')}</Descriptions.Item>
+              <Descriptions.Item label="Hora">{dayjs(viewingCompra.hora_compra, 'HH:mm:ss').format('HH:mm')}</Descriptions.Item>
+              <Descriptions.Item label="Estado">
+                <Tag color={viewingCompra.estado_compra === 'Completada' ? 'success' : 'default'}>
+                  {viewingCompra.estado_compra}
+                </Tag>
+              </Descriptions.Item>
+              <Descriptions.Item label="Costo Total">${Number(viewingCompra.costo_compra).toFixed(2)}</Descriptions.Item>
+            </Descriptions>
+
             {viewingCompra.detalles && viewingCompra.detalles.length > 0 && (
-              <Card title="Elementos de la Compra" style={{ marginTop: 16 }}>
+              <Card title="Elementos" style={{ marginTop: 16 }}>
                 <Table
                   dataSource={viewingCompra.detalles}
                   columns={[
                     {
                       title: 'Elemento',
                       dataIndex: ['elemento', 'nombre_elemento'],
-                      key: 'nombre_elemento',
+                      key: 'elemento',
                     },
                     {
                       title: 'Cantidad',
