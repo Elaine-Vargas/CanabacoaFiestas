@@ -2497,6 +2497,7 @@ const RentEmployee: React.FC = () => {
 
   return (
     <>
+
       {/* View Rent Modal */}
       <Modal
         title="Ver Alquiler"
@@ -2716,7 +2717,7 @@ const RentEmployee: React.FC = () => {
               placeholder="Filtrar por evento"
               allowClear
               value={filterEvento || undefined}
-              onChange={(value: string) => handleEventoChange(value)}
+              onChange={(value: unknown) => handleEventoChange(value as string)}
               showSearch
               optionFilterProp="children"
               dropdownMatchSelectWidth={false}
@@ -2735,7 +2736,7 @@ const RentEmployee: React.FC = () => {
               placeholder="Filtrar por estado"
               allowClear
               value={filterEstado || undefined}
-              onChange={(value: string) => handleEstadoAlquilerChange(value)}
+              onChange={(value: unknown) => handleEstadoAlquilerChange(value as string)}
             >
               <Option value="Solicitado">Solicitado</Option>
               <Option value="Aceptado">Aceptado</Option>
