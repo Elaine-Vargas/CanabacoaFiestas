@@ -52,7 +52,7 @@ __decorate([
 ], Compra.prototype, "costo_compra", void 0);
 __decorate([
     (0, sequelize_typescript_1.Column)({
-        type: sequelize_typescript_1.DataType.ENUM('Completada', 'Cancelada')
+        type: sequelize_typescript_1.DataType.ENUM('Pendiente', 'Completada', 'Cancelada')
     }),
     __metadata("design:type", String)
 ], Compra.prototype, "estado_compra", void 0);

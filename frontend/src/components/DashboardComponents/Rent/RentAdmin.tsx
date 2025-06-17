@@ -18,14 +18,124 @@ import {
   Card,
   Table,
   Upload,
-  Radio
+  Radio,
+  Grid
 } from 'antd';
+import type { ColumnType } from 'antd/es/table';
+import type { SelectProps } from 'antd/es/select';
+import type { TableProps } from 'antd';
+import type { DefaultOptionType } from 'antd/es/select';
 import { PlusOutlined, RightOutlined, CloseOutlined, ReloadOutlined, EditOutlined, DeleteOutlined, EyeOutlined, InboxOutlined, UploadOutlined } from '@ant-design/icons';
 import axios from 'axios';
 import styled from 'styled-components';
 import '../../../styles/dashboard/ServicesSubpages.scss';
 import dayjs from 'dayjs';
 import { apiUrl } from '../../../config';
+
+// Define responsive breakpoints
+type Breakpoint = 'xs' | 'sm' | 'md' | 'lg' | 'xl' | 'xxl';
+
+// Define types for Select components
+type ValueType = string | undefined;
+type OptionType = { value: string; label: string };
+
+interface DetalleCompraForm {
+  id_elemento: number;
+  cantidad_compra: number;
+  precio_unitario: number;
+}
+
+interface DetalleCompraData {
+  id_elemento: number;
+  cantidad_compra: number;
+  precio_unitario: number;
+  total_compra: number;
+  precio_total: number;
+}
+
+interface CompraData {
+  id_proveedor: number;
+  fecha_compra: string;
+  hora_compra: string;
+  costo_compra: number;
+  estado_compra: string;
+  detalles: DetalleCompraData[];
+}
+
+interface Elemento {
+  id_elemento: number;
+  nombre_elemento: string;
+  precio_elemento: number;
+  cantidad_disponible: number;
+  cantidad_total: number;
+  imagen_url?: string;
+  estado_elemento: string;
+  material: {
+    id_material: number;
+    nombre_material: string;
+  };
+  color: {
+    id_color: number;
+    nombre_color: string;
+  };
+  subcategoria: {
+    id_subcategoria: number;
+    nombre_subcategoria: string;
+    categoria: {
+      id_categoria: number;
+      nombre_categoria: string;
+    };
+  };
+}
+
+interface ElementoSeleccionado extends Elemento {
+  cantidad_seleccionada: number;
+}
+
+interface DetalleAlquiler {
+  id_elemento: number;
+  elemento: Elemento;
+  cantidad_alquiler: number;
+  precio_unitario: number;
+  total_alquiler: number;
+  estado_detalquiler: string;
+}
+
+interface Alquiler {
+  id_alquiler: number;
+  estado_alquiler: string;
+  precioneto_alquiler: number;
+  itbis_alquiler: number;
+  total_alquiler: number;
+  cant_elementos_alquiler: number;
+  evento?: {
+    id_evento: number;
+    nombre_evento: string;
+    fecha_evento: string;
+  };
+  detalles?: DetalleAlquiler[];
+}
+
+interface Compra {
+  id_compra: number;
+  id_proveedor: number;
+  fecha_compra: string;
+  hora_compra: string;
+  costo_compra: number;
+  estado_compra: string;
+  proveedor?: {
+    nombre_proveedor: string;
+  };
+  detalles?: DetalleCompra[];
+}
+
+interface DetalleCompra {
+  id_elemento: number;
+  elemento: Elemento;
+  cantidad_compra: number;
+  precio_unitario: number;
+  total_compra: number;
+}
 
 const { Search } = Input;
 const { Option } = Select;
@@ -48,6 +158,29 @@ const StyledCard = styled(Card)`
     font-family: "Montserrat", sans-serif;
     font-weight: 600;
   }
+
+  @media (max-width: 768px) {
+    margin: 10px;
+    
+    .ant-card-head-wrapper {
+      flex-direction: column;
+      align-items: stretch;
+      
+      .ant-card-head-title {
+        padding-bottom: 0;
+      }
+      
+      .ant-card-extra {
+        margin-left: 0;
+        padding-top: 16px;
+        width: 100%;
+      }
+    }
+
+    .ant-card-body {
+      padding: 12px;
+    }
+  }
 `;
 
 const StyledModal = styled(Modal)`
@@ -65,6 +198,63 @@ const StyledModal = styled(Modal)`
       color: var(--color-text);
       font-family: "Montserrat", sans-serif;
       font-weight: 600;
+    }
+  }
+
+  @media (max-width: 768px) {
+    margin: 0;
+    padding: 0;
+    max-width: 100vw !important;
+    top: 0;
+    
+    .ant-modal-content {
+      border-radius: 0;
+      min-height: 100vh;
+      
+      .ant-modal-header {
+        padding: 12px 16px;
+        
+        .ant-modal-title {
+          font-size: 16px;
+        }
+      }
+      
+      .ant-modal-body {
+        padding: 16px;
+        
+        .ant-form-item {
+          margin-bottom: 16px;
+        }
+        
+        .ant-input,
+        .ant-select-selector,
+        .ant-input-number {
+          height: 32px;
+          font-size: 14px;
+        }
+        
+        .ant-input-number {
+          width: 100%;
+        }
+        
+        .ant-form-item-label {
+          padding-bottom: 4px;
+          
+          label {
+            font-size: 14px;
+          }
+        }
+      }
+      
+      .ant-modal-footer {
+        padding: 12px 16px;
+        
+        .ant-btn {
+          height: 32px;
+          font-size: 14px;
+          padding: 4px 15px;
+        }
+      }
     }
   }
 `;
@@ -94,6 +284,25 @@ const StyledButton = styled(Button)`
       color: var(--dark-gold);
     }
   }
+
+  @media (max-width: 768px) {
+    width: 100%;
+    height: 32px;
+    padding: 4px 15px;
+    font-size: 14px;
+    border-radius: 6px;
+    margin-bottom: 8px;
+
+    &.ant-btn-icon-only {
+      width: 32px;
+      padding: 0;
+      margin-bottom: 0;
+    }
+
+    .anticon {
+      font-size: 14px;
+    }
+  }
 `;
 
 const StyledTable = styled(Table)`
@@ -112,6 +321,268 @@ const StyledTable = styled(Table)`
   .ant-table-tbody > tr:hover > td {
     background-color: var(--color-background);
   }
+
+  @media (max-width: 768px) {
+    .ant-table {
+      font-size: 12px;
+      
+      .ant-table-container {
+        border-radius: 8px;
+        overflow: hidden;
+      }
+    }
+
+    .ant-table-thead > tr > th,
+    .ant-table-tbody > tr > td {
+      padding: 8px 4px;
+      white-space: nowrap;
+      
+      &:first-child {
+        padding-left: 8px;
+      }
+      
+      &:last-child {
+        padding-right: 8px;
+      }
+    }
+
+    .ant-table-thead > tr > th {
+      font-size: 12px;
+      background-color: var(--color-background);
+      
+      &[colspan] {
+        text-align: center;
+      }
+    }
+
+    .ant-table-tbody > tr > td {
+      font-size: 12px;
+      
+      .ant-tag {
+        margin: 0;
+        padding: 0 4px;
+        font-size: 11px;
+        line-height: 18px;
+      }
+    }
+
+    .ant-table-cell {
+      .ant-space {
+        gap: 4px !important;
+      }
+    }
+
+    .ant-table-content {
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+      
+      &::-webkit-scrollbar {
+        height: 6px;
+      }
+      
+      &::-webkit-scrollbar-thumb {
+        background-color: var(--dark-gold);
+        border-radius: 3px;
+      }
+      
+      &::-webkit-scrollbar-track {
+        background-color: var(--color-background);
+      }
+    }
+
+    .ant-pagination {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      padding: 8px 0;
+      
+      .ant-pagination-item,
+      .ant-pagination-prev,
+      .ant-pagination-next {
+        margin: 4px;
+        min-width: 28px;
+        height: 28px;
+        line-height: 26px;
+        
+        a {
+          padding: 0 4px;
+        }
+      }
+      
+      .ant-pagination-options {
+        margin: 4px;
+        
+        .ant-select {
+          width: 80px !important;
+        }
+      }
+    }
+
+    .ant-table-fixed-left,
+    .ant-table-fixed-right {
+      .ant-table-cell {
+        background-color: var(--color-background2) !important;
+      }
+    }
+  }
+`;
+
+const ResponsiveSpace = styled(Space)`
+  @media (max-width: 768px) {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    width: 100%;
+    margin-bottom: 16px;
+    
+    .ant-space-item {
+      width: 100%;
+      margin-right: 0 !important;
+    }
+
+    &.ant-space-horizontal {
+      gap: 8px !important;
+    }
+  }
+`;
+
+const ActionButtons = styled(Space)`
+  @media (max-width: 768px) {
+    display: flex;
+    flex-direction: row;
+    justify-content: flex-start;
+    gap: 4px;
+    
+    .ant-btn {
+      padding: 4px 8px;
+      font-size: 12px;
+      width: auto;
+      margin-bottom: 0;
+      
+      &.ant-btn-icon-only {
+        width: 24px;
+        height: 24px;
+        padding: 0;
+        
+        .anticon {
+          font-size: 12px;
+        }
+      }
+    }
+  }
+`;
+
+const StyledSearch = styled(Search)`
+  @media (max-width: 768px) {
+    width: 100% !important;
+    margin-bottom: 8px !important;
+    
+    .ant-input-wrapper {
+      display: flex;
+      
+      .ant-input {
+        flex: 1;
+        font-size: 14px;
+      }
+      
+      .ant-input-group-addon {
+        width: auto;
+      }
+      
+      .ant-btn {
+        height: 32px;
+        padding: 0 8px;
+        
+        .anticon {
+          font-size: 14px;
+        }
+      }
+    }
+  }
+`;
+
+const StyledSelect = styled(Select)`
+  @media (max-width: 768px) {
+    width: 100% !important;
+    margin-bottom: 8px !important;
+    
+    .ant-select-selector {
+      height: 32px !important;
+      padding: 0 11px !important;
+      
+      .ant-select-selection-item {
+        line-height: 30px !important;
+        font-size: 14px;
+      }
+    }
+    
+    &.ant-select-single:not(.ant-select-customize-input) .ant-select-selector {
+      padding: 0 11px;
+    }
+  }
+`;
+
+const ResponsivePagination = styled.div`
+  @media (max-width: 768px) {
+    .ant-pagination {
+      display: flex;
+      justify-content: center;
+      flex-wrap: wrap;
+      
+      .ant-pagination-item,
+      .ant-pagination-prev,
+      .ant-pagination-next {
+        margin: 4px;
+        min-width: 28px;
+        height: 28px;
+        line-height: 26px;
+        
+        a {
+          padding: 0 4px;
+        }
+      }
+      
+      .ant-pagination-options {
+        margin: 4px;
+        
+        .ant-select {
+          width: 80px !important;
+        }
+      }
+    }
+  }
+`;
+
+const FilterContainer = styled.div`
+  @media (max-width: 768px) {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-bottom: 16px;
+    
+    .ant-radio-group {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      
+      .ant-radio-button-wrapper {
+        width: 100%;
+        text-align: center;
+        margin-right: 0;
+        height: 32px;
+        line-height: 30px;
+        font-size: 14px;
+        
+        &:first-child {
+          border-radius: 6px 6px 0 0;
+        }
+        
+        &:last-child {
+          border-radius: 0 0 6px 6px;
+        }
+      }
+    }
+  }
 `;
 
 const CatalogModal = styled(StyledModal)`
@@ -125,6 +596,23 @@ const CatalogModal = styled(StyledModal)`
   
   .ant-modal-mask {
     z-index: 1099 !important;
+  }
+
+  @media (max-width: 768px) {
+    .ant-modal-content {
+      .ant-modal-body {
+        padding: 12px;
+        
+        .ant-card {
+          margin: 0;
+          border-radius: 8px;
+          
+          .ant-card-body {
+            padding: 12px;
+          }
+        }
+      }
+    }
   }
 `;
 
@@ -304,6 +792,32 @@ interface Alquiler {
   detalles?: DetalleAlquiler[];
 }
 
+interface Compra {
+  id_compra: number;
+  id_proveedor: number;
+  fecha_compra: string;
+  hora_compra: string;
+  costo_compra: number;
+  estado_compra: string;
+  proveedor?: {
+    nombre_proveedor: string;
+  };
+  detalles?: DetalleCompra[];
+}
+
+interface DetalleCompra {
+  id_elemento: number;
+  elemento: Elemento;
+  cantidad_compra: number;
+  precio_unitario: number;
+  total_compra: number;
+}
+
+const ScrollableContent = styled.div<{ hasSelection: boolean }>`
+  position: relative;
+  z-index: 1100;
+`;
+
 const RentAdmin: React.FC = () => {
   const [alquileres, setAlquileres] = useState<Alquiler[]>([]);
   const [elementos, setElementos] = useState<Elemento[]>([]);
@@ -338,6 +852,20 @@ const RentAdmin: React.FC = () => {
   const [showViewElementModal, setShowViewElementModal] = useState(false);
   const [viewingElement, setViewingElement] = useState<Elemento | null>(null);
 
+  // Estados para compras
+  const [compras, setCompras] = useState<Compra[]>([]);
+  const [searchCompra, setSearchCompra] = useState('');
+  const [filterCompraEstado, setFilterCompraEstado] = useState<string | null>(null);
+  const [loadingCompra, setLoadingCompra] = useState(false);
+  const [editingCompra, setEditingCompra] = useState<Compra | null>(null);
+  const [showCompraModal, setShowCompraModal] = useState(false);
+  const [compraForm] = Form.useForm();
+  const [showViewCompraModal, setShowViewCompraModal] = useState(false);
+  const [viewingCompra, setViewingCompra] = useState<Compra | null>(null);
+  const [showEditCompraModal, setShowEditCompraModal] = useState(false);
+  const [loadingCompraSubmit, setLoadingCompraSubmit] = useState(false);
+  const [proveedores, setProveedores] = useState<any[]>([]);
+
   useEffect(() => {
     fetchAlquileres();
     fetchElementos();
@@ -345,6 +873,8 @@ const RentAdmin: React.FC = () => {
     fetchCategorias();
     fetchMateriales();
     fetchColores();
+    fetchCompras();
+    fetchProveedores();
   }, []);
 
   const fetchAlquileres = async () => {
@@ -482,6 +1012,70 @@ const RentAdmin: React.FC = () => {
     } catch (error) {
       console.error('Error al obtener colores:', error);
       message.error('Error al cargar los colores');
+    }
+  };
+
+  const fetchCompras = async () => {
+    setLoadingCompra(true);
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        message.error('No hay sesión activa');
+        return;
+      }
+
+      const response = await axios.get(`${apiUrl}/compra/all`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      
+      if (Array.isArray(response.data)) {
+        console.log('Compras recibidas:', response.data);
+        setCompras(response.data);
+      } else {
+        console.warn('La respuesta no es un array:', response.data);
+        setCompras([]);
+      }
+    } catch (error: any) {
+      console.error('Error al cargar las compras:', error);
+      if (axios.isAxiosError(error)) {
+        message.error(`Error: ${error.response?.data?.mensaje || error.message}`);
+      } else {
+        message.error('Error al cargar las compras');
+      }
+      setCompras([]);
+    } finally {
+      setLoadingCompra(false);
+    }
+  };
+
+  const fetchProveedores = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        message.error('No hay sesión activa');
+        return;
+      }
+      const response = await axios.get(`${apiUrl}/proveedor/search?tipo=Elementos`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      if (response.data && Array.isArray(response.data)) {
+        // Filtrar solo proveedores activos y ordenar por nombre
+        const proveedoresElementos = response.data
+          .filter((proveedor: any) => proveedor.estado_proveedor === 'Activo')
+          .sort((a: any, b: any) => a.nombre_proveedor.localeCompare(b.nombre_proveedor));
+        setProveedores(proveedoresElementos);
+      } else {
+        setProveedores([]);
+      }
+    } catch (error: any) {
+      console.error('Error al obtener proveedores:', error);
+      message.error('Error al cargar los proveedores');
     }
   };
 
@@ -969,16 +1563,18 @@ const RentAdmin: React.FC = () => {
     }
   };
 
-  const columns = [
+  const columns: ColumnType<Alquiler>[] = [
     {
       title: 'ID',
       dataIndex: 'id_alquiler',
       key: 'id_alquiler',
+      responsive: ['md' as Breakpoint],
     },
     {
-      title: 'ID Evento',
+      title: 'Evento',
       dataIndex: ['evento', 'id_evento'],
       key: 'evento',
+      responsive: ['md' as Breakpoint],
       render: (id_evento: number, record: any) => (
         <span>
           {id_evento}
@@ -1011,21 +1607,10 @@ const RentAdmin: React.FC = () => {
       },
     },
     {
-      title: 'Cantidad Elementos',
+      title: 'Elementos',
       dataIndex: 'cant_elementos_alquiler',
       key: 'cant_elementos_alquiler',
-    },
-    {
-      title: 'Precio Neto',
-      dataIndex: 'precioneto_alquiler',
-      key: 'precioneto_alquiler',
-      render: (precio: number) => `$${Number(precio).toFixed(2)}`,
-    },
-    {
-      title: 'ITBIS',
-      dataIndex: 'itbis_alquiler',
-      key: 'itbis_alquiler',
-      render: (itbis: number) => `$${Number(itbis).toFixed(2)}`,
+      responsive: ['md' as Breakpoint],
     },
     {
       title: 'Total',
@@ -1036,8 +1621,9 @@ const RentAdmin: React.FC = () => {
     {
       title: 'Acciones',
       key: 'acciones',
+      fixed: 'left',
       render: (_: any, record: any) => (
-        <Space>
+        <ActionButtons>
           <Tooltip title="Ver alquiler">
             <Button
               type="text"
@@ -1066,7 +1652,7 @@ const RentAdmin: React.FC = () => {
               />
             </Tooltip>
           )}
-        </Space>
+        </ActionButtons>
       ),
     },
   ];
@@ -1276,11 +1862,12 @@ const RentAdmin: React.FC = () => {
   };
 
   // Columns for elements table
-  const elementColumns = [
+  const elementColumns: ColumnType<Elemento>[] = [
     {
       title: 'ID',
       dataIndex: 'id_elemento',
       key: 'id_elemento',
+      responsive: ['md' as Breakpoint],
     },
     {
       title: 'Nombre',
@@ -1291,32 +1878,13 @@ const RentAdmin: React.FC = () => {
       title: 'Categoría',
       dataIndex: ['subcategoria', 'categoria', 'nombre_categoria'],
       key: 'categoria',
-    },
-    {
-      title: 'Subcategoría',
-      dataIndex: ['subcategoria', 'nombre_subcategoria'],
-      key: 'subcategoria',
-    },
-    {
-      title: 'Material',
-      dataIndex: ['material', 'nombre_material'],
-      key: 'material',
-    },
-    {
-      title: 'Color',
-      dataIndex: ['color', 'nombre_color'],
-      key: 'color',
+      responsive: ['md' as Breakpoint],
     },
     {
       title: 'Precio',
       dataIndex: 'precio_elemento',
       key: 'precio_elemento',
       render: (precio: number) => `$${Number(precio).toFixed(2)}`,
-    },
-    {
-      title: 'Cantidad Disponible',
-      dataIndex: 'cantidad_disponible',
-      key: 'cantidad_disponible',
     },
     {
       title: 'Estado',
@@ -1341,8 +1909,9 @@ const RentAdmin: React.FC = () => {
     {
       title: 'Acciones',
       key: 'acciones',
+      fixed: 'left',
       render: (_: any, record: Elemento) => (
-        <Space>
+        <ActionButtons>
           <Tooltip title="Ver">
             <Button
               type="text"
@@ -1370,7 +1939,6 @@ const RentAdmin: React.FC = () => {
                   imagen_url: record.imagen_url,
                   estado_elemento: record.estado_elemento
                 };
-                console.log('Valores del formulario:', formValues);
                 elementForm.setFieldsValue(formValues);
                 setShowElementModal(true);
               }}
@@ -1386,7 +1954,7 @@ const RentAdmin: React.FC = () => {
               />
             </Tooltip>
           )}
-        </Space>
+        </ActionButtons>
       ),
     },
   ];
@@ -1415,42 +1983,426 @@ const RentAdmin: React.FC = () => {
     });
   };
 
+  // Función para filtrar compras
+  const handleFilterCompras = (compras: Compra[]) => {
+    return compras.filter(compra => {
+      const searchLower = searchCompra ? searchCompra.toLowerCase() : '';
+      return !searchCompra ||
+        compra.id_compra.toString().includes(searchLower) ||
+        (compra.proveedor?.nombre_proveedor || '').toLowerCase().includes(searchLower);
+    });
+  };
+
+  // Actualizar las columnas de la tabla de compras
+  const compraColumns: ColumnType<Compra>[] = [
+    {
+      title: 'ID',
+      dataIndex: 'id_compra',
+      key: 'id_compra',
+      responsive: ['md' as Breakpoint],
+      sorter: (a: Compra, b: Compra) => a.id_compra - b.id_compra,
+    },
+    {
+      title: 'Proveedor',
+      dataIndex: ['proveedor', 'nombre_proveedor'],
+      key: 'proveedor',
+      responsive: ['md' as Breakpoint],
+      sorter: (a: Compra, b: Compra) => (a.proveedor?.nombre_proveedor || '').localeCompare(b.proveedor?.nombre_proveedor || ''),
+    },
+    {
+      title: 'Fecha',
+      dataIndex: 'fecha_compra',
+      key: 'fecha_compra',
+      render: (fecha: string) => dayjs(fecha).format('DD/MM/YYYY'),
+      sorter: (a: Compra, b: Compra) => dayjs(a.fecha_compra).unix() - dayjs(b.fecha_compra).unix(),
+    },
+    {
+      title: 'Total',
+      dataIndex: 'costo_compra',
+      key: 'costo_compra',
+      render: (costo: number) => `$${Number(costo || 0).toFixed(2)}`,
+      sorter: (a: Compra, b: Compra) => (a.costo_compra || 0) - (b.costo_compra || 0),
+    },
+    {
+      title: 'Estado',
+      dataIndex: 'estado_compra',
+      key: 'estado_compra',
+      render: (estado: string) => {
+        let color = 'default';
+        if (estado === 'Completada') color = 'success';
+        else if (estado === 'Cancelada') color = 'error';
+        else if (estado === 'Pendiente') color = 'processing';
+        return <Tag color={color}>{estado}</Tag>;
+      },
+      filters: [
+        { text: 'Pendiente', value: 'Pendiente' },
+        { text: 'Completada', value: 'Completada' },
+        { text: 'Cancelada', value: 'Cancelada' }
+      ],
+      onFilter: (value: any, record: Compra) => record.estado_compra === value,
+    },
+    {
+      title: 'Acciones',
+      key: 'acciones',
+      fixed: 'left',
+      render: (_: any, record: Compra) => (
+        <ActionButtons>
+          <Tooltip title="Ver compra">
+            <Button
+              type="text"
+              icon={<EyeOutlined />}
+              onClick={() => handleViewCompra(record)}
+            />
+          </Tooltip>
+          <Tooltip title="Editar compra">
+            <Button
+              type="text"
+              icon={<EditOutlined />}
+              onClick={() => handleEditCompra(record)}
+            />
+          </Tooltip>
+          {record.estado_compra !== 'Cancelada' && (
+            <Tooltip title="Cancelar compra">
+              <Button
+                type="text"
+                danger
+                icon={<DeleteOutlined />}
+                onClick={() => handleCancelarCompra(record)}
+              />
+            </Tooltip>
+          )}
+        </ActionButtons>
+      ),
+    },
+  ];
+
+  // Función para manejar la cancelación de una compra
+  const handleCancelarCompra = async (record: Compra) => {
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        message.error('No hay sesión activa');
+        return;
+      }
+
+      // Obtener los detalles actuales de la compra
+      const detallesResponse = await axios.get(`${apiUrl}/compra/${record.id_compra}/detalles`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      Modal.confirm({
+        title: '¿Estás seguro de cancelar esta compra?',
+        content: 'Esta acción no se puede deshacer',
+        okText: 'Sí, cancelar',
+        cancelText: 'No',
+        onOk: async () => {
+          try {
+            // Preparar los datos manteniendo toda la información original
+            const updateData = {
+              id_proveedor: record.id_proveedor,
+              fecha_compra: record.fecha_compra,
+              hora_compra: record.hora_compra,
+              costo_compra: record.costo_compra,
+              estado_compra: 'Cancelada',
+              detalles: detallesResponse.data.map((detalle: any) => ({
+                id_elemento: detalle.id_elemento,
+                cantidad_compra: detalle.cantidad_compra,
+                precio_unitario: detalle.precio_unitario,
+                precio_total: detalle.cantidad_compra * detalle.precio_unitario
+              }))
+            };
+
+            await axios.put(
+              `${apiUrl}/compra/${record.id_compra}`,
+              updateData,
+              {
+                headers: {
+                  'Authorization': `Bearer ${token}`,
+                  'Content-Type': 'application/json'
+                }
+              }
+            );
+            message.success('Compra cancelada exitosamente');
+            fetchCompras();
+          } catch (error) {
+            console.error('Error al cancelar la compra:', error);
+            message.error('Error al cancelar la compra');
+          }
+        }
+      });
+    } catch (error) {
+      console.error('Error al cancelar la compra:', error);
+      message.error('Error al cancelar la compra');
+    }
+  };
+
+  // Función para ver detalles de una compra
+  const handleViewCompra = async (record: Compra) => {
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        message.error('No hay sesión activa');
+        return;
+      }
+
+      const response = await axios.get(`${apiUrl}/compra/${record.id_compra}/detalles`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      // Asegurarse de que los números sean válidos
+      const detalles = response.data.map((detalle: any) => ({
+        ...detalle,
+        cantidad_compra: Number(detalle.cantidad_compra || 0),
+        precio_unitario: Number(detalle.precio_unitario || 0),
+        total_compra: Number((detalle.cantidad_compra || 0) * (detalle.precio_unitario || 0))
+      }));
+
+      // Calcular el total general
+      const totalGeneral = detalles.reduce((sum: number, detalle: any) => 
+        sum + (detalle.cantidad_compra * detalle.precio_unitario), 0
+      );
+
+      setViewingCompra({
+        ...record,
+        detalles: detalles,
+        costo_compra: Number(totalGeneral.toFixed(2))
+      });
+      setShowViewCompraModal(true);
+    } catch (error) {
+      console.error('Error al obtener detalles de la compra:', error);
+      message.error('Error al cargar los detalles de la compra');
+    }
+  };
+
+  // Función para editar una compra
+  const handleEditCompra = async (record: Compra) => {
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        message.error('No hay sesión activa');
+        return;
+      }
+
+      const response = await axios.get(`${apiUrl}/compra/${record.id_compra}/detalles`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      // Formatear los detalles para el formulario
+      const detalles = response.data.map((detalle: any) => ({
+        id_elemento: detalle.id_elemento,
+        cantidad_compra: Number(detalle.cantidad_compra),
+        precio_unitario: Number(detalle.precio_unitario)
+      }));
+
+      // Calcular el costo total
+      const costoTotal = detalles.reduce((sum: number, detalle: any) => 
+        sum + (detalle.cantidad_compra * detalle.precio_unitario), 0
+      );
+
+      setEditingCompra({
+        ...record,
+        detalles: response.data
+      });
+      
+      // Establecer los valores iniciales en el formulario
+      compraForm.setFieldsValue({
+        id_proveedor: record.id_proveedor,
+        estado_compra: record.estado_compra,
+        costo_compra: Number(costoTotal.toFixed(2)),
+        detalles: detalles // Establecer los detalles en el formulario
+      });
+      
+      setShowCompraModal(true);
+    } catch (error) {
+      console.error('Error al obtener detalles de la compra:', error);
+      message.error('Error al cargar los detalles de la compra');
+    }
+  };
+
+  const onFinish = async (values: any) => {
+    try {
+      setLoadingCompraSubmit(true);
+      const token = localStorage.getItem('token');
+      if (!token) {
+        message.error('No hay sesión activa');
+        return;
+      }
+
+      console.log('Valores del formulario:', values);
+
+      // Validar el proveedor
+      if (!values.id_proveedor) {
+        message.error('Por favor seleccione un proveedor');
+        return;
+      }
+
+      // Validar que haya detalles
+      if (!values.detalles || values.detalles.length === 0) {
+        message.error('Debe agregar al menos un elemento a la compra');
+        return;
+      }
+
+      // Validar y formatear los detalles
+      const detallesValidados = values.detalles.map((detalle: {
+        id_elemento: number;
+        cantidad_compra: number;
+        precio_unitario: number;
+      }) => {
+        // Asegurarse de que todos los campos necesarios existan
+        if (!detalle.id_elemento || !detalle.cantidad_compra || !detalle.precio_unitario) {
+          throw new Error('Todos los campos de los elementos son requeridos');
+        }
+
+        // Convertir a números y validar
+        const cantidad = Number(detalle.cantidad_compra);
+        const precio = Number(detalle.precio_unitario);
+        const total = Number((cantidad * precio).toFixed(2));
+
+        if (isNaN(cantidad) || cantidad <= 0) {
+          throw new Error('La cantidad debe ser un número mayor a 0');
+        }
+        if (isNaN(precio) || precio <= 0) {
+          throw new Error('El precio debe ser un número mayor a 0');
+        }
+
+        return {
+          id_elemento: Number(detalle.id_elemento),
+          cantidad_compra: cantidad,
+          precio_unitario: precio,
+          precio_total: total
+        };
+      });
+
+      // Calcular el costo total
+      const costoTotal = detallesValidados.reduce((sum: number, detalle: DetalleCompraData) => 
+        sum + (detalle.precio_total || detalle.total_compra), 0
+      );
+
+      // Preparar los datos para enviar
+      const compraData = {
+        id_proveedor: Number(values.id_proveedor),
+        fecha_compra: editingCompra ? editingCompra.fecha_compra : dayjs().format('YYYY-MM-DD'),
+        hora_compra: editingCompra ? editingCompra.hora_compra : dayjs().format('HH:mm:ss'),
+        costo_compra: Number(costoTotal.toFixed(2)),
+        estado_compra: values.estado_compra || 'Completada',
+        detalles: detallesValidados
+      };
+
+      console.log('Datos a enviar:', compraData);
+
+      try {
+        let response;
+        if (editingCompra) {
+          // Si estamos editando, hacer un PUT para actualizar la compra y sus detalles
+          response = await axios.put(
+            `${apiUrl}/compra/${editingCompra.id_compra}`,
+            compraData,
+            {
+              headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+              }
+            }
+          );
+          message.success('Compra actualizada exitosamente');
+        } else {
+          // Si estamos creando, hacer un POST
+          response = await axios.post(
+            `${apiUrl}/compra`,
+            compraData,
+            {
+              headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+              }
+            }
+          );
+          message.success('Compra creada exitosamente');
+        }
+
+        if (response.data) {
+          setShowCompraModal(false);
+          setEditingCompra(null);
+          compraForm.resetFields();
+          fetchCompras();
+        }
+      } catch (error: any) {
+        console.error('Error en la petición HTTP:', error);
+        if (error.response?.data?.mensaje) {
+          message.error(`Error del servidor: ${error.response.data.mensaje}`);
+        } else if (error.message) {
+          message.error(`Error: ${error.message}`);
+        } else {
+          message.error(editingCompra ? 'Error al actualizar la compra' : 'Error al crear la compra');
+        }
+      }
+    } catch (error: any) {
+      console.error('Error al procesar la compra:', error);
+      if (!error.isAxiosError) {
+        message.error(error.message);
+      }
+    } finally {
+      setLoadingCompraSubmit(false);
+    }
+  };
+
+  const handleCategoriaChange = (value: string | undefined, option: any) => {
+    setFilterElementCategoria(value || null);
+  };
+
+  const handleEstadoChange = (value: string | undefined, option: any) => {
+    setFilterElementEstado(value || null);
+  };
+
+  const handleEventoChange = (value: string | undefined, option: any) => {
+    setFilterEvento(value || null);
+  };
+
+  const handleEstadoAlquilerChange = (value: string | undefined, option: any) => {
+    setFilterEstado(value || null);
+  };
+
   return (
     <>
       {/* Elements Section */}
       <StyledCard
         title="Gestión de Elementos"
         extra={
-          <Space>
-            <Search
+          <ResponsiveSpace>
+            <StyledSearch
               placeholder="Buscar elementos..."
               onChange={(e) => setSearchElement(e.target.value)}
               style={{ width: 200 }}
             />
-            <Select
+            <StyledSelect
               style={{ width: 200 }}
               placeholder="Filtrar por categoría"
               allowClear
-              value={filterElementCategoria}
-              onChange={setFilterElementCategoria}
+              value={filterElementCategoria || undefined}
+              onChange={handleCategoriaChange}
             >
               {categorias.map((categoria: any) => (
                 <Option key={categoria.id_categoria} value={categoria.id_categoria.toString()}>
                   {categoria.nombre_categoria}
                 </Option>
               ))}
-            </Select>
-            <Select
+            </StyledSelect>
+            <StyledSelect
               style={{ width: 150 }}
               placeholder="Filtrar por estado"
               allowClear
-              value={filterElementEstado}
-              onChange={setFilterElementEstado}
+              value={filterElementEstado || undefined}
+              onChange={handleEstadoChange}
             >
               <Option value="Activo">Activo</Option>
               <Option value="Inactivo">Inactivo</Option>
-              <Option value="Eliminado">Eliminado</Option>
-            </Select>
+            </StyledSelect>
             <Button
               type="primary"
               icon={<PlusOutlined />}
@@ -1463,16 +2415,14 @@ const RentAdmin: React.FC = () => {
             >
               Nuevo Elemento
             </Button>
-          </Space>
+          </ResponsiveSpace>
         }
       >
-        <Table
+        <StyledTable
           columns={elementColumns}
           dataSource={filterElements(elementos)}
           loading={loadingElement}
           rowKey="id_elemento"
-          pagination={{ pageSize: 10 }}
-          locale={{ emptyText: 'No hay elementos registrados' }}
         />
       </StyledCard>
 
@@ -1714,8 +2664,8 @@ const RentAdmin: React.FC = () => {
       </Modal>
 
       <StyledCard title="Gestión de Alquileres">
-        <Space direction="vertical" style={{ width: '100%', marginBottom: 16 }}>
-          <Space wrap>
+        <ResponsiveSpace direction="vertical" style={{ width: '100%', marginBottom: 16 }}>
+          <ResponsiveSpace wrap>
             <Button
               type="primary"
               icon={<PlusOutlined />}
@@ -1730,53 +2680,275 @@ const RentAdmin: React.FC = () => {
             >
               Recargar
             </Button>
-          </Space>
+          </ResponsiveSpace>
 
-          <Space wrap>
-            <Input.Search
+          <ResponsiveSpace wrap>
+            <StyledSearch
               placeholder="Buscar por ID de alquiler"
               allowClear
               style={{ width: 200 }}
               value={searchAlquiler}
               onChange={(e) => setSearchAlquiler(e.target.value)}
             />
-            <Select
+            <StyledSelect
               placeholder="Filtrar por evento"
               allowClear
               style={{ width: 200 }}
-              value={filterEvento}
-              onChange={setFilterEvento}
+              value={filterEvento || undefined}
+              onChange={handleEventoChange}
             >
               {eventos.map((evento: any) => (
                 <Option key={evento.id_evento} value={evento.id_evento.toString()}>
-                  ID: {evento.id_evento}
+                  {evento.nombre_evento}
                 </Option>
               ))}
-            </Select>
-            <Select
-              placeholder="Filtrar por estado"
-              allowClear
+            </StyledSelect>
+            <StyledSelect
               style={{ width: 200 }}
-              value={filterEstado}
-              onChange={setFilterEstado}
+              value={filterEstado || undefined}
+              onChange={handleEstadoAlquilerChange}
             >
               <Option value="Solicitado">Solicitado</Option>
               <Option value="Aceptado">Aceptado</Option>
               <Option value="Completado">Completado</Option>
               <Option value="Cancelado">Cancelado</Option>
-            </Select>
-          </Space>
-        </Space>
+            </StyledSelect>
+          </ResponsiveSpace>
+        </ResponsiveSpace>
 
-        <Table
+        <StyledTable<Alquiler>
           columns={columns}
           dataSource={filteredAlquileres}
           loading={loading}
           rowKey="id_alquiler"
-          pagination={{ pageSize: 10 }}
-          locale={{ emptyText: <span style={{ color: '#999', fontWeight: 500, fontSize: 16 }}>No hay Registros</span> }}
         />
       </StyledCard>
+
+      {/* Tabla de Compras */}
+      <StyledCard
+        title="Gestión de Compras"
+        extra={
+          <ResponsiveSpace>
+            <StyledSearch
+              placeholder="Buscar por ID o proveedor..."
+              allowClear
+              value={searchCompra}
+              onChange={(e) => setSearchCompra(e.target.value)}
+              style={{ width: 200 }}
+            />
+            <Button
+              type="primary"
+              icon={<PlusOutlined />}
+              style={{ backgroundColor: 'var(--dark-gold)', borderColor: 'var(--dark-gold)' }}
+              onClick={() => {
+                setEditingCompra(null);
+                compraForm.resetFields();
+                setShowCompraModal(true);
+              }}
+            >
+              Nueva Compra
+            </Button>
+            <Button
+              onClick={fetchCompras}
+              icon={<ReloadOutlined />}
+            >
+              Recargar
+            </Button>
+          </ResponsiveSpace>
+        }
+      >
+        <StyledTable<Compra>
+          columns={compraColumns}
+          dataSource={handleFilterCompras(compras)}
+          loading={loadingCompra}
+          rowKey="id_compra"
+        />
+      </StyledCard>
+
+      {/* Modal de Crear/Editar Compra */}
+      <Modal
+        title={editingCompra ? "Editar Compra" : "Nueva Compra"}
+        open={showCompraModal}
+        onCancel={() => {
+          setShowCompraModal(false);
+          setEditingCompra(null);
+          compraForm.resetFields();
+        }}
+        footer={null}
+      >
+        <Form
+          form={compraForm}
+          layout="vertical"
+          onFinish={onFinish}
+        >
+          <Form.Item
+            name="id_proveedor"
+            label="Proveedor"
+            rules={[{ required: true, message: 'Por favor seleccione un proveedor' }]}
+          >
+            <Select placeholder="Seleccione un proveedor">
+              {proveedores.map((proveedor: any) => (
+                <Option key={proveedor.id_proveedor} value={proveedor.id_proveedor}>
+                  {proveedor.nombre_proveedor}
+                </Option>
+              ))}
+            </Select>
+          </Form.Item>
+
+          <Form.List name="detalles">
+            {(fields, { add, remove }) => (
+              <>
+                {fields.map(({ key, name, ...restField }) => (
+                  <Space key={key} style={{ display: 'flex', marginBottom: 8 }} align="baseline">
+                    <Form.Item
+                      {...restField}
+                      name={[name, 'id_elemento']}
+                      rules={[{ required: true, message: 'Seleccione un elemento' }]}
+                    >
+                      <Select style={{ width: 200 }} placeholder="Seleccione elemento">
+                        {elementos
+                          .filter(elemento => elemento.estado_elemento === 'Activo')
+                          .map((elemento) => (
+                            <Option key={elemento.id_elemento} value={elemento.id_elemento}>
+                              {elemento.nombre_elemento}
+                            </Option>
+                          ))}
+                      </Select>
+                    </Form.Item>
+                    <Form.Item
+                      {...restField}
+                      name={[name, 'cantidad_compra']}
+                      rules={[{ required: true, message: 'Ingrese cantidad' }]}
+                    >
+                      <InputNumber 
+                        min={1} 
+                        placeholder="Cantidad"
+                        onChange={(value) => {
+                          const values = compraForm.getFieldsValue();
+                          if (values.detalles) {
+                            const detalles = values.detalles.map((detalle: DetalleCompraForm) => ({
+                              ...detalle,
+                              total_compra: detalle.cantidad_compra * detalle.precio_unitario
+                            }));
+                            const total = detalles.reduce((sum: number, detalle: any) => 
+                              sum + (detalle.total_compra || 0), 0
+                            );
+                            compraForm.setFieldsValue({ 
+                              costo_compra: Number(total.toFixed(2)),
+                              detalles: detalles
+                            });
+                          }
+                        }}
+                      />
+                    </Form.Item>
+                    <Form.Item
+                      {...restField}
+                      name={[name, 'precio_unitario']}
+                      rules={[{ required: true, message: 'Ingrese precio' }]}
+                    >
+                      <InputNumber
+                        min={0}
+                        step={0.01}
+                        placeholder="Precio unitario"
+                        formatter={value => `$ ${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
+                        parser={(value: string | undefined) => value ? Number(value.replace(/\$\s?|(,*)/g, '')) : 0}
+                        onChange={(value) => {
+                          const values = compraForm.getFieldsValue();
+                          if (values.detalles) {
+                            const detalles = values.detalles.map((detalle: DetalleCompraForm) => ({
+                              ...detalle,
+                              total_compra: detalle.cantidad_compra * detalle.precio_unitario
+                            }));
+                            const total = detalles.reduce((sum: number, detalle: any) => 
+                              sum + (detalle.total_compra || 0), 0
+                            );
+                            compraForm.setFieldsValue({ 
+                              costo_compra: Number(total.toFixed(2)),
+                              detalles: detalles
+                            });
+                          }
+                        }}
+                      />
+                    </Form.Item>
+                    <Button type="text" danger onClick={() => {
+                      remove(name);
+                      setTimeout(() => {
+                        const values = compraForm.getFieldsValue();
+                        if (values.detalles) {
+                          const detalles = values.detalles.map((detalle: DetalleCompraForm) => ({
+                            ...detalle,
+                            total_compra: detalle.cantidad_compra * detalle.precio_unitario
+                          }));
+                          const total = detalles.reduce((sum: number, detalle: any) => 
+                            sum + (detalle.total_compra || 0), 0
+                          );
+                          compraForm.setFieldsValue({ 
+                            costo_compra: Number(total.toFixed(2)),
+                            detalles: detalles
+                          });
+                        }
+                      }, 0);
+                    }}>
+                      <DeleteOutlined />
+                    </Button>
+                  </Space>
+                ))}
+                <Form.Item>
+                  <Button type="dashed" onClick={() => add()} block icon={<PlusOutlined />}>
+                    Agregar elemento
+                  </Button>
+                </Form.Item>
+              </>
+            )}
+          </Form.List>
+
+          <Form.Item
+            name="costo_compra"
+            label="Costo Total"
+          >
+            <InputNumber
+              min={0}
+              step={0.01}
+              style={{ width: '100%' }}
+              formatter={value => `$ ${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
+              parser={(value: string | undefined) => value ? Number(value.replace(/\$\s?|(,*)/g, '')) : 0}
+              disabled={true}
+            />
+          </Form.Item>
+
+          {editingCompra && (
+            <Form.Item
+              name="estado_compra"
+              label="Estado"
+              rules={[{ required: true, message: 'Por favor seleccione el estado' }]}
+            >
+              <Select>
+                <Option value="Completada">Completada</Option>
+                <Option value="Cancelada">Cancelada</Option>
+              </Select>
+            </Form.Item>
+          )}
+
+          <Form.Item>
+            <Space style={{ width: '100%', justifyContent: 'flex-end' }}>
+              <Button onClick={() => {
+                setShowCompraModal(false);
+                compraForm.resetFields();
+              }}>
+                Cancelar
+              </Button>
+              <Button 
+                type="primary" 
+                htmlType="submit"
+                loading={loadingCompraSubmit}
+                style={{ backgroundColor: 'var(--dark-gold)', borderColor: 'var(--dark-gold)' }}
+              >
+                {editingCompra ? 'Actualizar' : 'Crear'}
+              </Button>
+            </Space>
+          </Form.Item>
+        </Form>
+      </Modal>
 
       {/* Modal del catálogo */}
       <Modal
@@ -1794,12 +2966,12 @@ const RentAdmin: React.FC = () => {
         style={{ top: 20 }}
       >
         <Space style={{ marginBottom: 16 }}>
-          <Search
+          <StyledSearch
             placeholder="Buscar elementos..."
             onChange={(e) => setSearchText(e.target.value)}
             style={{ width: 200 }}
           />
-          <Select
+          <StyledSelect
             style={{ width: 200 }}
             placeholder="Filtrar por categoría"
             allowClear
@@ -1810,7 +2982,7 @@ const RentAdmin: React.FC = () => {
                 {categoria.nombre_categoria}
               </Option>
             ))}
-          </Select>
+          </StyledSelect>
           <Button onClick={handleReset} icon={<ReloadOutlined />}>
             Resetear Filtros
           </Button>
@@ -2094,6 +3266,83 @@ const RentAdmin: React.FC = () => {
           </Form>
         )}
       </StyledModal>
+
+      {/* Modal para ver detalles de compra */}
+      <Modal
+        title="Detalles de la Compra"
+        open={showViewCompraModal}
+        onCancel={() => {
+          setShowViewCompraModal(false);
+          setViewingCompra(null);
+        }}
+        footer={[
+          <Button key="close" onClick={() => {
+            setShowViewCompraModal(false);
+            setViewingCompra(null);
+          }}>
+            Cerrar
+          </Button>
+        ]}
+        width={800}
+      >
+        {viewingCompra && (
+          <div>
+            <Card>
+              <Descriptions column={2} bordered>
+                <Descriptions.Item label="ID Compra" span={1}>{viewingCompra.id_compra}</Descriptions.Item>
+                <Descriptions.Item label="Proveedor" span={1}>{viewingCompra.proveedor?.nombre_proveedor}</Descriptions.Item>
+                <Descriptions.Item label="Fecha" span={1}>{dayjs(viewingCompra.fecha_compra).format('DD/MM/YYYY')}</Descriptions.Item>
+                <Descriptions.Item label="Hora" span={1}>{dayjs(viewingCompra.hora_compra, 'HH:mm:ss').format('HH:mm')}</Descriptions.Item>
+                <Descriptions.Item label="Estado" span={1}>
+                  <Tag color={
+                    viewingCompra.estado_compra === 'Completada' ? 'success' :
+                    viewingCompra.estado_compra === 'Cancelada' ? 'error' : 'processing'
+                  }>
+                    {viewingCompra.estado_compra}
+                  </Tag>
+                </Descriptions.Item>
+                <Descriptions.Item label="Costo Total" span={1}>
+                  <Typography.Text strong>${Number(viewingCompra.costo_compra).toFixed(2)}</Typography.Text>
+                </Descriptions.Item>
+              </Descriptions>
+            </Card>
+            
+            {viewingCompra.detalles && viewingCompra.detalles.length > 0 && (
+              <Card title="Elementos de la Compra" style={{ marginTop: 16 }}>
+                <Table
+                  dataSource={viewingCompra.detalles}
+                  columns={[
+                    {
+                      title: 'Elemento',
+                      dataIndex: ['elemento', 'nombre_elemento'],
+                      key: 'nombre_elemento',
+                    },
+                    {
+                      title: 'Cantidad',
+                      dataIndex: 'cantidad_compra',
+                      key: 'cantidad_compra',
+                    },
+                    {
+                      title: 'Precio Unitario',
+                      dataIndex: 'precio_unitario',
+                      key: 'precio_unitario',
+                      render: (precio: number) => `$${Number(precio).toFixed(2)}`,
+                    },
+                    {
+                      title: 'Total',
+                      dataIndex: 'total_compra',
+                      key: 'total_compra',
+                      render: (total: number) => `$${Number(total).toFixed(2)}`,
+                    },
+                  ]}
+                  pagination={false}
+                  rowKey={(record) => record.elemento.id_elemento}
+                />
+              </Card>
+            )}
+          </div>
+        )}
+      </Modal>
     </>
   );
 };
