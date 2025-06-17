@@ -3,7 +3,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.deleteDetalleCompra = exports.createDetalleCompra = exports.deleteCompra = exports.editCompra = exports.getComprasByElemento = exports.getDetallesByCompra = exports.getCompras = exports.createCompra = void 0;
+exports.deleteDetalleCompra = exports.createDetalleCompra = exports.deleteCompra = exports.editCompra = exports.getComprasByElemento = exports.getDetallesByCompra = exports.getAllCompras = exports.getCompras = exports.createCompra = void 0;
 const Compra_model_1 = __importDefault(require("../models/Compra_model"));
 const DetalleCompra_model_1 = __importDefault(require("../models/DetalleCompra_model"));
 const Proveedor_model_1 = __importDefault(require("../models/Proveedor_model"));
@@ -88,12 +88,15 @@ exports.createCompra = createCompra;
 // Obtener todas las compras
 const getCompras = async (req, res) => {
     try {
+        const { estado } = req.query;
+        let whereClause = {};
+        if (estado) {
+            whereClause = {
+                estado_compra: estado
+            };
+        }
         const compras = await Compra_model_1.default.findAll({
-            where: {
-                estado_compra: {
-                    [sequelize_1.Op.ne]: 'Cancelada'
-                }
-            },
+            where: whereClause,
             include: [
                 {
                     model: DetalleCompra_model_1.default,
@@ -112,7 +115,9 @@ const getCompras = async (req, res) => {
         if (!compras || compras.length === 0) {
             return res.status(404).json({
                 error: 'No se encontraron compras',
-                mensaje: 'No hay compras registradas en el sistema'
+                mensaje: estado
+                    ? `No hay compras con estado ${estado} registradas en el sistema`
+                    : 'No hay compras registradas en el sistema'
             });
         }
         res.json(compras);
@@ -126,6 +131,38 @@ const getCompras = async (req, res) => {
     }
 };
 exports.getCompras = getCompras;
+// Obtener todas las compras sin filtro de estado
+const getAllCompras = async (req, res) => {
+    try {
+        const compras = await Compra_model_1.default.findAll({
+            include: [
+                {
+                    model: DetalleCompra_model_1.default,
+                    include: [
+                        {
+                            model: Elemento_model_1.default
+                        }
+                    ]
+                },
+                {
+                    model: Proveedor_model_1.default
+                }
+            ],
+            order: [['fecha_compra', 'DESC'], ['hora_compra', 'DESC']]
+        });
+        console.log('Total de compras encontradas:', compras.length);
+        // Siempre devolver un array, incluso si está vacío
+        res.json(compras || []);
+    }
+    catch (error) {
+        console.error('Error al obtener compras:', error);
+        res.status(500).json({
+            error: 'Error al obtener las compras',
+            mensaje: 'Ocurrió un error al cargar las compras'
+        });
+    }
+};
+exports.getAllCompras = getAllCompras;
 // Obtener detalles de una compra específica
 const getDetallesByCompra = async (req, res) => {
     try {

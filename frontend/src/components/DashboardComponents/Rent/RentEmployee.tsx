@@ -334,6 +334,41 @@ interface Alquiler {
   detalles?: DetalleAlquiler[];
 }
 
+interface DetalleCompra {
+  id_elemento: number;
+  elemento: Elemento;
+  cantidad_compra: number;
+  precio_unitario: number;
+  total_compra: number;
+}
+
+interface DetalleCompraForm {
+  id_elemento: number;
+  cantidad_compra: number;
+  precio_unitario: number;
+}
+
+interface DetalleCompraData {
+  id_elemento: number;
+  cantidad_compra: number;
+  precio_unitario: number;
+  total_compra: number;
+  precio_total: number;
+}
+
+interface Compra {
+  id_compra: number;
+  id_proveedor: number;
+  fecha_compra: string;
+  hora_compra: string;
+  costo_compra: number;
+  estado_compra: string;
+  proveedor?: {
+    nombre_proveedor: string;
+  };
+  detalles?: DetalleCompra[];
+}
+
 const RentEmployee: React.FC = () => {
   const [alquileres, setAlquileres] = useState<Alquiler[]>([]);
   const [elementos, setElementos] = useState<Elemento[]>([]);
@@ -355,11 +390,24 @@ const RentEmployee: React.FC = () => {
   const [showViewModal, setShowViewModal] = useState(false);
   const [viewingAlquiler, setViewingAlquiler] = useState<Alquiler | null>(null);
 
+  // Estados para compras
+  const [compras, setCompras] = useState<Compra[]>([]);
+  const [searchCompra, setSearchCompra] = useState('');
+  const [loadingCompra, setLoadingCompra] = useState(false);
+  const [showCompraModal, setShowCompraModal] = useState(false);
+  const [showViewCompraModal, setShowViewCompraModal] = useState(false);
+  const [viewingCompra, setViewingCompra] = useState<Compra | null>(null);
+  const [loadingCompraSubmit, setLoadingCompraSubmit] = useState(false);
+  const [proveedores, setProveedores] = useState<any[]>([]);
+  const [compraForm] = Form.useForm();
+
   useEffect(() => {
     fetchAlquileres();
     fetchElementos();
     fetchEventos();
     fetchCategorias();
+    fetchCompras();
+    fetchProveedores();
   }, []);
 
   const fetchAlquileres = async () => {
@@ -474,6 +522,69 @@ const RentEmployee: React.FC = () => {
       setCategorias(response.data);
     } catch (error) {
       message.error('Error al cargar las categorías');
+    }
+  };
+
+  const fetchCompras = async () => {
+    setLoadingCompra(true);
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        message.error('No hay sesión activa');
+        return;
+      }
+
+      const response = await axios.get(`${apiUrl}/compra/all`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      
+      if (Array.isArray(response.data)) {
+        console.log('Compras recibidas:', response.data);
+        setCompras(response.data);
+      } else {
+        console.warn('La respuesta no es un array:', response.data);
+        setCompras([]);
+      }
+    } catch (error: any) {
+      console.error('Error al cargar las compras:', error);
+      if (axios.isAxiosError(error)) {
+        message.error(`Error: ${error.response?.data?.mensaje || error.message}`);
+      } else {
+        message.error('Error al cargar las compras');
+      }
+      setCompras([]);
+    } finally {
+      setLoadingCompra(false);
+    }
+  };
+
+  const fetchProveedores = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        message.error('No hay sesión activa');
+        return;
+      }
+      const response = await axios.get(`${apiUrl}/proveedor/search?tipo=Elementos`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      if (response.data && Array.isArray(response.data)) {
+        const proveedoresElementos = response.data
+          .filter((proveedor: any) => proveedor.estado_proveedor === 'Activo')
+          .sort((a: any, b: any) => a.nombre_proveedor.localeCompare(b.nombre_proveedor));
+        setProveedores(proveedoresElementos);
+      } else {
+        setProveedores([]);
+      }
+    } catch (error: any) {
+      console.error('Error al obtener proveedores:', error);
+      message.error('Error al cargar los proveedores');
     }
   };
 
@@ -1083,6 +1194,121 @@ const RentEmployee: React.FC = () => {
     return matchesSearch && matchesEvento && matchesEstado;
   });
 
+  // Función para ver detalles de una compra
+  const handleViewCompra = async (record: Compra) => {
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        message.error('No hay sesión activa');
+        return;
+      }
+
+      const response = await axios.get(`${apiUrl}/compra/${record.id_compra}/detalles`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      const detalles = response.data.map((detalle: any) => ({
+        ...detalle,
+        cantidad_compra: Number(detalle.cantidad_compra || 0),
+        precio_unitario: Number(detalle.precio_unitario || 0),
+        total_compra: Number((detalle.cantidad_compra || 0) * (detalle.precio_unitario || 0))
+      }));
+
+      const totalGeneral = detalles.reduce((sum: number, detalle: any) => 
+        sum + (detalle.cantidad_compra * detalle.precio_unitario), 0
+      );
+
+      setViewingCompra({
+        ...record,
+        detalles: detalles,
+        costo_compra: Number(totalGeneral.toFixed(2))
+      });
+      setShowViewCompraModal(true);
+    } catch (error) {
+      console.error('Error al obtener detalles de la compra:', error);
+      message.error('Error al cargar los detalles de la compra');
+    }
+  };
+
+  // Función para filtrar compras
+  const handleFilterCompras = (compras: Compra[]) => {
+    return compras.filter(compra => {
+      const searchLower = searchCompra ? searchCompra.toLowerCase() : '';
+      return !searchCompra ||
+        compra.id_compra.toString().includes(searchLower) ||
+        (compra.proveedor?.nombre_proveedor || '').toLowerCase().includes(searchLower);
+    });
+  };
+
+  // Columnas para la tabla de compras
+  const compraColumns = [
+    {
+      title: 'ID',
+      dataIndex: 'id_compra',
+      key: 'id_compra',
+      sorter: (a: Compra, b: Compra) => a.id_compra - b.id_compra,
+    },
+    {
+      title: 'Proveedor',
+      dataIndex: ['proveedor', 'nombre_proveedor'],
+      key: 'proveedor',
+      sorter: (a: Compra, b: Compra) => (a.proveedor?.nombre_proveedor || '').localeCompare(b.proveedor?.nombre_proveedor || ''),
+    },
+    {
+      title: 'Fecha',
+      dataIndex: 'fecha_compra',
+      key: 'fecha_compra',
+      render: (fecha: string) => dayjs(fecha).format('DD/MM/YYYY'),
+      sorter: (a: Compra, b: Compra) => dayjs(a.fecha_compra).unix() - dayjs(b.fecha_compra).unix(),
+    },
+    {
+      title: 'Hora',
+      dataIndex: 'hora_compra',
+      key: 'hora_compra',
+      render: (hora: string) => dayjs(hora, 'HH:mm:ss').format('HH:mm'),
+    },
+    {
+      title: 'Costo',
+      dataIndex: 'costo_compra',
+      key: 'costo_compra',
+      render: (costo: number) => `$${Number(costo || 0).toFixed(2)}`,
+      sorter: (a: Compra, b: Compra) => (a.costo_compra || 0) - (b.costo_compra || 0),
+    },
+    {
+      title: 'Estado',
+      dataIndex: 'estado_compra',
+      key: 'estado_compra',
+      render: (estado: string) => {
+        let color = 'default';
+        if (estado === 'Completada') color = 'success';
+        else if (estado === 'Cancelada') color = 'error';
+        return <Tag color={color}>{estado}</Tag>;
+      },
+      filters: [
+        { text: 'Completada', value: 'Completada' },
+        { text: 'Cancelada', value: 'Cancelada' }
+      ],
+      onFilter: (value: any, record: Compra) => record.estado_compra === value,
+    },
+    {
+      title: 'Acciones',
+      key: 'acciones',
+      render: (_: any, record: Compra) => (
+        <Space>
+          <Tooltip title="Ver compra">
+            <Button
+              type="text"
+              icon={<EyeOutlined />}
+              onClick={() => handleViewCompra(record)}
+            />
+          </Tooltip>
+        </Space>
+      ),
+    },
+  ];
+
   return (
     <>
       <StyledCard title="Gestión de Alquileres">
@@ -1563,6 +1789,127 @@ const RentEmployee: React.FC = () => {
                 </List.Item>
               )}
             />
+          </div>
+        )}
+      </Modal>
+
+      {/* Tabla de Compras */}
+      <StyledCard
+        title="Gestión de Compras"
+        extra={
+          <Space>
+            <Search
+              placeholder="Buscar por ID o proveedor..."
+              allowClear
+              value={searchCompra}
+              onChange={(e) => setSearchCompra(e.target.value)}
+              style={{ width: 200 }}
+            />
+            <Button
+              onClick={fetchCompras}
+              icon={<ReloadOutlined />}
+            >
+              Recargar
+            </Button>
+          </Space>
+        }
+      >
+        <div style={{ marginBottom: 16 }}>
+          <Typography.Text>
+            Mostrando todas las compras ({compras.length} en total)
+          </Typography.Text>
+        </div>
+        <Table
+          columns={compraColumns}
+          dataSource={handleFilterCompras(compras)}
+          loading={loadingCompra}
+          rowKey="id_compra"
+          pagination={{ 
+            pageSize: 10,
+            showTotal: (total, range) => `${range[0]}-${range[1]} de ${total} compras`
+          }}
+          locale={{ 
+            emptyText: 'No hay compras registradas',
+            filterConfirm: 'Aceptar',
+            filterReset: 'Resetear',
+            filterEmptyText: 'Sin filtros'
+          }}
+        />
+      </StyledCard>
+
+      {/* Modal para ver detalles de compra */}
+      <Modal
+        title="Detalles de la Compra"
+        open={showViewCompraModal}
+        onCancel={() => {
+          setShowViewCompraModal(false);
+          setViewingCompra(null);
+        }}
+        footer={[
+          <Button key="close" onClick={() => {
+            setShowViewCompraModal(false);
+            setViewingCompra(null);
+          }}>
+            Cerrar
+          </Button>
+        ]}
+        width={800}
+      >
+        {viewingCompra && (
+          <div>
+            <Card>
+              <Descriptions column={2} bordered>
+                <Descriptions.Item label="ID Compra" span={1}>{viewingCompra.id_compra}</Descriptions.Item>
+                <Descriptions.Item label="Proveedor" span={1}>{viewingCompra.proveedor?.nombre_proveedor}</Descriptions.Item>
+                <Descriptions.Item label="Fecha" span={1}>{dayjs(viewingCompra.fecha_compra).format('DD/MM/YYYY')}</Descriptions.Item>
+                <Descriptions.Item label="Hora" span={1}>{dayjs(viewingCompra.hora_compra, 'HH:mm:ss').format('HH:mm')}</Descriptions.Item>
+                <Descriptions.Item label="Estado" span={1}>
+                  <Tag color={
+                    viewingCompra.estado_compra === 'Completada' ? 'success' :
+                    viewingCompra.estado_compra === 'Cancelada' ? 'error' : 'default'
+                  }>
+                    {viewingCompra.estado_compra}
+                  </Tag>
+                </Descriptions.Item>
+                <Descriptions.Item label="Costo Total" span={1}>
+                  <Typography.Text strong>${Number(viewingCompra.costo_compra).toFixed(2)}</Typography.Text>
+                </Descriptions.Item>
+              </Descriptions>
+            </Card>
+            
+            {viewingCompra.detalles && viewingCompra.detalles.length > 0 && (
+              <Card title="Elementos de la Compra" style={{ marginTop: 16 }}>
+                <Table
+                  dataSource={viewingCompra.detalles}
+                  columns={[
+                    {
+                      title: 'Elemento',
+                      dataIndex: ['elemento', 'nombre_elemento'],
+                      key: 'nombre_elemento',
+                    },
+                    {
+                      title: 'Cantidad',
+                      dataIndex: 'cantidad_compra',
+                      key: 'cantidad_compra',
+                    },
+                    {
+                      title: 'Precio Unitario',
+                      dataIndex: 'precio_unitario',
+                      key: 'precio_unitario',
+                      render: (precio: number) => `$${Number(precio).toFixed(2)}`,
+                    },
+                    {
+                      title: 'Total',
+                      dataIndex: 'total_compra',
+                      key: 'total_compra',
+                      render: (total: number) => `$${Number(total).toFixed(2)}`,
+                    },
+                  ]}
+                  pagination={false}
+                  rowKey={(record) => record.elemento.id_elemento}
+                />
+              </Card>
+            )}
           </div>
         )}
       </Modal>

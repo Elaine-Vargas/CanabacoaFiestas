@@ -17,13 +17,31 @@ export const createCompra = async (req: Request, res: Response) => {
       estado_compra = 'Completada' // Estado por defecto
     } = req.body;
 
+    console.log('Datos recibidos:', {
+      id_proveedor,
+      detalles,
+      costo_compra,
+      estado_compra
+    });
+
     // Verificar que el proveedor existe
     const proveedor = await Proveedor.findByPk(id_proveedor);
+    console.log('Proveedor encontrado:', proveedor?.toJSON());
+    
     if (!proveedor) {
       await t.rollback();
       return res.status(404).json({ 
         error: 'Proveedor no encontrado',
         mensaje: 'El proveedor especificado no existe en el sistema'
+      });
+    }
+
+    // Verificar que el proveedor sea de tipo Elementos
+    if (proveedor.tipo_proveedor !== 'Elementos') {
+      await t.rollback();
+      return res.status(400).json({
+        error: 'Tipo de proveedor inválido',
+        mensaje: 'Solo se pueden crear compras con proveedores de tipo Elementos'
       });
     }
 
@@ -36,11 +54,15 @@ export const createCompra = async (req: Request, res: Response) => {
       estado_compra
     }, { transaction: t });
 
+    console.log('Compra creada:', compra.toJSON());
+
     // Crear los detalles de compra
     if (detalles && detalles.length > 0) {
       // Validar que todos los elementos existen
       for (const detalle of detalles) {
         const elemento = await Elemento.findByPk(detalle.id_elemento);
+        console.log('Elemento encontrado:', elemento?.toJSON());
+        
         if (!elemento) {
           await t.rollback();
           return res.status(404).json({
@@ -59,7 +81,9 @@ export const createCompra = async (req: Request, res: Response) => {
           precio_total: detalle.precio_unitario * detalle.cantidad_compra
         }, { transaction: t })
       );
-      await Promise.all(detallesPromises);
+
+      const detallesCreados = await Promise.all(detallesPromises);
+      console.log('Detalles creados:', detallesCreados.map(d => d.toJSON()));
     }
 
     await t.commit();
@@ -81,13 +105,23 @@ export const createCompra = async (req: Request, res: Response) => {
       ]
     });
 
+    console.log('Compra completa:', compraCompleta?.toJSON());
+
     res.status(201).json(compraCompleta);
-  } catch (error) {
+  } catch (error: any) {
     await t.rollback();
     console.error('Error al crear compra:', error);
+    console.error('Detalles del error:', {
+      name: error.name,
+      message: error.message,
+      stack: error.stack,
+      code: error.code,
+      errors: error.errors
+    });
     res.status(500).json({ 
       error: 'Error al crear compra',
-      mensaje: 'Ocurrió un error al procesar la compra'
+      mensaje: 'Ocurrió un error al procesar la compra',
+      detalles: error.message
     });
   }
 };

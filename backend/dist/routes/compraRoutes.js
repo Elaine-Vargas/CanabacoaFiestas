@@ -4,12 +4,26 @@ const express_1 = require("express");
 const compraController_1 = require("../controllers/compraController");
 const authMiddleware_1 = require("../middlewares/authMiddleware");
 const router = (0, express_1.Router)();
-// Middleware de autenticación para todas las rutas
-const authMiddleware = (req, res, next) => {
-    (0, authMiddleware_1.verificarToken)(req, res, next);
-};
-// Aplicar autenticación a todas las rutas
-router.use(authMiddleware);
+// Aplicar middleware de autenticación a todas las rutas
+router.use(authMiddleware_1.verificarToken);
+// Obtener todas las compras sin filtro de estado (debe ir antes de las rutas con parámetros)
+router.get('/all', async (req, res, next) => {
+    try {
+        await (0, compraController_1.getAllCompras)(req, res);
+    }
+    catch (error) {
+        next(error);
+    }
+});
+// Obtener compras por elemento (debe ir antes de las rutas con :id_compra)
+router.get('/elemento/:id_elemento', async (req, res, next) => {
+    try {
+        await (0, compraController_1.getComprasByElemento)(req, res);
+    }
+    catch (error) {
+        next(error);
+    }
+});
 // Crear una nueva compra
 router.post('/', async (req, res, next) => {
     try {
@@ -19,10 +33,10 @@ router.post('/', async (req, res, next) => {
         next(error);
     }
 });
-// Obtener todas las compras
-router.get('/', async (req, res, next) => {
+// Crear un detalle de compra individual
+router.post('/detalle', async (req, res, next) => {
     try {
-        await (0, compraController_1.getCompras)(req, res);
+        await (0, compraController_1.createDetalleCompra)(req, res);
     }
     catch (error) {
         next(error);
@@ -32,15 +46,6 @@ router.get('/', async (req, res, next) => {
 router.get('/:id_compra/detalles', async (req, res, next) => {
     try {
         await (0, compraController_1.getDetallesByCompra)(req, res);
-    }
-    catch (error) {
-        next(error);
-    }
-});
-// Obtener compras por elemento
-router.get('/elemento/:id_elemento', async (req, res, next) => {
-    try {
-        await (0, compraController_1.getComprasByElemento)(req, res);
     }
     catch (error) {
         next(error);
@@ -64,19 +69,19 @@ router.delete('/:id_compra', async (req, res, next) => {
         next(error);
     }
 });
-// Crear un detalle de compra individual
-router.post('/detalle', async (req, res, next) => {
+// Eliminar un detalle de compra
+router.delete('/detalle/:id_detalle_compra', async (req, res, next) => {
     try {
-        await (0, compraController_1.createDetalleCompra)(req, res);
+        await (0, compraController_1.deleteDetalleCompra)(req, res);
     }
     catch (error) {
         next(error);
     }
 });
-// Eliminar un detalle de compra
-router.delete('/detalle/:id_detalle_compra', async (req, res, next) => {
+// Obtener todas las compras (con filtros opcionales)
+router.get('/', async (req, res, next) => {
     try {
-        await (0, compraController_1.deleteDetalleCompra)(req, res);
+        await (0, compraController_1.getCompras)(req, res);
     }
     catch (error) {
         next(error);
