@@ -6,7 +6,7 @@ import bcrypt from 'bcryptjs';
 import { Op } from 'sequelize';
 
 // Validación de variables de entorno al iniciar
-const requiredEnvVars = ['JWT_SECRET', 'EMAIL_USER', 'EMAIL_PASS', 'FRONTEND_FULL_URL', 'EMAIL_SERVICE'];
+const requiredEnvVars = ['JWT_SECRET', 'EMAIL_USER', 'EMAIL_PASS', 'FRONTEND_URL', 'EMAIL_SERVICE'];
 for (const envVar of requiredEnvVars) {
   if (!process.env[envVar]) {
     throw new Error(`ERROR CRÍTICO: La variable de entorno ${envVar} no está definida o está vacía. Por favor, verifica tu archivo .env.`);
@@ -114,8 +114,38 @@ export const sendRecoveryEmail = async (req: Request, res: Response) => {
       throw new Error('Error al conectar con el servicio de correo');
     }
 
-    // URL de recuperación
-    const recoveryUrl = `${process.env.FRONTEND_URL}Login/Recuperar-Contrasena/Restablecer?token=${encodeURIComponent(token)}`;
+    // Asegura que FRONTEND_URL esté definida y construye la URL correctamente
+    if (!process.env.FRONTEND_URL) {
+      throw new Error('FRONTEND_URL no está definida en las variables de entorno');
+    }
+    // Obtiene la URL base del frontend a partir del encabezado Referer o del Host de la petición
+    let frontendUrl: string | undefined;
+
+    // Intenta obtener la base desde el Referer (si viene del frontend)
+    const referer = req.get('referer');
+    if (referer) {
+      try {
+      const url = new URL(referer);
+      frontendUrl = `${url.protocol}//${url.host}`;
+      } catch {
+      frontendUrl = undefined;
+      }
+    }
+
+    // Si no hay Referer, usa el Host del request (menos confiable, pero útil en desarrollo)
+    if (!frontendUrl) {
+      const host = req.get('host');
+      const protocol = req.protocol;
+      if (host) {
+      frontendUrl = `${protocol}://${host}`;
+      }
+    }
+
+    // Si aún no se pudo determinar, usa la variable de entorno como último recurso
+    if (!frontendUrl) {
+      frontendUrl = process.env.FRONTEND_URL;
+    }
+    const recoveryUrl = `${frontendUrl.replace(/\/+$/, '')}/Login/Recuperar-Contrasena/Restablecer?token=${encodeURIComponent(token)}`;
     console.log('[Recovery] URL generada:', recoveryUrl);
 
     // Configurar el correo

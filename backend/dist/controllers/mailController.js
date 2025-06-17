@@ -103,8 +103,36 @@ const sendRecoveryEmail = async (req, res) => {
             console.error('[Recovery] Error al verificar servicio de correo:', mailError);
             throw new Error('Error al conectar con el servicio de correo');
         }
-        // URL de recuperación
-        const recoveryUrl = `${process.env.FRONTEND_URL}Login/Recuperar-Contrasena/Restablecer?token=${encodeURIComponent(token)}`;
+        // Asegura que FRONTEND_URL esté definida y construye la URL correctamente
+        if (!process.env.FRONTEND_URL) {
+            throw new Error('FRONTEND_URL no está definida en las variables de entorno');
+        }
+        // Obtiene la URL base del frontend a partir del encabezado Referer o del Host de la petición
+        let frontendUrl;
+        // Intenta obtener la base desde el Referer (si viene del frontend)
+        const referer = req.get('referer');
+        if (referer) {
+            try {
+                const url = new URL(referer);
+                frontendUrl = `${url.protocol}//${url.host}`;
+            }
+            catch {
+                frontendUrl = undefined;
+            }
+        }
+        // Si no hay Referer, usa el Host del request (menos confiable, pero útil en desarrollo)
+        if (!frontendUrl) {
+            const host = req.get('host');
+            const protocol = req.protocol;
+            if (host) {
+                frontendUrl = `${protocol}://${host}`;
+            }
+        }
+        // Si aún no se pudo determinar, usa la variable de entorno como último recurso
+        if (!frontendUrl) {
+            frontendUrl = process.env.FRONTEND_URL;
+        }
+        const recoveryUrl = `${frontendUrl.replace(/\/+$/, '')}/Login/Recuperar-Contrasena/Restablecer?token=${encodeURIComponent(token)}`;
         console.log('[Recovery] URL generada:', recoveryUrl);
         // Configurar el correo
         const mailOptions = {

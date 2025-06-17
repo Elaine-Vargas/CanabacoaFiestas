@@ -33,43 +33,58 @@ const EventoForm: React.FC<EventoFormProps> = ({
 }) => {
   const [form] = Form.useForm();
   const [selectedProvincia, setSelectedProvincia] = useState<number | null>(null);
-  const isEditing = !!initialValues;
-  const canEdit = !isEditing || initialValues.estado_solicitud === 'Pendiente';
+  const [isEditMode, setIsEditMode] = useState(false);
 
   useEffect(() => {
     if (visible) {
       if (initialValues) {
-        // Convertir las fechas a objetos dayjs
+        setIsEditMode(true);
+        // Mapear todos los campos relevantes del evento
+        let provinciaId = null;
+        if (initialValues.id_provincia != null) {
+          provinciaId = Number(initialValues.id_provincia);
+        } else if (initialValues.direccion?.ciudad?.provincia?.id_provincia != null) {
+          provinciaId = Number(initialValues.direccion.ciudad.provincia.id_provincia);
+        } else if (initialValues.direccion?.ciudad?.id_provincia != null) {
+          provinciaId = Number(initialValues.direccion.ciudad.id_provincia);
+        }
         const values = {
           ...initialValues,
           fecha_evento: initialValues.fecha_evento ? dayjs(initialValues.fecha_evento) : null,
           hora_evento: initialValues.hora_evento ? dayjs(initialValues.hora_evento, 'HH:mm:ss') : null,
-          id_provincia: initialValues.direccion?.ciudad?.provincia?.id_provincia != null ? Number(initialValues.direccion.ciudad.provincia.id_provincia) : null,
-          id_ciudad: initialValues.direccion?.ciudad?.id_ciudad != null ? Number(initialValues.direccion.ciudad.id_ciudad) : null,
-          sector: initialValues.direccion?.sector,
-          calle: initialValues.direccion?.calle,
-          detalles: initialValues.direccion?.detalles,
-          id_tipo_evento: initialValues.tipo_evento?.id_tipo_evento != null ? Number(initialValues.tipo_evento.id_tipo_evento) : null,
-          espacio_evento: initialValues.espacio_evento,
-          desea_supervision: initialValues.desea_supervision,
-          nota_cliente: initialValues.nota_cliente,
-          cedula_cliente: initialValues.cliente?.cedula_usuario,
-          cedula_asesor: initialValues.asesor?.cedula_usuario,
-          estado_solicitud: initialValues.estado_solicitud
+          id_provincia: provinciaId,
+          id_ciudad: initialValues.direccion?.ciudad?.id_ciudad != null ? Number(initialValues.direccion.ciudad.id_ciudad) : initialValues.id_ciudad ?? null,
+          sector: initialValues.direccion?.sector ?? initialValues.sector ?? '',
+          calle: initialValues.direccion?.calle ?? initialValues.calle ?? '',
+          detalles: initialValues.direccion?.detalles ?? initialValues.detalles ?? '',
+          id_tipo_evento: initialValues.tipo_evento?.id_tipo_evento != null ? Number(initialValues.tipo_evento.id_tipo_evento) : initialValues.id_tipo_evento ?? null,
+          espacio_evento: initialValues.espacio_evento ?? '',
+          desea_supervision: initialValues.desea_supervision ?? false,
+          nota_cliente: initialValues.nota_cliente ?? '',
+          cedula_cliente: initialValues.cliente?.cedula_usuario ?? initialValues.cedula_cliente ?? '',
+          cedula_asesor: initialValues.asesor?.cedula_usuario ?? initialValues.cedula_asesor ?? '',
+          estado_solicitud: initialValues.estado_solicitud ?? 'Pendiente',
+          total_evento: initialValues.total_evento ?? '',
+          subtotal_evento: initialValues.subtotal_evento ?? '',
+          itbis_evento: initialValues.itbis_evento ?? '',
+          id_direccion: initialValues.id_direccion ?? initialValues.direccion?.id_direccion ?? '',
         };
         form.setFieldsValue(values);
-        setSelectedProvincia(initialValues.direccion?.ciudad?.provincia?.id_provincia != null ? Number(initialValues.direccion.ciudad.provincia.id_provincia) : null);
+        setSelectedProvincia(provinciaId);
       } else {
+        setIsEditMode(false);
         // Si es un nuevo evento, establecer la cédula del usuario actual
         form.setFieldsValue({
           cedula_cliente: userCedula,
           estado_solicitud: 'Pendiente',
           desea_supervision: false
         });
+        setSelectedProvincia(null);
       }
     } else {
       form.resetFields();
       setSelectedProvincia(null);
+      setIsEditMode(false);
     }
   }, [visible, initialValues, form, userCedula]);
 
@@ -81,13 +96,10 @@ const EventoForm: React.FC<EventoFormProps> = ({
   const handleSubmit = async () => {
     try {
       const values = await form.validateFields();
-      
-      // Validar que las fechas sean válidas
       if (!values.fecha_evento || !values.hora_evento) {
         message.error('La fecha y hora del evento son requeridas');
         return;
       }
-
       await onSubmit(values);
     } catch (error) {
       console.error('Error al validar el formulario:', error);
@@ -154,7 +166,7 @@ const EventoForm: React.FC<EventoFormProps> = ({
             { value: 'Completada', label: 'Completada' },
             { value: 'Cancelada', label: 'Cancelada' }
           ]}
-          disabled={!isEditing}
+          disabled={false}
         />
       </Form.Item>
 
@@ -165,7 +177,7 @@ const EventoForm: React.FC<EventoFormProps> = ({
       >
         <DatePicker 
           style={{ width: '100%' }} 
-          disabled={!canEdit}
+          disabled={false}
         />
       </Form.Item>
 
@@ -177,7 +189,7 @@ const EventoForm: React.FC<EventoFormProps> = ({
         <TimePicker 
           style={{ width: '100%' }} 
           format="HH:mm" 
-          disabled={!canEdit}
+          disabled={false}
         />
       </Form.Item>
 
@@ -194,7 +206,7 @@ const EventoForm: React.FC<EventoFormProps> = ({
           }))}
           showSearch
           optionFilterProp="label"
-          disabled={!canEdit}
+          disabled={false}
         />
       </Form.Item>
 
@@ -212,7 +224,7 @@ const EventoForm: React.FC<EventoFormProps> = ({
           }))}
           showSearch
           optionFilterProp="label"
-          disabled={!canEdit}
+          disabled={false}
         />
       </Form.Item>
 
@@ -223,7 +235,7 @@ const EventoForm: React.FC<EventoFormProps> = ({
       >
         <Select
           placeholder="Seleccione una ciudad"
-          disabled={!selectedProvincia || !canEdit}
+          disabled={!selectedProvincia}
           options={ciudades
             .filter(ciudad => ciudad.id_provincia === selectedProvincia)
             .map(ciudad => ({
@@ -240,7 +252,7 @@ const EventoForm: React.FC<EventoFormProps> = ({
         label="Sector"
         rules={[{ required: true, message: 'Por favor ingrese el sector' }]}
       >
-        <Input disabled={!canEdit} />
+        <Input disabled={false} />
       </Form.Item>
 
       <Form.Item
@@ -248,14 +260,14 @@ const EventoForm: React.FC<EventoFormProps> = ({
         label="Calle"
         rules={[{ required: true, message: 'Por favor ingrese la calle' }]}
       >
-        <Input disabled={!canEdit} />
+        <Input disabled={false} />
       </Form.Item>
 
       <Form.Item
         name="detalles"
         label="Detalles Adicionales"
       >
-        <Input.TextArea rows={4} disabled={!canEdit} />
+        <Input.TextArea rows={4} disabled={false} />
       </Form.Item>
 
       <Form.Item
@@ -263,7 +275,7 @@ const EventoForm: React.FC<EventoFormProps> = ({
         label="Espacio del Evento"
         rules={[{ required: true, message: 'Por favor ingrese el espacio del evento' }]}
       >
-        <Input disabled={!canEdit} />
+        <Input disabled={false} />
       </Form.Item>
 
       <Form.Item
@@ -271,14 +283,14 @@ const EventoForm: React.FC<EventoFormProps> = ({
         label="¿Desea supervisión?"
         valuePropName="checked"
       >
-        <Switch disabled={!canEdit} />
+        <Switch disabled={false} />
       </Form.Item>
 
       <Form.Item
         name="nota_cliente"
         label="Notas"
       >
-        <Input.TextArea rows={4} disabled={!canEdit} />
+        <Input.TextArea rows={4} disabled={false} />
       </Form.Item>
 
       <div style={{ textAlign: 'right', marginTop: '20px' }}>
@@ -286,11 +298,11 @@ const EventoForm: React.FC<EventoFormProps> = ({
           Cancelar
         </Button>
         <Button type="primary" onClick={handleSubmit} loading={loading}>
-          {isEditing ? 'Actualizar Evento' : 'Crear Evento'}
+          {isEditMode ? 'Actualizar Evento' : 'Crear Evento'}
         </Button>
       </div>
     </Form>
   );
 };
 
-export default EventoForm; 
+export default EventoForm;

@@ -93,7 +93,6 @@ const PagoForm: React.FC<PagoFormProps> = ({
             style={{ width: '100%' }} 
             prefix="RD$" 
             formatter={value => `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
-            parser={value => value!.replace(/\$\s?|(,*)/g, '')}
           />
         </Form.Item>
         <Form.Item

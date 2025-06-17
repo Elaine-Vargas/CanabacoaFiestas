@@ -1246,14 +1246,14 @@ const WelcomeAdmin: React.FC = () => {
     setModalDetallesProveedorVisible(true);
   };
 
-  const handleEditEvento = (record: Evento) => {
-    setEventoSeleccionado(record);
-    setModalEventoVisible(true);
-  };
+const handleEditEvento = (record: Evento) => {
+  setEventoSeleccionado(record);
+  setShowEventoForm(true);
+};
 
   const handleEditUsuario = (record: Usuario) => {
     setUsuarioSeleccionado(record);
-    setModalUsuarioVisible(true);
+    setShowUsuarioForm(true);
   };
 
   const handleEditProveedor = (record: Proveedor) => {
@@ -1526,15 +1526,12 @@ const WelcomeAdmin: React.FC = () => {
             }}
             title="Ver Detalles"
           />
-          <Button
-            type="text"
-            icon={<EditOutlined />}
-            onClick={() => {
-              setEventoSeleccionado(record);
-              setModalEventoVisible(true);
-            }}
-            title="Editar"
-          />
+            <Button
+              type="text"
+              icon={<EditOutlined />}
+              onClick={() => handleEditEvento(record)}
+              title="Editar"
+            />
           <Button
             type="text"
             danger
@@ -1596,10 +1593,7 @@ const WelcomeAdmin: React.FC = () => {
           <Button
             type="text"
             icon={<EditOutlined />}
-            onClick={() => {
-              setUsuarioSeleccionado(record);
-              setModalUsuarioVisible(true);
-            }}
+            onClick={() => handleEditUsuario(record)}
             title="Editar"
           />
           <Button
@@ -1893,7 +1887,7 @@ const WelcomeAdmin: React.FC = () => {
         return;
       }
 
-      const response = await fetch(`${apiUrl}/eventos/${eventoSeleccionado.id_evento}`, {
+      const response = await fetch(`${apiUrl}/evento/${eventoSeleccionado.id_evento}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -1968,7 +1962,7 @@ const WelcomeAdmin: React.FC = () => {
   clearFilters={() => {
     setSearchTextEventos('');
     setSelectedEstadoEventos('todos');
-    setSelectedCliente('');
+    ('');
     setSelectedAsesor('');
   }}
   activeFiltersCount={
@@ -3105,6 +3099,7 @@ const WelcomeAdmin: React.FC = () => {
         onCancel={() => {
           setShowEventoForm(false);
           setEventoSeleccionado(null);
+        
         }}
         footer={null}
         width={800}

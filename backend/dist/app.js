@@ -33,9 +33,16 @@ const reporteRoutes_1 = __importDefault(require("./routes/reporteRoutes"));
 dotenv_1.default.config();
 const app = (0, express_1.default)();
 const PORT = process.env.PORT || 3000;
+const HOST = process.env.FRONTEND_URL || '0.0.0.0';
 // Configuración de CORS
+const allowedOrigins = [
+    'http://localhost:5173',
+    'http://127.0.0.1:5173',
+    'https://canabacoafiestas-production.up.railway.app/',
+    process.env.FRONTEND_URL
+].filter((origin) => Boolean(origin));
 const corsOptions = {
-    origin: ['http://localhost:5173', 'http://127.0.0.1:5173'],
+    origin: allowedOrigins.length === 1 ? allowedOrigins[0] : allowedOrigins,
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization']
@@ -46,30 +53,39 @@ app.use((0, morgan_1.default)('dev'));
 app.use(express_1.default.json());
 // Servir archivos estáticos desde el directorio uploads
 app.use('/uploads', express_1.default.static(path_1.default.join(__dirname, '../uploads')));
-// Rutas
-app.use('/api/auth', authRoutes_1.default);
-app.use('/api/elemento', elementoRoutes_1.default);
-app.use('/api/comentario', comentarioRoutes_1.default);
-app.use('/api/usuario', usersRoutes_1.default);
-app.use('/api/evento', eventoRoutes_1.default);
-app.use('/api/alquiler', alquilerRoutes_1.default);
-app.use('/api/decoracion', decoracionRoutes_1.default);
-app.use('/api/direccion', direccionRoutes_1.default);
-app.use('/api/transporte', transporteRoutes_1.default);
-app.use('/api/supervision', supervisionRoutes_1.default);
-app.use('/api/catering', cateringRoutes_1.default);
-app.use('/api/menucatering', menuCateringRoutes_1.default);
-app.use('/api/menu', MenuRoutes_1.default);
-app.use('/api/plato', platoRoutes_1.default);
-app.use('/api/compra', compraRoutes_1.default);
-app.use('/api/costo-agregado', costoAgregadoRoutes_1.default);
-app.use('/api/pago', pagoRoutes_1.default);
-app.use('/api/proveedor', proveedorRoutes_1.default);
-app.use('/api/vehiculo', supervisionRoutes_2.default);
-app.use('/api/reporte', reporteRoutes_1.default);
+// Servir frontend compilado
+app.use(express_1.default.static(path_1.default.join(__dirname, '../../frontend/dist')));
+// Agrupar todas las rutas API en un router
+const apiRouter = express_1.default.Router();
+apiRouter.use('/auth', authRoutes_1.default);
+apiRouter.use('/elemento', elementoRoutes_1.default);
+apiRouter.use('/comentario', comentarioRoutes_1.default);
+apiRouter.use('/usuario', usersRoutes_1.default);
+apiRouter.use('/evento', eventoRoutes_1.default);
+apiRouter.use('/alquiler', alquilerRoutes_1.default);
+apiRouter.use('/decoracion', decoracionRoutes_1.default);
+apiRouter.use('/direccion', direccionRoutes_1.default);
+apiRouter.use('/transporte', transporteRoutes_1.default);
+apiRouter.use('/supervision', supervisionRoutes_1.default);
+apiRouter.use('/catering', cateringRoutes_1.default);
+apiRouter.use('/menucatering', menuCateringRoutes_1.default);
+apiRouter.use('/menu', MenuRoutes_1.default);
+apiRouter.use('/plato', platoRoutes_1.default);
+apiRouter.use('/compra', compraRoutes_1.default);
+apiRouter.use('/costo-agregado', costoAgregadoRoutes_1.default);
+apiRouter.use('/pago', pagoRoutes_1.default);
+apiRouter.use('/proveedor', proveedorRoutes_1.default);
+apiRouter.use('/vehiculo', supervisionRoutes_2.default);
+apiRouter.use('/reporte', reporteRoutes_1.default);
+// Usar el router agrupado bajo /api
+app.use('/api', apiRouter);
 // Ruta de prueba
 app.get('/', (req, res) => {
-    res.send('Servidor funcionando correctamente');
+    res.sendFile(path_1.default.join(__dirname, '../../frontend/dist/index.html'));
+});
+// Catch-all para rutas que NO sean de API (SPA React Router)
+app.get(/^\/(?!api).*/, (req, res) => {
+    res.sendFile(path_1.default.join(__dirname, '../../frontend/dist/index.html'));
 });
 // Middleware de manejo de errores global
 app.use((err, req, res, next) => {
@@ -80,8 +96,8 @@ app.use((err, req, res, next) => {
     });
 });
 // Iniciar servidor
-app.listen(PORT, async () => {
-    console.log(`Servidor escuchando en http://localhost:${PORT}`);
+app.listen(Number(PORT), HOST, async () => {
+    console.log(`Servidor escuchando en http://${HOST}:${PORT}`);
     try {
         await testDbConnection();
         await (0, syncDatabase_1.syncDatabase)();
