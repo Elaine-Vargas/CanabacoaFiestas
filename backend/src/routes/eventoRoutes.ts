@@ -102,7 +102,6 @@ router.get('/tipo-eventos/list', getTiposEventos as RequestHandler);
 // Obtener todas las asignaciones de empleados
 router.get('/asignar-empleados', async (req, res, next) => {
     try {
-        console.log('Intentando obtener asignaciones de empleados...');
         const asignaciones = await EmpleadoEvento.findAll({
             include: [
                 { 
@@ -125,7 +124,6 @@ router.get('/asignar-empleados', async (req, res, next) => {
             ],
             logging: console.log
         });
-        console.log('Asignaciones encontradas:', asignaciones.length);
         res.json(asignaciones);
     } catch (error) {
         console.error('Error detallado al obtener asignaciones:', error);
@@ -136,7 +134,6 @@ router.get('/asignar-empleados', async (req, res, next) => {
 // Asignar empleado a un evento
 router.post('/asignar-empleados', async (req: Request, res: Response, next: NextFunction) => {
     try {
-        console.log('Datos recibidos para asignación:', req.body);
         await assignEmployeeToEvent(req, res);
     } catch (error) {
         console.error('Error detallado al asignar empleado:', error);
@@ -182,7 +179,6 @@ router.get('/empleados/cliente/:cedula_cliente', async (req: Request, res: Respo
 
 // Actualizar rol de empleado en un evento
 router.put('/:id_evento/empleados/:empleado_evento', async (req: Request, res: Response, next: NextFunction) => {
-    console.log('Datos recibidos para actualizar rol de empleado:', req.body);
     try {
         await updateEmployeeRole(req, res);
     } catch (error) {

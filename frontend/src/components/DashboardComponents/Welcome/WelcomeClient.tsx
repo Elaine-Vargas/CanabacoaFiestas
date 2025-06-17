@@ -82,9 +82,14 @@ interface Comentario {
 }
 
 interface Empleado {
-  empleado?: Usuario;
-  puesto_evento?: string;
-  estado_empevento?: string;
+  empleado: {
+    nombre_usuario: string;
+    apellido_usuario: string;
+    cedula_usuario: string;
+    tel_usuario: string;
+  };
+  puesto_evento: string;
+  estado_empevento: string;
   id_evento?: number;
   evento?: {
     id_evento: number;
@@ -330,7 +335,6 @@ export default function WelcomeClient() {
 
       // Obtener empleados asignados a eventos del cliente
       const empleadosQuery: string[] = [];
-      // Ejemplo: para filtrar por puesto: empleadosQuery.push(`puesto_evento=Decorador`);
       const empleadosQueryString = empleadosQuery.length > 0 ? `?${empleadosQuery.join('&')}` : '';
       const empleadosResponse = await fetch(`${apiUrl}/evento/empleados/cliente/${userCedula}${empleadosQueryString}`, {
         headers: {
@@ -343,7 +347,28 @@ export default function WelcomeClient() {
         throw new Error('Error al obtener empleados');
       }
       const empleadosData = await empleadosResponse.json();
-      setEmpleados(empleadosData);
+      // Enriquecer con teléfono usando /usuario/buscar
+      const empleadosConTelefono = await Promise.all(empleadosData.map(async (empleado: Empleado) => {
+        try {
+          const userResponse = await fetch(`${apiUrl}/usuario/buscar?cedula=${empleado.empleado.cedula_usuario}`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+          });
+          if (userResponse.ok) {
+            const userData = await userResponse.json();
+            console.log('Respuesta de usuario/buscar:', userData);
+            const tel = userData.tel_usuario || (userData.usuario && userData.usuario.tel_usuario) || '';
+            return {
+              ...empleado,
+              empleado: {
+                ...empleado.empleado,
+                tel_usuario: tel
+              }
+            };
+          }
+        } catch (e) { /* ignorar error individual */ }
+        return empleado;
+      }));
+      setEmpleados(empleadosConTelefono);
 
     } catch (error) {
       console.error('Error al cargar datos:', error);
@@ -1513,7 +1538,7 @@ export default function WelcomeClient() {
             </Descriptions.Item>
             <Descriptions.Item label="Asesor">
               {selectedEvento.asesor ? 
-                `${selectedEvento.asesor.nombre_usuario} ${selectedEvento.asesor.apellido_usuario} (Cédula: ${selectedEvento.asesor.cedula_usuario || 'N/A'})`
+                `${selectedEvento.asesor.nombre_usuario} ${selectedEvento.asesor.apellido_usuario} (Tel: ${selectedEvento.asesor.tel_usuario || 'N/A'})`
                 : 'N/A'}
             </Descriptions.Item>
           </Descriptions>
@@ -1587,9 +1612,6 @@ export default function WelcomeClient() {
             </Descriptions.Item>
             <Descriptions.Item label="Apellido">
               {selectedEmpleado.empleado?.apellido_usuario}
-            </Descriptions.Item>
-            <Descriptions.Item label="Cédula">
-              {selectedEmpleado.empleado?.cedula_usuario}
             </Descriptions.Item>
             <Descriptions.Item label="Puesto">
               {selectedEmpleado.puesto_evento}
