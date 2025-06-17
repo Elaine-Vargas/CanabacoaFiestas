@@ -185,7 +185,16 @@ interface CateringService {
   estado_catering: string;
   fecha_catering?: string;
   evento?: {
-    nombre_evento: string;
+    id_evento: number;
+    fecha_evento: string;
+    tipo_evento: {
+      id_tipo_evento: number;
+      tipo_evento: string;
+    };
+    cliente: {
+      nombre_usuario: string;
+      apellido_usuario: string;
+    };
   };
   menus_catering?: Array<{
     menu: Menu;
@@ -222,6 +231,10 @@ interface Plato {
 interface Event {
   id_evento: number;
   nombre_evento: string;
+  cliente: {
+    nombre_usuario: string;
+    apellido_usuario: string;
+  };
 }
 
 interface Proveedor {
@@ -310,7 +323,6 @@ const CateringAdmin = () => {
 
   // Funciones de fetch
   const fetchCateringServices = async () => {
-    setLoading(true);
     try {
       const token = localStorage.getItem('token');
       if (!token) {
@@ -318,24 +330,26 @@ const CateringAdmin = () => {
         return;
       }
 
-      const response = await axios.get(`${apiUrl}/catering`, {
+      const params = new URLSearchParams();
+      params.append('include', 'evento.cliente');
+      const url = `${apiUrl}/catering?${params.toString()}`;
+
+      const response = await fetch(url, {
         headers: {
           'Authorization': `Bearer ${token}`
         }
       });
 
-      if (response.data) {
-        console.log('Datos actualizados:', response.data);
-        setCateringServices(response.data);
-      } else {
-        setCateringServices([]);
+      if (!response.ok) {
+        throw new Error('Error al cargar servicios de catering');
       }
+
+      const data = await response.json();
+      console.log('Datos de catering recibidos (estructura completa):', JSON.stringify(data, null, 2));
+      setCateringServices(data);
     } catch (error) {
-      console.error('Error al cargar los servicios de catering:', error);
-      message.error('Error al cargar los servicios de catering');
-      setCateringServices([]);
-    } finally {
-      setLoading(false);
+      console.error('Error al cargar servicios de catering:', error);
+      message.error('Error al cargar servicios de catering');
     }
   };
 
@@ -440,15 +454,25 @@ const CateringAdmin = () => {
         return;
       }
 
-      const response = await axios.get(`${apiUrl}/evento`, {
+      const params = new URLSearchParams();
+      params.append('include', 'cliente');
+      const url = `${apiUrl}/evento?${params.toString()}`;
+
+      const response = await fetch(url, {
         headers: {
           'Authorization': `Bearer ${token}`
         }
       });
-      setEvents(response.data);
+
+      if (!response.ok) {
+        throw new Error('Error al cargar eventos');
+      }
+
+      const data = await response.json();
+      setEvents(data);
     } catch (error) {
-      console.error('Error al cargar los eventos:', error);
-      message.error('Error al cargar los eventos');
+      console.error('Error al cargar eventos:', error);
+      message.error('Error al cargar eventos');
     }
   };
 
@@ -941,39 +965,43 @@ const CateringAdmin = () => {
   // Columnas para las tablas
   const cateringColumns = [
     {
-      title: 'ID',
-      dataIndex: 'id_catering',
-      key: 'id_catering',
-    },
-    {
       title: 'Evento',
-      dataIndex: ['evento', 'nombre_evento'],
       key: 'evento',
-      render: (nombre: string, record: CateringService) => (
-        <span>
-          {record.id_evento}{nombre ? ` - ${nombre}` : ''}
-        </span>
-      ),
+      render: (_: any, record: CateringService) => {
+        if (!record.evento) {
+          return <span>Evento no disponible</span>;
+        }
+
+        const fecha = record.evento.fecha_evento ? dayjs(record.evento.fecha_evento).format('DD/MM/YYYY') : 'Fecha no disponible';
+        
+        return (
+          <span>
+            {`ID: ${record.evento.id_evento} - Fecha: ${fecha}`}
+          </span>
+        );
+      },
     },
     {
       title: 'Estado',
       dataIndex: 'estado_catering',
       key: 'estado_catering',
       render: (estado: string) => {
-        let color = 'default';
-        switch (estado.toLowerCase()) {
-          case 'solicitado':
-            color = 'processing';
+        let color;
+        switch (estado) {
+          case 'Activo':
+            color = 'green';
             break;
-          case 'confirmado':
-            color = 'warning';
+          case 'Pendiente':
+            color = 'gold';
             break;
-          case 'completado':
-            color = 'success';
+          case 'Completado':
+            color = 'blue';
             break;
-          case 'cancelado':
-            color = 'error';
+          case 'Cancelado':
+            color = 'red';
             break;
+          default:
+            color = 'default';
         }
         return <Tag color={color}>{estado}</Tag>;
       },
@@ -1258,7 +1286,7 @@ const CateringAdmin = () => {
       >
         <Select placeholder="Seleccione un evento">
           {events.map(evento => (
-            <Option key={`event-${evento.id_evento}`} value={evento.id_evento}>
+            <Option key={`event-${evento.id_evento} - ${evento.cliente.nombre_usuario} ${evento.cliente.apellido_usuario}`} value={evento.id_evento}>
               {evento.nombre_evento}
             </Option>
           ))}
@@ -1351,10 +1379,11 @@ const CateringAdmin = () => {
   // Función para filtrar los servicios de catering
   const getFilteredCateringServices = () => {
     return cateringServices.filter(service => {
-      // Filtro por texto de búsqueda (evento o ID)
+      // Filtro por texto de búsqueda (evento, ID o cliente)
       const matchesSearch = !searchText
-        || (service.evento?.nombre_evento?.toLowerCase().includes(searchText.toLowerCase()))
-        || service.id_evento?.toString().includes(searchText);
+        || service.id_evento?.toString().includes(searchText)
+        || (service.evento?.cliente?.nombre_usuario?.toLowerCase().includes(searchText.toLowerCase()))
+        || (service.evento?.cliente?.apellido_usuario?.toLowerCase().includes(searchText.toLowerCase()));
 
       // Filtro por estado
       const matchesStatus = !statusFilter

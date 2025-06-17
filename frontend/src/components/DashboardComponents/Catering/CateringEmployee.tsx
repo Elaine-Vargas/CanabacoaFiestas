@@ -143,7 +143,9 @@ interface CateringService {
   estado_catering: string;
   fecha_catering?: string;
   evento?: {
+    id_evento: number;
     nombre_evento: string;
+    fecha_evento: string;
   };
   menus_catering?: Array<{
     menu: Menu;
@@ -900,13 +902,20 @@ const CateringAdmin = () => {
     },
     {
       title: 'Evento',
-      dataIndex: ['evento', 'nombre_evento'],
       key: 'evento',
-      render: (nombre: string, record: CateringService) => (
-        <span>
-          {record.id_evento}{nombre ? ` - ${nombre}` : ''}
-        </span>
-      ),
+      render: (_: any, record: CateringService) => {
+        if (!record.evento) {
+          return <span>Evento no disponible</span>;
+        }
+
+        const fecha = record.evento.fecha_evento ? dayjs(record.evento.fecha_evento).format('DD/MM/YYYY') : 'Fecha no disponible';
+        
+        return (
+          <span>
+            {`ID: ${record.evento.id_evento} - Fecha: ${fecha}`}
+          </span>
+        );
+      },
     },
     {
       title: 'Estado',

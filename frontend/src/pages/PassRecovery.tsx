@@ -3,18 +3,37 @@ import axios from 'axios';
 import { useNavigate, Link } from 'react-router-dom';
 import '../styles/mainPages/Recovery.scss';
 import { apiUrl } from '../config';
+import { validateEmail } from '../utils/validation';
 
 const PassRecovery = () => {
   const [correo, setCorreo] = useState('');
   const [mensaje, setMensaje] = useState('');
   const [error, setError] = useState('');
   const [cargando, setCargando] = useState(false);
+  const [emailError, setEmailError] = useState('');
 
+  const handleEmailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value.toLowerCase();
+    setCorreo(value);
+    
+    if (value) {
+      const error = validateEmail(value);
+      setEmailError(error || '');
+    } else {
+      setEmailError('');
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setMensaje('');
     setError('');
+
+    if (!validateEmail(correo)) {
+      setEmailError('Por favor, ingrese un correo electrónico válido');
+      return;
+    }
+
     setCargando(true);
 
     try {
@@ -53,16 +72,21 @@ const PassRecovery = () => {
                 type="email"
                 required
                 value={correo}
-                onChange={(e) => setCorreo(e.target.value)}
-                className="recovery-input"
+                onChange={handleEmailChange}
+                className={`recovery-input ${emailError ? 'error' : ''}`}
                 placeholder="ejemplo@correo.com"
               />
+              {emailError && (
+                <div className="recovery-message error">
+                  {emailError}
+                </div>
+              )}
             </div>
 
             <div className="recovery-actions">
               <button
                 type="submit"
-                disabled={cargando}
+                disabled={cargando || !!emailError}
                 className="recovery-submit-btn"
               >
                 {cargando ? 'Enviando...' : 'Enviar enlace de recuperación'}
