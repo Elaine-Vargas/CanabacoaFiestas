@@ -27,7 +27,9 @@ export default function ServicesMenu({ selectedService }: ServicesMenuProps) {
   const userData = JSON.parse(localStorage.getItem('userData') || '{}');
   const [showLogoutModal, setShowLogoutModal] = useState(false);
   const [drawerOpen, setDrawerOpen] = useState(false);
-  const isMobile = useMediaQuery("(max-width:450px)");
+  const isTabletOrMobile = useMediaQuery("(max-width:720px)");
+  const isShortScreen = useMediaQuery("(max-height:460px)");
+  const shouldUseDrawer = isTabletOrMobile || isShortScreen;
 
   const toggleDrawer = (open: boolean) => () => {
     setDrawerOpen(open);
@@ -51,6 +53,7 @@ export default function ServicesMenu({ selectedService }: ServicesMenuProps) {
 
   const handleNavigation = (path: string) => {
     navigate(path);
+    setDrawerOpen(false);
   };
 
   const renderMenuItems = () => {
@@ -90,11 +93,10 @@ export default function ServicesMenu({ selectedService }: ServicesMenuProps) {
     );
   };
 
-  const renderMobileMenu = () => {
+  const renderDrawerMenu = () => {
     const rolId = Number(userData.rol);
     let menuItems = [];
 
-    // Menú para todos los roles
     menuItems = [
       { text: "Bienvenida", path: "/Menu-Servicios/Bienvenida", icon: <FaTachometerAlt /> },
       { text: rolId === 1 ? "Alquileres y Compras" : "Alquiler", path: "/Menu-Servicios/Alquiler", icon: <FaBoxOpen /> },
@@ -112,10 +114,12 @@ export default function ServicesMenu({ selectedService }: ServicesMenuProps) {
             background: "var(--color-background2)",
             color: "var(--color-text)",
             fontFamily: '"Nunito Sans", sans-serif',
-            width: 250,
+            width: 280,
             padding: 2,
             display: 'flex',
-            flexDirection: 'column'
+            flexDirection: 'column',
+            height: isShortScreen ? '100%' : 'auto',
+            maxHeight: isShortScreen ? '100%' : 'none'
           },
         }}
       >
@@ -151,10 +155,7 @@ export default function ServicesMenu({ selectedService }: ServicesMenuProps) {
           {menuItems.map((item) => (
             <ListItem key={item.text} disablePadding>
               <ListItemButton
-                onClick={() => {
-                  handleNavigation(item.path);
-                  setDrawerOpen(false);
-                }}
+                onClick={() => handleNavigation(item.path)}
                 sx={{
                   color: selectedService === item.text ? "var(--gold)" : "var(--color-text)",
                   justifyContent: 'center',
@@ -184,7 +185,6 @@ export default function ServicesMenu({ selectedService }: ServicesMenuProps) {
           <ColorTheme colorDark="black" colorLight="white" />
           <IoIosExit className="logout-button" title="Cerrar Sesión" onClick={() => setShowLogoutModal(true)} />
         </div>
-
       </Drawer>
     );
   };
@@ -203,30 +203,31 @@ export default function ServicesMenu({ selectedService }: ServicesMenuProps) {
         </div>
       )}
 
-      {isMobile && (
-        <IconButton 
-          className="menu-icon" 
-          onClick={toggleDrawer(true)}
-          sx={{ 
-            color: "var(--color-text)",
-            position: "fixed",
-            top: 20,
-            left: 20,
-            zIndex: 1000,
-            backgroundColor: "var(--color-background2)",
-            '&:hover': {
-              backgroundColor: "var(--gold)",
-              color: "var(--white)"
-            }
-          }}
-        >
-          <MenuRoundedIcon />
-        </IconButton>
+      {shouldUseDrawer && (
+        <>
+          <IconButton 
+            className="menu-icon" 
+            onClick={toggleDrawer(true)}
+            sx={{ 
+              color: "var(--color-text)",
+              position: "fixed",
+              top: 20,
+              left: 20,
+              zIndex: 1000,
+              backgroundColor: "var(--color-background2)",
+              '&:hover': {
+                backgroundColor: "var(--gold)",
+                color: "var(--white)"
+              }
+            }}
+          >
+            <MenuRoundedIcon />
+          </IconButton>
+          {renderDrawerMenu()}
+        </>
       )}
-      
-      {isMobile && renderMobileMenu()}
 
-      {!isMobile && (
+      {!shouldUseDrawer && (
         <div className="sidebar">
           <div className="theme-exit-container">
             <ColorTheme colorDark="black" colorLight="white" />

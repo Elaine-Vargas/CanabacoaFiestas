@@ -1785,7 +1785,7 @@ const ReportAdmin = () => {
       </Modal>
 
       <Modal className='ReportsModal'
-        title="Reportes de Facturas"
+        title="TODO SOBRE UN EVENTO"
         open={isFacturaModalVisible}
         onCancel={handleFacturaModalCancel}
         footer={null}

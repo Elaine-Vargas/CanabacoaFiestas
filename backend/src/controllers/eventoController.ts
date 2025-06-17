@@ -10,10 +10,7 @@ import EmpleadoEvento from '../models/EmpleadoEvento_model';
  
 export const createEvent = async (req: Request, res: Response) => {
     try {
-        console.log('=== INICIO createEvent ===');
-        console.log('Headers:', req.headers);
-        console.log('Body completo:', req.body);
-        
+          
         const {
             cedula_cliente,
             cedula_asesor,
@@ -31,27 +28,10 @@ export const createEvent = async (req: Request, res: Response) => {
             nota_cliente
         } = req.body;
 
-        console.log('Datos extraídos del body:', {
-            cedula_cliente,
-            cedula_asesor,
-            fecha_evento,
-            hora_evento,
-            id_tipo_evento,
-            id_provincia,
-            id_ciudad,
-            sector,
-            calle,
-            detalles,
-            espacio_evento,
-            estado_solicitud,
-            desea_supervision,
-            nota_cliente
-        });
+     
 
         // Verificar roles
-        console.log('Verificando cliente...');
-        const cliente = await Usuario.findOne({ where: { cedula_usuario: cedula_cliente, id_rol: 2 } });
-        console.log('Cliente encontrado:', cliente ? 'Sí' : 'No');
+      const cliente = await Usuario.findOne({ where: { cedula_usuario: cedula_cliente, id_rol: 2 } });
         if (!cliente) {
             return res.status(400).json({ 
                 error: 'Cliente no válido',
@@ -61,9 +41,7 @@ export const createEvent = async (req: Request, res: Response) => {
 
         let asesor = null;
         if (cedula_asesor) {
-            console.log('Verificando asesor...');
             asesor = await Usuario.findOne({ where: { cedula_usuario: cedula_asesor, id_rol: 3 } });
-            console.log('Asesor encontrado:', asesor ? 'Sí' : 'No');
             if (!asesor) {
                 return res.status(400).json({ 
                     error: 'Asesor no válido',
@@ -73,9 +51,7 @@ export const createEvent = async (req: Request, res: Response) => {
         }
 
         // Verificar que el tipo de evento existe
-        console.log('Verificando tipo de evento...');
         const tipoEvento = await TipoEvento.findByPk(id_tipo_evento);
-        console.log('Tipo de evento encontrado:', tipoEvento ? 'Sí' : 'No');
         if (!tipoEvento) {
             return res.status(400).json({
                 error: 'Tipo de evento no válido',
@@ -84,14 +60,14 @@ export const createEvent = async (req: Request, res: Response) => {
         }
 
         // Verificar que la ciudad existe y pertenece a la provincia
-        console.log('Verificando ciudad...');
+       
         const ciudad = await Ciudad.findOne({
             where: {
                 id_ciudad,
                 id_provincia
             }
         });
-        console.log('Ciudad encontrada:', ciudad ? 'Sí' : 'No');
+    
 
         if (!ciudad) {
             return res.status(400).json({
@@ -101,7 +77,6 @@ export const createEvent = async (req: Request, res: Response) => {
         }
 
         // Crear la dirección
-        console.log('Creando dirección...');
         const direccion = await Direccion.create({
             id_ciudad,
             sector,
@@ -109,10 +84,9 @@ export const createEvent = async (req: Request, res: Response) => {
             detalles: detalles || null
         });
 
-        console.log('Dirección creada:', direccion.toJSON());
 
         // Crear el evento
-        console.log('Creando evento...');
+        
         const evento = await Evento.create({
             cedula_cliente,
             cedula_asesor: cedula_asesor || null,
@@ -130,10 +104,9 @@ export const createEvent = async (req: Request, res: Response) => {
             pagopendiente_evento: 0
         });
 
-        console.log('Evento creado:', evento.toJSON());
+       
 
         // Obtener el evento con sus relaciones
-        console.log('Obteniendo evento completo con relaciones...');
         const eventoCompleto = await Evento.findByPk(evento.id_evento, {
             include: [
                 {
@@ -171,7 +144,6 @@ export const createEvent = async (req: Request, res: Response) => {
             throw new Error('Error al recuperar el evento creado');
         }
 
-        console.log('=== FIN createEvent - ÉXITO ===');
         res.status(201).json({
             mensaje: 'Evento creado exitosamente',
             evento: eventoCompleto
@@ -342,20 +314,7 @@ export const editEvent = async (req: Request, res: Response) => {
             estado_solicitud,
         } = req.body;
 
-        console.log('Datos recibidos para editar evento:', {
-            id_evento,
-            cedula_cliente,
-            cedula_asesor,
-            fecha_evento,
-            hora_evento,
-            id_direccion,
-            espacio_evento,
-            id_tipo_evento,
-            desea_supervision,
-            nota_cliente,
-            estado_solicitud,
-        });
-
+ 
         // Verificar roles si se están actualizando
         if (cedula_cliente) {
             const cliente = await Usuario.findOne({ where: { cedula_usuario: cedula_cliente, id_rol: 2 } });
@@ -442,9 +401,7 @@ export const editEvent = async (req: Request, res: Response) => {
             });
         }
 
-        console.log('Evento encontrado:', evento.toJSON());
-        console.log('Datos a actualizar:', datosActualizados);
-
+    
         await evento.update(datosActualizados);
 
         res.json(evento);
@@ -488,12 +445,10 @@ export const deleteEvent = async (req: Request, res: Response) => {
 
 export const getTiposEventos = async (req: Request, res: Response) => {
     try {
-      console.log('Intentando obtener tipos de evento...');
       const tipoevento = await TipoEvento.findAll({
       });
   
       if (!tipoevento || tipoevento.length === 0) {
-        console.log('No se encontraron tipos de eventos');
         return res.status(404).json({ 
           error: 'No se encontraron tipos de eventos',
           mensaje: 'No hay tipos de eventos disponibles'
@@ -514,9 +469,7 @@ export const getTiposEventos = async (req: Request, res: Response) => {
 export const assignEmployeeToEvent = async (req: Request, res: Response) => {
     try {
         const { id_evento, empleado_evento, puesto_evento } = req.body;
-        console.log('Datos recibidos en el controlador:', { id_evento, empleado_evento, puesto_evento });
-
-        if (!id_evento || !empleado_evento || !puesto_evento) {
+           if (!id_evento || !empleado_evento || !puesto_evento) {
             return res.status(400).json({
                 error: 'Datos incompletos',
                 mensaje: 'Faltan datos requeridos para la asignación'
@@ -572,7 +525,6 @@ export const assignEmployeeToEvent = async (req: Request, res: Response) => {
             });
         }
 
-        console.log('Creando nueva asignación...');
         const empleadoEvento = await EmpleadoEvento.create({
             id_evento,
             empleado_evento,
@@ -581,7 +533,6 @@ export const assignEmployeeToEvent = async (req: Request, res: Response) => {
         }, {
             fields: ['id_evento', 'empleado_evento', 'puesto_evento', 'estado_empevento']
         });
-        console.log('Asignación creada exitosamente:', empleadoEvento);
 
         res.status(201).json(empleadoEvento);
     } catch (error) {
@@ -624,7 +575,6 @@ export const getEventEmployees = async (req: Request, res: Response) => {
 export const getEmployeeEvents = async (req: Request, res: Response) => {
     try {
         const { id_empleado } = req.params; // Cédula del empleado logueado
-        console.log('Buscando eventos donde el empleado', id_empleado, 'ha participado.');
 
         const eventos = await EmpleadoEvento.findAll({
             where: {
@@ -650,8 +600,7 @@ export const getEmployeeEvents = async (req: Request, res: Response) => {
             order: [[{ model: Evento, as: 'evento' }, 'fecha_evento', 'DESC']]
         });
 
-        console.log('Eventos participados encontrados para', id_empleado + ':', eventos.length);
-
+ 
         if (!eventos || eventos.length === 0) {
             console.log('No se encontraron participaciones de eventos para el empleado', id_empleado);
             return res.status(404).json({
@@ -673,7 +622,6 @@ export const getEmployeeEvents = async (req: Request, res: Response) => {
 export const getAsesorTeamAssignments = async (req: Request, res: Response) => {
     try {
         const { cedula_asesor } = req.params; // Cédula del empleado logueado (asesor)
-        console.log('Buscando asignaciones de equipo para eventos donde el asesor es:', cedula_asesor);
 
         const asignaciones = await EmpleadoEvento.findAll({
             where: {
@@ -700,8 +648,6 @@ export const getAsesorTeamAssignments = async (req: Request, res: Response) => {
             ],
             order: [[{ model: Evento, as: 'evento' }, 'fecha_evento', 'DESC']]
         });
-
-        console.log('Asignaciones de equipo encontradas para eventos asesorados por', cedula_asesor + ':', asignaciones.length);
 
         if (!asignaciones || asignaciones.length === 0) {
             console.log('No se encontraron asignaciones de equipo para eventos donde el empleado es asesor para', cedula_asesor);
@@ -890,7 +836,7 @@ export const getEmpleadosByClienteEventos = async (req: Request, res: Response) 
         {
           model: Usuario,
           as: 'empleado',
-          attributes: ['cedula_usuario', 'nombre_usuario', 'apellido_usuario']
+          attributes: ['cedula_usuario', 'nombre_usuario', 'apellido_usuario', 'tel_usuario', 'correo_usuario'] // Eliminado para traer todos los campos
         },
         {
           model: Evento,
@@ -900,6 +846,9 @@ export const getEmpleadosByClienteEventos = async (req: Request, res: Response) 
       ],
       order: [[{ model: Evento, as: 'evento' }, 'fecha_evento', 'DESC']]
     });
+
+    // Depuración: mostrar los empleados asignados y verificar tel_usuario
+    console.log('Empleados asignados:', JSON.stringify(empleadosAsignados, null, 2));
 
     res.json(empleadosAsignados);
   } catch (error) {
