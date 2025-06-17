@@ -2512,7 +2512,7 @@ const RentAdmin: React.FC = () => {
               placeholder="Filtrar por categoría"
               allowClear
               value={filterElementCategoria || undefined}
-              onChange={(value: string) => handleCategoriaChange(value)}
+              onChange={(value) => handleCategoriaChange(value as string)}
             >
               {categorias.map((categoria: any) => (
                 <Option key={categoria.id_categoria} value={categoria.id_categoria.toString()}>
@@ -2525,7 +2525,7 @@ const RentAdmin: React.FC = () => {
               placeholder="Filtrar por estado"
               allowClear
               value={filterElementEstado || undefined}
-              onChange={(value: string) => handleEstadoChange(value)}
+              onChange={(value) => handleEstadoChange(value as string)}
             >
               <Option value="Activo">Activo</Option>
               <Option value="Inactivo">Inactivo</Option>
@@ -2833,7 +2833,7 @@ const RentAdmin: React.FC = () => {
               placeholder="Filtrar por evento"
               allowClear
               value={filterEvento || undefined}
-              onChange={(value: string) => handleEventoChange(value)}
+              onChange={(value) => handleEventoChange(value as string)}
               showSearch
               optionFilterProp="children"
               dropdownMatchSelectWidth={false}
@@ -2852,7 +2852,7 @@ const RentAdmin: React.FC = () => {
               placeholder="Filtrar por estado"
               allowClear
               value={filterEstado || undefined}
-              onChange={(value: string) => handleEstadoAlquilerChange(value)}
+              onChange={(value) => handleEstadoAlquilerChange(value as string)}
             >
               <Option value="Solicitado">Solicitado</Option>
               <Option value="Aceptado">Aceptado</Option>
