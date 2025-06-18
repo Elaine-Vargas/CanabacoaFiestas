@@ -414,8 +414,8 @@ const WelcomeAdmin: React.FC = () => {
     try {
       setLoading(true);
       const url = decoracionSeleccionada 
-        ? `http://localhost:3001/api/decoraciones/${decoracionSeleccionada.id_decoracion}`
-        : 'http://localhost:3001/api/decoraciones';
+        ? `${apiUrl}/decoracion/${decoracionSeleccionada.id_decoracion}`
+        : `${apiUrl}/decoracion`;
       
       const method = decoracionSeleccionada ? 'PUT' : 'POST';
 
@@ -423,6 +423,7 @@ const WelcomeAdmin: React.FC = () => {
         method,
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
         },
         body: JSON.stringify(values),
       });
@@ -457,8 +458,11 @@ const WelcomeAdmin: React.FC = () => {
   const handleDeleteDecoracion = async (id: number) => {
     try {
       setLoading(true);
-      const response = await fetch(`http://localhost:3001/api/decoraciones/${id}`, {
+      const response = await fetch(`${apiUrl}/decoracion/${id}`, {
         method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        }
       });
 
       if (!response.ok) {
@@ -478,7 +482,11 @@ const WelcomeAdmin: React.FC = () => {
   const fetchDecoraciones = async () => {
     try {
       setLoading(true);
-      const response = await fetch('http://localhost:3001/api/decoraciones');
+      const response = await fetch(`${apiUrl}/decoracion`, {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        }
+      });
       if (!response.ok) {
         throw new Error('Error al cargar las decoraciones');
       }
@@ -1414,14 +1422,18 @@ const handleEditEvento = (record: Evento) => {
 
     try {
       setLoading(true);
-      const response = await fetch('http://localhost:3001/api/decoraciones/elementos', {
+      const response = await fetch(`${apiUrl}/decoracion/detalle`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
         },
         body: JSON.stringify({
-          ...values,
-          id_evento: eventoSeleccionadoParaElementos.id_evento
+          id_decoracion: eventoSeleccionadoParaElementos.id_evento, // Asumiendo que el evento tiene una decoración asociada
+          elemento_decoracion: values.nombre_elemento,
+          cantelemento_decoracion: values.cantidad_elemento,
+          precio_elemento: values.precio_elemento,
+          estado_detdecoracion: 'Aceptado'
         }),
       });
 
